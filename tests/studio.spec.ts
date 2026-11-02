@@ -221,7 +221,12 @@ test("original image uploads survive refresh and project backups; SVG is rejecte
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=",
     "base64",
   );
-  await page.getByLabel("Upload original image file").setInputFiles({
+  const choosingImage = page.waitForEvent("filechooser");
+  await page
+    .getByRole("button", { name: "Choose my image", exact: true })
+    .click();
+  const imageChooser = await choosingImage;
+  await imageChooser.setFiles({
     name: "my-sketch.png",
     mimeType: "image/png",
     buffer: pixel,
@@ -253,9 +258,21 @@ test("original image uploads survive refresh and project backups; SVG is rejecte
     mimeType: "image/svg+xml",
     buffer: Buffer.from('<svg onload="alert(1)"/>'),
   });
-  await expect(page.getByRole("status")).toContainText(
+  await expect(page.getByRole("alert")).toContainText(
     "SVG import is not available",
   );
+  await expect(
+    page.getByRole("button", { name: "Choose my image" }),
+  ).toBeEnabled();
+  await page.getByLabel("Upload original image file").setInputFiles({
+    name: "retry.png",
+    mimeType: "image/png",
+    buffer: pixel,
+  });
+  await expect(
+    page.getByRole("heading", { name: "retry’s first story" }),
+  ).toBeVisible();
+  await saved(page);
 });
 
 test("drawing, undo stroke, save and motion controls work", async ({

@@ -45,6 +45,7 @@ export default function App() {
   const backupInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const [working, setWorking] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
@@ -203,6 +204,7 @@ export default function App() {
   async function upload(file?: File) {
     if (!file) return;
     setWorking(true);
+    setUploadError("");
     try {
       const asset = await readImage(file);
       fromAsset(
@@ -210,7 +212,7 @@ export default function App() {
         file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "My character",
       );
     } catch (e) {
-      setNotice(
+      setUploadError(
         e instanceof Error ? e.message : "The image could not be opened.",
       );
     } finally {
@@ -343,7 +345,10 @@ export default function App() {
           projects={projects}
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onDemo={() => open(starterProject())}
-          onUpload={() => setDialog({ type: "upload" })}
+          onUpload={() => {
+            setUploadError("");
+            setDialog({ type: "upload" });
+          }}
           onDraw={() => setDialog({ type: "draw" })}
           onOpen={open}
           onDuplicate={(p) => void duplicate(p)}
@@ -377,6 +382,15 @@ export default function App() {
           title="Your artwork has a story to tell."
           onClose={() => setDialog(null)}
         >
+          <input
+            type="file"
+            ref={imageInput}
+            accept="image/png,image/jpeg,image/webp"
+            className="visually-hidden"
+            tabIndex={-1}
+            aria-label="Upload original image file"
+            onChange={(e) => void upload(e.target.files?.[0])}
+          />
           <div className="upload-illustration">
             <Icon name="image" size={48} />
             <span>✦</span>
@@ -394,6 +408,11 @@ export default function App() {
             Image movement animates the whole picture. It does not automatically
             separate or rig a face and limbs.
           </p>
+          {uploadError && (
+            <p role="alert" className="error-message">
+              {uploadError}
+            </p>
+          )}
           <div className="modal-actions">
             <button
               className="button secondary"
@@ -510,15 +529,6 @@ export default function App() {
         tabIndex={-1}
         aria-label="Restore project backup file"
         onChange={(e) => void importBackup(e.target.files?.[0])}
-      />
-      <input
-        type="file"
-        ref={imageInput}
-        accept="image/png,image/jpeg,image/webp"
-        className="visually-hidden"
-        tabIndex={-1}
-        aria-label="Upload original image file"
-        onChange={(e) => void upload(e.target.files?.[0])}
       />
       {notice && (
         <div className="toast" role="status">
