@@ -1,3 +1,4 @@
+import { emptyProduction } from "./media-model";
 import { clone, makeScene, uid, validateProject, BACKGROUNDS } from "./model";
 import type {
   Asset,
@@ -193,7 +194,8 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     emotion: item.emotion,
   };
   validateProject({
-    schemaVersion: 3,
+    schemaVersion: 4,
+    ...emptyProduction(),
     id: "library-validation",
     title: "Library artwork",
     idea: "",

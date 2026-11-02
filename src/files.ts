@@ -24,7 +24,7 @@ export function exportProject(project: Project) {
 }
 export async function readProject(file: File): Promise<Project> {
   if (file.size > MAX_PROJECT_BYTES)
-    throw new Error("Choose a project backup smaller than 32 MB.");
+    throw new Error("Choose a project backup smaller than 64 MB.");
   return parseBackup(await file.text());
 }
 export async function readImage(file: File): Promise<Asset> {

@@ -4394,3 +4394,329 @@ input[type="color"] {
     max-height: 290px;
   }
 }
+
+/* Local voice production and verified canvas movies. */
+.production-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 0 14px;
+}
+.production-steps button {
+  border: 1px solid var(--line);
+  background: var(--field);
+  border-radius: 18px;
+  color: var(--text);
+  padding: 8px 14px;
+  min-height: 38px;
+  font-size: 11px;
+}
+.production-steps button:last-child {
+  background: var(--mint);
+  font-weight: 700;
+}
+.finish-button {
+  white-space: nowrap;
+}
+.editor-toolbar .toolbar-actions {
+  flex-wrap: wrap;
+}
+.caption-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none;
+}
+.audio-clip-block {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  min-width: 6px;
+  overflow: hidden;
+  padding: 3px 6px;
+  border: 1px solid var(--text);
+  border-radius: 5px;
+  font-size: 10px;
+  color: var(--text);
+  background: var(--sky);
+  text-align: left;
+  touch-action: none;
+  z-index: 2;
+}
+.audio-clip-block > span {
+  white-space: nowrap;
+}
+.audio-clip-block.music {
+  background: var(--mint);
+}
+.audio-clip-block.effects {
+  background: var(--yellow);
+}
+.audio-clip-block.dialogue {
+  background: var(--lavender);
+}
+.audio-clip-block.muted {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.voice-studio-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  margin: 20px 0;
+}
+.voice-studio-grid > section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.voice-studio-grid h3,
+.export-settings h3,
+.caption-editor h3 {
+  font-size: 20px;
+  margin: 4px 0;
+}
+.voice-studio-grid label,
+.caption-editor label,
+.browser-voice label,
+.audio-sources label,
+.export-settings label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.voice-studio-grid input,
+.voice-studio-grid select,
+.caption-editor input,
+.caption-editor select,
+.caption-editor textarea,
+.browser-voice textarea,
+.browser-voice select,
+.audio-sources input,
+.export-settings select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+}
+.voice-studio-grid audio {
+  width: 100%;
+}
+.voice-studio-grid .inline-check,
+.export-settings .inline-check,
+.voice-edit .inline-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voice-studio-grid input[type="checkbox"],
+.export-settings input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+}
+.media-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.media-tabs [aria-pressed="true"] {
+  background: var(--mint);
+  border-color: var(--ring);
+}
+.production-save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.media-notice {
+  padding: 12px 15px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  margin: 12px 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.media-notice p {
+  margin-bottom: 10px;
+}
+.audio-draft,
+.mixer-panel {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--field);
+}
+.audio-draft h4 {
+  margin: 0;
+}
+.sound-collection,
+.audio-sources,
+.browser-voice {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin: 14px 0;
+}
+.sound-collection summary,
+.audio-sources summary,
+.browser-voice summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 32px;
+}
+.sound-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.sound-grid .button {
+  white-space: normal;
+  min-height: 44px;
+}
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  padding: 12px;
+  background: var(--peach);
+  border-radius: 8px;
+  font-weight: 700;
+}
+.recording-indicator > span {
+  background: var(--primary);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.audio-source-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.audio-source-row label {
+  flex: 1;
+  min-width: 160px;
+}
+.audio-source-row > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.browser-voice {
+  display: grid;
+  gap: 12px;
+}
+.caption-editor {
+  display: grid;
+  gap: 16px;
+}
+.finish-review {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.finish-review > div {
+  display: grid;
+  gap: 7px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 10px;
+}
+.finish-review span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.finish-review strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.export-settings {
+  display: grid;
+  gap: 18px;
+  margin: 20px 0;
+}
+.export-checks {
+  display: grid;
+  gap: 10px;
+  padding: 8px 0;
+}
+.export-visual-preview summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.export-visual-preview .live-stage {
+  margin: 12px auto;
+  max-width: 600px;
+}
+.export-progress {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+}
+.export-progress progress {
+  width: 100%;
+  height: 18px;
+  accent-color: var(--primary);
+}
+.finished-movie {
+  display: grid;
+  gap: 14px;
+}
+.finished-movie video {
+  width: 100%;
+  max-height: 450px;
+  background: #161c28;
+  border-radius: 10px;
+}
+@media (max-width: 740px) {
+  .production-steps {
+    gap: 6px;
+  }
+  .production-steps button {
+    min-height: 42px;
+    padding: 8px 12px;
+  }
+  .voice-studio-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .finish-review {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .media-tabs .button {
+    flex: 1;
+    min-height: 44px;
+  }
+  .sound-grid .button {
+    font-size: 12px;
+  }
+  .voice-studio-grid input,
+  .voice-studio-grid select,
+  .caption-editor input,
+  .caption-editor select,
+  .caption-editor textarea,
+  .browser-voice textarea,
+  .browser-voice select,
+  .audio-sources input,
+  .export-settings select {
+    min-height: 44px;
+  }
+}

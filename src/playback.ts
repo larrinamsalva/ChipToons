@@ -27,6 +27,11 @@ export class PlaybackClock {
   private start = 0;
   private end = 60;
   private loop = false;
+  private timeSource: (() => number) | undefined;
+  setTimeSource(source?: () => number) {
+    this.timeSource = source;
+    this.last = undefined;
+  }
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -71,7 +76,9 @@ export class PlaybackClock {
     if (timestamp - this.published >= 1000 / 30) {
       const next = advancePlayback(
         this.snapshot.seconds,
-        (timestamp - this.last) / 1000,
+        this.timeSource
+          ? this.timeSource() - this.snapshot.seconds
+          : (timestamp - this.last) / 1000,
         this.start,
         this.end,
         this.loop,

@@ -1,3 +1,4 @@
+import { emptyProduction } from "./media-model";
 import { useEffect, useRef, useState } from "react";
 import { Dashboard } from "./components/Dashboard";
 import { DrawingPad } from "./components/DrawingPad";
@@ -164,6 +165,7 @@ export default function App() {
   }
   function fromAsset(asset: Asset, name: string) {
     const p = starterProject();
+    Object.assign(p, emptyProduction());
     p.title = `${name.slice(0, 110)}’s first story`;
     p.assets = [asset];
     p.characters[0] = {
@@ -523,7 +525,8 @@ export default function App() {
           <p className="field-hint">
             This version includes reusable art libraries, editable animation
             keyframes, timed expressions, empathy hearts and camera movement.
-            Playback is silent. Audio and video downloads are planned for PR #4.
+            Record voices, add sounds and timed captions, then use Finish My
+            Cartoon to export a playable WebM video in supported browsers.
           </p>
           <div className="modal-actions">
             <button className="button primary" onClick={() => setDialog(null)}>

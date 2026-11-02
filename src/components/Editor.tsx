@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import { PreviewAudio } from "../audio-engine";
+import type { AudioCategory } from "../media-model";
+import { reconcileProduction, duplicateSceneMedia } from "../production";
+import { VoiceStudio } from "./VoiceStudio";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Modal } from "./Modal";
 import {
   makeScene,
   totalDuration,
@@ -34,6 +39,10 @@ import type { LibraryItem } from "../library";
 import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
+const FinishCartoon = lazy(() =>
+  import("./FinishCartoon").then((m) => ({ default: m.FinishCartoon })),
+);
+
 export function Editor({
   project,
   onChange,
@@ -59,6 +68,16 @@ export function Editor({
 }) {
   const [selected, setSelected] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [audio] = useState(() => new PreviewAudio());
+  const [sound, setSound] = useState(true),
+    [audioBusy, setAudioBusy] = useState(false);
+  const playTicket = useRef(0);
+  const [voiceStudio, setVoiceStudio] = useState<{
+      clipId?: string;
+      category?: AudioCategory;
+      tab?: "sound" | "captions";
+    } | null>(null),
+    [finish, setFinish] = useState(false);
   const [clock] = useState(() => new PlaybackClock());
   const [scope, setScope] = useState<"episode" | "scene">("episode");
   const [loop, setLoop] = useState(false);
@@ -85,23 +104,64 @@ export function Editor({
       )
     : element;
   const character = resolvedCharacter(project, element);
-  useEffect(() => () => clock.dispose(), [clock]);
-  function seek(value: number) {
+  function halt() {
+    playTicket.current++;
+    audio.stop();
+    clock.setTimeSource();
     clock.pause();
+    setPlaying(false);
+    setAudioBusy(false);
+  }
+  useEffect(() => {
+    const off = clock.subscribe(() => {
+      if (!clock.getSnapshot().playing) {
+        audio.stop();
+        clock.setTimeSource();
+      }
+    });
+    return () => {
+      off();
+      clock.dispose();
+      audio.dispose();
+    };
+  }, [clock, audio]);
+  function openVoice(
+    clipId?: string,
+    category?: AudioCategory,
+    tab?: "sound" | "captions",
+  ) {
+    halt();
+    setVoiceStudio({ clipId, category, tab });
+  }
+  function updateProduction(next: Project) {
+    halt();
+    try {
+      validateProject(next);
+      onChange(next);
+      setEditError("");
+    } catch (e) {
+      setEditError(
+        e instanceof Error ? e.message : "Media could not be saved.",
+      );
+    }
+  }
+
+  function seek(value: number) {
+    halt();
     clock.configure(0, total, false);
     const t = clamp(value, 0, total);
     clock.seek(t);
     setEditSeconds(t);
     setSelected(frameAt(project, t).index);
-    clock.pause();
+    halt();
     setPlaying(false);
   }
   function seekLocal(value: number) {
-    clock.pause();
+    halt();
     clock.configure(0, total, false);
     clock.seek(sceneStart(project, index) + clamp(value, 0, scene.duration));
     setEditSeconds(clock.getSnapshot().seconds);
-    clock.pause();
+    halt();
     setPlaying(false);
   }
   function selectScene(next: number) {
@@ -110,33 +170,73 @@ export function Editor({
     setSelected(i);
     setElementIndex(0);
   }
-  function play() {
-    if (clock.getSnapshot().playing) {
+  async function play(forceEpisode = false, withSound = sound) {
+    if (clock.getSnapshot().playing && !forceEpisode) {
       const t = clock.getSnapshot().seconds;
       setEditSeconds(t);
-      clock.pause();
-      setPlaying(false);
+      halt();
       if (scope === "episode") setSelected(frameAt(project, t).index);
       return;
     }
-    const start = scope === "scene" ? sceneStart(project, index) : 0;
-    const end = scope === "scene" ? start + scene.duration : total;
-    clock.configure(start, end, scope === "scene" && loop);
-    clock.play();
-    setPlaying(true);
-    setMobilePanel("stage");
+    if (audioBusy) return;
+    halt();
+    const ticket = ++playTicket.current;
+    const mode = forceEpisode ? "episode" : scope,
+      start = mode === "scene" ? sceneStart(project, index) : 0,
+      end = mode === "scene" ? start + scene.duration : total;
+    if (forceEpisode) {
+      setScope("episode");
+      setSelected(0);
+      setSound(withSound);
+    }
+    clock.configure(start, end, mode === "scene" && loop);
+    let offset = forceEpisode ? 0 : clock.getSnapshot().seconds;
+    if (offset < start || offset >= end) offset = start;
+    clock.seek(offset);
+    try {
+      if (withSound && project.audioClips.some((c) => !c.muted)) {
+        setAudioBusy(true);
+        const source = await audio.start(
+          project,
+          offset,
+          start,
+          end,
+          mode === "scene" && loop,
+        );
+        if (playTicket.current !== ticket) return;
+        clock.setTimeSource(source);
+      } else clock.setTimeSource();
+      if (playTicket.current !== ticket) return;
+      clock.play();
+      setPlaying(true);
+      setMobilePanel("stage");
+    } catch (e) {
+      if (
+        playTicket.current === ticket &&
+        !(e instanceof DOMException && e.name === "AbortError")
+      )
+        setEditError(
+          e instanceof Error
+            ? e.message
+            : "Audio preview could not start. Turn Sound off to inspect animation.",
+        );
+    } finally {
+      if (playTicket.current === ticket) setAudioBusy(false);
+    }
   }
   function changeScene(patch: Partial<Scene>) {
     setEditSeconds(clock.getSnapshot().seconds);
-    clock.pause();
+    halt();
     setPlaying(false);
     let next = { ...scene, ...patch };
     if (patch.duration !== undefined && patch.duration !== scene.duration)
       next = retimeScene(scene, patch.duration);
     next = cleanSceneReferences(next);
+    const scenes = project.scenes.map((s, i) => (i === index ? next : s));
     const updated = {
       ...project,
-      scenes: project.scenes.map((s, i) => (i === index ? next : s)),
+      scenes,
+      ...reconcileProduction(project, scenes),
     };
     try {
       validateProject(updated);
@@ -243,16 +343,20 @@ export function Editor({
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, makeScene(project.characters, scenes.length));
     try {
-      validateProject({ ...project, scenes });
+      validateProject({
+        ...project,
+        scenes,
+        ...reconcileProduction(project, scenes),
+      });
     } catch {
       setEditError(
         "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
       );
       return;
     }
-    onChange({ ...project, scenes });
+    onChange({ ...project, scenes, ...reconcileProduction(project, scenes) });
     setSelected(index + 1);
-    clock.pause();
+    halt();
     clock.configure(
       0,
       scenes.reduce((n, s) => n + s.duration, 0),
@@ -268,16 +372,24 @@ export function Editor({
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, copy);
     try {
-      validateProject({ ...project, scenes });
+      validateProject({
+        ...project,
+        scenes,
+        ...duplicateSceneMedia(project, scene, copy),
+      });
     } catch {
       setEditError(
         "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
       );
       return;
     }
-    onChange({ ...project, scenes });
+    onChange({
+      ...project,
+      scenes,
+      ...duplicateSceneMedia(project, scene, copy),
+    });
     setSelected(index + 1);
-    clock.pause();
+    halt();
     clock.configure(
       0,
       scenes.reduce((n, s) => n + s.duration, 0),
@@ -292,16 +404,20 @@ export function Editor({
     const scenes = [...project.scenes];
     [scenes[index], scenes[next]] = [scenes[next], scenes[index]];
     try {
-      validateProject({ ...project, scenes });
+      validateProject({
+        ...project,
+        scenes,
+        ...reconcileProduction(project, scenes),
+      });
     } catch {
       setEditError(
         "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
       );
       return;
     }
-    onChange({ ...project, scenes });
+    onChange({ ...project, scenes, ...reconcileProduction(project, scenes) });
     setSelected(next);
-    clock.pause();
+    halt();
     clock.configure(0, total, false);
     clock.seek(scenes.slice(0, next).reduce((n, s) => n + s.duration, 0));
     setPlaying(false);
@@ -311,11 +427,15 @@ export function Editor({
     onChange({
       ...project,
       scenes: project.scenes.filter((_, i) => i !== index),
+      ...reconcileProduction(
+        project,
+        project.scenes.filter((_, i) => i !== index),
+      ),
     });
     const remaining = project.scenes.filter((_, i) => i !== index),
       next = Math.max(0, index - 1);
     setSelected(next);
-    clock.pause();
+    halt();
     clock.configure(
       0,
       remaining.reduce((n, s) => n + s.duration, 0),
@@ -387,6 +507,43 @@ export function Editor({
           </button>
         </div>
       </div>
+      <nav className="production-steps" aria-label="Cartoon production steps">
+        {[
+          "Story",
+          "Artwork",
+          "Animation",
+          "Voices & Sound",
+          "Preview",
+          "Export",
+        ].map((step) => (
+          <button
+            key={step}
+            onClick={() => {
+              halt();
+              if (step === "Story") {
+                setPanel("story");
+                setMobilePanel("properties");
+              } else if (step === "Artwork") onLibrary(index);
+              else if (step === "Voices & Sound") openVoice();
+              else if (step === "Export") setFinish(true);
+              else {
+                setMobilePanel("stage");
+                requestAnimationFrame(() =>
+                  document
+                    .querySelector(
+                      step === "Animation"
+                        ? ".animation-studio"
+                        : ".stage-panel",
+                    )
+                    ?.scrollIntoView({ block: "start" }),
+                );
+              }
+            }}
+          >
+            {step}
+          </button>
+        ))}
+      </nav>
       <div className="editor-toolbar">
         <div className="studio-label">
           <span className="studio-dot" />
@@ -394,9 +551,24 @@ export function Editor({
         </div>
         <div className="toolbar-actions">
           <button
+            className="button primary small finish-button"
+            onClick={() => {
+              halt();
+              setFinish(true);
+            }}
+          >
+            Finish My Cartoon
+          </button>
+          <button
+            className="button secondary small"
+            onClick={() => openVoice()}
+          >
+            Voices & Sound
+          </button>
+          <button
             className="button secondary small"
             onClick={() => {
-              clock.pause();
+              halt();
               setPlaying(false);
               onLibrary(index);
             }}
@@ -409,7 +581,7 @@ export function Editor({
             aria-label="Undo edit"
             disabled={!canUndo}
             onClick={() => {
-              clock.pause();
+              halt();
               setPlaying(false);
               onUndo();
             }}
@@ -421,7 +593,7 @@ export function Editor({
             aria-label="Redo edit"
             disabled={!canRedo}
             onClick={() => {
-              clock.pause();
+              halt();
               setPlaying(false);
               onRedo();
             }}
@@ -549,10 +721,16 @@ export function Editor({
           onIndex={setSelected}
           onSeek={seek}
           onSceneSelect={selectScene}
-          onPlay={play}
+          onPlay={() => void play()}
+          sound={sound}
+          audioBusy={audioBusy}
+          onSound={(value) => {
+            halt();
+            setSound(value);
+          }}
           scope={scope}
           onScope={(value) => {
-            clock.pause();
+            halt();
             setPlaying(false);
             setScope(value);
           }}
@@ -566,6 +744,15 @@ export function Editor({
             clock={clock}
             sceneOffset={sceneStart(project, index)}
             selectedId={element?.id}
+            onAudioEdit={(id, category) => openVoice(id, category)}
+            onAudioMove={(id, start) =>
+              updateProduction({
+                ...project,
+                audioClips: project.audioClips.map((c) =>
+                  c.id === id ? { ...c, start } : c,
+                ),
+              })
+            }
             onSelect={(id) =>
               setElementIndex(scene.elements.findIndex((e) => e.id === id))
             }
@@ -595,7 +782,7 @@ export function Editor({
               <Icon name="play" size={30} />
               <h3>Enjoy your little story.</h3>
               <p>Pause to change a scene, a character, or a line.</p>
-              <button className="button secondary" onClick={play}>
+              <button className="button secondary" onClick={() => void play()}>
                 Pause & edit
               </button>
             </div>
@@ -1093,6 +1280,58 @@ export function Editor({
           )}
         </aside>
       </div>
+      {voiceStudio && (
+        <VoiceStudio
+          project={project}
+          sceneIndex={index}
+          localTime={clamp(
+            clock.getSnapshot().seconds - sceneStart(project, index),
+            0,
+            scene.duration,
+          )}
+          initialClip={voiceStudio.clipId}
+          initialCategory={voiceStudio.category}
+          initialTab={voiceStudio.tab}
+          onChange={updateProduction}
+          onClose={() => setVoiceStudio(null)}
+          onPreview={() => {
+            setVoiceStudio(null);
+            void play(false, true);
+          }}
+          saveStatus={saveStatus}
+          onRetry={onRetry}
+        />
+      )}
+      {finish && (
+        <Suspense
+          fallback={
+            <Modal
+              title="Preparing movie tools"
+              onClose={() => setFinish(false)}
+            >
+              <p>Opening your local exporter…</p>
+            </Modal>
+          }
+        >
+          <FinishCartoon
+            project={project}
+            saveStatus={saveStatus}
+            onClose={() => setFinish(false)}
+            onVoices={() => {
+              setFinish(false);
+              openVoice();
+            }}
+            onCaptions={() => {
+              setFinish(false);
+              openVoice(undefined, undefined, "captions");
+            }}
+            onPreview={(sound) => {
+              setFinish(false);
+              void play(true, sound);
+            }}
+          />
+        </Suspense>
+      )}
     </main>
   );
 }
