@@ -193,7 +193,7 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     emotion: item.emotion,
   };
   validateProject({
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: "library-validation",
     title: "Library artwork",
     idea: "",

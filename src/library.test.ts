@@ -24,11 +24,11 @@ const original = "data:image/png;base64,iVBORw0KGgo=";
 afterEach(() => vi.restoreAllMocks());
 describe("versioned artwork, reusable libraries and project independence", () => {
   it("migrates schema 1 without mutating the original, IDs, timing or positions", () => {
-    const p = starterProject();
+    const p = starterProject("friendship");
     const old = { ...clone(p), schemaVersion: 1 };
     const before = JSON.stringify(old);
     const migrated = validateProject(old);
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
     expect(JSON.stringify(old)).toBe(before);
     expect(migrated.scenes[0].id).toBe(p.scenes[0].id);
     expect(migrated.scenes.map((s) => s.duration)).toEqual(

@@ -33,6 +33,8 @@ npm run preview
 
 **Upload a sketch or image** imports an original PNG, JPEG or WebP (4 MB / 24 megapixels maximum) as a movable image character. **Draw a character** offers a transparent drawing pad with brush, color, eraser and stroke undo. Image movement transforms the whole picture; it does not automatically rig an arbitrary photograph.
 
+Use the visual timeline beneath the stage to add editable motion, timed expressions and camera movement. See [Animation Studio](docs/ANIMATION_STUDIO.md).
+
 On phones, use the **Scenes**, **Preview** and **Edit scene** tabs. All editors have readable light/dark themes. Original shape characters are a keyboard-accessible alternative to the pointer-based drawing canvas.
 
 ## What this foundation includes
@@ -47,7 +49,7 @@ On phones, use the **Scenes**, **Preview** and **Edit scene** tabs. All editors 
 
 ## Honest limitations
 
-- This studio follows the [five-PR roadmap](docs/ROADMAP.md). Editable keyframes, camera animation, audio and video export are future increments. Reusable art libraries, vector drawing tools, scene layers and non-destructive raster crops are now implemented.
+- This studio follows the [five-PR roadmap](docs/ROADMAP.md). Editable keyframes, acting, camera tracks and background motion are now implemented alongside reusable art libraries, drawing tools, scene layers and non-destructive raster crops. Audio and video export remain planned for PR #4.
 - Playback is silent. Narration and dialogue appear as scene captions. There is no microphone access, speech service, music upload or WebM/MP4 export yet.
 - The planner uses local, editable templates. It is not generative AI. Mood, art direction, age and desired episode length are planning notes. A longer episode goal still starts with six scenes (about one minute); add scenes to grow it.
 - Changing an outline or action/prop note does not automatically rewrite narration or create new props. Each scene and its actual motion are edited separately.
@@ -120,3 +122,13 @@ Every project embeds its own character and raster/drawing assets. Library deleti
 Library writes update the saved list only after transaction commit. Errors keep the open draft available for retry and original images can be downloaded. Saved palettes are also local. Whole-library backups, collaborative editing and cross-tab conflict resolution are not provided; back up important episodes and use one editing tab per source.
 
 New validation covers source reuse across episodes, scene independence, persistence, source deletion, vector drawing round trips, legacy migration, quota failure and disguised active content, plus browser flows for artwork/PNG export, crops, props, library retry and responsive light/dark accessibility. Existing PR #1 tests remain in the suite. See [the art studio guide](docs/ART_STUDIO.md) for the beginner workflow.
+
+## Animation & Timeline Studio (PR #3)
+
+The existing editor now includes a time ruler, draggable playhead, element and acting tracks, camera/background tracks, editable keyframe diamonds, snapping, zoom and exact numeric timing. All transforms are deterministic; discrete acting changes hold until their authored moment. Actions generate editable data, offer a temporary preview and confirm before replacing existing motion. Scene-only looping and complete-episode playback share one clock. Stage movement on an animated object writes a keyframe at the playhead; other scenes and library sources remain independent.
+
+Original shape characters have five poses, six expressions, closed/open/smile mouths, a manually timed silent talking cycle, blinking, optional idle motion and controlled wave/nod/shake/walk gestures. Optional empathy hearts have soft shape-based glow cues. Camera keyframes pan/zoom or follow an object. Original outdoor backgrounds support cloud drift, sway and gentle stars; parallax endpoints are editable. Props use whole-object transforms, and the original door has an opening control. Uploaded pictures retain whole-image behavior.
+
+New projects use schema 3; existing schema 1/2 backups and saved projects migrate through 1→2→3 without moving artwork or rewriting legacy motion. IndexedDB remains version 2. Explicit keyframes are limited to 120 per track and 12,000 per project; malformed times, references, IDs, values and animation types are rejected. Scene duration changes retime all tracks proportionally; clones remap their keys and follows. Backups embed motion and original artwork.
+
+The fresh inclusion demo shows noticing a lonely friend, walking over, sadness, a wave and smile, friendship hearts, celebration and a smooth camera move. Existing saved copies are preserved. The shared frame sampler is ready for future export work, but this release remains silent and does not export video. See the [beginner animation guide](docs/ANIMATION_STUDIO.md) for controls, migration, performance and limitations.

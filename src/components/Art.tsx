@@ -53,7 +53,13 @@ export function RasterArt({
     </svg>
   );
 }
-export function PropArt({ name }: { name: PropName }) {
+export function PropArt({
+  name,
+  openness = 0,
+}: {
+  name: PropName;
+  openness?: number;
+}) {
   return (
     <g strokeLinejoin="round" strokeLinecap="round">
       {name === "chair" ? (
@@ -126,13 +132,30 @@ export function PropArt({ name }: { name: PropName }) {
       ) : name === "door" ? (
         <g>
           <path
-            d="M-42 0v-154h84V0"
-            fill="#aeb6d0"
+            d="M-42 0v-154h84V0Z"
+            fill="#535d7b"
             stroke="#fff6e5"
             strokeWidth="9"
           />
-          <rect x="-28" y="-137" width="56" height="67" rx="5" fill="#d4e6db" />
-          <circle cx="24" cy="-52" r="5" fill="#f0d38c" />
+          <g
+            transform={`translate(-42 0) scale(${1 - openness * 0.85} 1) translate(42 0)`}
+          >
+            <path
+              d="M-42 0v-154h84V0Z"
+              fill="#aeb6d0"
+              stroke="#fff6e5"
+              strokeWidth="4"
+            />
+            <rect
+              x="-28"
+              y="-137"
+              width="56"
+              height="67"
+              rx="5"
+              fill="#d4e6db"
+            />
+            <circle cx="24" cy="-52" r="5" fill="#f0d38c" />
+          </g>
         </g>
       ) : (
         <g>

@@ -1,3 +1,4 @@
+import { animateInclusion } from "./demo-animation";
 import { makeScene, uid } from "./model";
 import type { Character, IdeaInput, Project, StoryProvider } from "./model";
 
@@ -205,7 +206,7 @@ export function planStory(input: IdeaInput): Project {
   });
   const now = new Date().toISOString();
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     id: uid(),
     title: input.title.trim().slice(0, 160) || "My little big story",
     idea,
@@ -285,5 +286,6 @@ export function starterProject(id = "kindness"): Project {
       [s.title, s.narration, s.dialogue, s.action] = content[i];
     });
   }
+  if (id === "kindness") animateInclusion(p);
   return p;
 }

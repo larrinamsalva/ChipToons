@@ -1,4 +1,15 @@
 import {
+  validElementAnimation,
+  validCameraAnimation,
+  validBackgroundAnimation,
+  MAX_PROJECT_KEYS,
+} from "./animation-model";
+import type {
+  ElementAnimation,
+  CameraAnimation,
+  BackgroundAnimation,
+} from "./animation-model";
+import {
   colorValid,
   validCrop,
   validDrawing,
@@ -8,7 +19,7 @@ import {
   rasterSignature,
 } from "./art-model";
 import type { Crop, DrawingDocument, Pose, PropName } from "./art-model";
-export const SCHEMA_VERSION = 2 as const;
+export const SCHEMA_VERSION = 3 as const;
 export const BACKGROUNDS = [
   "meadow",
   "playground",
@@ -80,6 +91,7 @@ export interface SceneElement {
   >;
   sourceLibraryId?: string;
   backdrop?: boolean;
+  animation?: ElementAnimation;
 }
 export interface Scene {
   id: string;
@@ -94,6 +106,8 @@ export interface Scene {
   props: string;
   audioRefs: string[];
   elements: SceneElement[];
+  cameraAnimation?: CameraAnimation;
+  backgroundAnimation?: BackgroundAnimation;
 }
 export interface Outline {
   beginning: string;
@@ -203,6 +217,7 @@ const fail = (): never => {
 export function validateProject(value: unknown): Project {
   if (!isRecord(value)) return fail();
   if (value.schemaVersion === 1) return validateProject(migrateV1(value));
+  if (value.schemaVersion === 2) return validateProject(migrateV2(value));
   const p = value;
   if (
     p.schemaVersion !== SCHEMA_VERSION ||
@@ -243,6 +258,11 @@ export function validateProject(value: unknown): Project {
   )
     return fail();
   const ids = new Set<string>();
+  let keyCount = 0;
+  function animationId(id: unknown) {
+    unique(id);
+    if (++keyCount > MAX_PROJECT_KEYS) fail();
+  }
   function unique(id: unknown) {
     if (!validString(id, 100) || !id || ids.has(id)) fail();
     ids.add(id as string);
@@ -358,7 +378,34 @@ export function validateProject(value: unknown): Project {
       )
         return fail();
       unique(e.id);
+      if (
+        e.animation !== undefined &&
+        !validElementAnimation(e.animation, s.duration as number, animationId)
+      )
+        fail();
     }
+    const elementIds = new Set(
+      s.elements.map((e) => (e as Record<string, unknown>).id as string),
+    );
+    if (
+      s.cameraAnimation !== undefined &&
+      !validCameraAnimation(
+        s.cameraAnimation,
+        s.duration as number,
+        elementIds,
+        animationId,
+      )
+    )
+      fail();
+    if (
+      s.backgroundAnimation !== undefined &&
+      !validBackgroundAnimation(
+        s.backgroundAnimation,
+        s.duration as number,
+        animationId,
+      )
+    )
+      fail();
   }
   if (
     new TextEncoder().encode(JSON.stringify(value)).byteLength >
@@ -409,5 +456,26 @@ export function duplicateProject(source: Project): Project {
   copy.id = uid();
   copy.title = `${source.title.slice(0, 150)} (copy)`;
   copy.createdAt = copy.updatedAt = new Date().toISOString();
+  return copy;
+}
+
+// v2 artwork and legacy presets are preserved verbatim; explicit animation is opt-in.
+export function migrateV2(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const copy = clone(value);
+  copy.schemaVersion = 3;
+  // Animation fields did not exist in v2. Never interpret unvalidated extension data.
+  if (Array.isArray(copy.scenes))
+    for (const scene of copy.scenes) {
+      if (!isRecord(scene)) continue;
+      if (
+        scene.cameraAnimation !== undefined ||
+        scene.backgroundAnimation !== undefined ||
+        (Array.isArray(scene.elements) &&
+          scene.elements.some((e) => isRecord(e) && e.animation !== undefined))
+      )
+        fail();
+    }
   return copy;
 }

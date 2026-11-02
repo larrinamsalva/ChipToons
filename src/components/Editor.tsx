@@ -1,7 +1,25 @@
-import { useEffect, useRef, useState } from "react";
-import { clone, durationLabel, makeScene, totalDuration, uid } from "../model";
+import { useEffect, useState } from "react";
+import {
+  makeScene,
+  totalDuration,
+  uid,
+  durationLabel,
+  validateProject,
+} from "../model";
 import type { Character, Project, Scene, SceneElement } from "../model";
-import { frameAt, sceneStart } from "../timeline";
+import {
+  frameAt,
+  sceneStart,
+  elementAt,
+  clamp,
+  putElementKey,
+  duplicateAnimatedScene,
+  cleanSceneReferences,
+  retimeScene,
+} from "../timeline";
+import { PlaybackClock } from "../playback";
+import { ScenePlayer } from "./ScenePlayer";
+import { AnimationTimeline } from "./AnimationTimeline";
 import {
   downloadBlob,
   exportProject,
@@ -41,87 +59,171 @@ export function Editor({
 }) {
   const [selected, setSelected] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const timeRef = useRef(0);
+  const [clock] = useState(() => new PlaybackClock());
+  const [scope, setScope] = useState<"episode" | "scene">("episode");
+  const [loop, setLoop] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSeconds, setEditSeconds] = useState(0);
   const [panel, setPanel] = useState("scene");
   const [mobilePanel, setMobilePanel] = useState("stage");
   const [elementIndex, setElementIndex] = useState(0);
-  const [captions, setCaptions] = useState(true);
+
   const total = totalDuration(project);
   const index = Math.min(selected, project.scenes.length - 1);
-  const frame = frameAt(project, Math.min(seconds, total));
-  const scene = playing ? frame.scene : project.scenes[index];
-  const displayedIndex = playing ? frame.index : index;
+  const scene = project.scenes[index];
+  const displayedIndex = index;
   const element =
-    scene.elements[Math.min(elementIndex, scene.elements.length - 1)];
+    scene.elements[
+      Math.max(0, Math.min(elementIndex, scene.elements.length - 1))
+    ];
+  const displayedElement = element?.animation?.keyframes.length
+    ? elementAt(
+        element,
+        clamp(editSeconds - sceneStart(project, index), 0, scene.duration),
+        scene.duration,
+        true,
+      )
+    : element;
   const character = resolvedCharacter(project, element);
-  useEffect(() => {
-    if (!playing) return;
-    let handle = 0;
-    let last = 0;
-    function tick(timestamp: number) {
-      if (last)
-        timeRef.current = Math.min(
-          total,
-          timeRef.current + (timestamp - last) / 1000,
-        );
-      last = timestamp;
-      setSeconds(timeRef.current);
-      if (timeRef.current >= total) {
-        setPlaying(false);
-        setSelected(project.scenes.length - 1);
-        return;
-      }
-      handle = requestAnimationFrame(tick);
-    }
-    handle = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(handle);
-  }, [playing, total, project.scenes.length]);
+  useEffect(() => () => clock.dispose(), [clock]);
   function seek(value: number) {
-    const t = Math.max(0, Math.min(total, value));
-    timeRef.current = t;
-    setSeconds(t);
+    clock.pause();
+    clock.configure(0, total, false);
+    const t = clamp(value, 0, total);
+    clock.seek(t);
+    setEditSeconds(t);
     setSelected(frameAt(project, t).index);
+    clock.pause();
+    setPlaying(false);
+  }
+  function seekLocal(value: number) {
+    clock.pause();
+    clock.configure(0, total, false);
+    clock.seek(sceneStart(project, index) + clamp(value, 0, scene.duration));
+    setEditSeconds(clock.getSnapshot().seconds);
+    clock.pause();
+    setPlaying(false);
   }
   function selectScene(next: number) {
-    setPlaying(false);
-    setSelected(Math.max(0, Math.min(next, project.scenes.length - 1)));
-    seek(
-      sceneStart(
-        project,
-        Math.max(0, Math.min(next, project.scenes.length - 1)),
-      ),
-    );
+    const i = clamp(next, 0, project.scenes.length - 1);
+    seek(sceneStart(project, i));
+    setSelected(i);
     setElementIndex(0);
   }
   function play() {
-    if (playing) {
-      setSelected(frame.index);
+    if (clock.getSnapshot().playing) {
+      const t = clock.getSnapshot().seconds;
+      setEditSeconds(t);
+      clock.pause();
       setPlaying(false);
+      if (scope === "episode") setSelected(frameAt(project, t).index);
       return;
     }
-    if (timeRef.current >= total) seek(0);
-    else if (frameAt(project, timeRef.current).index !== index)
-      seek(sceneStart(project, index));
+    const start = scope === "scene" ? sceneStart(project, index) : 0;
+    const end = scope === "scene" ? start + scene.duration : total;
+    clock.configure(start, end, scope === "scene" && loop);
+    clock.play();
     setPlaying(true);
     setMobilePanel("stage");
   }
   function changeScene(patch: Partial<Scene>) {
+    setEditSeconds(clock.getSnapshot().seconds);
+    clock.pause();
     setPlaying(false);
-    onChange({
+    let next = { ...scene, ...patch };
+    if (patch.duration !== undefined && patch.duration !== scene.duration)
+      next = retimeScene(scene, patch.duration);
+    next = cleanSceneReferences(next);
+    const updated = {
       ...project,
-      scenes: project.scenes.map((s, i) =>
-        i === index ? { ...s, ...patch } : s,
-      ),
+      scenes: project.scenes.map((s, i) => (i === index ? next : s)),
+    };
+    try {
+      validateProject(updated);
+      onChange(updated);
+      setEditError("");
+    } catch (e) {
+      setEditError(
+        e instanceof Error ? e.message : "This edit could not be saved.",
+      );
+      return;
+    }
+    if (patch.duration !== undefined) {
+      const local = clamp(
+        clock.getSnapshot().seconds - sceneStart(project, index),
+        0,
+        patch.duration,
+      );
+      clock.configure(0, totalDuration(updated), false);
+      clock.seek(sceneStart(updated, index) + local);
+    }
+  }
+  function updateElement(id: string, patch: Partial<SceneElement>) {
+    const source = scene.elements.find((e) => e.id === id);
+    const time = clamp(
+      clock.getSnapshot().seconds - sceneStart(project, index),
+      0,
+      scene.duration,
+    );
+    if (
+      source?.animation &&
+      source.animation.keyframes.length >= 120 &&
+      !source.animation.keyframes.some((k) => Math.abs(k.time - time) < 0.001)
+    ) {
+      setEditError(
+        "This track has 120 keyframes. Edit an existing moment or remove one first.",
+      );
+      return;
+    }
+    changeScene({
+      elements: scene.elements.map((e) => {
+        if (e.id !== id) return e;
+        const animated =
+          e.animation?.keyframes.length &&
+          Object.keys(patch).some((k) =>
+            [
+              "x",
+              "y",
+              "scale",
+              "rotation",
+              "opacity",
+              "emotion",
+              "pose",
+            ].includes(k),
+          );
+        if (!animated) return { ...e, ...patch };
+        const { x, y, scale, rotation, opacity, emotion, pose, ...rest } =
+          patch;
+        const values = Object.fromEntries(
+          Object.entries({
+            x,
+            y,
+            scale,
+            rotation,
+            opacity,
+            emotion,
+            pose,
+          }).filter(([, v]) => v !== undefined),
+        );
+        return {
+          ...e,
+          ...rest,
+          animation: putElementKey(
+            e,
+            clamp(
+              clock.getSnapshot().seconds - sceneStart(project, index),
+              0,
+              scene.duration,
+            ),
+            scene.duration,
+            values,
+          ),
+        };
+      }),
     });
   }
   function changeElement(patch: Partial<SceneElement>) {
-    if (element)
-      changeScene({
-        elements: scene.elements.map((e) =>
-          e.id === element.id ? { ...e, ...patch } : e,
-        ),
-      });
+    if (element) updateElement(element.id, patch);
   }
   function changeCharacter(patch: Partial<Character>) {
     if (!element || !character) return;
@@ -137,20 +239,30 @@ export function Editor({
     scenes.splice(index + 1, 0, makeScene(project.characters, scenes.length));
     onChange({ ...project, scenes });
     setSelected(index + 1);
+    clock.pause();
+    clock.configure(
+      0,
+      scenes.reduce((n, s) => n + s.duration, 0),
+      false,
+    );
+    clock.seek(scenes.slice(0, index + 1).reduce((n, s) => n + s.duration, 0));
     setPlaying(false);
   }
   function duplicateScene() {
     if (project.scenes.length >= 120) return;
-    const copy = clone(scene);
-    copy.id = uid();
+    const copy = duplicateAnimatedScene(scene);
     copy.title = `${copy.title.slice(0, 150)} (copy)`;
-    copy.elements.forEach((e) => {
-      e.id = uid();
-    });
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, copy);
     onChange({ ...project, scenes });
     setSelected(index + 1);
+    clock.pause();
+    clock.configure(
+      0,
+      scenes.reduce((n, s) => n + s.duration, 0),
+      false,
+    );
+    clock.seek(scenes.slice(0, index + 1).reduce((n, s) => n + s.duration, 0));
     setPlaying(false);
   }
   function moveScene(direction: number) {
@@ -160,6 +272,9 @@ export function Editor({
     [scenes[index], scenes[next]] = [scenes[next], scenes[index]];
     onChange({ ...project, scenes });
     setSelected(next);
+    clock.pause();
+    clock.configure(0, total, false);
+    clock.seek(scenes.slice(0, next).reduce((n, s) => n + s.duration, 0));
     setPlaying(false);
   }
   function removeScene() {
@@ -168,7 +283,16 @@ export function Editor({
       ...project,
       scenes: project.scenes.filter((_, i) => i !== index),
     });
-    setSelected(Math.max(0, index - 1));
+    const remaining = project.scenes.filter((_, i) => i !== index),
+      next = Math.max(0, index - 1);
+    setSelected(next);
+    clock.pause();
+    clock.configure(
+      0,
+      remaining.reduce((n, s) => n + s.duration, 0),
+      false,
+    );
+    clock.seek(remaining.slice(0, next).reduce((n, s) => n + s.duration, 0));
     setPlaying(false);
   }
   function toggleCharacter(c: Character) {
@@ -243,6 +367,7 @@ export function Editor({
           <button
             className="button secondary small"
             onClick={() => {
+              clock.pause();
               setPlaying(false);
               onLibrary(index);
             }}
@@ -255,6 +380,7 @@ export function Editor({
             aria-label="Undo edit"
             disabled={!canUndo}
             onClick={() => {
+              clock.pause();
               setPlaying(false);
               onUndo();
             }}
@@ -266,6 +392,7 @@ export function Editor({
             aria-label="Redo edit"
             disabled={!canRedo}
             onClick={() => {
+              clock.pause();
               setPlaying(false);
               onRedo();
             }}
@@ -304,6 +431,11 @@ export function Editor({
           </button>
         ))}
       </nav>
+      {editError && (
+        <p className="animation-message" role="alert">
+          {editError}
+        </p>
+      )}
       <div className={`editor-workspace mobile-show-${mobilePanel}`}>
         <aside className="scene-panel" aria-label="Storyboard scenes">
           <div className="panel-heading">
@@ -374,157 +506,44 @@ export function Editor({
             Add a scene
           </button>
         </aside>
-        <section className="stage-panel" aria-label="Cartoon preview">
-          <div className="stage-header">
-            <span>
-              <Icon name="film" size={16} />
-              SCENE {displayedIndex + 1} OF {project.scenes.length}
-            </span>
-            <span className="preview-badge">
-              {playing ? "Playing your story" : "Live scene preview"}
-            </span>
-          </div>
-          <div className="live-stage">
-            <Stage
-              project={project}
-              scene={scene}
-              selectedId={element?.id}
-              onSelect={
-                playing
-                  ? undefined
-                  : (id) =>
-                      setElementIndex(
-                        scene.elements.findIndex((e) => e.id === id),
-                      )
-              }
-              onResize={
-                playing
-                  ? undefined
-                  : (id, scale) =>
-                      changeScene({
-                        elements: scene.elements.map((e) =>
-                          e.id === id ? { ...e, scale } : e,
-                        ),
-                      })
-              }
-              onMove={
-                playing
-                  ? undefined
-                  : (id, x, y) =>
-                      changeScene({
-                        elements: scene.elements.map((e) =>
-                          e.id === id ? { ...e, x, y } : e,
-                        ),
-                      })
-              }
-              progress={
-                playing
-                  ? frame.progress
-                  : Math.max(
-                      0,
-                      Math.min(
-                        1,
-                        (seconds - sceneStart(project, index)) / scene.duration,
-                      ),
-                    ) || 0.5
-              }
-            />
-            <div className="stage-scene-label">{scene.title}</div>
-          </div>
-          {captions && (
-            <div className="caption-box" aria-live="off">
-              <span>NARRATION</span>
-              <p>
-                {scene.narration ||
-                  "Add a little narration to tell your story."}
-              </p>
-              {scene.dialogue && (
-                <p className="dialogue-caption">{scene.dialogue}</p>
-              )}
-            </div>
-          )}
-          <div className="playback">
-            <div className="transport">
-              <button
-                className="icon-button"
-                aria-label="Restart cartoon"
-                onClick={() => {
-                  setPlaying(false);
-                  seek(0);
-                }}
-              >
-                <Icon name="restart" size={19} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Previous scene"
-                disabled={displayedIndex === 0}
-                onClick={() => selectScene(displayedIndex - 1)}
-              >
-                <Icon name="previous" size={19} />
-              </button>
-              <button
-                className="play-button"
-                aria-label={playing ? "Pause cartoon" : "Play cartoon"}
-                onClick={play}
-              >
-                <Icon name={playing ? "pause" : "play"} size={21} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Next scene"
-                disabled={displayedIndex === project.scenes.length - 1}
-                onClick={() => selectScene(displayedIndex + 1)}
-              >
-                <Icon name="next" size={19} />
-              </button>
-              <span className="time-display">
-                {durationLabel(Math.min(seconds, total))}
-                <span> / {durationLabel(total)}</span>
-              </span>
-            </div>
-            <label className="caption-toggle">
-              <input
-                type="checkbox"
-                checked={captions}
-                onChange={(e) => setCaptions(e.target.checked)}
-              />
-              Captions
-            </label>
-          </div>
-          <input
-            className="episode-scrubber"
-            aria-label="Cartoon play position"
-            type="range"
-            min="0"
-            max={total}
-            step="0.1"
-            value={Math.min(seconds, total)}
-            onChange={(e) => {
-              setPlaying(false);
-              seek(Number(e.target.value));
-            }}
+        <ScenePlayer
+          project={project}
+          index={index}
+          clock={clock}
+          selectedId={element?.id}
+          onSelect={(id) =>
+            setElementIndex(scene.elements.findIndex((e) => e.id === id))
+          }
+          onMove={(id, x, y) => updateElement(id, { x, y })}
+          onResize={(id, scale) => updateElement(id, { scale })}
+          onPlaying={setPlaying}
+          onIndex={setSelected}
+          onSeek={seek}
+          onSceneSelect={selectScene}
+          onPlay={play}
+          scope={scope}
+          onScope={(value) => {
+            clock.pause();
+            setPlaying(false);
+            setScope(value);
+          }}
+          loop={loop}
+          onLoop={setLoop}
+        >
+          <AnimationTimeline
+            key={scene.id}
+            project={project}
+            scene={scene}
+            clock={clock}
+            sceneOffset={sceneStart(project, index)}
+            selectedId={element?.id}
+            onSelect={(id) =>
+              setElementIndex(scene.elements.findIndex((e) => e.id === id))
+            }
+            onSeek={seekLocal}
+            onChange={changeScene}
           />
-          <div className="timeline-strip" aria-label="Scene timeline">
-            {project.scenes.map((s, i) => (
-              <button
-                key={s.id}
-                style={{ flex: s.duration }}
-                className={displayedIndex === i ? "active" : ""}
-                aria-label={`Go to scene ${i + 1}: ${s.title}`}
-                onClick={() => selectScene(i)}
-              >
-                <span>{i + 1}</span>
-                <small>{s.duration}s</small>
-              </button>
-            ))}
-          </div>
-          <p className="preview-note">
-            <Icon name="bulb" size={16} />
-            This preview is silent. Voices, sound, and video downloads are
-            coming in a future release.
-          </p>
-        </section>
+        </ScenePlayer>
         <aside className="properties-panel" aria-label="Editing controls">
           <div className="properties-tabs">
             <button
@@ -557,10 +576,12 @@ export function Editor({
                 project={project}
                 scene={scene}
                 selected={element}
+                frame={displayedElement}
                 onSelect={(id) =>
                   setElementIndex(scene.elements.findIndex((e) => e.id === id))
                 }
                 onChange={changeScene}
+                onElementChange={changeElement}
                 onLibrary={() => onLibrary(index)}
                 onSave={() => {
                   if (element)
@@ -733,7 +754,7 @@ export function Editor({
                         <label>
                           Feeling
                           <select
-                            value={element.emotion}
+                            value={displayedElement?.emotion ?? element.emotion}
                             onChange={(e) =>
                               changeElement({
                                 emotion: e.target
@@ -754,6 +775,7 @@ export function Editor({
                         Movement
                         <select
                           value={element.motion}
+                          disabled={!!element.animation?.keyframes.length}
                           onChange={(e) =>
                             changeElement({
                               motion: e.target.value as SceneElement["motion"],
@@ -779,26 +801,31 @@ export function Editor({
                     </div>
                     <label>
                       Left ↔ right{" "}
-                      <span className="range-value">{element.x}</span>
+                      <span className="range-value">
+                        {Math.round(displayedElement?.x ?? element.x)}
+                      </span>
                       <input
                         type="range"
                         min="0"
                         max="800"
                         step="5"
-                        value={element.x}
+                        value={displayedElement?.x ?? element.x}
                         onChange={(e) =>
                           changeElement({ x: Number(e.target.value) })
                         }
                       />
                     </label>
                     <label>
-                      Up ↔ down <span className="range-value">{element.y}</span>
+                      Up ↔ down{" "}
+                      <span className="range-value">
+                        {Math.round(displayedElement?.y ?? element.y)}
+                      </span>
                       <input
                         type="range"
                         min="50"
                         max="450"
                         step="5"
-                        value={element.y}
+                        value={displayedElement?.y ?? element.y}
                         onChange={(e) =>
                           changeElement({ y: Number(e.target.value) })
                         }
@@ -813,7 +840,7 @@ export function Editor({
                           min="0.3"
                           max="2"
                           step="0.05"
-                          value={element.scale}
+                          value={displayedElement?.scale ?? element.scale}
                           onChange={(e) =>
                             changeElement({ scale: Number(e.target.value) })
                           }
@@ -826,7 +853,7 @@ export function Editor({
                           type="range"
                           min="-180"
                           max="180"
-                          value={element.rotation}
+                          value={displayedElement?.rotation ?? element.rotation}
                           onChange={(e) =>
                             changeElement({ rotation: Number(e.target.value) })
                           }
@@ -848,7 +875,9 @@ export function Editor({
                         Pose
                         <select
                           aria-label="Character pose"
-                          value={element.pose ?? "standing"}
+                          value={
+                            displayedElement?.pose ?? element.pose ?? "standing"
+                          }
                           onChange={(e) =>
                             changeElement({ pose: e.target.value as Pose })
                           }
