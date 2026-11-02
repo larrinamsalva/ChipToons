@@ -1,5 +1,16 @@
 import { motionAt } from "../timeline";
-import type { Character, Emotion, Project, Scene } from "../model";
+import { useRef, useState } from "react";
+import type { PointerEvent } from "react";
+import type {
+  Character,
+  Emotion,
+  Project,
+  Scene,
+  SceneElement,
+} from "../model";
+import type { Pose } from "../art-model";
+import { resolvedCharacter, elementName } from "../library";
+import { BackgroundArt, PropArt, RasterArt } from "./Art";
 
 function Flower({
   x,
@@ -53,16 +64,24 @@ export function CartoonCharacter({
   character,
   emotion = "happy",
   blink = false,
+  pose = "standing",
 }: {
   character: Character;
   emotion?: Emotion;
   blink?: boolean;
+  pose?: Pose;
 }) {
   const { shirt, skin, hair, accessory } = character;
   return (
     <g strokeLinejoin="round">
       <path
-        d="m-22-63-8 47m51-47 8 47"
+        d={
+          pose === "sitting"
+            ? "M-22-63-52-26h39M21-63 51-26H12"
+            : pose === "walking"
+              ? "m-22-63-25 47m68-47 25 47"
+              : "m-22-63-8 47m51-47 8 47"
+        }
         stroke="#3f5065"
         strokeWidth="17"
         strokeLinecap="round"
@@ -72,7 +91,15 @@ export function CartoonCharacter({
         fill="#fff5e3"
       />
       <path
-        d="M-28-124q-25 7-32 42m88-42q25 7 32 42"
+        d={
+          pose === "waving"
+            ? "M-28-124q-35-20-32-66m88 66q25 7 32 42"
+            : pose === "pointing"
+              ? "M-28-124q-25 7-32 42m88-42 70-8"
+              : pose === "walking"
+                ? "M-28-124q-37 6-48-3m104 3q35 6 45 23"
+                : "M-28-124q-25 7-32 42m88-42q25 7 32 42"
+        }
         stroke={skin}
         strokeWidth="15"
         fill="none"
@@ -122,7 +149,7 @@ export function CartoonCharacter({
           />
         </g>
       )}
-      {emotion === "sad" && (
+      {(emotion === "sad" || emotion === "worried") && (
         <path
           d="m-26-182 14-5m24 0 14 5"
           stroke={hair}
@@ -134,7 +161,15 @@ export function CartoonCharacter({
         <ellipse cy="-149" rx="5" ry="7" fill="#653f3e" />
       ) : (
         <path
-          d={emotion === "sad" ? "M-9-145q9-9 18 0" : "M-12-151q12 17 24 0"}
+          d={
+            emotion === "sad"
+              ? "M-9-145q9-9 18 0"
+              : emotion === "worried"
+                ? "M-12-148q6-5 12 0t12 0"
+                : emotion === "excited"
+                  ? "M-17-153q17 30 34 0Z"
+                  : "M-12-151q12 17 24 0"
+          }
           fill={emotion === "sad" ? "none" : "#fff8ec"}
           stroke="#653f3e"
           strokeWidth="2.5"
@@ -161,7 +196,16 @@ export function CartoonCharacter({
       )}
       <path
         d="M-5-99c-9-8-19 7 5 21 24-14 14-29 5-21l-5 4Z"
-        fill="#fff5de"
+        fill={
+          {
+            happy: "#fff5de",
+            sad: "#b5deef",
+            calm: "#c8e5ce",
+            surprised: "#ffdd8c",
+            excited: "#f6c0ce",
+            worried: "#d1c5ed",
+          }[emotion]
+        }
         opacity=".95"
       />
     </g>
@@ -174,23 +218,84 @@ export function Stage({
   progress = 0.5,
   showCaption = false,
   labelled = true,
+  selectedId,
+  onSelect,
+  onMove,
+  onResize,
 }: {
   project: Project;
   scene: Scene;
   progress?: number;
   showCaption?: boolean;
   labelled?: boolean;
+  selectedId?: string;
+  onSelect?: (id: string) => void;
+  onMove?: (id: string, x: number, y: number) => void;
+  onResize?: (id: string, scale: number) => void;
 }) {
+  const root = useRef<SVGSVGElement>(null);
+  const dragging = useRef<{
+    element: SceneElement;
+    pointer: { x: number; y: number };
+    resize?: boolean;
+  } | null>(null);
+  const [drag, setDrag] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    scale?: number;
+  } | null>(null);
   const night = scene.background === "moonlight";
   const classroom = scene.background === "classroom";
   const blink =
     (progress > 0.23 && progress < 0.25) ||
     (progress > 0.71 && progress < 0.73);
   const cameraScale = scene.camera === "close" ? 1.3 : 1;
+  function point(e: PointerEvent<SVGGElement>) {
+    const matrix = root.current?.getScreenCTM();
+    if (!matrix) return { x: 0, y: 0 };
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(
+      matrix.inverse(),
+    );
+    return {
+      x: (p.x - (400 - 400 * cameraScale)) / cameraScale,
+      y: (p.y - (340 - 340 * cameraScale)) / cameraScale,
+    };
+  }
+  function move(e: PointerEvent<SVGGElement>, finish = false) {
+    const d = dragging.current;
+    if (!d) return;
+    const p = point(e);
+    if (d.resize) {
+      const scale = Math.max(
+        0.3,
+        Math.min(
+          2,
+          d.element.scale + (p.x - d.pointer.x + p.y - d.pointer.y) / 300,
+        ),
+      );
+      if (finish) {
+        dragging.current = null;
+        setDrag(null);
+        onResize?.(d.element.id, Math.round(scale * 100) / 100);
+      } else setDrag({ id: d.element.id, x: 0, y: 0, scale });
+      return;
+    }
+    const x = Math.max(0, Math.min(800, d.element.x + p.x - d.pointer.x));
+    const y = Math.max(50, Math.min(450, d.element.y + p.y - d.pointer.y));
+    if (finish) {
+      dragging.current = null;
+      setDrag(null);
+      if (Math.abs(x - d.element.x) + Math.abs(y - d.element.y) > 1)
+        onMove?.(d.element.id, Math.round(x), Math.round(y));
+    } else
+      setDrag({ id: d.element.id, x: x - d.element.x, y: y - d.element.y });
+  }
   return (
     <svg
+      ref={root}
       viewBox="0 0 800 450"
-      role={labelled ? "img" : undefined}
+      role={onSelect ? "group" : labelled ? "img" : undefined}
       aria-label={labelled ? `${scene.title}: ${scene.action}` : undefined}
       aria-hidden={!labelled || undefined}
       xmlns="http://www.w3.org/2000/svg"
@@ -311,40 +416,149 @@ export function Stage({
             />
           </g>
         )}
+        <BackgroundArt background={scene.background} />
         <g
           transform={`translate(${400 - 400 * cameraScale} ${340 - 340 * cameraScale}) scale(${cameraScale})`}
         >
           {scene.elements.map((element) => {
-            const character = project.characters.find(
-              (c) => c.id === element.characterId,
-            );
-            if (!character) return null;
+            const character = resolvedCharacter(project, element);
             const asset = project.assets.find(
-              (a) => a.id === character.assetId,
+              (a) => a.id === (element.assetId ?? character?.assetId),
             );
             const frame = motionAt(element, progress);
+            const width =
+              element.width ?? (asset ? (element.backdrop ? 800 : 190) : 120);
+            const height =
+              element.height ?? (asset ? (element.backdrop ? 450 : 245) : 260);
             return (
               <g
                 key={element.id}
-                transform={`translate(${frame.x} ${frame.y}) rotate(${frame.rotation}) scale(${frame.scale * (element.flip ? -1 : 1)} ${frame.scale})`}
-                opacity={frame.opacity}
+                transform={`translate(${frame.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
+                opacity={frame.opacity * (element.opacity ?? 1)}
+                role={onSelect ? "button" : undefined}
+                tabIndex={onSelect ? 0 : undefined}
+                aria-label={
+                  onSelect
+                    ? `Select ${elementName(project, element)}`
+                    : undefined
+                }
+                className={onSelect ? "stage-object" : undefined}
+                onPointerDown={
+                  onSelect
+                    ? (e) => {
+                        e.stopPropagation();
+                        onSelect(element.id);
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        dragging.current = {
+                          element,
+                          pointer: point(e),
+                          resize:
+                            (e.target as SVGElement).getAttribute(
+                              "data-resize",
+                            ) === "yes",
+                        };
+                      }
+                    : undefined
+                }
+                onPointerMove={onSelect ? (e) => move(e) : undefined}
+                onPointerUp={onSelect ? (e) => move(e, true) : undefined}
+                onPointerCancel={() => {
+                  dragging.current = null;
+                  setDrag(null);
+                }}
+                onKeyDown={
+                  onSelect
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onSelect(element.id);
+                        } else if (
+                          [
+                            "ArrowLeft",
+                            "ArrowRight",
+                            "ArrowUp",
+                            "ArrowDown",
+                          ].includes(e.key)
+                        ) {
+                          e.preventDefault();
+                          onSelect(element.id);
+                          onMove?.(
+                            element.id,
+                            Math.max(
+                              0,
+                              Math.min(
+                                800,
+                                element.x +
+                                  (e.key === "ArrowLeft"
+                                    ? -5
+                                    : e.key === "ArrowRight"
+                                      ? 5
+                                      : 0),
+                              ),
+                            ),
+                            Math.max(
+                              50,
+                              Math.min(
+                                450,
+                                element.y +
+                                  (e.key === "ArrowUp"
+                                    ? -5
+                                    : e.key === "ArrowDown"
+                                      ? 5
+                                      : 0),
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    : undefined
+                }
               >
                 <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />
                 {asset ? (
-                  <image
-                    href={asset.dataUrl}
-                    x="-95"
-                    y="-245"
-                    width="190"
-                    height="245"
-                    preserveAspectRatio="xMidYMax meet"
+                  <RasterArt
+                    asset={asset}
+                    width={width}
+                    height={height}
+                    crop={element.crop}
+                    cover={element.backdrop}
                   />
-                ) : (
+                ) : element.kind === "prop" && element.prop ? (
+                  <PropArt name={element.prop} />
+                ) : character ? (
                   <CartoonCharacter
                     character={character}
                     emotion={element.emotion}
                     blink={blink}
+                    pose={element.pose}
                   />
+                ) : null}
+                {onSelect && selectedId === element.id && (
+                  <g pointerEvents="none">
+                    <rect
+                      x={-width / 2 - 8}
+                      y={-height - 8}
+                      width={width + 16}
+                      height={height + 16}
+                      fill="none"
+                      stroke="#346bba"
+                      strokeWidth="3"
+                      strokeDasharray="8 5"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                    <rect
+                      data-resize="yes"
+                      pointerEvents="all"
+                      x={width / 2 - 9}
+                      y={-9}
+                      width="18"
+                      height="18"
+                      fill="#fff"
+                      stroke="#346bba"
+                      strokeWidth="2"
+                      className="stage-resize"
+                    />
+                  </g>
                 )}
               </g>
             );

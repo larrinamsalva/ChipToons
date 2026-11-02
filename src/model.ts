@@ -1,6 +1,30 @@
-export const SCHEMA_VERSION = 1 as const;
-export type Background = "meadow" | "playground" | "classroom" | "moonlight";
-export type Emotion = "happy" | "sad" | "surprised" | "calm";
+import {
+  colorValid,
+  validCrop,
+  validDrawing,
+  POSES,
+  PROPS,
+  numberIn,
+  rasterSignature,
+} from "./art-model";
+import type { Crop, DrawingDocument, Pose, PropName } from "./art-model";
+export const SCHEMA_VERSION = 2 as const;
+export const BACKGROUNDS = [
+  "meadow",
+  "playground",
+  "classroom",
+  "moonlight",
+  "house",
+  "bedroom",
+  "forest",
+  "garden",
+  "beach",
+  "town",
+  "magical",
+] as const;
+export type Background = (typeof BACKGROUNDS)[number];
+export type Emotion =
+  "happy" | "sad" | "surprised" | "calm" | "excited" | "worried";
 export type Motion =
   | "still"
   | "enter-left"
@@ -27,6 +51,9 @@ export interface Asset {
   type: "image";
   mime: "image/png" | "image/jpeg" | "image/webp";
   dataUrl: string;
+  drawing?: DrawingDocument;
+  sourceWidth?: number;
+  sourceHeight?: number;
 }
 export interface SceneElement {
   id: string;
@@ -38,6 +65,21 @@ export interface SceneElement {
   flip: boolean;
   emotion: Emotion;
   motion: Motion;
+  kind?: "character" | "prop" | "art";
+  assetId?: string;
+  prop?: PropName;
+  pose?: Pose;
+  opacity?: number;
+  flipY?: boolean;
+  width?: number;
+  height?: number;
+  crop?: Crop;
+  name?: string;
+  appearance?: Partial<
+    Pick<Character, "shirt" | "skin" | "hair" | "accessory">
+  >;
+  sourceLibraryId?: string;
+  backdrop?: boolean;
 }
 export interface Scene {
   id: string;
@@ -136,7 +178,7 @@ export function makeScene(characters: Character[], index = 0): Scene {
     })),
   };
 }
-export const MAX_PROJECT_BYTES = 12 * 1024 * 1024;
+export const MAX_PROJECT_BYTES = 32 * 1024 * 1024;
 export const MAX_ASSET_BYTES = 4 * 1024 * 1024;
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -160,6 +202,7 @@ const fail = (): never => {
 // Validate the whole graph before either importing or rendering untrusted data.
 export function validateProject(value: unknown): Project {
   if (!isRecord(value)) return fail();
+  if (value.schemaVersion === 1) return validateProject(migrateV1(value));
   const p = value;
   if (
     p.schemaVersion !== SCHEMA_VERSION ||
@@ -216,7 +259,13 @@ export function validateProject(value: unknown): Project {
       !asset.dataUrl.startsWith(`data:${asset.mime};base64,`) ||
       !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+=*$/.test(
         asset.dataUrl,
-      )
+      ) ||
+      (asset.drawing !== undefined && !validDrawing(asset.drawing)) ||
+      ((asset.sourceWidth !== undefined || asset.sourceHeight !== undefined) &&
+        (!numberIn(asset.sourceWidth, 1, 24000000) ||
+          !numberIn(asset.sourceHeight, 1, 24000000) ||
+          asset.sourceWidth * asset.sourceHeight > 24000000)) ||
+      !rasterSignature(asset.dataUrl, asset.mime)
     )
       return fail();
     unique(asset.id);
@@ -244,12 +293,7 @@ export function validateProject(value: unknown): Project {
       !validString(s.narration) ||
       !validString(s.dialogue) ||
       !bounded(s.duration, 2, 120) ||
-      !oneOf(s.background, [
-        "meadow",
-        "playground",
-        "classroom",
-        "moonlight",
-      ]) ||
+      !oneOf(s.background, BACKGROUNDS) ||
       !oneOf(s.camera, ["wide", "close"]) ||
       !oneOf(s.transition, ["cut", "fade"]) ||
       !validString(s.action) ||
@@ -265,13 +309,42 @@ export function validateProject(value: unknown): Project {
     for (const e of s.elements) {
       if (
         !isRecord(e) ||
-        !characterIds.has(e.characterId as string) ||
+        !oneOf(e.kind ?? "character", ["character", "prop", "art"]) ||
+        ((e.kind === undefined || e.kind === "character") &&
+          !characterIds.has(e.characterId as string)) ||
+        (e.kind === "prop" && !oneOf(e.prop, PROPS)) ||
+        (e.kind === "art" && !assetIds.has(e.assetId as string)) ||
+        (e.assetId !== undefined && !assetIds.has(e.assetId as string)) ||
+        (e.pose !== undefined && !oneOf(e.pose, POSES)) ||
+        (e.opacity !== undefined && !numberIn(e.opacity, 0, 1)) ||
+        (e.flipY !== undefined && typeof e.flipY !== "boolean") ||
+        (e.width !== undefined && !numberIn(e.width, 10, 1600)) ||
+        (e.height !== undefined && !numberIn(e.height, 10, 900)) ||
+        (e.crop !== undefined && !validCrop(e.crop)) ||
+        (e.name !== undefined && !validString(e.name, 80)) ||
+        (e.sourceLibraryId !== undefined &&
+          !validString(e.sourceLibraryId, 100)) ||
+        (e.backdrop !== undefined && typeof e.backdrop !== "boolean") ||
+        (e.appearance !== undefined &&
+          (!isRecord(e.appearance) ||
+            !Object.entries(e.appearance).every(([k, v]) =>
+              k === "accessory"
+                ? oneOf(v, ["none", "bow", "cap"])
+                : ["shirt", "skin", "hair"].includes(k) && colorValid(v),
+            ))) ||
         !bounded(e.x, 0, 800) ||
         !bounded(e.y, 50, 450) ||
         !bounded(e.scale, 0.3, 2) ||
         !bounded(e.rotation, -180, 180) ||
         typeof e.flip !== "boolean" ||
-        !oneOf(e.emotion, ["happy", "sad", "surprised", "calm"]) ||
+        !oneOf(e.emotion, [
+          "happy",
+          "sad",
+          "surprised",
+          "calm",
+          "excited",
+          "worried",
+        ]) ||
         !oneOf(e.motion, [
           "still",
           "enter-left",
@@ -287,12 +360,19 @@ export function validateProject(value: unknown): Project {
       unique(e.id);
     }
   }
+  if (
+    new TextEncoder().encode(JSON.stringify(value)).byteLength >
+    MAX_PROJECT_BYTES
+  )
+    throw new Error(
+      "This project exceeds the 32 MB portable project limit. Remove unused images or use smaller originals.",
+    );
   // Keep validated data detached from the caller. Rendering uses text nodes and raster images.
   return JSON.parse(JSON.stringify(value)) as Project;
 }
 export function parseBackup(text: string): Project {
   if (new TextEncoder().encode(text).byteLength > MAX_PROJECT_BYTES)
-    throw new Error("This backup is too large. The limit is 12 MB.");
+    throw new Error("This backup is too large. The limit is 32 MB.");
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -300,6 +380,29 @@ export function parseBackup(text: string): Project {
     throw new Error("This file is not valid project JSON.");
   }
   return validateProject(value);
+}
+// Lazy, non-destructive migration: originals stay untouched until the next successful save.
+export function migrateV1(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  const copy = clone(value);
+  copy.schemaVersion = 2;
+  if (Array.isArray(copy.scenes))
+    for (const scene of copy.scenes) {
+      if (isRecord(scene) && Array.isArray(scene.elements))
+        scene.elements = scene.elements.map((e) =>
+          isRecord(e)
+            ? {
+                ...e,
+                kind: "character",
+                pose: "standing",
+                opacity: 1,
+                flipY: false,
+              }
+            : e,
+        );
+    }
+  return copy;
 }
 export function duplicateProject(source: Project): Project {
   const copy = clone(source);

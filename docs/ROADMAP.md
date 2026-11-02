@@ -20,6 +20,8 @@ The studio is delivered as five reviewable increments. Pull requests are never a
 - Deliberate SVG sanitization/rasterization before supporting SVG imports. SVG uploads are rejected in the foundation.
 - Multiple art assets, accessories and poses; preserve original source images.
 
+Implemented: reusable characters/backgrounds/props/drawings, collection/tag search, six expressions and five shape poses, editable drawing documents and transparent PNG export, non-destructive image crops/transforms, stage selection/drag/resize, layer order, independent snapshots, project schema 1→2 migration, IndexedDB library/palette stores, and source-preserving portable backups. SVG imports remain rejected. See [Art Studio](ART_STUDIO.md) for the creator workflow and README for limits.
+
 ## PR #3 — Animation and Timeline
 
 - Explicit editable keyframes, additional easing and reusable motion presets.
@@ -39,4 +41,4 @@ The studio is delivered as five reviewable increments. Pull requests are never a
 - Expanded assistive technology, phone and tablet testing.
 - Optional AI providers behind explicit user actions, honest provider labels, and server-held secrets.
 
-The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes in schema version 1); it does not claim to generate a finished 15–20 minute episode automatically.
+The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by both project schemas); it does not claim to generate a finished 15–20 minute episode automatically.
