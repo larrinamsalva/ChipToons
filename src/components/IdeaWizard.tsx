@@ -241,8 +241,9 @@ export function IdeaWizard({
           <div className="local-note">
             <Icon name="film" size={18} />
             <span>
-              Six editable scenes, two original characters, and room for your
-              imagination.
+              Six editable scenes, {proposal.characters.length} original
+              character{proposal.characters.length === 1 ? "" : "s"}, and room
+              for your imagination.
             </span>
           </div>
           <div className="modal-actions">

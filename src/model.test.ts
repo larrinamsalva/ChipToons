@@ -1,15 +1,31 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   clone,
   duplicateProject,
   MAX_PROJECT_BYTES,
   parseBackup,
   totalDuration,
+  uid,
   validateProject,
 } from "./model";
 import { DEFAULT_IDEA, planStory, STARTERS, starterProject } from "./planner";
 
 describe("local story planning and project backups", () => {
+  it("creates unique project IDs on local HTTP previews without randomUUID", () => {
+    const nativeCrypto = globalThis.crypto;
+    try {
+      vi.stubGlobal("crypto", {
+        getRandomValues: nativeCrypto.getRandomValues.bind(nativeCrypto),
+      });
+      const first = uid();
+      expect(first).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+      expect(uid()).not.toBe(first);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("makes complete, independent, editable starter stories with an honest one-minute duration", () => {
     for (const starter of STARTERS) {
       const p = starterProject(starter.id);

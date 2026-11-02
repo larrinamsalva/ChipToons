@@ -3357,6 +3357,30 @@ input[type="color"] {
     width: 70px;
   }
 }
+@media (min-width: 741px) {
+  .property-fields > label,
+  .property-group > label,
+  .compact label,
+  .cast-toggle {
+    font-size: 12px;
+  }
+  .property-fields input:not([type="checkbox"], [type="range"], [type="color"]),
+  .property-fields textarea,
+  .property-fields select,
+  .caption-box > p {
+    font-size: 13px;
+  }
+  .caption-box > .dialogue-caption,
+  .scene-card strong {
+    font-size: 12px;
+  }
+  .preview-note,
+  .property-group .field-hint,
+  .save-status,
+  .time-display {
+    font-size: 11px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

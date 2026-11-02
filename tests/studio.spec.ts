@@ -69,14 +69,18 @@ test("idea → outline → editable storyboard → autosave → refresh → resu
     .getByLabel("Scene title", { exact: true })
     .fill("A tiny raincloud");
   await page
-    .getByLabel("Narration", { exact: true })
+    .getByRole("textbox", { name: "Narration", exact: true })
     .fill("Cloud sees Sunny waiting for a little rain.");
   await page.getByLabel("Duration (seconds)").fill("12");
   await page
-    .getByLabel("Background", { exact: true })
+    .getByRole("combobox", { name: "Background", exact: true })
     .selectOption("moonlight");
-  await page.getByLabel("Feeling", { exact: true }).selectOption("surprised");
-  await page.getByLabel("Movement", { exact: true }).selectOption("bounce");
+  await page
+    .getByRole("combobox", { name: "Feeling", exact: true })
+    .selectOption("surprised");
+  await page
+    .getByRole("combobox", { name: "Movement", exact: true })
+    .selectOption("bounce");
   await saved(page);
   await page.reload();
   await page
@@ -86,19 +90,19 @@ test("idea → outline → editable storyboard → autosave → refresh → resu
   await expect(page.getByLabel("Scene title", { exact: true })).toHaveValue(
     "A tiny raincloud",
   );
-  await expect(page.getByLabel("Narration", { exact: true })).toHaveValue(
-    "Cloud sees Sunny waiting for a little rain.",
-  );
-  await expect(page.getByLabel("Background", { exact: true })).toHaveValue(
-    "moonlight",
-  );
-  await expect(page.getByLabel("Movement", { exact: true })).toHaveValue(
-    "bounce",
-  );
+  await expect(
+    page.getByRole("textbox", { name: "Narration", exact: true }),
+  ).toHaveValue("Cloud sees Sunny waiting for a little rain.");
+  await expect(
+    page.getByRole("combobox", { name: "Background", exact: true }),
+  ).toHaveValue("moonlight");
+  await expect(
+    page.getByRole("combobox", { name: "Movement", exact: true }),
+  ).toHaveValue("bounce");
   await page.getByRole("button", { name: "My story", exact: true }).click();
-  await expect(page.getByLabel("Beginning", { exact: true })).toHaveValue(
-    "A small cloud discovers a thirsty sunflower.",
-  );
+  await expect(
+    page.getByRole("textbox", { name: "Beginning", exact: true }),
+  ).toHaveValue("A small cloud discovers a thirsty sunflower.");
   expect(errors).toEqual([]);
 });
 
@@ -159,7 +163,7 @@ test("backup download restores edits and artwork as a separate project; storyboa
   await openDemo(page);
   await editPanel(page);
   await page
-    .getByLabel("Narration", { exact: true })
+    .getByRole("textbox", { name: "Narration", exact: true })
     .fill("Keep this original line safe. <script>alert(1)</script>");
   const backupPromise = page.waitForEvent("download");
   await page
@@ -196,13 +200,11 @@ test("backup download restores edits and artwork as a separate project; storyboa
     .getByRole("button", { name: "Save and return to my cartoons" })
     .click();
   await expect(page.locator(".project-card")).toHaveCount(2);
-  await page
-    .getByLabel("Restore project backup file")
-    .setInputFiles({
-      name: "invalid.json",
-      mimeType: "application/json",
-      buffer: Buffer.from('{"schemaVersion":99}'),
-    });
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "invalid.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"schemaVersion":99}'),
+  });
   await expect(page.getByRole("status")).toContainText(
     "invalid or unsupported",
   );
@@ -217,13 +219,11 @@ test("original image uploads survive refresh and project backups; SVG is rejecte
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=",
     "base64",
   );
-  await page
-    .getByLabel("Upload original image file")
-    .setInputFiles({
-      name: "my-sketch.png",
-      mimeType: "image/png",
-      buffer: pixel,
-    });
+  await page.getByLabel("Upload original image file").setInputFiles({
+    name: "my-sketch.png",
+    mimeType: "image/png",
+    buffer: pixel,
+  });
   await expect(
     page.getByRole("heading", { name: "my-sketch’s first story" }),
   ).toBeVisible();
@@ -244,13 +244,11 @@ test("original image uploads survive refresh and project backups; SVG is rejecte
     .getByRole("button", { name: "Save and return to my cartoons" })
     .click();
   await page.getByRole("button", { name: "Upload a sketch or image" }).click();
-  await page
-    .getByLabel("Upload original image file")
-    .setInputFiles({
-      name: "script.svg",
-      mimeType: "image/svg+xml",
-      buffer: Buffer.from('<svg onload="alert(1)"/>'),
-    });
+  await page.getByLabel("Upload original image file").setInputFiles({
+    name: "script.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from('<svg onload="alert(1)"/>'),
+  });
   await expect(page.getByRole("status")).toContainText(
     "SVG import is not available",
   );
@@ -281,7 +279,9 @@ test("drawing, undo stroke, save and motion controls work", async ({
     page.getByRole("heading", { name: "Doodle’s first story" }),
   ).toBeVisible();
   await editPanel(page);
-  await page.getByLabel("Movement", { exact: true }).selectOption("spin");
+  await page
+    .getByRole("combobox", { name: "Movement", exact: true })
+    .selectOption("spin");
   await saved(page);
 });
 

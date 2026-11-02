@@ -123,19 +123,17 @@ export function makeScene(characters: Character[], index = 0): Scene {
     action: "The characters take a moment together.",
     props: "",
     audioRefs: [],
-    elements: characters
-      .slice(0, 2)
-      .map((c, i) => ({
-        id: uid(),
-        characterId: c.id,
-        x: 310 + i * 230,
-        y: 340,
-        scale: 1,
-        rotation: 0,
-        flip: false,
-        emotion: "happy",
-        motion: i ? "enter-right" : "still",
-      })),
+    elements: characters.slice(0, 2).map((c, i) => ({
+      id: uid(),
+      characterId: c.id,
+      x: 310 + i * 230,
+      y: 340,
+      scale: 1,
+      rotation: 0,
+      flip: false,
+      emotion: "happy",
+      motion: i ? "enter-right" : "still",
+    })),
   };
 }
 export const MAX_PROJECT_BYTES = 12 * 1024 * 1024;
@@ -289,7 +287,7 @@ export function validateProject(value: unknown): Project {
       unique(e.id);
     }
   }
-  // Reconstructing drops unexpected keys (including prototype-shaped properties).
+  // Keep validated data detached from the caller. Rendering uses text nodes and raster images.
   return JSON.parse(JSON.stringify(value)) as Project;
 }
 export function parseBackup(text: string): Project {
