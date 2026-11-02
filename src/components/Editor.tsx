@@ -543,16 +543,9 @@ export function Editor({
               <div className="form-grid compact">
                 <label>
                   Duration (seconds)
-                  <input
-                    type="number"
-                    min="2"
-                    max="120"
-                    step="1"
+                  <SceneDuration
                     value={scene.duration}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (n >= 2 && n <= 120) changeScene({ duration: n });
-                    }}
+                    onChange={(duration) => changeScene({ duration })}
                   />
                 </label>
                 <label>
@@ -959,5 +952,43 @@ export function Editor({
         </aside>
       </div>
     </main>
+  );
+}
+
+function SceneDuration({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (duration: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  const [editing, setEditing] = useState(false);
+  return (
+    <input
+      type="number"
+      min="2"
+      max="120"
+      step="1"
+      value={editing ? draft : value}
+      onFocus={() => {
+        setDraft(String(value));
+        setEditing(true);
+      }}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const duration = Number(e.target.value);
+        if (duration >= 2 && duration <= 120) onChange(duration);
+      }}
+      onBlur={() => {
+        const parsed = Number(draft);
+        const duration =
+          draft.trim() && Number.isFinite(parsed)
+            ? Math.min(120, Math.max(2, Math.round(parsed)))
+            : value;
+        if (duration !== value) onChange(duration);
+        setEditing(false);
+      }}
+    />
   );
 }

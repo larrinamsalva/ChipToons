@@ -4,9 +4,11 @@ Think it. Sketch it. Toon it!
 
 A beginner-friendly, local-first children's cartoon creation studio. Turn an idea into a six-scene editable storyboard, customize original characters, preview a simple silent cartoon, and keep a portable copy of your work. No account or paid API is required.
 
+![ChipToons Studio storyboard editor in dark mode](docs/studio-preview.jpg)
+
 ## Run locally
 
-Use Node.js 24 (minimum 22.12) and npm.
+Use Node.js 24 (minimum 22.13) and npm.
 
 ```sh
 npm ci

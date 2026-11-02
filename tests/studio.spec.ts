@@ -71,7 +71,9 @@ test("idea → outline → editable storyboard → autosave → refresh → resu
   await page
     .getByRole("textbox", { name: "Narration", exact: true })
     .fill("Cloud sees Sunny waiting for a little rain.");
-  await page.getByLabel("Duration (seconds)").fill("12");
+  await page.getByLabel("Duration (seconds)").fill("");
+  await page.getByLabel("Duration (seconds)").pressSequentially("12");
+  await expect(page.getByLabel("Duration (seconds)")).toHaveValue("12");
   await page
     .getByRole("combobox", { name: "Background", exact: true })
     .selectOption("moonlight");
@@ -233,7 +235,9 @@ test("original image uploads survive refresh and project backups; SVG is rejecte
     .getByRole("button", { name: "Continue my-sketch’s first story" })
     .click();
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Project backup" }).click();
+  await page
+    .getByRole("button", { name: "Project backup", exact: true })
+    .click();
   const backup = await downloadPromise;
   const p = JSON.parse(await readFile((await backup.path())!, "utf8"));
   expect(p.assets[0].dataUrl).toBe(
