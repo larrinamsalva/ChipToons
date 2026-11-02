@@ -22,12 +22,13 @@ function OriginalAudio({ asset }: { asset: AudioAsset }) {
   const ref = useRef<HTMLAudioElement>(null);
   useEffect(() => {
     const el = ref.current;
+    if (el) el.src = asset.dataUrl;
     return () => {
       el?.pause();
       el?.removeAttribute("src");
       el?.load();
     };
-  }, []);
+  }, [asset.dataUrl]);
   return (
     <audio
       ref={ref}

@@ -42,6 +42,16 @@ test("upload, character assignment, trim, mixer, reload and portable restore pre
 }) => {
   await demo(page);
   await voices(page);
+  const originalAudio = page.getByLabel("Original audio source", {
+    exact: true,
+  });
+  await originalAudio.evaluate((el: HTMLAudioElement) => el.play());
+  await expect
+    .poll(() =>
+      originalAudio.evaluate((el: HTMLAudioElement) => el.currentTime),
+    )
+    .toBeGreaterThan(0.05);
+  await originalAudio.evaluate((el: HTMLAudioElement) => el.pause());
   await page
     .getByRole("combobox", { name: "New audio category", exact: true })
     .selectOption("dialogue");

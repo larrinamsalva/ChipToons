@@ -1,4 +1,4 @@
-import voices from "./demo-voices.json";
+import voices from "./demo-voices.json" with { type: "json" };
 import { uid, totalDuration } from "./model";
 import type { Project } from "./model";
 import type { AudioAsset } from "./media-model";
