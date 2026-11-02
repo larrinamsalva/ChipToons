@@ -47,13 +47,13 @@ On phones, use the **Scenes**, **Preview** and **Edit scene** tabs. All editors 
 
 ## Honest limitations
 
-- This is the first increment in the [five-PR roadmap](docs/ROADMAP.md). Dedicated cross-project art libraries, non-destructive crop/layers, editable keyframes, camera animation, audio and video export are future increments.
+- This is the first increment in the [five-PR roadmap](docs/ROADMAP.md). Editable keyframes, camera animation, audio and video export are future increments. Reusable art libraries, vector drawing tools, scene layers and non-destructive raster crops are now implemented.
 - Playback is silent. Narration and dialogue appear as scene captions. There is no microphone access, speech service, music upload or WebM/MP4 export yet.
 - The planner uses local, editable templates. It is not generative AI. Mood, art direction, age and desired episode length are planning notes. A longer episode goal still starts with six scenes (about one minute); add scenes to grow it.
 - Changing an outline or action/prop note does not automatically rewrite narration or create new props. Each scene and its actual motion are edited separately.
 - Raster uploads remain whole images. SVG uploads and remote image URLs are rejected. This avoids executing active imported SVG content.
 - Work is local to this browser and origin. Clearing browser/site data or using private browsing can remove it. Save backups, and use one editor tab per project. IndexedDB transactions are atomic, but collaborative editing and multi-tab conflict resolution are not implemented.
-- Up to 120 scenes, 20 characters and 40 assets per project; portable imports are capped at 12 MB. Very long text is supported in the data model but not automatically paced to match scene duration.
+- Up to 120 scenes, 20 characters and 40 assets per project; portable imports are capped at 32 MB. Very long text is supported in the data model but not automatically paced to match scene duration.
 - Chromium desktop/phone/tablet automation is provided. Safari and Firefox need additional manual coverage before claiming full browser parity.
 
 ## Architecture
@@ -100,3 +100,23 @@ All application navigation stays on the entry page, so static hosting needs no S
 ## Art and dependencies
 
 Characters, backgrounds, lesson text, icons and illustrations were created for ChipToons. No licensed entertainment characters, commercial music or imitated character voices are included. Font credits and bundled license texts are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `public/licenses/`.
+
+## Reusable Character & Art Studio (PR #2)
+
+Open **Art library** from the dashboard or an episode editor. Create an original shape character, draw artwork, or upload a PNG/JPEG/WebP. Name it, assign a collection and tags, and explicitly choose **Save to library**. Search by name, collection or tag. Saved sources can be edited, renamed, duplicated or deleted with confirmation. The original starter set includes 11 settings (including all 10 requested settings), eight props and two customizable children.
+
+Use **Add to scene** or **Add to three scenes** to place independent snapshots. Click/touch an object on the stage to select it; drag to move and drag its bottom-right handle to resize. Use arrow keys or **Object X/Y**, size, rotation, opacity, flips and crop controls as keyboard-accessible alternatives. **Back/Forward** changes layer order. Background uploads are ordinary embedded image layers, initially placed behind the cast. Character name, outfit and expression changes in an episode are scene-specific. Saving a selected object to the library creates a separate reusable source; library edits do not silently rewrite old episodes.
+
+The Drawing Studio offers pencil, brush, eraser, circle, ellipse, rectangle, line and star tools, fill/outline colors, saved palettes, undo/redo, zoom, selection, move/resize/rotate, duplicate/remove, transparent PNG export and retained editable objects. Use **Insert shape** and the object inspector without a pointer. Library drawings can reopen their object document for later editing. Eraser strokes are editable compositing objects. Drawing history is limited to 40 undo steps and documents to 500 objects / 50,000 points. No image-to-puppet or subject extraction is claimed. Imported pictures move as whole images, and crops/transforms are settings over the preserved original.
+
+Shape characters support happy, sad, calm, surprised, excited and worried expressions and standing, sitting, waving, walking and pointing poses. Uploaded images use whole-image transforms, not shape facial/limb controls. Drawing objects rasterize to a PNG for efficient stage playback while the portable project retains the editable source document.
+
+### Compatibility and recovery
+
+IndexedDB upgrades from database version 1 to 2 by adding `library` and `settings` stores without removing or bulk-rewriting `projects`. Project schema version 1 is explicitly migrated in memory to schema 2 on read, preserving IDs, stage coordinates and timings; it is written back only on the next successful save. Schema 1 backups remain importable. Unknown versions, invalid graphs, duplicate IDs, missing assets, invalid crops, invalid drawing coordinates and active/disguised SVG data are rejected before editing state changes.
+
+Every project embeds its own character and raster/drawing assets. Library deletion never cascades into project files. Portable project backups work without the original library and retain editable drawings and crop settings. Projects are capped at 32 MB, 40 assets, 20 character definitions, 20 objects per scene and 120 scenes; individual source uploads remain limited to 4 MB / 24 megapixels. The extra project budget supports multiple original images. When adding artwork would exceed a limit, the current project is unchanged.
+
+Library writes update the saved list only after transaction commit. Errors keep the open draft available for retry and original images can be downloaded. Saved palettes are also local. Whole-library backups, collaborative editing and cross-tab conflict resolution are not provided; back up important episodes and use one editing tab per source.
+
+New validation covers source reuse across episodes, scene independence, persistence, source deletion, vector drawing round trips, legacy migration, quota failure and disguised active content, plus browser flows for artwork/PNG export, crops, props, library retry and responsive light/dark accessibility. Existing PR #1 tests remain in the suite. See [the art studio guide](docs/ART_STUDIO.md) for the beginner workflow.

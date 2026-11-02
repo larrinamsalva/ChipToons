@@ -10,6 +10,11 @@ import {
 } from "../files";
 import { Icon } from "./Icon";
 import { Stage } from "./Stage";
+import { CompositionTools } from "./CompositionTools";
+import { resolvedCharacter, libraryItemFromElement } from "../library";
+import type { LibraryItem } from "../library";
+import { POSES } from "../art-model";
+import type { Pose } from "../art-model";
 
 export function Editor({
   project,
@@ -21,6 +26,7 @@ export function Editor({
   canRedo,
   saveStatus,
   onRetry,
+  onLibrary,
 }: {
   project: Project;
   onChange: (p: Project) => void;
@@ -31,6 +37,7 @@ export function Editor({
   canRedo: boolean;
   saveStatus: string;
   onRetry: () => void;
+  onLibrary: (sceneIndex: number, draft?: LibraryItem) => void;
 }) {
   const [selected, setSelected] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -47,9 +54,7 @@ export function Editor({
   const displayedIndex = playing ? frame.index : index;
   const element =
     scene.elements[Math.min(elementIndex, scene.elements.length - 1)];
-  const character = project.characters.find(
-    (c) => c.id === element?.characterId,
-  );
+  const character = resolvedCharacter(project, element);
   useEffect(() => {
     if (!playing) return;
     let handle = 0;
@@ -119,13 +124,12 @@ export function Editor({
       });
   }
   function changeCharacter(patch: Partial<Character>) {
-    if (character)
-      onChange({
-        ...project,
-        characters: project.characters.map((c) =>
-          c.id === character.id ? { ...c, ...patch } : c,
-        ),
-      });
+    if (!element || !character) return;
+    const { name, ...appearance } = patch;
+    changeElement({
+      ...(name !== undefined ? { name } : {}),
+      appearance: { ...element.appearance, ...appearance },
+    });
   }
   function addScene() {
     if (project.scenes.length >= 120) return;
@@ -171,7 +175,7 @@ export function Editor({
     const existing = scene.elements.find((e) => e.characterId === c.id);
     changeScene({
       elements: existing
-        ? scene.elements.filter((e) => e.id !== existing.id)
+        ? scene.elements.filter((e) => e.characterId !== c.id)
         : [
             ...scene.elements,
             {
@@ -236,6 +240,16 @@ export function Editor({
           Let’s bring your story to life.
         </div>
         <div className="toolbar-actions">
+          <button
+            className="button secondary small"
+            onClick={() => {
+              setPlaying(false);
+              onLibrary(index);
+            }}
+          >
+            <Icon name="folder" size={17} />
+            Art library
+          </button>
           <button
             className="icon-button"
             aria-label="Undo edit"
@@ -374,6 +388,35 @@ export function Editor({
             <Stage
               project={project}
               scene={scene}
+              selectedId={element?.id}
+              onSelect={
+                playing
+                  ? undefined
+                  : (id) =>
+                      setElementIndex(
+                        scene.elements.findIndex((e) => e.id === id),
+                      )
+              }
+              onResize={
+                playing
+                  ? undefined
+                  : (id, scale) =>
+                      changeScene({
+                        elements: scene.elements.map((e) =>
+                          e.id === id ? { ...e, scale } : e,
+                        ),
+                      })
+              }
+              onMove={
+                playing
+                  ? undefined
+                  : (id, x, y) =>
+                      changeScene({
+                        elements: scene.elements.map((e) =>
+                          e.id === id ? { ...e, x, y } : e,
+                        ),
+                      })
+              }
               progress={
                 playing
                   ? frame.progress
@@ -510,6 +553,20 @@ export function Editor({
             </div>
           ) : panel === "scene" ? (
             <div className="property-fields">
+              <CompositionTools
+                project={project}
+                scene={scene}
+                selected={element}
+                onSelect={(id) =>
+                  setElementIndex(scene.elements.findIndex((e) => e.id === id))
+                }
+                onChange={changeScene}
+                onLibrary={() => onLibrary(index)}
+                onSave={() => {
+                  if (element)
+                    onLibrary(index, libraryItemFromElement(project, element));
+                }}
+              />
               <label>
                 Scene title
                 <input
@@ -582,6 +639,13 @@ export function Editor({
                     <option value="playground">Neighborhood playground</option>
                     <option value="classroom">Cozy classroom</option>
                     <option value="moonlight">Moonlit meadow</option>
+                    <option value="house">House</option>
+                    <option value="bedroom">Bedroom</option>
+                    <option value="forest">Forest</option>
+                    <option value="garden">Garden</option>
+                    <option value="beach">Beach</option>
+                    <option value="town">Town street</option>
+                    <option value="magical">Magical world</option>
                   </select>
                 </label>
                 <label>
@@ -680,6 +744,8 @@ export function Editor({
                           <option value="sad">Feeling sad</option>
                           <option value="surprised">A bright idea!</option>
                           <option value="calm">Calm</option>
+                          <option value="excited">Excited</option>
+                          <option value="worried">Worried</option>
                         </select>
                       </label>
                       <label>
@@ -774,6 +840,20 @@ export function Editor({
                         }
                       />
                       Flip character
+                    </label>
+                    <label>
+                      Pose
+                      <select
+                        aria-label="Character pose"
+                        value={element.pose ?? "standing"}
+                        onChange={(e) =>
+                          changeElement({ pose: e.target.value as Pose })
+                        }
+                      >
+                        {POSES.map((p) => (
+                          <option key={p}>{p}</option>
+                        ))}
+                      </select>
                     </label>
                     <label>
                       Character name

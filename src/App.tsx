@@ -5,6 +5,9 @@ import { Editor } from "./components/Editor";
 import { Icon, Logo } from "./components/Icon";
 import { IdeaWizard } from "./components/IdeaWizard";
 import { Modal } from "./components/Modal";
+import { ArtLibrary } from "./components/ArtLibrary";
+import { placeLibraryItem } from "./library";
+import type { LibraryItem } from "./library";
 import { exportProject, readImage, readProject } from "./files";
 import { clone, duplicateProject, uid } from "./model";
 import type { Asset, Project } from "./model";
@@ -20,6 +23,7 @@ type Dialog =
   | { type: "idea"; starterId?: string }
   | { type: "draw" | "help" | "upload" }
   | { type: "delete"; project: Project }
+  | { type: "library"; sceneIndex?: number; draft?: LibraryItem }
   | null;
 function initialTheme(): "light" | "dark" {
   try {
@@ -339,6 +343,9 @@ export default function App() {
           canRedo={!!future.length}
           saveStatus={saveStatus}
           onRetry={() => setRetry((r) => r + 1)}
+          onLibrary={(sceneIndex, draft) =>
+            setDialog({ type: "library", sceneIndex, draft })
+          }
         />
       ) : (
         <Dashboard
@@ -355,6 +362,7 @@ export default function App() {
           onDelete={(project) => setDialog({ type: "delete", project })}
           onImport={() => backupInput.current?.click()}
           onHelp={() => setDialog({ type: "help" })}
+          onLibrary={() => setDialog({ type: "library" })}
         />
       )}
       {!current && (
@@ -372,6 +380,31 @@ export default function App() {
           starterId={dialog.starterId}
           onClose={() => setDialog(null)}
           onCreate={open}
+        />
+      )}
+      {dialog?.type === "library" && (
+        <ArtLibrary
+          onClose={() => setDialog(null)}
+          draft={dialog.draft}
+          inProject={!!current}
+          onUse={(item, three) => {
+            let p = current ?? starterProject();
+            const index = dialog.sceneIndex ?? 0;
+            if (!current)
+              p = { ...p, title: `${item.name.slice(0, 100)}’s new adventure` };
+            const targets = three
+              ? [
+                  ...new Set([
+                    index,
+                    (index + 1) % p.scenes.length,
+                    (index + 2) % p.scenes.length,
+                  ]),
+                ]
+              : [index];
+            for (const i of targets) p = placeLibraryItem(p, i, item);
+            if (current) update(p);
+            else open(p);
+          }}
         />
       )}
       {dialog?.type === "draw" && (

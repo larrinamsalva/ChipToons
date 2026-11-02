@@ -205,7 +205,7 @@ export function planStory(input: IdeaInput): Project {
   });
   const now = new Date().toISOString();
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: uid(),
     title: input.title.trim().slice(0, 160) || "My little big story",
     idea,

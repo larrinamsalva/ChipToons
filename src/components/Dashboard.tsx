@@ -16,6 +16,7 @@ export function Dashboard({
   onDelete,
   onImport,
   onHelp,
+  onLibrary,
 }: {
   projects: Project[];
   onIdea: (starterId?: string) => void;
@@ -27,6 +28,7 @@ export function Dashboard({
   onDelete: (p: Project) => void;
   onImport: () => void;
   onHelp: () => void;
+  onLibrary: () => void;
 }) {
   const demo = useMemo(() => starterProject(), []);
   const [allStarters, setAllStarters] = useState(false);
@@ -172,6 +174,27 @@ export function Dashboard({
           </button>
         ))}
       </div>
+      <section className="library-banner" aria-label="Reusable art studio">
+        <span className="library-banner-art">
+          <Icon name="pencil" size={32} />
+          <span className="art-spark" aria-hidden="true">
+            ✦
+          </span>
+        </span>
+        <div>
+          <span className="eyebrow">DRAW IT ONCE. DREAM UP WHAT’S NEXT.</span>
+          <h2>Your art. A hundred adventures.</h2>
+          <p>
+            Keep characters, backgrounds, props and drawings ready for your next
+            little story.
+          </p>
+        </div>
+        <button className="button secondary" onClick={onLibrary}>
+          <Icon name="folder" />
+          Open art library
+          <Icon name="arrow" size={18} />
+        </button>
+      </section>
       <section
         className="projects-section"
         id="my-cartoons"

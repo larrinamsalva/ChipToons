@@ -4,7 +4,7 @@ import type { Project } from "./model";
 const DB_NAME = "chiptoons-studio";
 const STORE = "projects";
 let connection: Promise<IDBDatabase> | undefined;
-function db(): Promise<IDBDatabase> {
+export function db(): Promise<IDBDatabase> {
   if (connection) return connection;
   connection = new Promise((resolve, reject) => {
     if (!globalThis.indexedDB)
@@ -13,9 +13,14 @@ function db(): Promise<IDBDatabase> {
           "This browser cannot save locally. Download a project backup to keep your work.",
         ),
       );
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, 2);
     req.onupgradeneeded = () => {
-      req.result.createObjectStore(STORE, { keyPath: "id" });
+      if (!req.result.objectStoreNames.contains(STORE))
+        req.result.createObjectStore(STORE, { keyPath: "id" });
+      if (!req.result.objectStoreNames.contains("library"))
+        req.result.createObjectStore("library", { keyPath: "id" });
+      if (!req.result.objectStoreNames.contains("settings"))
+        req.result.createObjectStore("settings");
     };
     req.onsuccess = () => {
       const result = req.result;
