@@ -1,5 +1,7 @@
 # A character, three little adventures
 
+![Reusable character library with saved artwork, search, collections and scene insertion controls.](art-library-preview.jpg)
+
 1. Open **Art library** on the home screen. Choose **New character** for an original shape character or **Draw artwork** for your own drawing. Choose **Upload artwork** for a PNG, JPEG or WebP. SVG files are rejected.
 2. Give your creation a name, collection and optional comma-separated tags. Choose colors, expression and pose for shape characters, or choose an editable crop for images. Save to your library and wait for the saved message.
 3. Open or start a cartoon. Choose a scene, then open **Art library** from the editor toolbar. Find the character and choose **Add to three scenes**. It is added to this scene and the next two available scenes, wrapping to the beginning at the end of an episode. With fewer than three scenes, each available scene gets one copy.
