@@ -264,19 +264,22 @@ export function cameraBase(scene: Scene): CameraValues {
     zoom: scene.camera === "close" ? 1.3 : 1,
   };
 }
-export function cameraAt(scene: Scene, seconds: number) {
-  const t = clamp(seconds, 0, scene.duration);
-  const { values } = sample(
+export function cameraValuesAt(scene: Scene, seconds: number): CameraValues {
+  return sample(
     cameraBase(scene),
     scene.cameraAnimation?.keyframes ?? [],
-    t,
+    clamp(seconds, 0, scene.duration),
     ["x", "y", "zoom"],
-  );
+  ).values;
+}
+export function cameraAt(scene: Scene, seconds: number, calm = false) {
+  const t = clamp(seconds, 0, scene.duration);
+  const values = cameraValuesAt(scene, t);
   const target = scene.elements.find(
     (e) => e.id === scene.cameraAnimation?.followId,
   );
   if (target) {
-    const frame = elementAt(target, t, scene.duration);
+    const frame = elementAt(target, t, scene.duration, calm);
     values.x += frame.x - 400;
     values.y += frame.y - 120 - 225;
   }
@@ -311,7 +314,7 @@ export function backgroundAt(scene: Scene, seconds: number, calm = false) {
 }
 export function sceneAt(scene: Scene, seconds: number, calm = false) {
   return {
-    camera: cameraAt(scene, seconds),
+    camera: cameraAt(scene, seconds, calm),
     background: backgroundAt(scene, seconds, calm),
     elements: scene.elements.map((e) => ({
       id: e.id,

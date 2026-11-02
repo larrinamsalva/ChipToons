@@ -172,6 +172,12 @@ export default function App() {
       assetId: asset.id,
     };
     p.scenes.forEach((s) => {
+      // Uploaded artwork starts with the original whole-image motion controls,
+      // without inheriting the demo shape character's face/limb animation.
+      const imageElement = s.elements.find(
+        (e) => e.characterId === p.characters[0].id,
+      );
+      if (imageElement) delete imageElement.animation;
       s.dialogue = s.dialogue.replaceAll("Pip", name.slice(0, 80));
       s.narration = s.narration.replaceAll("Pip", name.slice(0, 80));
       s.action = s.action.replaceAll("Pip", name.slice(0, 80));

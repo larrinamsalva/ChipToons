@@ -33,14 +33,12 @@ async function backup(page: Page) {
   return { path, data: JSON.parse(await readFile(path, "utf8")) };
 }
 const track = (page: Page, name: string) =>
-  page
-    .locator(".timeline-row")
-    .filter({
-      has: page.getByRole("button", {
-        name: `Select ${name} track`,
-        exact: true,
-      }),
-    });
+  page.locator(".timeline-row").filter({
+    has: page.getByRole("button", {
+      name: `Select ${name} track`,
+      exact: true,
+    }),
+  });
 async function replace(page: Page) {
   await page
     .getByRole("dialog")
@@ -391,26 +389,22 @@ test("animation survives reload and portable restore; v2 and malformed motion im
     .click();
   const bad = structuredClone(before.data);
   bad.scenes[0].elements[0].animation.keyframes[0].time = -1;
-  await page
-    .getByLabel("Restore project backup file")
-    .setInputFiles({
-      name: "bad-motion.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(bad)),
-    });
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "bad-motion.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(bad)),
+  });
   await expect(page.getByRole("status")).toContainText(
     "invalid or unsupported",
   );
   await expect(page.locator(".project-card")).toHaveCount(2);
   const legacy = { ...starterProject("friendship"), schemaVersion: 2 };
   legacy.title = "Version two story";
-  await page
-    .getByLabel("Restore project backup file")
-    .setInputFiles({
-      name: "old.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(legacy)),
-    });
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "old.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(legacy)),
+  });
   await saved(page);
   const migrated = await backup(page);
   expect(migrated.data.schemaVersion).toBe(3);
@@ -481,5 +475,14 @@ test("timeline keyboard/touch editing, scrolling and light/dark accessibility", 
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  await page.locator(".animation-heading").scrollIntoViewIfNeeded();
+  await info.attach(`${info.project.name}-timeline-dark`, {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+  await info.attach(`${info.project.name}-scene`, {
+    body: await page.locator(".live-stage").screenshot(),
+    contentType: "image/png",
+  });
   await saved(page);
 });

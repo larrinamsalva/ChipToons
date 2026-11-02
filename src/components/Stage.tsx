@@ -329,7 +329,7 @@ export const Stage = memo(function Stage({
   } | null>(null);
   const objects = useRef<SVGGElement>(null);
   const t = time ?? progress * scene.duration;
-  const camera = cameraAt(scene, t);
+  const camera = cameraAt(scene, t, calmPreview);
   const background = backgroundAt(scene, t, calmPreview);
   const night = scene.background === "moonlight";
   const classroom = scene.background === "classroom";

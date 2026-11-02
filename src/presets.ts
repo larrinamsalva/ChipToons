@@ -170,13 +170,6 @@ export function presetAnimation(
       opacity: first.opacity,
     };
     keys.set(0, { ...hold, id: uid(), time: 0, easing: "linear" });
-    if (from >= 0.002)
-      keys.set(roundTime(from - 0.001), {
-        ...hold,
-        id: uid(),
-        time: roundTime(from - 0.001),
-        easing: "linear",
-      });
   }
   return {
     keyframes: [...keys.values()].sort((a, b) => a.time - b.time),

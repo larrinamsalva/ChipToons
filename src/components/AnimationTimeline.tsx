@@ -21,6 +21,7 @@ import { POSES } from "../art-model";
 import {
   backgroundAt,
   cameraAt,
+  cameraValuesAt,
   clamp,
   elementBase,
   keyAt,
@@ -63,14 +64,12 @@ function NumberEntry({
         step={step}
         onBlur={(e) => {
           const n = Number(e.target.value);
-          if (
-            !e.target.value ||
-            !Number.isFinite(n) ||
-            n < min ||
-            n > max ||
-            onCommit(n) === false
-          )
+          if (!e.target.value || !Number.isFinite(n) || n < min || n > max) {
             e.target.value = String(value);
+            return;
+          }
+          if (n === value) return;
+          if (onCommit(n) === false) e.target.value = String(value);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
@@ -473,7 +472,7 @@ export function AnimationTimeline({
     let key: AnyKeyframe;
     if (target === "camera")
       key = {
-        ...cameraAt(scene, time),
+        ...cameraValuesAt(scene, time),
         id: uid(),
         time,
         easing: "ease-in-out",
@@ -491,7 +490,17 @@ export function AnimationTimeline({
       };
     } else if (element) key = keyAt(element, time, scene.duration);
     else return;
-    if (setKeys(target, [...keys, key])) setSelection(key.id);
+    const create = () => {
+      if (setKeys(target, [...keys, key])) setSelection(key.id);
+    };
+    confirm(
+      "Start an editable motion track?",
+      "This replaces the older movement preset with explicit keyframes. Add moments to describe its path. Cancel keeps the older movement. Undo can restore it.",
+      create,
+      !!element &&
+        !element.animation?.keyframes.length &&
+        element.motion !== "still",
+    );
   }
   function confirm(
     title: string,

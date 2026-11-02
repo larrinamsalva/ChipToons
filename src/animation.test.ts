@@ -9,6 +9,7 @@ import {
   elementBase,
   putElementKey,
   cameraAt,
+  cameraValuesAt,
   backgroundAt,
   easeAt,
   snapTime,
@@ -151,6 +152,21 @@ describe("shared deterministic animation renderer", () => {
     expect(f.x).toBe(350);
     expect(f.y).toBe(160);
     expect(sceneAt(s, 2).camera).toEqual(f);
+  });
+  it("adds follow-camera keys without applying target offsets twice", () => {
+    const s = animated().scenes[0];
+    s.cameraAnimation = { keyframes: [], followId: s.elements[0].id };
+    const before = cameraAt(s, 2);
+    const values = cameraValuesAt(s, 2);
+    s.cameraAnimation.keyframes.push({
+      ...values,
+      id: "follow-moment",
+      time: 2,
+      easing: "linear",
+    });
+    expect(cameraAt(s, 2)).toEqual(before);
+    s.elements[0].animation!.idle = "float";
+    expect(cameraAt(s, 2, true).y).toBe(before.y);
   });
   it("keeps layer order, source position and library identity during sampling", () => {
     const p = animated(),

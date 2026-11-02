@@ -166,6 +166,11 @@ export function Editor({
       scene.duration,
     );
     if (
+      Object.keys(patch).some((k) =>
+        ["x", "y", "scale", "rotation", "opacity", "emotion", "pose"].includes(
+          k,
+        ),
+      ) &&
       source?.animation &&
       source.animation.keyframes.length >= 120 &&
       !source.animation.keyframes.some((k) => Math.abs(k.time - time) < 0.001)
@@ -237,6 +242,14 @@ export function Editor({
     if (project.scenes.length >= 120) return;
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, makeScene(project.characters, scenes.length));
+    try {
+      validateProject({ ...project, scenes });
+    } catch {
+      setEditError(
+        "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
+      );
+      return;
+    }
     onChange({ ...project, scenes });
     setSelected(index + 1);
     clock.pause();
@@ -254,6 +267,14 @@ export function Editor({
     copy.title = `${copy.title.slice(0, 150)} (copy)`;
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, copy);
+    try {
+      validateProject({ ...project, scenes });
+    } catch {
+      setEditError(
+        "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
+      );
+      return;
+    }
     onChange({ ...project, scenes });
     setSelected(index + 1);
     clock.pause();
@@ -270,6 +291,14 @@ export function Editor({
     if (next < 0 || next >= project.scenes.length) return;
     const scenes = [...project.scenes];
     [scenes[index], scenes[next]] = [scenes[next], scenes[index]];
+    try {
+      validateProject({ ...project, scenes });
+    } catch {
+      setEditError(
+        "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
+      );
+      return;
+    }
     onChange({ ...project, scenes });
     setSelected(next);
     clock.pause();
