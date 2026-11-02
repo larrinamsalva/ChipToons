@@ -43,4 +43,4 @@ Implemented: explicit transform/acting keyframes, shared deterministic sampling 
 - Expanded assistive technology, phone and tablet testing.
 - Optional AI providers behind explicit user actions, honest provider labels, and server-held secrets.
 
-The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by both project schemas); it does not claim to generate a finished 15–20 minute episode automatically.
+The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by all three project schemas); it does not claim to generate a finished 15–20 minute episode automatically.

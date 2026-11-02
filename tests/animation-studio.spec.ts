@@ -481,9 +481,16 @@ test("timeline keyboard/touch editing, scrolling and light/dark accessibility", 
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.locator(".animation-heading").scrollIntoViewIfNeeded();
+  await page
+    .getByRole("button", { name: "Select Camera track", exact: true })
+    .click();
+  await expect(track(page, "Camera")).toBeInViewport();
   await info.attach(`${info.project.name}-timeline-dark`, {
     body: await page.screenshot(),
+    contentType: "image/png",
+  });
+  await info.attach(`${info.project.name}-tracks`, {
+    body: await scroll.screenshot(),
     contentType: "image/png",
   });
   await info.attach(`${info.project.name}-scene`, {

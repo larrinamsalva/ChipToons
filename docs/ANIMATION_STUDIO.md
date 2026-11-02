@@ -1,9 +1,11 @@
 # Your first animated friendship
 
+![The animated inclusion story with camera and character keyframes, acting tracks and a shared playhead.](animation-timeline-preview.jpg)
+
 The timeline is part of the storyboard editor. No account, audio service or paid API is needed. **Try a demo cartoon** opens the original inclusion story with editable motion, timed expressions, friendship hearts and a camera pan. Existing saved copies are left alone; open a fresh demo to see the new sequence.
 
 1. Select **Preview** on a phone, then choose a character directly on the stage or its named timeline track.
-2. In **Choose an action**, pick Walk, Jump, Wave or another action. Set the start time, duration and speed. **Preview action** is temporary. **Apply action** creates editable diamonds. Replacing existing keyframes or an older preset asks for confirmation; Cancel keeps the existing motion.
+2. In **Choose an action**, pick Walk, Jump, Wave or another action. Set the start time, action length and speed. **Preview action** is temporary. **Apply action** creates editable diamonds. Replacing existing keyframes or an older preset asks for confirmation; Cancel keeps the existing motion.
 3. Drag the ruler's playhead or type **Go to time**. Choose **Add keyframe at playhead** to say “move here.” Change the moment's X/Y, scale, rotation and opacity. Numeric fields commit with Enter or when you leave the field. Escape cancels an unfinished numeric edit.
 4. Add another moment to say “stop here.” **Arrive with** controls interpolation into that moment: linear, ease in, ease out, ease in/out or bounce. Drag diamonds or focus one and use left/right arrows. Snap and Zoom help place them. **Choose a keyframe** and its exact time field provide alternatives to dragging. Two moments cannot occupy the same time on one track.
 5. For original shape characters, choose a moment's expression, pose and mouth. **Talking cycle (silent)** opens and closes the mouth from this moment until another mouth state is set; it does not infer dialogue or use audio. Wave, nod, shake and walk use controlled original shape parts. Natural blinking and small idle motions can be turned off.
