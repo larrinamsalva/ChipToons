@@ -285,7 +285,7 @@ test("crop preserves uploads, props reorder, source deletion and portable restor
 test("schema 1 projects upgrade without loss, new libraries recover after reload", async ({
   page,
 }) => {
-  const p = starterProject();
+  const p = starterProject("friendship");
   p.title = "Legacy story";
   const legacy = { ...p, schemaVersion: 1 };
   await page.addInitScript((data) => {
@@ -306,7 +306,7 @@ test("schema 1 projects upgrade without loss, new libraries recover after reload
   await page.getByRole("button", { name: "Continue Legacy story" }).click();
   await saved(page);
   const { data } = await backup(page);
-  expect(data.schemaVersion).toBe(2);
+  expect(data.schemaVersion).toBe(3);
   expect(data.scenes[0].id).toBe(p.scenes[0].id);
   expect(data.scenes[0].elements[0]).toMatchObject({
     ...p.scenes[0].elements[0],

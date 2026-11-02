@@ -172,6 +172,12 @@ export default function App() {
       assetId: asset.id,
     };
     p.scenes.forEach((s) => {
+      // Uploaded artwork starts with the original whole-image motion controls,
+      // without inheriting the demo shape character's face/limb animation.
+      const imageElement = s.elements.find(
+        (e) => e.characterId === p.characters[0].id,
+      );
+      if (imageElement) delete imageElement.animation;
       s.dialogue = s.dialogue.replaceAll("Pip", name.slice(0, 80));
       s.narration = s.narration.replaceAll("Pip", name.slice(0, 80));
       s.action = s.action.replaceAll("Pip", name.slice(0, 80));
@@ -488,7 +494,7 @@ export default function App() {
               [
                 "play",
                 "Give it a little life",
-                "Choose a character’s movement and press Play. The strip below the stage shows the scenes in order.",
+                "Select a character in the timeline, choose an action and preview it. Apply the action, then move its keyframe diamonds or edit exact times. Add a camera move and press Play.",
               ],
               [
                 "download",
@@ -515,9 +521,9 @@ export default function App() {
             </span>
           </div>
           <p className="field-hint">
-            This version includes editable storyboards and simple silent
-            animation with reusable art libraries. Advanced keyframes, voices
-            and video downloads are coming in future releases.
+            This version includes reusable art libraries, editable animation
+            keyframes, timed expressions, empathy hearts and camera movement.
+            Playback is silent. Audio and video downloads are planned for PR #4.
           </p>
           <div className="modal-actions">
             <button className="button primary" onClick={() => setDialog(null)}>

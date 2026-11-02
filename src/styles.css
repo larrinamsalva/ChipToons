@@ -4007,3 +4007,390 @@ input[type="color"] {
 .button.text:hover {
   color: var(--text);
 }
+
+/* Animation studio: time lives beside the artwork, not in a second editor. */
+.preview-options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 18px;
+}
+.preview-options label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+.preview-options select {
+  width: auto;
+  min-height: 38px;
+  font-size: 11px;
+  padding: 7px;
+}
+.animation-studio {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 12px;
+  margin: 14px 0 20px;
+  overflow: hidden;
+  min-width: 0;
+}
+.animation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.animation-heading h2 {
+  font-size: 20px;
+  margin: 4px 0 0;
+}
+.animation-heading .eyebrow {
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.animation-heading .button {
+  white-space: normal;
+}
+.timeline-help {
+  margin: 0;
+  padding: 14px 24px 14px 36px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+  background: var(--field);
+}
+.timeline-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.timeline-toolbar label {
+  font-size: 10px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.timeline-toolbar select {
+  min-height: 38px;
+  padding: 6px;
+  width: 74px;
+  font-size: 11px;
+}
+.timeline-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 10px;
+  min-width: 170px;
+}
+.timeline-time output {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.timeline-time input {
+  width: 82px;
+  min-height: 38px;
+  padding: 6px;
+  font-size: 12px;
+}
+.timeline-scroll {
+  max-width: 100%;
+  max-height: 340px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-block: 1px solid var(--line);
+  scrollbar-width: thin;
+}
+.timeline-scroll:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: -3px;
+}
+.timeline-sheet {
+  min-width: 100%;
+}
+.timeline-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  height: 44px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+.track-label {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+}
+.track-label span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.active > .track-label {
+  background: var(--mint);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: inset 3px 0 var(--primary);
+}
+.acting-row {
+  height: 34px;
+}
+.acting-row .track-label {
+  padding-left: 22px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.track-lane {
+  position: relative;
+  min-width: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 39px,
+    var(--line) 40px
+  );
+}
+.active > .track-lane {
+  background-color: var(--field);
+}
+.empty-track {
+  display: block;
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 9px;
+  pointer-events: none;
+}
+.track-playhead {
+  position: absolute;
+  z-index: 1;
+  width: 2px;
+  top: 0;
+  bottom: 0;
+  background: var(--primary);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.key-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  z-index: 2;
+  cursor: grab;
+  touch-action: none;
+  font-size: 17px;
+}
+.key-marker.selected span {
+  color: var(--text);
+  background: var(--peach);
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.key-marker:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: -2px;
+}
+.key-marker:active {
+  cursor: grabbing;
+}
+.ruler-row {
+  height: 44px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--field);
+}
+.ruler-row .track-label {
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--field);
+}
+.track-ruler {
+  position: relative;
+}
+.track-ruler > span {
+  position: absolute;
+  top: 7px;
+  padding-left: 4px;
+  border-left: 1px solid var(--line);
+  font-size: 9px;
+  color: var(--muted);
+  height: 25px;
+  pointer-events: none;
+}
+.ruler-scrubber {
+  position: absolute;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  inset: 0;
+  opacity: 0.25;
+  cursor: ew-resize;
+}
+.ruler-scrubber:hover,
+.ruler-scrubber:focus-visible {
+  opacity: 0.85;
+}
+.keyframe-workspace {
+  padding: 15px;
+  display: grid;
+  gap: 12px;
+}
+.keyframe-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+.keyframe-heading strong {
+  font-family: var(--heading-font, inherit);
+  font-size: 14px;
+}
+.keyframe-heading > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.animation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.animation-studio .button {
+  min-height: 40px;
+  font-size: 10px;
+}
+.animation-studio .button.primary {
+  color: var(--primary-text);
+}
+.animation-studio h3 {
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.animation-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.keyframe-workspace label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.keyframe-workspace input,
+.keyframe-workspace select {
+  min-width: 0;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px;
+  font-size: 12px;
+}
+.keyframe-workspace .inline-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.keyframe-workspace input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+}
+.motion-library {
+  background: var(--field);
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+}
+.keyframe-inspector {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+}
+.animation-idle {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.animation-idle label:last-child {
+  flex: 1;
+  min-width: 130px;
+}
+.animation-message {
+  background: var(--field);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  padding: 12px 16px;
+  margin: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 6px;
+}
+.action-preview {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+.action-preview svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 740px) {
+  .animation-heading,
+  .timeline-toolbar {
+    padding: 12px;
+  }
+  .animation-heading h2 {
+    font-size: 18px;
+  }
+  .animation-studio .button {
+    min-height: 44px;
+    font-size: 11px;
+  }
+  .preview-options {
+    gap: 12px;
+  }
+  .preview-options select {
+    min-height: 44px;
+  }
+  .keyframe-workspace {
+    padding: 12px;
+  }
+  .timeline-scroll {
+    max-height: 290px;
+  }
+}

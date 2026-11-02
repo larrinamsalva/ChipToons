@@ -24,8 +24,10 @@ Implemented: reusable characters/backgrounds/props/drawings, collection/tag sear
 
 ## PR #3 — Animation and Timeline
 
+Implemented: explicit transform/acting keyframes, shared deterministic sampling and easing, visual timeline with touch/keyboard alternatives, editable action presets with preview and replacement confirmation, silent talking states and original part gestures, optional soft empathy hearts, camera pan/zoom/follow, lightweight background/prop motion, scene looping, schema 1→2→3 compatibility, retiming and portable animation backups. The original inclusion demo now contains editable timed acting and camera movement. See [Animation Studio](ANIMATION_STUDIO.md).
+
 - Explicit editable keyframes, additional easing and reusable motion presets.
-- Puppet/pose and mouth states, camera movement and animated backgrounds.
+- Basic original shape pose/mouth states, camera movement and lightweight animated backgrounds (implemented); advanced rigging remains outside this increment.
 - Timeline interaction at finer granularity; deterministic rendering shared with exports.
 
 ## PR #4 — Audio and Export
@@ -41,4 +43,4 @@ Implemented: reusable characters/backgrounds/props/drawings, collection/tag sear
 - Expanded assistive technology, phone and tablet testing.
 - Optional AI providers behind explicit user actions, honest provider labels, and server-held secrets.
 
-The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by both project schemas); it does not claim to generate a finished 15–20 minute episode automatically.
+The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by all three project schemas); it does not claim to generate a finished 15–20 minute episode automatically.

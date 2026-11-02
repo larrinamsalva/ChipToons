@@ -1,5 +1,5 @@
 import type { Project, Scene, SceneElement } from "../model";
-import { clone, uid } from "../model";
+import { duplicateElement } from "../timeline";
 import { elementName } from "../library";
 import { Icon } from "./Icon";
 import { ImageControls } from "./ImageControls";
@@ -8,21 +8,30 @@ export function CompositionTools({
   project,
   scene,
   selected,
+  frame,
   onSelect,
   onChange,
+  onElementChange,
   onLibrary,
   onSave,
 }: {
   project: Project;
   scene: Scene;
   selected?: SceneElement;
+  frame?: Partial<SceneElement>;
   onSelect: (id: string) => void;
   onChange: (patch: Partial<Scene>) => void;
+  onElementChange?: (patch: Partial<SceneElement>) => void;
   onLibrary: () => void;
   onSave: () => void;
 }) {
+  const shown = selected ? { ...selected, ...frame } : undefined;
   const index = scene.elements.findIndex((e) => e.id === selected?.id);
   function patch(value: Partial<SceneElement>) {
+    if (onElementChange) {
+      onElementChange(value);
+      return;
+    }
     if (selected)
       onChange({
         elements: scene.elements.map((e) =>
@@ -59,6 +68,13 @@ export function CompositionTools({
         Click or touch an object on the stage to select it. Drag to move, or use
         these controls.
       </p>
+      {selected?.animation?.keyframes.length ? (
+        <p className="field-hint">
+          This object is animated. Movement and appearance edits add a keyframe
+          at the playhead. Use the timeline to edit exact values, or Reset
+          animation to return to the older movement presets.
+        </p>
+      ) : null}
       <label>
         Selected scene object
         <select
@@ -102,12 +118,7 @@ export function CompositionTools({
               aria-label="Duplicate scene object"
               disabled={scene.elements.length >= 20}
               onClick={() => {
-                const e = {
-                  ...clone(selected),
-                  id: uid(),
-                  x: Math.min(800, selected.x + 15),
-                  y: Math.min(450, selected.y + 10),
-                };
+                const e = duplicateElement(selected, 15);
                 onChange({ elements: [...scene.elements, e] });
                 onSelect(e.id);
               }}
@@ -134,7 +145,7 @@ export function CompositionTools({
                 type="number"
                 min="0"
                 max="800"
-                value={Math.round(selected.x)}
+                value={Math.round(shown!.x)}
                 onChange={(e) => {
                   const n = Number(e.target.value);
                   if (n >= 0 && n <= 800) patch({ x: n });
@@ -148,7 +159,7 @@ export function CompositionTools({
                 type="number"
                 min="50"
                 max="450"
-                value={Math.round(selected.y)}
+                value={Math.round(shown!.y)}
                 onChange={(e) => {
                   const n = Number(e.target.value);
                   if (n >= 50 && n <= 450) patch({ y: n });
@@ -164,7 +175,7 @@ export function CompositionTools({
               min="0.3"
               max="2"
               step="0.05"
-              value={selected.scale}
+              value={shown!.scale}
               onChange={(e) => patch({ scale: Number(e.target.value) })}
             />
           </label>
@@ -173,6 +184,7 @@ export function CompositionTools({
             <select
               aria-label="Object movement"
               value={selected.motion}
+              disabled={!!selected.animation?.keyframes.length}
               onChange={(e) =>
                 patch({ motion: e.target.value as SceneElement["motion"] })
               }
@@ -194,7 +206,7 @@ export function CompositionTools({
             </select>
           </label>
           <ImageControls
-            value={selected}
+            value={shown!}
             croppable={!!asset}
             defaultSize={
               selected.backdrop ? { width: 800, height: 450 } : undefined
