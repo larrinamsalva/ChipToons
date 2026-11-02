@@ -151,7 +151,7 @@ test("action preview is temporary; replacement is confirmed, editable and copyab
     .getByRole("combobox", { name: "Animation action", exact: true })
     .selectOption("jump");
   await number(page, "Action starts (seconds)", "1");
-  await number(page, "Action duration (seconds)", "2");
+  await number(page, "Action length (seconds)", "2");
   await page
     .getByRole("combobox", { name: "Action speed", exact: true })
     .selectOption("2");
@@ -234,6 +234,12 @@ test("camera, background and original door tracks work; deleting a followed obje
     { x: box.x + box.width / 2 + 24, y: box.y + box.height * 0.55 - 8 },
     info.project.name !== "desktop",
   );
+  await expect(
+    page.getByRole("button", {
+      name: "Pip keyframe at 5.00 seconds",
+      exact: true,
+    }),
+  ).toBeAttached();
   const moved = (await backup(page)).data.scenes[0].elements[0];
   expect(moved.x).toBe(310);
   expect(

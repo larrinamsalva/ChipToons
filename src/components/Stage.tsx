@@ -376,6 +376,7 @@ export const Stage = memo(function Stage({
   return (
     <svg
       ref={root}
+      style={onSelect ? { touchAction: "none" } : undefined}
       viewBox="0 0 800 450"
       role={onSelect ? "group" : labelled ? "img" : undefined}
       aria-label={labelled ? `${scene.title}: ${scene.action}` : undefined}
@@ -566,6 +567,7 @@ export const Stage = memo(function Stage({
                   onPointerDown={
                     onSelect
                       ? (e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           onSelect(element.id);
                           e.currentTarget.setPointerCapture(e.pointerId);

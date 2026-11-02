@@ -906,7 +906,7 @@ export function AnimationTimeline({
                 onCommit={(n) => setStart(n)}
               />
               <NumberEntry
-                label="Action duration (seconds)"
+                label="Action length (seconds)"
                 value={length}
                 min={0.1}
                 max={scene.duration}
@@ -1283,7 +1283,7 @@ export function AnimationTimeline({
                       }
                     >
                       {MOUTHS.map((e) => (
-                        <option key={e}>
+                        <option key={e} value={e}>
                           {e === "auto"
                             ? "Follow expression"
                             : e === "talking"
