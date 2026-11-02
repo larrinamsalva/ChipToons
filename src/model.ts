@@ -52,6 +52,8 @@ export interface Asset {
   mime: "image/png" | "image/jpeg" | "image/webp";
   dataUrl: string;
   drawing?: DrawingDocument;
+  sourceWidth?: number;
+  sourceHeight?: number;
 }
 export interface SceneElement {
   id: string;
@@ -259,6 +261,10 @@ export function validateProject(value: unknown): Project {
         asset.dataUrl,
       ) ||
       (asset.drawing !== undefined && !validDrawing(asset.drawing)) ||
+      ((asset.sourceWidth !== undefined || asset.sourceHeight !== undefined) &&
+        (!numberIn(asset.sourceWidth, 1, 24000000) ||
+          !numberIn(asset.sourceHeight, 1, 24000000) ||
+          asset.sourceWidth * asset.sourceHeight > 24000000)) ||
       !rasterSignature(asset.dataUrl, asset.mime)
     )
       return fail();

@@ -47,7 +47,7 @@ On phones, use the **Scenes**, **Preview** and **Edit scene** tabs. All editors 
 
 ## Honest limitations
 
-- This is the first increment in the [five-PR roadmap](docs/ROADMAP.md). Editable keyframes, camera animation, audio and video export are future increments. Reusable art libraries, vector drawing tools, scene layers and non-destructive raster crops are now implemented.
+- This studio follows the [five-PR roadmap](docs/ROADMAP.md). Editable keyframes, camera animation, audio and video export are future increments. Reusable art libraries, vector drawing tools, scene layers and non-destructive raster crops are now implemented.
 - Playback is silent. Narration and dialogue appear as scene captions. There is no microphone access, speech service, music upload or WebM/MP4 export yet.
 - The planner uses local, editable templates. It is not generative AI. Mood, art direction, age and desired episode length are planning notes. A longer episode goal still starts with six scenes (about one minute); add scenes to grow it.
 - Changing an outline or action/prop note does not automatically rewrite narration or create new props. Each scene and its actual motion are edited separately.

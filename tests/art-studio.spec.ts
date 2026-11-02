@@ -17,6 +17,7 @@ async function properties(page: Page) {
   if (await tab.isVisible()) await tab.click();
 }
 async function library(page: Page) {
+  await page.locator(".dashboard, .editor").waitFor({ state: "visible" });
   const dashboard = page.getByRole("button", {
     name: "Open art library",
     exact: true,
@@ -57,7 +58,9 @@ test("personal characters survive reload, work in two projects and keep scene-sp
   await page
     .getByRole("button", { name: "Save to library", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("Saved Mira");
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
+    "Saved Mira",
+  );
   await page.reload();
   await library(page);
   await page.getByRole("searchbox", { name: "Find artwork" }).fill("Mira");
@@ -90,7 +93,9 @@ test("personal characters survive reload, work in two projects and keep scene-sp
   await card(page, "Mira")
     .getByRole("button", { name: "Add to three scenes" })
     .click();
-  await expect(page.getByRole("status")).toContainText("three scenes");
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
+    "three scenes",
+  );
   await page.getByRole("button", { name: "Back to my story" }).click();
   await saved(page);
   const { data } = await backup(page);
@@ -165,6 +170,7 @@ test("editable drawings, shape transforms, palette, undo/redo and real PNG expor
   await page
     .getByRole("button", { name: "Save to library", exact: true })
     .click();
+  await expect(card(page, "Star friend")).toHaveCount(1);
   await page.reload();
   await library(page);
   await page.getByRole("button", { name: "Drawings", exact: true }).click();
@@ -311,6 +317,9 @@ test("schema 1 projects upgrade without loss, new libraries recover after reload
     .click();
   await page.getByRole("textbox", { name: "Artwork name" }).fill("New source");
   await page.getByRole("button", { name: "Save to library" }).click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
+    "Saved New source",
+  );
   await page.reload();
   await library(page);
   await page

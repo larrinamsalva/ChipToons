@@ -6,27 +6,48 @@ export function RasterArt({
   width = 190,
   height = 245,
   crop,
+  cover = false,
 }: {
   asset: Asset;
   width?: number;
   height?: number;
   crop?: Crop;
+  cover?: boolean;
 }) {
   const c = crop ?? { left: 0, top: 0, width: 1, height: 1 };
+  const sw = asset.sourceWidth ?? 1000;
+  const sh = asset.sourceHeight ?? 1000;
+  if (
+    !asset.sourceWidth &&
+    c.left === 0 &&
+    c.top === 0 &&
+    c.width === 1 &&
+    c.height === 1
+  )
+    return (
+      <image
+        href={asset.dataUrl}
+        x={-width / 2}
+        y={-height}
+        width={width}
+        height={height}
+        preserveAspectRatio={cover ? "xMidYMid slice" : "xMidYMax meet"}
+      />
+    );
   return (
     <svg
       x={-width / 2}
       y={-height}
       width={width}
       height={height}
-      viewBox={`${c.left * 1000} ${c.top * 1000} ${c.width * 1000} ${c.height * 1000}`}
-      preserveAspectRatio="none"
+      viewBox={`${c.left * sw} ${c.top * sh} ${c.width * sw} ${c.height * sh}`}
+      preserveAspectRatio={cover ? "xMidYMid slice" : "xMidYMax meet"}
       overflow="hidden"
     >
       <image
         href={asset.dataUrl}
-        width="1000"
-        height="1000"
+        width={sw}
+        height={sh}
         preserveAspectRatio="none"
       />
     </svg>

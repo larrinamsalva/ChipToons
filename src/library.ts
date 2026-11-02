@@ -304,14 +304,21 @@ export function libraryItemFromElement(
   e: SceneElement,
 ): LibraryItem {
   const c = resolvedCharacter(p, e);
-  const kind: LibraryKind = c ? "character" : e.prop ? "prop" : "drawing";
+  const kind: LibraryKind = e.backdrop
+    ? "background"
+    : c
+      ? "character"
+      : e.prop
+        ? "prop"
+        : "drawing";
   const item = newLibraryItem(elementName(p, e), kind);
   item.character = c ? clone(c) : undefined;
   item.prop = e.prop;
   const aid = e.assetId ?? c?.assetId;
   item.assets = aid ? p.assets.filter((a) => a.id === aid).map(clone) : [];
   item.assetId = aid;
-  if (!c && !e.prop && !item.assets[0]?.drawing) item.kind = "prop";
+  if (!c && !e.prop && !item.assets[0]?.drawing && !e.backdrop)
+    item.kind = "prop";
   item.transform = {
     crop: e.crop,
     opacity: e.opacity,

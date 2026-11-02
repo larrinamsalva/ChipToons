@@ -521,6 +521,7 @@ export function Stage({
                     width={width}
                     height={height}
                     crop={element.crop}
+                    cover={element.backdrop}
                   />
                 ) : element.kind === "prop" && element.prop ? (
                   <PropArt name={element.prop} />

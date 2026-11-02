@@ -53,7 +53,10 @@ export async function readImage(file: File): Promise<Asset> {
     reader.onerror = () => reject(new Error("This image could not be read."));
     reader.readAsDataURL(file);
   });
-  await new Promise<void>((resolve, reject) => {
+  const dimensions = await new Promise<{
+    sourceWidth: number;
+    sourceHeight: number;
+  }>((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
       if (image.naturalWidth * image.naturalHeight > 24_000_000)
@@ -62,7 +65,11 @@ export async function readImage(file: File): Promise<Asset> {
             "This image is too large to edit comfortably. Choose an image under 24 megapixels.",
           ),
         );
-      else resolve();
+      else
+        resolve({
+          sourceWidth: image.naturalWidth,
+          sourceHeight: image.naturalHeight,
+        });
     };
     image.onerror = () => reject(new Error("This image could not be opened."));
     image.src = dataUrl;
@@ -73,6 +80,7 @@ export async function readImage(file: File): Promise<Asset> {
     type: "image",
     mime: file.type as Asset["mime"],
     dataUrl,
+    ...dimensions,
   };
 }
 const escapeXml = (text: string) =>

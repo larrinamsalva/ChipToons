@@ -222,6 +222,8 @@ export function DrawingPad({
         mime: "image/png",
         dataUrl,
         drawing: clone(doc),
+        sourceWidth: 600,
+        sourceHeight: 400,
       },
       name.trim().slice(0, 80) || "My character",
     );

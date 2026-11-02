@@ -729,25 +729,27 @@ export function Editor({
                       </select>
                     </label>
                     <div className="form-grid compact">
-                      <label>
-                        Feeling
-                        <select
-                          value={element.emotion}
-                          onChange={(e) =>
-                            changeElement({
-                              emotion: e.target
-                                .value as SceneElement["emotion"],
-                            })
-                          }
-                        >
-                          <option value="happy">Happy</option>
-                          <option value="sad">Feeling sad</option>
-                          <option value="surprised">A bright idea!</option>
-                          <option value="calm">Calm</option>
-                          <option value="excited">Excited</option>
-                          <option value="worried">Worried</option>
-                        </select>
-                      </label>
+                      {!character.assetId && (
+                        <label>
+                          Feeling
+                          <select
+                            value={element.emotion}
+                            onChange={(e) =>
+                              changeElement({
+                                emotion: e.target
+                                  .value as SceneElement["emotion"],
+                              })
+                            }
+                          >
+                            <option value="happy">Happy</option>
+                            <option value="sad">Feeling sad</option>
+                            <option value="surprised">A bright idea!</option>
+                            <option value="calm">Calm</option>
+                            <option value="excited">Excited</option>
+                            <option value="worried">Worried</option>
+                          </select>
+                        </label>
+                      )}
                       <label>
                         Movement
                         <select
@@ -841,20 +843,22 @@ export function Editor({
                       />
                       Flip character
                     </label>
-                    <label>
-                      Pose
-                      <select
-                        aria-label="Character pose"
-                        value={element.pose ?? "standing"}
-                        onChange={(e) =>
-                          changeElement({ pose: e.target.value as Pose })
-                        }
-                      >
-                        {POSES.map((p) => (
-                          <option key={p}>{p}</option>
-                        ))}
-                      </select>
-                    </label>
+                    {!character.assetId && (
+                      <label>
+                        Pose
+                        <select
+                          aria-label="Character pose"
+                          value={element.pose ?? "standing"}
+                          onChange={(e) =>
+                            changeElement({ pose: e.target.value as Pose })
+                          }
+                        >
+                          {POSES.map((p) => (
+                            <option key={p}>{p}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <label>
                       Character name
                       <input

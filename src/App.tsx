@@ -516,8 +516,8 @@ export default function App() {
           </div>
           <p className="field-hint">
             This version includes editable storyboards and simple silent
-            animation. Advanced art libraries, voices, and video downloads are
-            coming in future releases.
+            animation with reusable art libraries. Advanced keyframes, voices
+            and video downloads are coming in future releases.
           </p>
           <div className="modal-actions">
             <button className="button primary" onClick={() => setDialog(null)}>

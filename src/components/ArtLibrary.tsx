@@ -46,6 +46,7 @@ export function ArtThumbnail({ item }: { item: LibraryItem }) {
             : "art",
         characterId: item.character?.id ?? "",
         prop: item.prop,
+        backdrop: item.kind === "background",
         assetId: item.assetId,
         x: 400,
         y: item.kind === "background" ? 450 : 350,
