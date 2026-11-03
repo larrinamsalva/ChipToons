@@ -67,9 +67,11 @@ jobs:
       - run: npm run build
       - name: Install verified browser and offline media tools
         run: |
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
           sudo apt-get update
           sudo apt-get install -y ffmpeg
+      - name: Check binary-media compatibility before the real-time proof
+        run: npx playwright test --project=webkit --grep 'file-backed originals'
       - name: Restore, reopen, export and decode a complete narrated episode
         run: npm run test:episode
       - name: Keep every genuine part and independent decoding measurements

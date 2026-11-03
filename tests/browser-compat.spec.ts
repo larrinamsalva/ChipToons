@@ -151,9 +151,31 @@ test("file-backed originals and complete package recovery work with portable che
   const { voices } = await import("./production-helpers"),
     { readFile } = await import("node:fs/promises"),
     { inspectEpisodePackage } = await import("./episode-fixture");
+  page.on("console", (m) => {
+    if (m.text().includes("IndexedDB")) console.info(m.text());
+  });
   await demo(page);
   await saved(page);
   await page.evaluate(() => {
+    const originalAdd = IDBObjectStore.prototype.add;
+    IDBObjectStore.prototype.add = function (
+      ...args: Parameters<IDBObjectStore["add"]>
+    ) {
+      try {
+        const request = originalAdd.apply(this, args);
+        request.addEventListener("error", () =>
+          console.info(
+            "IndexedDB add failed",
+            request.error?.name,
+            request.error?.message,
+          ),
+        );
+        return request;
+      } catch (e) {
+        console.info("IndexedDB add threw", String(e));
+        throw e;
+      }
+    };
     Object.defineProperty(crypto, "subtle", {
       configurable: true,
       value: undefined,
@@ -189,13 +211,11 @@ test("file-backed originals and complete package recovery work with portable che
       exact: true,
     })
     .click();
-  await page
-    .getByLabel("Restore project backup file")
-    .setInputFiles({
-      name: "voices.ctepisode",
-      mimeType: "application/octet-stream",
-      buffer: bytes,
-    });
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "voices.ctepisode",
+    mimeType: "application/octet-stream",
+    buffer: bytes,
+  });
   await expect(page.locator(".editor")).toBeVisible();
   await saved(page);
   await page

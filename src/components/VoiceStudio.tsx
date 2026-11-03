@@ -197,25 +197,10 @@ export function VoiceStudio({
   }
   async function addSource(source: AudioAsset, kind = category) {
     if (busy || recording) return;
-    if (
-      project.mediaVersion === 1 &&
-      (project.audioAssets.length >= MAX_EPISODE_AUDIO_SOURCES ||
-        project.audioAssets.reduce((n, a) => n + a.duration, 0) +
-          source.duration >
-          MAX_EPISODE_AUDIO_SECONDS ||
-        project.audioAssets.reduce((n, a) => n + sourceBytes(a), 0) +
-          sourceBytes(source) >
-          MAX_EPISODE_AUDIO_BYTES)
-    ) {
-      setMessage(
-        "This source would exceed the episode’s 30-minute / 256 MB / 256-source budget. Keep the original and use another chapter project.",
-      );
-      return;
-    }
     setBusy(true);
     if (project.mediaVersion === 1) {
       try {
-        source = await storeAudio(source);
+        source = await storeAudio(source, undefined, project.audioAssets);
       } catch (error) {
         setMessage(
           error instanceof Error
@@ -233,6 +218,23 @@ export function VoiceStudio({
       ),
       a = same ?? source,
       nextClip = newAudioClip(project, a, kind, sceneIndex, localTime);
+    if (
+      project.mediaVersion === 1 &&
+      !same &&
+      (project.audioAssets.length >= MAX_EPISODE_AUDIO_SOURCES ||
+        project.audioAssets.reduce((n, a) => n + a.duration, 0) +
+          source.duration >
+          MAX_EPISODE_AUDIO_SECONDS ||
+        project.audioAssets.reduce((n, a) => n + sourceBytes(a), 0) +
+          sourceBytes(source) >
+          MAX_EPISODE_AUDIO_BYTES)
+    ) {
+      setMessage(
+        "This source would exceed the episode’s 30-minute / 256 MB / 256-source budget. Keep the original and use another chapter project.",
+      );
+      setBusy(false);
+      return;
+    }
     nextClip.name = source.name.slice(0, 100);
     if (kind === "dialogue" && association) nextClip.characterId = association;
     if (
@@ -253,7 +255,12 @@ export function VoiceStudio({
     setBusy(true);
     setMessage("");
     try {
-      const a = await readAudio(file, undefined, project.mediaVersion === 1);
+      const a = await readAudio(
+        file,
+        undefined,
+        project.mediaVersion === 1,
+        project.audioAssets,
+      );
       if (!alive.current) return;
       if (replacing.current && clip) {
         const old = clip,
@@ -305,6 +312,7 @@ export function VoiceStudio({
             }),
             seconds,
             project.mediaVersion === 1,
+            project.audioAssets,
           )
             .then((a) => {
               if (alive.current) {
@@ -440,8 +448,8 @@ export function VoiceStudio({
                 .catch((error) => {
                   if (alive.current)
                     setMessage(
-                      error instanceof Error
-                        ? error.message
+                      error instanceof Error || error instanceof DOMException
+                        ? `${error.name}: ${error.message}`
                         : "Storage could not be prepared. Existing sources are unchanged.",
                     );
                 })

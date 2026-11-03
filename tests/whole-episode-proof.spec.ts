@@ -1,3 +1,4 @@
+import { alignment } from "./episode-alignment";
 import { test, expect } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -30,30 +31,6 @@ function pcm(path: string | Buffer) {
       maxBuffer: 8 * 1024 * 1024,
     },
   );
-}
-function alignment(reference: Buffer, movie: Buffer, sceneOffset: number) {
-  const sampleStart = 8000,
-    count = 16000;
-  let best = { correlation: -1, delay: 0 };
-  // Compare actual speech waveform to decoded Opus; low original music remains mixed in.
-  for (let lag = -800; lag <= 4800; lag += 8) {
-    const start = Math.round(sceneOffset * 8000) + sampleStart + lag;
-    if (start < 0 || (start + count) * 4 > movie.length) continue;
-    let dot = 0,
-      a2 = 0,
-      b2 = 0;
-    for (let j = 0; j < count; j += 4) {
-      const a = reference.readFloatLE((sampleStart + j) * 4),
-        b = movie.readFloatLE((start + j) * 4);
-      dot += a * b;
-      a2 += a * a;
-      b2 += b * b;
-    }
-    const correlation = dot / Math.sqrt(a2 * b2 || 1);
-    if (correlation > best.correlation)
-      best = { correlation, delay: lag / 8000 };
-  }
-  return best;
 }
 async function completeBackup(page: import("@playwright/test").Page) {
   const pending = page.waitForEvent("download");
@@ -262,6 +239,10 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
       `part-${String(part).padStart(2, "0")}-scenes-${segment.firstScene + 1}-${segment.lastScene + 1}`,
     );
     await movie.saveAs(path);
+    await info.attach(`part-${part}-complete-video`, {
+      path,
+      contentType: "video/webm",
+    });
     const probe = JSON.parse(
         execFileSync(
           "ffprobe",
@@ -362,10 +343,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
       path: frame,
       contentType: "image/png",
     });
-    await info.attach(`part-${part}-complete-video`, {
-      path,
-      contentType: "video/webm",
-    });
+
     measures.push({
       part,
       scenes: [segment.firstScene + 1, segment.lastScene + 1],

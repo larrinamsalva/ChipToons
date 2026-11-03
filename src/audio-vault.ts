@@ -70,6 +70,7 @@ export function fileAsset(source: AudioAsset, record: AudioFile): AudioAsset {
 export async function storeAudio(
   source: AudioAsset,
   blob?: Blob,
+  known: readonly AudioAsset[] = [],
 ): Promise<AudioAsset> {
   if (source.file) return source;
   const data =
@@ -82,9 +83,23 @@ export async function storeAudio(
       ],
       { type: source.mime },
     );
+  const record = await fileRecord(data, source.mime);
+  const prior = known.find(
+    (a) =>
+      a.mime === source.mime &&
+      a.file?.sha256 === record.sha256 &&
+      a.file.size === record.size,
+  );
+  if (prior?.file) {
+    try {
+      await audioBytes(prior);
+      return { ...source, dataUrl: "", file: { ...prior.file } };
+    } catch {
+      /* A fresh upload can recover a missing or damaged original. */
+    }
+  }
   await checkStorage(data.size);
-  const record = await fileRecord(data, source.mime),
-    database = await db();
+  const database = await db();
   await new Promise<void>((resolve, reject) => {
     const tx = database.transaction("media", "readwrite");
     tx.objectStore("media").add(record);

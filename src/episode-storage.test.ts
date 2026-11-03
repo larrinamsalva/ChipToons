@@ -351,3 +351,28 @@ it("honors restore cancellation while waiting for the database to open", async (
   await expect(pending).rejects.toThrow(/cancelled/);
   expect(await listProjects()).toHaveLength(0);
 });
+
+it("reuses known immutable original bytes without storing duplicate files or needing extra free space", async () => {
+  const original = builtInSound("notice"),
+    stored = await storeAudio(original);
+  vi.stubGlobal("navigator", {
+    storage: { estimate: async () => ({ quota: 1, usage: 1 }) },
+  });
+  const copy = await storeAudio(
+    { ...original, id: uid(), name: "Another scene's name" },
+    undefined,
+    [stored],
+  );
+  expect(copy.id).not.toBe(stored.id);
+  expect(copy.file).toEqual(stored.file);
+  expect(copy.name).toBe("Another scene's name");
+  const database = await db();
+  const count = await new Promise<number>((resolve, reject) => {
+    const tx = database.transaction("media", "readonly"),
+      r = tx.objectStore("media").count();
+    tx.oncomplete = () => resolve(r.result);
+    tx.onabort = () => reject(tx.error);
+  });
+  expect(count).toBe(1);
+  expect(original.dataUrl).not.toBe("");
+});

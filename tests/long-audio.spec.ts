@@ -280,6 +280,33 @@ test("missing stored originals block export and a complete backup restores a sep
     .getByRole("button", { name: "Back to cartoon", exact: true })
     .click();
   await saved(page);
+  await voices(page);
+  await page
+    .getByRole("button", { name: "Kindness melody", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Kindness melody", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Back to cartoon", exact: true })
+    .click();
+  await saved(page);
+  const storedOriginals = await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const r = indexedDB.open("chiptoons-studio", 3);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+    const count = await new Promise<number>((resolve, reject) => {
+      const tx = database.transaction("media", "readonly"),
+        r = tx.objectStore("media").count();
+      tx.oncomplete = () => resolve(r.result);
+      tx.onabort = () => reject(tx.error);
+    });
+    database.close();
+    return count;
+  });
+  expect(storedOriginals).toBe(5);
   const { bytes } = await packageDownload(page);
   // Simulate lost browser-local media in this isolated test context.
   await page.evaluate(async () => {

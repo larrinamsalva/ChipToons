@@ -90,6 +90,7 @@ export async function readAudio(
   file: File,
   recordingSeconds?: number,
   stored = false,
+  known: readonly AudioAsset[] = [],
 ): Promise<AudioAsset> {
   let mime = file.type.toLowerCase().split(";")[0];
   if (["audio/x-wav", "audio/wave", "audio/vnd.wave"].includes(mime))
@@ -146,6 +147,7 @@ export async function readAudio(
       ? await storeAudio(
           asset,
           new Blob([output as Uint8Array<ArrayBuffer>], { type }),
+          known,
         )
       : asset;
   } catch (error) {
