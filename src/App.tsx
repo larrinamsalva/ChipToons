@@ -14,6 +14,7 @@ import { CreatorGuide } from "./components/CreatorGuide";
 import { ArtworkStart } from "./components/ArtworkStart";
 import type { ArtworkRole } from "./story";
 import { IdeaWizard } from "./components/IdeaWizard";
+import { CartoonAssistant } from "./components/CartoonAssistant";
 import { Modal } from "./components/Modal";
 import { ArtLibrary } from "./components/ArtLibrary";
 import { placeLibraryItem } from "./library";
@@ -52,6 +53,7 @@ type Dialog =
   | { type: "art-draw" }
   | { type: "draw" | "help" | "upload" }
   | { type: "recovery" }
+  | { type: "assistant"; source?: Project }
   | { type: "delete"; project: Project; revision: string | null }
   | { type: "library"; sceneIndex?: number; draft?: LibraryItem }
   | null;
@@ -646,6 +648,7 @@ export default function App() {
           saveStatus={saveStatus}
           saveError={storageError}
           onRetry={() => setRetry((r) => r + 1)}
+          onAssistant={() => setDialog({ type: "assistant", source: current })}
           onLibrary={(sceneIndex, draft) =>
             setDialog({ type: "library", sceneIndex, draft })
           }
@@ -654,6 +657,7 @@ export default function App() {
       ) : (
         <Dashboard
           projects={projects}
+          onAssistant={() => setDialog({ type: "assistant" })}
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
           onDemo={() => void openDemo()}
@@ -680,6 +684,26 @@ export default function App() {
             Local by default. Yours to create.
           </span>
         </footer>
+      )}
+      {dialog?.type === "assistant" && (
+        <CartoonAssistant
+          source={dialog.source}
+          onClose={() => setDialog(null)}
+          onApply={async (proposal) => {
+            if (!dialog.source) {
+              await open(proposal);
+              return;
+            }
+            if (
+              currentRef.current !== dialog.source ||
+              session.current?.blocked ||
+              editMode !== "edit"
+            )
+              throw new Error("This cartoon changed while you reviewed. Close the assistant and review the current version.");
+            update(proposal);
+            setDialog(null);
+          }}
+        />
       )}
       {dialog?.type === "idea" && (
         <IdeaWizard

@@ -8,6 +8,7 @@ import { Stage } from "./Stage";
 export function Dashboard({
   projects,
   onIdea,
+  onAssistant,
   onDemo,
   onUpload,
   onDraw,
@@ -22,6 +23,7 @@ export function Dashboard({
 }: {
   projects: Project[];
   onIdea: (starterId?: string) => void;
+  onAssistant: () => void;
   onDemo: () => void;
   onUpload: () => void;
   onDraw: () => void;
@@ -79,11 +81,12 @@ export function Dashboard({
             <br className="desktop-break" /> into stories worth sharing. Let’s
             make one.
           </p>
-          <button className="button primary hero-cta" onClick={() => onIdea()}>
+          <button className="button primary hero-cta" onClick={onAssistant}>
             <Icon name="sparkles" size={21} />
-            Start with an idea
+            Help Me Make My Cartoon
             <Icon name="arrow" size={18} />
           </button>
+          <button className="button text assistant-quick-start" onClick={() => onIdea()}>Start with an idea</button>
           <span className="hero-note">
             No experience needed. Just your imagination.
           </span>

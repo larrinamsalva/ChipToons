@@ -93,3 +93,18 @@ For fully narrated stories, open **Voices & Sound → Enable long-episode audio*
 Chromium is the primary verified WebM export engine. Firefox and WebKit automation cover selected creation, saving, navigation, accessibility and actual capability detection. A WebKit build that cannot record WebM keeps project/storyboard/SRT downloads available. Automated WebKit is not a physical Safari device, and viewport/touch emulation is not physical iOS/Android microphone or thermal testing.
 
 No cloud sync, multi-user editing, automatic AI interpretation, photo rigging, voice cloning, transcription, automatic lip-sync, MP4 or gapless long-form encoding is supplied. Keep one editing tab per project. See [PR #6 verification](PR6_VERIFICATION.md) for current measured coverage and remaining work.
+
+## Plan an animated first draft
+
+Choose **Help Me Make My Cartoon**. Enter your idea and a goal for the lead character, pick up to three original or saved characters, then choose the setting, lesson, and six to twelve scenes. **Try The Playground of Kind Hearts** fills in an original inclusion story with a walking approach, a close-up of a feeling, and a gentle celebration.
+
+Review the scene text, background, cast, and duration before continuing to the Scene Director. Each scene offers one featured actor and a camera suggestion. Use **Preview this scene** or enter a preview time. You can change the character, motion, pose, expression, heart effect, placement, and timing. Clear **Include suggestions for this scene** to keep the scene without generated acting or framing. **Create animated first draft** opens the actual project with editable keyframes. Wait for **Saved on this device** before leaving.
+
+In an existing cartoon, **Review animation suggestions** starts with every scene unselected. Only unused character and camera tracks can receive changes. Applying reviewed suggestions creates a single undo step. Cancel leaves the cartoon untouched.
+
+The planner runs locally after the app loads. It matches cues against seven editable patterns for kindness, friendship, problem-solving, responsibility, cooperation, safety, and caring for others. Add a goal or story details if the initial idea is short or the proposed beats miss your intent. **Growing With the Story** offers richer audience questions in later episodes. Image characters use whole-image movement. Dialogue and narration are editable scripts for you to record. Longer duration goals are planning notes, and longer films use the existing segment export workflow.
+
+
+![Desktop Scene Director showing the proposed playground animation.](assistant-desktop.png)
+
+![Phone Scene Director with the playground stage and preview controls.](assistant-phone.png)

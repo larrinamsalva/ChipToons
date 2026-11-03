@@ -185,3 +185,7 @@ See [Make and keep a narrated episode](docs/EPISODE_PRODUCTION.md) and [package/
 ## Project & Media Recovery
 
 Open **Project & Media Recovery** from **My cartoons** to check backups, find and download originals, reconnect identical media, or preview a manual cleanup. Shared and draft recordings stay protected. If editing moves to another tab, use **Save as a Separate Copy** or download the open draft as a backup. See the [Recovery Center guide](docs/RECOVERY_CENTER.md).
+
+### Idea-to-Cartoon Assistant
+
+Choose **Help Me Make My Cartoon** to review a local story plan, audition real character and camera movement, and create an editable first draft. Try **The Playground of Kind Hearts** for an original walkthrough. The assistant uses transparent story patterns and action cues and works without an account or an AI service. See the [creator guide](docs/CREATOR_GUIDE.md#plan-an-animated-first-draft).
