@@ -25,7 +25,7 @@ The timeline is part of the storyboard editor. No account, audio service or paid
 
 ## Data, compatibility and limits
 
-Projects now use schema **4**. Imports/readback apply an explicit **1 → 2 → 3 → 4** migration chain. Schema 2 scenes retain their base positions, artwork, durations, layer order and older motion presets verbatim; explicit tracks are opt-in. IndexedDB stays at database version 2 because the existing project store already supports the new document. Migration happens on a detached in-memory copy and is persisted only on the next successful save.
+Projects now use schema **4**. Imports/readback apply an explicit **1 → 2 → 3 → 4** migration chain. Schema 2 scenes retain their base positions, artwork, durations, layer order and older motion presets verbatim; explicit tracks are opt-in. IndexedDB is now version 4 for separately stored narration; existing project, library and palette stores are preserved. Animation still uses the established project store and deterministic sampler. Migration happens on a detached in-memory copy and is persisted only on the next successful save.
 
 Each element owns its animation track; removing it also removes that track. Camera and background tracks belong to the scene. There are at most **120 keyframes per track** and **12,000 per project**, strictly increasing times within the scene, unique graph IDs, bounded numeric values and validated pose/expression/easing types. Missing follow targets, duplicate times/IDs, non-finite values, unknown schema versions and excessive tracks are rejected before imports replace editing state. The total portable-project limit is now 64 MB; original artwork limits remain in force.
 
@@ -36,3 +36,5 @@ The shared `timeline.ts` functions `frameAt`, `elementAt`, `cameraAt`, `backgrou
 Uploads remain whole raster images. They have position, scale, rotation, opacity and crop, but ordinary photographs are not rigged or given invented facial states. There is no subject extraction, automatic AI cartoon generation, automatic recorded-voice lip-sync or MP4 export. Audio tracks and real WebM export are described in the [production guide](AUDIO_PRODUCTION.md). The five original poses and controlled shape gestures are a simple illustrative rig, not professional skeletal animation. SVG imports remain rejected.
 
 Work and the motion clipboard are browser-local. Portable project backups include every used artwork asset, drawing document and animation setting; a separate reusable library is not required to reopen them. Library sources never change when scene animation is edited. Chromium desktop, phone and tablet are covered automatically; Firefox and Safari still need separate manual coverage. PR #4 adds audio and video export; see the [production guide](AUDIO_PRODUCTION.md).
+
+For narrated longer episodes and complete original-media backups, see [Episode Production](EPISODE_PRODUCTION.md).

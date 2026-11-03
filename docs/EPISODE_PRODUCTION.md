@@ -15,6 +15,10 @@ ChipToons can keep at least twenty minutes of distinct narration in one editable
 9. Export and download whole-scene **Segment 1, Segment 2…** in order. Limits remain sixty seconds per file on phones, 120 seconds on wider screens. A twenty-minute story with sixty twenty-second scenes makes twenty phone parts or ten desktop parts. Keep the tab visible and device awake. Each part uses original animation/audio time, including trimmed music offsets and captions. Download its SRT and the part-order manifest if useful.
 10. On My cartoons, **Restore a backup** accepts JSON or .ctepisode. A package is fully checked before a new project and its files are committed together. The existing story is never overwritten. Wait for restoration progress and Saved. Practice reopening a restored copy before clearing site data.
 
+![Long-episode controls on a phone layout in light mode.](episode-voices-phone.png)
+
+![Scene voice and caption review on a tablet layout in dark mode.](episode-readiness-tablet.png)
+
 ## Recovery you can act on
 
 - **Storage is low/full:** keep the open editor. Download a complete package, free space outside ChipToons, then retry. Estimates are advisory; writes still fail safely if the actual quota is exceeded. Restoring needs space for another full copy. A package may need substantial download memory on a small device; keep source recordings separately too.
