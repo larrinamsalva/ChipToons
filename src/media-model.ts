@@ -106,6 +106,14 @@ export function audioDataValid(asset: AudioAsset) {
     return false;
   try {
     const comma = asset.dataUrl.indexOf(",");
+    const payload = asset.dataUrl.slice(comma + 1),
+      padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+    if (
+      payload.length % 4 ||
+      (payload.length * 3) / 4 - padding > MAX_AUDIO_BYTES ||
+      payload.endsWith("===")
+    )
+      return false;
     return audioSignature(
       Uint8Array.from(atob(asset.dataUrl.slice(comma + 1, comma + 65)), (c) =>
         c.charCodeAt(0),

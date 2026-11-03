@@ -120,6 +120,9 @@ describe("portable production data and historical migration", () => {
         v.audioAssets[0].dataUrl = `data:audio/wav;base64,${btoa('<svg onload="alert(1)"/>')}`;
       },
       (v: typeof p) => {
+        v.audioAssets[0].dataUrl += "=";
+      },
+      (v: typeof p) => {
         v.audioClips[0].assetId = "missing";
       },
       (v: typeof p) => {

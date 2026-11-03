@@ -2,6 +2,8 @@
 
 The production steps stay inside the storyboard editor: **Story → Artwork → Animation → Voices & Sound → Preview → Export**. Everything is local by default. No account, subscription, speech API or screen-recording permission is needed.
 
+![The local Voice Studio in dark mode, with source listening and editable timing.](audio-studio-preview.png)
+
 ## Try the finished friendship story
 
 1. Choose **Try a demo cartoon** on the dashboard. A fresh copy has six animated scenes, three original sample speech clips, a gentle looping melody, a sparkle effect and ten timed captions. Existing saved copies are preserved.
@@ -9,6 +11,10 @@ The production steps stay inside the storyboard editor: **Story → Artwork → 
 3. Choose **Finish My Cartoon**, review the scene count, running time, voices and captions, and preview the complete episode. Some scenes intentionally use music and written captions rather than recorded narration; the review calls out those missing voice assignments.
 4. Leave **WebM · VP8 + Opus**, **800 × 450**, **15 fps**, audio and captions selected. Press **Export complete cartoon** and keep the tab visible for about one minute. This records only the cartoon stage, using the same animation sampler as preview.
 5. Wait for **Your movie is ready**, play it in the review panel and choose **Download completed video**. Keep a **portable project** too: the movie is a finished viewing copy; the project contains editable motion, original artwork, voices, trim settings and captions.
+
+[Watch a ten-second excerpt with dialogue and music](friendship-preview.webm). This is a shortened viewing copy of the actual 60-second browser export, not an editor recording.
+
+![A completed, playable 60-second cartoon and its real download controls.](audio-export-preview.png)
 
 ## Add your own voices and sounds
 
@@ -75,3 +81,7 @@ Wait for **Saved on this device**. Low available storage shows a warning; quota 
 The suite includes genuine Chromium MediaRecorder exports, browser playback/seek, FFprobe stream/duration/frame inspection and FFmpeg decoding with non-silent PCM measurements. Desktop, phone and tablet automation exercises recording permission success/denial, track cleanup, upload/trim, seek/resume, continuous music, caption timing/SRT, backups, quota recovery, cancellation/errors and light/dark accessibility. Microphone automation uses Chromium's synthetic test device, never a person's microphone.
 
 Live Chromium also exported the complete 60-second demo and FFmpeg decoded its VP8 frames and Opus mix. Firefox and Safari have not been manually verified, and no export compatibility claim is made for them. Testing mobile layouts in Chromium does not prove physical iOS microphone or export behavior. PR #5 should focus on real-device/browser coverage, longer-project performance, richer original sound/voice material, smoother editing, and improved export recovery. Automatic lip-sync, transcription, voice cloning, MP4 and backend services remain outside this release.
+
+The [passing production verification run](https://github.com/larrinamsalva/ChipToons/actions/runs/41552555611) completed **78 unit tests and 91 browser tests**, with no failures, skips or retries. The [machine-readable measurements](media-verification.json) record 901 decoded frames over 60.168707 seconds for the complete demo, with Opus audio at RMS 0.04364 and peak 0.95011. The muted test decoded to zero samples, while the 1280×720 / 24 fps VP9 test had 96 video frames and no audio stream. The report artifact retains the actual WebM files, decoded frames and screenshots for 14 days; the excerpt and screenshots here are kept with the repository.
+
+![The phone finishing review in light mode.](audio-phone-preview.png)

@@ -183,6 +183,7 @@ export function Editor({
     if (audioBusy) return;
     halt();
     const ticket = ++playTicket.current;
+    setSound(withSound);
     const mode = forceEpisode ? "episode" : scope,
       start = mode === "scene" ? sceneStart(project, index) : 0,
       end = mode === "scene" ? start + scene.duration : total;

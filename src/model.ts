@@ -425,7 +425,7 @@ export function validateProject(value: unknown): Project {
     MAX_PROJECT_BYTES
   )
     throw new Error(
-      "This project exceeds the 64 MB portable project limit. Remove unused images or use smaller originals.",
+      "This project exceeds the 64 MB portable project limit. Remove unused artwork/audio sources or use shorter originals.",
     );
   // Keep validated data detached from the caller. Rendering uses text nodes and raster images.
   return JSON.parse(JSON.stringify(value)) as Project;

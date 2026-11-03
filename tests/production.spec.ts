@@ -295,6 +295,20 @@ test("real audio preview follows seek, pause/resume and scene boundaries with co
   );
   expect(music?.offset).toBeCloseTo(1.7, 1);
   expect(music!.when - music!.now).toBeGreaterThanOrEqual(0.08);
+  await page.getByRole("checkbox", { name: "Sound", exact: true }).uncheck();
+  await voices(page);
+  await page
+    .getByRole("button", { name: "Preview with cartoon", exact: true })
+    .click();
+  await expect(
+    page.getByRole("checkbox", { name: "Sound", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "Pause cartoon", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Pause cartoon", exact: true })
+    .click();
   await page
     .getByRole("slider", { name: "Cartoon play position", exact: true })
     .fill("17");

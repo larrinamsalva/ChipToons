@@ -141,6 +141,8 @@ The fresh inclusion demo shows noticing a lonely friend, walking over, sadness, 
 
 **Finish My Cartoon** reviews the episode, warns about missing recorded narration, previews the mix and exports real stage frames plus mixed Web Audio to WebM. Capability detection, preload, shared timing, progress, cancellation, cleanup, encoder errors and playable-file verification are included. A fresh friendship demo has three sample speech clips, looping music, a sparkle and ten captions. See [the complete creator guide](docs/AUDIO_PRODUCTION.md).
 
+[Watch an excerpt of the actual exported friendship cartoon](docs/friendship-preview.webm). [Verified media measurements](docs/media-verification.json) include the full demo's 901 decoded frames, finite 60.17-second duration and non-silent Opus mix.
+
 Schema 4 adds explicit audio/caption validation and migrations without changing older art or animation. Portable backups contain original sound files and editable clip/mixer settings. Audio sources are limited to 12 MB / 120 seconds, 24 sources / 300 seconds total decoded duration, and 240 clips / 24 simultaneous clips. The total portable JSON limit is 64 MB. Low-storage and quota failures retain the open work and offer backup/retry. Original uploads remain intact through trimming, replacement and timeline removal.
 
 Chromium media proof tests export actual short and complete-demo movies, then verify browser playback, finite duration, dimensions, changing decoded video frames, Opus audio and non-silent PCM with FFprobe/FFmpeg. CI installs FFmpeg and retains the movies, decoded frames and measurements with its browser report. Firefox and Safari remain unverified. All PR #1–#3 checks stay in the suite.
