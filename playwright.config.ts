@@ -13,75 +13,103 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [
-    {
-      name: "desktop",
-      testIgnore: [
-        "**/video-export-proof.spec.ts",
-        "**/browser-compat.spec.ts",
-      ],
-      use: { browserName: "chromium", viewport: { width: 1440, height: 1000 } },
-    },
-    {
-      name: "phone",
-      testIgnore: [
-        "**/video-export-proof.spec.ts",
-        "**/browser-compat.spec.ts",
-      ],
-      use: {
-        browserName: "chromium",
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-      },
-    },
-    {
-      name: "tablet",
-      testIgnore: [
-        "**/video-export-proof.spec.ts",
-        "**/browser-compat.spec.ts",
-      ],
-      use: {
-        browserName: "chromium",
-        viewport: { width: 810, height: 1080 },
-        hasTouch: true,
-      },
-    },
-    {
-      name: "firefox",
-      testMatch: "**/browser-compat.spec.ts",
-      use: { browserName: "firefox", viewport: { width: 1440, height: 1000 } },
-    },
-    {
-      name: "webkit",
-      testMatch: "**/browser-compat.spec.ts",
-      use: { browserName: "webkit", viewport: { width: 1440, height: 1000 } },
-    },
-    {
-      name: "webkit-phone",
-      testMatch: "**/browser-compat.spec.ts",
-      use: {
-        browserName: "webkit",
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-      },
-    },
-    {
-      name: "webkit-tablet",
-      testMatch: "**/browser-compat.spec.ts",
-      use: {
-        browserName: "webkit",
-        viewport: { width: 810, height: 1080 },
-        hasTouch: true,
-      },
-    },
-    {
-      name: "media-export",
-      testMatch: "**/video-export-proof.spec.ts",
-      use: { browserName: "chromium", viewport: { width: 1440, height: 1000 } },
-    },
-  ],
+  projects:
+    process.env.CHIPTOONS_LONG_PROOF === "1"
+      ? [
+          {
+            name: "episode-production",
+            testMatch: "**/whole-episode-proof.spec.ts",
+            retries: 0,
+            use: {
+              browserName: "chromium",
+              viewport: { width: 1440, height: 1000 },
+            },
+          },
+        ]
+      : [
+          {
+            name: "desktop",
+            testIgnore: [
+              "**/video-export-proof.spec.ts",
+              "**/whole-episode-proof.spec.ts",
+              "**/browser-compat.spec.ts",
+            ],
+            use: {
+              browserName: "chromium",
+              viewport: { width: 1440, height: 1000 },
+            },
+          },
+          {
+            name: "phone",
+            testIgnore: [
+              "**/video-export-proof.spec.ts",
+              "**/whole-episode-proof.spec.ts",
+              "**/browser-compat.spec.ts",
+            ],
+            use: {
+              browserName: "chromium",
+              viewport: { width: 390, height: 844 },
+              isMobile: true,
+              hasTouch: true,
+            },
+          },
+          {
+            name: "tablet",
+            testIgnore: [
+              "**/video-export-proof.spec.ts",
+              "**/whole-episode-proof.spec.ts",
+              "**/browser-compat.spec.ts",
+            ],
+            use: {
+              browserName: "chromium",
+              viewport: { width: 810, height: 1080 },
+              hasTouch: true,
+            },
+          },
+          {
+            name: "firefox",
+            testMatch: "**/browser-compat.spec.ts",
+            use: {
+              browserName: "firefox",
+              viewport: { width: 1440, height: 1000 },
+            },
+          },
+          {
+            name: "webkit",
+            testMatch: "**/browser-compat.spec.ts",
+            use: {
+              browserName: "webkit",
+              viewport: { width: 1440, height: 1000 },
+            },
+          },
+          {
+            name: "webkit-phone",
+            testMatch: "**/browser-compat.spec.ts",
+            use: {
+              browserName: "webkit",
+              viewport: { width: 390, height: 844 },
+              isMobile: true,
+              hasTouch: true,
+            },
+          },
+          {
+            name: "webkit-tablet",
+            testMatch: "**/browser-compat.spec.ts",
+            use: {
+              browserName: "webkit",
+              viewport: { width: 810, height: 1080 },
+              hasTouch: true,
+            },
+          },
+          {
+            name: "media-export",
+            testMatch: "**/video-export-proof.spec.ts",
+            use: {
+              browserName: "chromium",
+              viewport: { width: 1440, height: 1000 },
+            },
+          },
+        ],
   webServer: externalUrl
     ? undefined
     : {

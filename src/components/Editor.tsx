@@ -228,6 +228,7 @@ export function Editor({
           end,
           mode === "scene" && loop,
           (error) => {
+            setEditSeconds(clock.getSnapshot().seconds);
             halt();
             setEditError(error.message);
           },

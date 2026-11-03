@@ -1098,6 +1098,8 @@ export function VoiceStudio({
           <p>
             Remove this unused source from this project? A previously downloaded
             project backup keeps its own copy.
+            {project.mediaVersion === 1 &&
+              " Stored originals also remain on this device for recovery; removing a source does not reclaim their storage."}
           </p>
           <div className="animation-actions">
             <button
@@ -1118,7 +1120,9 @@ export function VoiceStudio({
                 setDeleteId("");
               }}
             >
-              Remove source permanently
+              {project.mediaVersion === 1
+                ? "Remove source from this project"
+                : "Remove source permanently"}
             </button>
           </div>
         </div>

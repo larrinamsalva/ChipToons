@@ -1,3 +1,4 @@
+import { sha256 as portableSha256 } from "@noble/hashes/sha2.js";
 import type { AudioAsset, AudioMime } from "./media-model";
 import { audioSignature, MAX_AUDIO_BYTES } from "./media-model";
 import { db } from "./storage";
@@ -20,7 +21,11 @@ export function sourceBytes(a: AudioAsset) {
   return (s.length * 3) / 4 - (s.endsWith("==") ? 2 : s.endsWith("=") ? 1 : 0);
 }
 export async function sha256(bytes: ArrayBuffer) {
-  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
+  return [
+    ...(globalThis.crypto?.subtle
+      ? new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))
+      : portableSha256(new Uint8Array(bytes))),
+  ]
     .map((n) => n.toString(16).padStart(2, "0"))
     .join("");
 }

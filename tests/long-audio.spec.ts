@@ -117,11 +117,14 @@ test("replacing a file-backed recording keeps earlier originals and scene timing
     .getByLabel("Audio clip", { exact: true })
     .selectOption({ index: 1 });
   await number(page, "Audio fade in (seconds)", "0.2");
+  const chooser = page.waitForEvent("filechooser");
   await page
     .getByRole("button", { name: "Replace selected audio", exact: true })
     .click();
   const source = builtInSound("birds");
-  await page.getByLabel("Upload audio file").setInputFiles({
+  await (
+    await chooser
+  ).setFiles({
     name: "Original new line.wav",
     mimeType: "audio/wav",
     buffer: Buffer.from(source.dataUrl.split(",")[1], "base64"),
@@ -144,6 +147,7 @@ test("low-storage and interrupted package restoration leave existing projects an
 }) => {
   await demo(page);
   const before = (await backup(page)).data;
+  await saved(page);
   await page.evaluate(() => {
     Object.defineProperty(navigator.storage, "estimate", {
       configurable: true,

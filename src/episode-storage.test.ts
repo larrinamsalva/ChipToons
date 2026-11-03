@@ -283,3 +283,12 @@ it("never installs a manifest that references an absent local file", async () =>
   await expect(commitEpisode(p, [])).rejects.toThrow();
   expect(await listProjects()).toHaveLength(0);
 });
+
+it("uses the same SHA-256 integrity format without native Web Crypto", async () => {
+  const { createHash } = await import("node:crypto");
+  const bytes = new TextEncoder().encode("A kind original story.");
+  const expected = createHash("sha256").update(bytes).digest("hex");
+  expect(await sha256(bytes.buffer)).toBe(expected);
+  vi.stubGlobal("crypto", {});
+  expect(await sha256(bytes.buffer)).toBe(expected);
+});
