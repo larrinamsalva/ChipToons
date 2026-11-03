@@ -501,6 +501,16 @@ export function VoiceStudio({
               </label>
               {clip && asset ? (
                 <>
+                  <p className="audio-clip-status" role="status">
+                    <strong>
+                      {clip.muted ? "Muted clip" : "Assigned clip"}
+                    </strong>{" "}
+                    · {clip.category} · {clip.duration.toFixed(2)}s ·{" "}
+                    {clip.sceneId
+                      ? `scene ${project.scenes.findIndex((s) => s.id === clip.sceneId) + 1}`
+                      : "complete episode"}
+                    . Original source preserved.
+                  </p>
                   <OriginalAudio key={asset.id} asset={asset} />
                   <p className="field-hint">
                     Listen to the original source above. Preview with your
@@ -651,6 +661,25 @@ export function VoiceStudio({
                       onChange={(fadeOut) => edit({ fadeOut })}
                     />
                   </div>
+                  <div className="animation-actions">
+                    <button
+                      className="button secondary small"
+                      onClick={() =>
+                        edit({
+                          fadeIn: Math.min(0.4, clip.duration / 2),
+                          fadeOut: Math.min(0.6, clip.duration / 2),
+                        })
+                      }
+                    >
+                      Gentle clip fades
+                    </button>
+                    <button
+                      className="button text small"
+                      onClick={() => edit({ fadeIn: 0, fadeOut: 0 })}
+                    >
+                      Clear clip fades
+                    </button>
+                  </div>
                   <label>
                     Clip volume
                     <input
@@ -756,6 +785,27 @@ export function VoiceStudio({
                     </label>
                   ),
                 )}
+                <label className="inline-check">
+                  <input
+                    type="checkbox"
+                    checked={!!project.mixer.duckMusic}
+                    onChange={(e) =>
+                      commit({
+                        ...project,
+                        mixer: {
+                          ...project.mixer,
+                          duckMusic: e.target.checked,
+                        },
+                      })
+                    }
+                  />
+                  Lower music under recorded voices
+                </label>
+                <p className="field-hint">
+                  Music gently lowers to 30% during audible narration and
+                  dialogue, with a short fade before and after. Preview and
+                  movie exports use the same mix.
+                </p>
                 <label className="inline-check">
                   <input
                     type="checkbox"

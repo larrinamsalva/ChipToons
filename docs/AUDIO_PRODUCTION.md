@@ -24,7 +24,7 @@ Choose a scene and seek to the desired moment before opening Voices & Sound. Pic
 
 **Upload voice, music or sound** opens a WAV, MP3, Ogg or audio WebM that the current browser can actually decode. Files must have matching signatures and readable finite duration. A streaming WebM with no duration metadata may need conversion to WAV first. Uploads preserve their original bytes. No automatic transcription, subject extraction, remote voice generation or voice cloning is provided.
 
-The original sound collection includes Kindness melody, footsteps, a door, synthesized laughter, applause, sparkle, wind, rain, birds, a notification and a gentle transition. These are small programmatically synthesized sounds, not recorded commercial music. They are made for reuse in ChipToons cartoons. Add them at the playhead, then adjust their exact timing.
+The original sound collection includes Kindness melody, footsteps, a door, synthesized laughter, applause, sparkle, wind, rain, birds, a notification, a gentle transition, reassuring chimes, a tidy-up rhythm and a quiet garden breeze. These are small programmatically synthesized sounds, not recorded commercial music. They are made for reuse in ChipToons cartoons. Add them at the playhead, then adjust their exact timing.
 
 **Browser voice preview (not exported)** offers installed browser voices and rate controls when available. This convenience preview is separate from the cartoon mix. Record or upload a clip to put speech in the downloaded video. An empty voice list is normal on some devices.
 
@@ -36,7 +36,7 @@ The inspector has exact numeric start, play length, trim start/end, fades, volum
 
 - **Anchor clip to a scene** uses time relative to that scene. Reordering scenes moves their voices and effects with them. Changing a scene's duration proportionally retimes clip start and caption windows; playback lengths/fades are shortened only as needed to fit. Sources are never stretched or resampled to match a scene.
 - **Complete episode** uses global time. Music can cross scene boundaries uninterrupted. Enable **Loop trimmed source** and extend play length to fill the episode. Looping uses the trimmed interval, not the entire original file.
-- The **Cartoon mixer** controls master, voice (narration and dialogue), music and effects, plus a master mute. A gentle compressor reduces clipping when sources overlap.
+- The **Cartoon mixer** controls master, voice (narration and dialogue), music and effects, plus a master mute. **Lower music under recorded voices** applies deterministic ducking to 30% with a 120 ms attack / 280 ms release around audible assigned narration/dialogue clips. **Gentle clip fades** and **Clear clip fades** are quick, editable presets. A gentle compressor reduces clipping when sources overlap.
 - **Replace selected audio** retains the earlier source in Sources. Removing a timeline clip also keeps its source. An unused source can be removed explicitly with confirmation; a previously downloaded backup keeps its own copy.
 
 Pause preserves the playhead. Seeking, changing scenes or editing stops the old scheduled audio; the next Play schedules the correct trimmed offsets. With Sound enabled, visual preview uses the Web Audio clock. Scene looping schedules the mix at the same loop boundaries. **Sound off** is useful for quiet visual editing. **Calmer preview** is an editing accommodation and never rewrites the saved movie.
@@ -57,8 +57,8 @@ The original shape mouth controls remain manually timed. Put a **Talking cycle (
 | Audio import             | WAV, MP3, Ogg and audio WebM after MIME, signature, duration and actual decoding checks                   |
 | Video                    | Real WebM, VP8/Opus or VP9/Opus when MediaRecorder reports support                                        |
 | Movie sizes              | 800×450 at 15 fps; wider screens also offer 1280×720 and 24 fps                                           |
-| Phone export             | Up to 60 seconds, 800×450 at 15 fps                                                                       |
-| Desktop/tablet export    | Up to 120 seconds; keep the tab visible and device awake                                                  |
+| Phone export             | Up to 60 seconds per complete movie or whole-scene segment, 800×450 at 15 fps                             |
+| Desktop/tablet export    | Up to 120 seconds per file; whole-scene segmented export for longer stories                               |
 | Recording/output budgets | 60-second microphone takes; 80 MB maximum encoded movie                                                   |
 | Project media            | 12 MB and 120 seconds per uploaded audio source; 24 sources and 300 seconds total decoded source duration |
 | Timeline                 | 240 clips, up to 24 simultaneous clips, 1,000 captions                                                    |
@@ -80,8 +80,14 @@ Wait for **Saved on this device**. Low available storage shows a warning; quota 
 
 The suite includes genuine Chromium MediaRecorder exports, browser playback/seek, FFprobe stream/duration/frame inspection and FFmpeg decoding with non-silent PCM measurements. Desktop, phone and tablet automation exercises recording permission success/denial, track cleanup, upload/trim, seek/resume, continuous music, caption timing/SRT, backups, quota recovery, cancellation/errors and light/dark accessibility. Microphone automation uses Chromium's synthetic test device, never a person's microphone.
 
-Live Chromium also exported the complete 60-second demo and FFmpeg decoded its VP8 frames and Opus mix. Firefox and Safari have not been manually verified, and no export compatibility claim is made for them. Testing mobile layouts in Chromium does not prove physical iOS microphone or export behavior. PR #5 should focus on real-device/browser coverage, longer-project performance, richer original sound/voice material, smoother editing, and improved export recovery. Automatic lip-sync, transcription, voice cloning, MP4 and backend services remain outside this release.
+The original complete 60-second export proof is retained. PR #5 adds consecutive part exports with independently decoded artwork/camera position, subtitle windows, music offsets, audio streams and durations, plus selected Firefox/WebKit automation. See [the creator guide](CREATOR_GUIDE.md#export-longer-stories-in-safe-parts) and [current verification](PR5_VERIFICATION.md). Physical iOS/Android microphone and Safari export behavior remain unverified; automated browser builds and viewport emulation are not substitutes for real-device testing. Automatic lip-sync, transcription, voice cloning, MP4 and backend services remain outside this release.
 
 The [passing production verification run](https://github.com/larrinamsalva/ChipToons/actions/runs/41552555611) completed **78 unit tests and 91 browser tests**, with no failures, skips or retries. The [machine-readable measurements](media-verification.json) record 901 decoded frames over 60.168707 seconds for the complete demo, with Opus audio at RMS 0.04364 and peak 0.95011. The muted test decoded to zero samples, while the 1280×720 / 24 fps VP9 test had 96 video frames and no audio stream. The report artifact retains the actual WebM files, decoded frames and screenshots for 14 days; the excerpt and screenshots here are kept with the repository.
 
 ![The phone finishing review in light mode.](audio-phone-preview.png)
+
+## Whole-scene parts and export recovery
+
+**Finish My Cartoon → Longer story? Make it in parts.** plans consecutive whole-scene ranges without changing the project. Set a part limit, inspect the order/durations, then export and download one part at a time. Segment audio/captions use absolute original timeline sampling, trimmed-loop offsets and part-local SRT timestamps. Only one movie preview is held; download or explicitly discard it before starting another. An oversized scene pauses the plan with an actionable warning. The exact range selector can retry a valid range independently.
+
+Cancellation/encoder errors leave source media intact and show a retry button. Same-revision part statuses survive reopening where settings storage works, but encoded files are not stored with the project. Downloaded movies remain in Downloads; the part-order JSON is a manifest, not a movie archive. Each file has a short encoder startup lead; automatic gapless joining is not implemented. Keep a portable project before leaving or clearing browser data.

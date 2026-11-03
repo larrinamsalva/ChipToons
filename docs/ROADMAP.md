@@ -39,10 +39,12 @@ Implemented: explicit local microphone capture and uploaded audio, four editable
 - Capability-tested real video export; WebM first, MP4 only when it is truly supported.
 - Verify downloadable videos by decoding actual frames and checking timing/audio.
 
-## PR #5 — Polish and Expansion
+## PR #5 — Creator Experience & Longer Storytelling
 
-- Longer project performance, richer original templates and sound material, tutorials, export recovery and usability polish.
-- Expanded assistive technology and physical phone/tablet testing, including Firefox and Safari recording/export verification.
-- Optional AI providers behind explicit user actions, honest provider labels, and server-held secrets.
+Implemented: three guided thought/sketch/image starts with editable per-scene drafts and Save Draft/Edit Later; six story chapters, duration planning, reviewed batch scene insertion and direct long-story navigation; scene-instance character references and confirmed appearance consistency; twelve original educational starters; original gentle sound additions, quick fades and shared music ducking; actionable finishing readiness checks; ordered whole-scene WebM segments with independent retry, segment SRT and order manifest; navigation/save protection, backup reminders and an eight-step tutorial; portable personal art-library/palette backup and atomic copy restoration.
 
-The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by all four project schemas); it does not claim to generate a finished 15–20 minute episode automatically.
+Project schema stays 4 and IndexedDB stays 2. Additive optional fields are validated, existing schema-4 projects require no migration, and the tested 1→2→3→4 chain remains importable. Existing scenes, source art, animation and audio are preserved. Long projects render twelve memoized thumbnails at a time; exports load range-specific assets and reuse a bounded decoded-audio cache.
+
+See [Creator Guide](CREATOR_GUIDE.md) for working controls and limits, and [PR #5 verification](PR5_VERIFICATION.md) for actual tests, media inspection and screenshots. Chromium desktop/phone/tablet and selected Firefox/WebKit automation are included. Physical iOS/Android/Safari recording and extended thermal/memory tests remain future work, along with richer original voice material, accessible drawing improvements and deliberate cross-tab conflict handling.
+
+A six-scene roughly one-minute starter remains the starting point for a longer episode goal. Chapters and reviewed batches make an editable 15–20 minute story practical, up to 120 scenes. Each WebM file remains limited to 60 seconds on phones / 120 seconds on wider screens. This does not automatically create finished long-form footage, one uninterrupted 20-minute video, MP4, AI interpretation, photo rigging or automatic lip-sync.

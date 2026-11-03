@@ -16,12 +16,18 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
-      testIgnore: "**/video-export-proof.spec.ts",
+      testIgnore: [
+        "**/video-export-proof.spec.ts",
+        "**/browser-compat.spec.ts",
+      ],
       use: { browserName: "chromium", viewport: { width: 1440, height: 1000 } },
     },
     {
       name: "phone",
-      testIgnore: "**/video-export-proof.spec.ts",
+      testIgnore: [
+        "**/video-export-proof.spec.ts",
+        "**/browser-compat.spec.ts",
+      ],
       use: {
         browserName: "chromium",
         viewport: { width: 390, height: 844 },
@@ -31,9 +37,41 @@ export default defineConfig({
     },
     {
       name: "tablet",
-      testIgnore: "**/video-export-proof.spec.ts",
+      testIgnore: [
+        "**/video-export-proof.spec.ts",
+        "**/browser-compat.spec.ts",
+      ],
       use: {
         browserName: "chromium",
+        viewport: { width: 810, height: 1080 },
+        hasTouch: true,
+      },
+    },
+    {
+      name: "firefox",
+      testMatch: "**/browser-compat.spec.ts",
+      use: { browserName: "firefox", viewport: { width: 1440, height: 1000 } },
+    },
+    {
+      name: "webkit",
+      testMatch: "**/browser-compat.spec.ts",
+      use: { browserName: "webkit", viewport: { width: 1440, height: 1000 } },
+    },
+    {
+      name: "webkit-phone",
+      testMatch: "**/browser-compat.spec.ts",
+      use: {
+        browserName: "webkit",
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
+    {
+      name: "webkit-tablet",
+      testMatch: "**/browser-compat.spec.ts",
+      use: {
+        browserName: "webkit",
         viewport: { width: 810, height: 1080 },
         hasTouch: true,
       },

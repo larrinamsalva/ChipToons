@@ -48,6 +48,7 @@ export interface Caption {
   text: string;
 }
 export interface Mixer {
+  duckMusic?: boolean;
   master: number;
   voice: number;
   music: number;
@@ -148,6 +149,7 @@ export function validProduction(
       numberIn(n, 0, 1),
     ) ||
     typeof mixer.muted !== "boolean" ||
+    (mixer.duckMusic !== undefined && typeof mixer.duckMusic !== "boolean") ||
     !numberIn(p.captionStyle.fontSize, 18, 32) ||
     !["top", "bottom"].includes(String(p.captionStyle.position)) ||
     !["#ffffff", "#ffe6a1"].includes(String(p.captionStyle.color))

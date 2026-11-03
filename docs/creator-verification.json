@@ -1,0 +1,262 @@
+{
+  "recordedRun": "https://github.com/larrinamsalva/ChipToons/actions/runs/41562947610",
+  "commit": "20c9f719948bea139b4a8cbd3e3a6c558cdbecc3",
+  "unitTests": 93,
+  "browserStats": {
+    "total": 134,
+    "expected": 134,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "projects": [
+    "desktop",
+    "phone",
+    "tablet",
+    "firefox",
+    "webkit",
+    "webkit-phone",
+    "webkit-tablet",
+    "media-export"
+  ],
+  "retriedTests": 0,
+  "measurements": [
+    {
+      "test": "genuine short export decodes moving frames, embedded raster art, captions and mixed non-silent audio",
+      "project": "media-export",
+      "name": "short-cartoon-media-proof",
+      "measurement": {
+        "duration": 4.159274,
+        "decodedFrames": 61,
+        "width": 800,
+        "height": 450,
+        "video": "vp8",
+        "audio": "opus",
+        "rms": 0.07725788246932615,
+        "peak": 0.814496636390686,
+        "distinctFrames": 4
+      }
+    },
+    {
+      "test": "master mute records silence in an actual encoded audio track",
+      "project": "media-export",
+      "name": "muted-cartoon-media-proof",
+      "measurement": {
+        "duration": 4.159274,
+        "decodedFrames": 61,
+        "width": 800,
+        "height": 450,
+        "video": "vp8",
+        "audio": "opus",
+        "rms": 0,
+        "peak": 0,
+        "distinctFrames": 4
+      }
+    },
+    {
+      "test": "VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecked",
+      "project": "media-export",
+      "name": "silent-vp9-cartoon-media-proof",
+      "measurement": {
+        "duration": 4.188299,
+        "decodedFrames": 90,
+        "width": 1280,
+        "height": 720,
+        "video": "vp9",
+        "audio": null,
+        "rms": 0,
+        "peak": 0,
+        "distinctFrames": 4
+      }
+    },
+    {
+      "test": "the complete original friendship demo exports as a playable sixty-second movie with voices, music and effects",
+      "project": "media-export",
+      "name": "friendship-demo-media-proof",
+      "measurement": {
+        "duration": 60.171609,
+        "decodedFrames": 898,
+        "width": 800,
+        "height": 450,
+        "video": "vp8",
+        "audio": "opus",
+        "rms": 0.04363831461475939,
+        "peak": 0.9504523873329163,
+        "distinctFrames": 60
+      }
+    },
+    {
+      "test": "genuine consecutive parts retain camera, source artwork, subtitle timing and absolute music offsets",
+      "project": "media-export",
+      "name": "friendship-part-01-media-proof",
+      "measurement": {
+        "duration": 4.191201,
+        "decodedFrames": 59,
+        "width": 800,
+        "height": 450,
+        "video": "vp8",
+        "audio": "opus",
+        "rms": 0.02981174154935502,
+        "peak": 0.43490785360336304,
+        "distinctFrames": 4
+      }
+    },
+    {
+      "test": "genuine consecutive parts retain camera, source artwork, subtitle timing and absolute music offsets",
+      "project": "media-export",
+      "name": "friendship-part-02-media-proof",
+      "measurement": {
+        "duration": 4.170884,
+        "decodedFrames": 61,
+        "width": 800,
+        "height": 450,
+        "video": "vp8",
+        "audio": "opus",
+        "rms": 0.0325580057557833,
+        "peak": 0.3422315716743469,
+        "distinctFrames": 4
+      }
+    },
+    {
+      "test": "genuine consecutive parts retain camera, source artwork, subtitle timing and absolute music offsets",
+      "project": "media-export",
+      "name": "segmented-timeline-continuity",
+      "measurement": {
+        "parts": [
+          {
+            "part": 1,
+            "scenes": [1, 2],
+            "expectedArtworkX": 242.5,
+            "decodedArtworkX": 242.5,
+            "magentaPixels": 3968,
+            "expectedMusicHz": 349.23,
+            "decodedMusicHz": 349
+          },
+          {
+            "part": 2,
+            "scenes": [3, 4],
+            "expectedArtworkX": 526.5,
+            "decodedArtworkX": 525.5,
+            "magentaPixels": 4624,
+            "expectedMusicHz": 440,
+            "decodedMusicHz": 440
+          }
+        ],
+        "subtitleText": "1\n00:00:00,250 --> 00:00:01,600\nScene 3: a kind hello makes room for a friend.\n\n2\n00:00:02,250 --> 00:00:03,600\nScene 4: a kind hello makes room for a friend.\n",
+        "sourceUnchanged": true,
+        "logicalStorySeconds": 8
+      }
+    },
+    {
+      "test": "a 120-scene twenty-minute project keeps scene navigation and numeric editing responsive",
+      "project": "desktop",
+      "name": "desktop-long-story-profile",
+      "measurement": {
+        "scenes": 120,
+        "assets": 40,
+        "elementsPerScene": 8,
+        "seconds": 1200,
+        "visibleThumbnails": 12,
+        "loadAndImportMs": 650,
+        "numericEditResponseMs": 147
+      }
+    },
+    {
+      "test": "a 120-scene twenty-minute project keeps scene navigation and numeric editing responsive",
+      "project": "phone",
+      "name": "phone-long-story-profile",
+      "measurement": {
+        "scenes": 120,
+        "assets": 40,
+        "elementsPerScene": 8,
+        "seconds": 1200,
+        "visibleThumbnails": 12,
+        "loadAndImportMs": 566,
+        "numericEditResponseMs": 122
+      }
+    },
+    {
+      "test": "a 120-scene twenty-minute project keeps scene navigation and numeric editing responsive",
+      "project": "tablet",
+      "name": "tablet-long-story-profile",
+      "measurement": {
+        "scenes": 120,
+        "assets": 40,
+        "elementsPerScene": 8,
+        "seconds": 1200,
+        "visibleThumbnails": 12,
+        "loadAndImportMs": 810,
+        "numericEditResponseMs": 125
+      }
+    },
+    {
+      "test": "finish detects actual encoder capabilities while preserving portable project and subtitle downloads",
+      "project": "firefox",
+      "name": "firefox-encoder-capabilities",
+      "measurement": {
+        "webmFormatCount": 1,
+        "fullExportAvailable": true
+      }
+    },
+    {
+      "test": "finish detects actual encoder capabilities while preserving portable project and subtitle downloads",
+      "project": "webkit",
+      "name": "webkit-encoder-capabilities",
+      "measurement": {
+        "webmFormatCount": 0,
+        "fullExportAvailable": false
+      }
+    },
+    {
+      "test": "finish detects actual encoder capabilities while preserving portable project and subtitle downloads",
+      "project": "webkit-phone",
+      "name": "webkit-phone-encoder-capabilities",
+      "measurement": {
+        "webmFormatCount": 0,
+        "fullExportAvailable": false
+      }
+    },
+    {
+      "test": "finish detects actual encoder capabilities while preserving portable project and subtitle downloads",
+      "project": "webkit-tablet",
+      "name": "webkit-tablet-encoder-capabilities",
+      "measurement": {
+        "webmFormatCount": 0,
+        "fullExportAvailable": false
+      }
+    }
+  ],
+  "retainedFiles": [
+    {
+      "file": "creator-chapters-desktop.png",
+      "bytes": 248975,
+      "sha256": "334b047760d87ef159e98d7bcdf5165842afd591b41d665bb058c048cea864c8"
+    },
+    {
+      "file": "creator-chapters-phone.png",
+      "bytes": 56400,
+      "sha256": "0c5c616deba40f149b41772bb030a7aa8811a68537ac97081f2fb083be6feb3f"
+    },
+    {
+      "file": "creator-reference.png",
+      "bytes": 265044,
+      "sha256": "5e48eee03872d4e7f1925b77130611462db3937c6e077205d4946c9cbc6ef4f0"
+    },
+    {
+      "file": "creator-finish.png",
+      "bytes": 257103,
+      "sha256": "e3dea15dab3e66e59350ef4a03bff082b94c6a68f9a31828e64080c9c31c5c0a"
+    },
+    {
+      "file": "segment-proof-part-01.webm",
+      "bytes": 295993,
+      "sha256": "9a957ca84d7668e1c89b167c8e68c1d9ad44b1b83d0ccfaca1d9bad135c86171"
+    },
+    {
+      "file": "segment-proof-part-02.webm",
+      "bytes": 310180,
+      "sha256": "e218fc88808d62e782f5d2d8614a6f099531f93ae30d225b188b95fd2d14eb5a"
+    }
+  ]
+}

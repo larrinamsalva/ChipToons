@@ -17,6 +17,7 @@ export function Dashboard({
   onImport,
   onHelp,
   onLibrary,
+  onGuidedArt,
 }: {
   projects: Project[];
   onIdea: (starterId?: string) => void;
@@ -29,6 +30,7 @@ export function Dashboard({
   onImport: () => void;
   onHelp: () => void;
   onLibrary: () => void;
+  onGuidedArt: (source: "sketch" | "image") => void;
 }) {
   const demo = useMemo(() => starterProject(), []);
   const [allStarters, setAllStarters] = useState(false);
@@ -127,6 +129,42 @@ export function Dashboard({
           </div>
           <span className="floating-star">✦</span>
         </div>
+      </section>
+      <section
+        className="creation-paths"
+        aria-label="Guided starting workflows"
+      >
+        {[
+          {
+            icon: "bulb",
+            title: "Start with a Thought",
+            text: "An idea → an editable scene outline",
+            action: () => onIdea(),
+          },
+          {
+            icon: "pencil",
+            title: "Start with a Sketch",
+            text: "Draw or upload → choose a role → build a story",
+            action: () => onGuidedArt("sketch"),
+          },
+          {
+            icon: "image",
+            title: "Start with an Image",
+            text: "Keep your original → compose and animate",
+            action: () => onGuidedArt("image"),
+          },
+        ].map((path) => (
+          <button
+            className="creation-path"
+            key={path.title}
+            onClick={path.action}
+          >
+            <Icon name={path.icon} size={26} />
+            <strong>{path.title}</strong>
+            <span>{path.text}</span>
+            <Icon name="arrow" size={18} />
+          </button>
+        ))}
       </section>
       <div className="creative-actions" aria-label="Ways to create">
         {[
@@ -257,6 +295,11 @@ export function Dashboard({
                     {p.status === "ready" ? "Ready to share" : "In the making"}
                   </span>
                   <h3>{p.title}</h3>
+                  {p.templateId && (
+                    <small className="field-hint">
+                      From an original editable starter
+                    </small>
+                  )}
                   <p>
                     Edited{" "}
                     {new Date(p.updatedAt).toLocaleDateString(undefined, {
@@ -335,7 +378,7 @@ export function Dashboard({
             className="button text small"
             onClick={() => setAllStarters((s) => !s)}
           >
-            {allStarters ? "Show a few favorites" : "Browse all 8 starters"}
+            {allStarters ? "Show a few favorites" : `Browse all ${STARTERS.length} starters`}
             <Icon name="arrow" size={17} />
           </button>
         </div>

@@ -1,13 +1,16 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Project } from "./model";
-import { validateProject, totalDuration } from "./model";
+import { validateProject } from "./model";
 import { frameAt } from "./timeline";
 import { Stage } from "./components/Stage";
 import { captionText } from "./production";
 import { paintCaptions } from "./captions";
 import { mixingGraph, prepareAudio, scheduleAudio } from "./audio-engine";
 import { webmDuration } from "./webm";
+import { exportRange, rangeArtwork } from "./segments";
+import type { SceneRange } from "./segments";
+import type { AudioDecodeCache } from "./audio-engine";
 
 export interface ExportSettings {
   mime: string;
@@ -15,6 +18,7 @@ export interface ExportSettings {
   fps: 15 | 24;
   captions: boolean;
   audio: boolean;
+  range?: SceneRange;
 }
 export interface ExportProgress {
   phase: string;
@@ -204,9 +208,11 @@ export async function exportVideo(
   settings: ExportSettings,
   signal: AbortSignal,
   onProgress: (p: ExportProgress) => void,
+  cache?: AudioDecodeCache,
 ) {
   const project = validateProject(source),
-    duration = totalDuration(project);
+    range = exportRange(project, settings.range),
+    { start, end, duration } = range;
   if (!supportedVideoFormats().includes(settings.mime))
     throw new Error(
       "Video export is unavailable in this browser. Project backups, storyboards and subtitles remain available.",
@@ -236,17 +242,21 @@ export async function exportVideo(
     await audio.resume();
     check(signal);
     onProgress({ phase: "Preparing artwork…", seconds: 0, fraction: 0 });
-    for (const asset of project.assets) {
+    for (const asset of rangeArtwork(project, range)) {
       await loadImage(asset.dataUrl, signal);
       check(signal);
     }
     const buffers = settings.audio
-      ? await prepareAudio(audio, project, (phase) =>
-          onProgress({ phase, seconds: 0, fraction: 0 }),
+      ? await prepareAudio(
+          audio,
+          project,
+          (phase) => onProgress({ phase, seconds: 0, fraction: 0 }),
+          range,
+          cache,
         )
       : new Map<string, AudioBuffer>();
     check(signal);
-    await paintStage(context, project, 0, settings, signal);
+    await paintStage(context, project, start, settings, signal);
     captured = canvas.captureStream(settings.fps);
     const destination = audio.createMediaStreamDestination();
     mixed = destination.stream;
@@ -302,8 +312,8 @@ export async function exportVideo(
           project,
           buffers,
           graph,
-          0,
-          duration,
+          start,
+          end,
           anchor,
           nodes,
         );
@@ -328,7 +338,13 @@ export async function exportVideo(
           const frame = Math.floor(time * settings.fps);
           if (frame !== lastFrame) {
             const before = performance.now();
-            await paintStage(context, project, time, settings, workSignal);
+            await paintStage(
+              context,
+              project,
+              start + time,
+              settings,
+              workSignal,
+            );
             (
               captured!.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack
             ).requestFrame?.();
@@ -383,7 +399,7 @@ export async function exportVideo(
       await paintStage(
         context,
         project,
-        Math.max(0, duration - 0.001),
+        Math.max(start, end - 0.001),
         settings,
         signal,
       );

@@ -226,19 +226,40 @@ export function ScenePlayer({
       )}
       {children}
       <div className="timeline-strip" aria-label="Scene timeline">
-        {project.scenes.map((s, i) => (
-          <button
-            key={s.id}
-            style={{ flex: s.duration }}
-            className={shown === i ? "active" : ""}
-            aria-label={`Go to scene ${i + 1}: ${s.title}`}
-            onClick={() => onSceneSelect(i)}
-          >
-            <span>{i + 1}</span>
-            <small>{s.duration}s</small>
-          </button>
-        ))}
+        {project.scenes
+          .slice(Math.floor(shown / 12) * 12, Math.floor(shown / 12) * 12 + 12)
+          .map((s, n) => {
+            const i = Math.floor(shown / 12) * 12 + n;
+            return (
+              <button
+                key={s.id}
+                style={{ flex: s.duration }}
+                className={shown === i ? "active" : ""}
+                aria-label={`Go to scene ${i + 1}: ${s.title}`}
+                onClick={() => onSceneSelect(i)}
+              >
+                <span>{i + 1}</span>
+                <small>{s.duration}s</small>
+              </button>
+            );
+          })}
       </div>
+      {project.scenes.length > 12 && (
+        <label className="scene-jump">
+          Jump to any scene
+          <select
+            aria-label="Jump to any scene"
+            value={shown}
+            onChange={(e) => onSceneSelect(Number(e.target.value))}
+          >
+            {project.scenes.map((s, i) => (
+              <option key={s.id} value={i}>
+                {i + 1}. {s.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <p className="preview-note">
         <Icon name="bulb" size={16} />
         {audioBusy

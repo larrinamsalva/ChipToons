@@ -33,6 +33,42 @@ export function categoryBus(category: AudioCategory) {
     ? "voice"
     : category;
 }
+export function duckingWindows(project: Project) {
+  if (!project.mixer.duckMusic || !project.mixer.voice) return [];
+  const windows = project.audioClips
+    .filter(
+      (c) => categoryBus(c.category) === "voice" && !c.muted && c.volume > 0,
+    )
+    .map((c) => ({
+      start: clipStart(project, c),
+      end: clipStart(project, c) + c.duration,
+    }))
+    .sort((a, b) => a.start - b.start);
+  const merged: typeof windows = [];
+  for (const w of windows) {
+    const last = merged.at(-1);
+    if (last && w.start <= last.end + 0.4) last.end = Math.max(last.end, w.end);
+    else merged.push({ ...w });
+  }
+  return merged;
+}
+export function duckingAt(
+  windows: { start: number; end: number }[],
+  time: number,
+) {
+  let gain = 1;
+  for (const w of windows)
+    if (time >= w.start - 0.12 && time <= w.end + 0.28)
+      gain = Math.min(
+        gain,
+        time < w.start
+          ? 1 - (0.7 * (time - w.start + 0.12)) / 0.12
+          : time > w.end
+            ? 0.3 + (0.7 * (time - w.end)) / 0.28
+            : 0.3,
+      );
+  return Math.max(0.3, Math.min(1, gain));
+}
 export function audioPlan(project: Project, start: number, end: number) {
   return project.audioClips.flatMap((clip) => {
     const absolute = clipStart(project, clip),
@@ -107,17 +143,18 @@ export function captionsFromText(scene: Scene): Caption[] {
     line += (line ? " " : "") + word;
   }
   if (line) chunks.push(line);
-  return chunks
-    .slice(0, 100)
-    .map((text, i) => ({
-      id: uid(),
-      sceneId: scene.id,
-      start: (i * scene.duration) / chunks.length,
-      end: ((i + 1) * scene.duration) / chunks.length,
-      text: text.slice(0, 280),
-    }));
+  return chunks.slice(0, 100).map((text, i) => ({
+    id: uid(),
+    sceneId: scene.id,
+    start: (i * scene.duration) / chunks.length,
+    end: ((i + 1) * scene.duration) / chunks.length,
+    text: text.slice(0, 280),
+  }));
 }
-export function srt(project: Project) {
+export function srt(
+  project: Project,
+  range = { start: 0, end: totalDuration(project) },
+) {
   const timestamp = (t: number) => {
     const ms = Math.round(t * 1000);
     return `${String(Math.floor(ms / 3600000)).padStart(2, "0")}:${String(Math.floor(ms / 60000) % 60).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
@@ -131,9 +168,12 @@ export function srt(project: Project) {
       ),
     }))
     .sort((a, b) => a.offset + a.start - b.offset - b.start)
+    .filter(
+      (c) => c.offset + c.end > range.start && c.offset + c.start < range.end,
+    )
     .map(
       (c, i) =>
-        `${i + 1}\n${timestamp(c.offset + c.start)} --> ${timestamp(c.offset + c.end)}\n${c.text}\n`,
+        `${i + 1}\n${timestamp(Math.max(0, c.offset + c.start - range.start))} --> ${timestamp(Math.min(range.end, c.offset + c.end) - range.start)}\n${c.text}\n`,
     )
     .join("\n");
 }
