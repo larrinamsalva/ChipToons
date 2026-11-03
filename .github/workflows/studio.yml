@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches: [main, "feat/creator-experience-longer-stories"]
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ jobs:
   verify:
     name: Foundation and browser QA
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -30,12 +30,12 @@ jobs:
       - run: npm ci
       - name: Types, lint, unit tests, and production build
         run: npm run check
-      - name: Install Chromium for browser tests
+      - name: Install Chromium, Firefox and WebKit for browser tests
         run: |
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium firefox webkit
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-      - name: Desktop, phone, and tablet creator workflows
+      - name: Desktop, phone, tablet and cross-browser creator workflows
         run: npm run test:e2e
       - name: Keep browser QA report
         if: ${{ !cancelled() }}

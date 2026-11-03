@@ -1,7 +1,11 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { DEFAULT_IDEA, localStoryProvider, STARTERS } from "../planner";
-import type { IdeaInput, Project } from "../model";
+import type { Asset, IdeaInput, Project } from "../model";
+import { artworkStory } from "../story";
+import type { ArtworkRole } from "../story";
+import type { CreationSource } from "../story-model";
+import { CHAPTERS } from "../story-model";
 import { Icon } from "./Icon";
 import { Modal } from "./Modal";
 
@@ -9,14 +13,28 @@ export function IdeaWizard({
   onClose,
   onCreate,
   starterId,
+  onSaveDraft,
+  artwork,
+  onBack,
 }: {
   onClose: () => void;
   onCreate: (p: Project) => void;
   starterId?: string;
+  onSaveDraft: (p: Project) => Promise<void>;
+  artwork?: {
+    asset: Asset;
+    name: string;
+    role: ArtworkRole;
+    source: CreationSource;
+  };
+  onBack?: () => void;
 }) {
   const starter = STARTERS.find((s) => s.id === starterId);
   const [input, setInput] = useState<IdeaInput>({
     ...DEFAULT_IDEA,
+    ...(artwork?.role === "character"
+      ? { names: `${artwork.name}, Sunny` }
+      : {}),
     ...(starter
       ? { idea: starter.idea, title: starter.title, lesson: starter.lesson }
       : {}),
@@ -24,6 +42,39 @@ export function IdeaWizard({
   const [proposal, setProposal] = useState<Project | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  function prepare(p: Project) {
+    const next = {
+      ...p,
+      templateId: starter?.id,
+      creationSource: "thought" as const,
+    };
+    return artwork
+      ? artworkStory(
+          next,
+          artwork.asset,
+          artwork.name,
+          artwork.source,
+          artwork.role,
+        )
+      : next;
+  }
+  async function saveDraft() {
+    setBusy(true);
+    setError("");
+    try {
+      await onSaveDraft(
+        proposal ?? prepare(await localStoryProvider.plan(input)),
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "The draft could not be saved. Please try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   const field = <K extends keyof IdeaInput>(key: K, value: IdeaInput[K]) =>
     setInput((i) => ({ ...i, [key]: value }));
   async function generate(e: FormEvent) {
@@ -31,7 +82,7 @@ export function IdeaWizard({
     setBusy(true);
     setError("");
     try {
-      setProposal(await localStoryProvider.plan(input));
+      setProposal(prepare(await localStoryProvider.plan(input)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Please try again.");
     } finally {
@@ -61,6 +112,19 @@ export function IdeaWizard({
       </div>
       {!proposal ? (
         <form onSubmit={generate} className="wizard-form">
+          {artwork && (
+            <p className="local-note">
+              <img
+                className="wizard-art-thumb"
+                src={artwork.asset.dataUrl}
+                alt="Your story artwork"
+              />
+              <span>
+                {artwork.name} · {artwork.role}. Use the outline to give this
+                artwork a story.
+              </span>
+            </p>
+          )}
           <label className="big-label">
             What’s your story idea?
             <textarea
@@ -187,9 +251,17 @@ export function IdeaWizard({
             <button
               type="button"
               className="button secondary"
-              onClick={onClose}
+              onClick={onBack ?? onClose}
             >
-              Maybe later
+              Back
+            </button>
+            <button
+              type="button"
+              className="button secondary"
+              disabled={busy || !input.idea.trim()}
+              onClick={() => void saveDraft()}
+            >
+              Save Draft
             </button>
             <button className="button primary" type="submit" disabled={busy}>
               <Icon name="sparkles" />
@@ -238,6 +310,61 @@ export function IdeaWizard({
             Your outline is saved as a planning note. Scene narration is edited
             separately in the storyboard.
           </p>
+          <details className="scene-outline-review" open>
+            <summary>Next: edit your scene-by-scene outline</summary>
+            <p className="field-hint">
+              These scene notes become your storyboard. Recording and animation
+              remain your creative steps.
+            </p>
+            {proposal.scenes.map((scene, i) => (
+              <fieldset key={scene.id}>
+                <legend>
+                  {i + 1}. {CHAPTERS[i]?.label ?? "Scene"}
+                </legend>
+                <label>
+                  Scene {i + 1} title
+                  <input
+                    maxLength={160}
+                    value={scene.title}
+                    onChange={(e) =>
+                      setProposal({
+                        ...proposal,
+                        scenes: proposal.scenes.map((s, j) =>
+                          j === i
+                            ? {
+                                ...s,
+                                title: e.target.value || "Untitled scene",
+                              }
+                            : s,
+                        ),
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Scene {i + 1} narration
+                  <textarea
+                    rows={2}
+                    maxLength={6000}
+                    value={scene.narration}
+                    onChange={(e) =>
+                      setProposal({
+                        ...proposal,
+                        scenes: proposal.scenes.map((s, j) =>
+                          j === i ? { ...s, narration: e.target.value } : s,
+                        ),
+                      })
+                    }
+                  />
+                </label>
+              </fieldset>
+            ))}
+          </details>
+          {error && (
+            <p role="alert" className="error-message">
+              {error}
+            </p>
+          )}
           <div className="local-note">
             <Icon name="film" size={18} />
             <span>
@@ -255,7 +382,15 @@ export function IdeaWizard({
               Edit my idea
             </button>
             <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() => void saveDraft()}
+            >
+              Save Draft · Edit Later
+            </button>
+            <button
               className="button primary"
+              disabled={busy}
               onClick={() => onCreate(proposal)}
             >
               Create my storyboard

@@ -2,7 +2,9 @@ import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { starterProject } from "../src/planner";
-import { retimeScene } from "../src/timeline";
+import { segmentedProject } from "./creator-fixtures";
+import { backup } from "./production-helpers";
+import { cameraAt, elementAt, retimeScene } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { newAudioClip } from "../src/production";
@@ -22,6 +24,8 @@ async function render(
     audio?: boolean;
     captions?: boolean;
     silent?: boolean;
+    segment?: number;
+    limit?: number;
   } = {},
 ) {
   const width = options.width ?? 800,
@@ -29,6 +33,14 @@ async function render(
   await page
     .getByRole("button", { name: "Finish My Cartoon", exact: true })
     .click();
+  if (options.limit) {
+    const limit = page.getByRole("spinbutton", {
+      name: "Maximum seconds per segment",
+      exact: true,
+    });
+    await limit.fill(String(options.limit));
+    await limit.press("Enter");
+  }
   if (options.width)
     await page
       .getByLabel("Video export resolution")
@@ -50,12 +62,24 @@ async function render(
       .getByRole("checkbox", { name: "Include timed captions", exact: true })
       .uncheck();
   await page
-    .getByRole("button", { name: "Export complete cartoon", exact: true })
+    .getByRole("button", {
+      name: options.segment
+        ? `Export segment ${options.segment}`
+        : "Export complete cartoon",
+      exact: true,
+    })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Your movie is ready", exact: true }),
+    page.getByRole("heading", {
+      name: options.segment
+        ? `Segment ${options.segment} is ready`
+        : "Your movie is ready",
+      exact: true,
+    }),
   ).toBeVisible({ timeout: (seconds + 35) * 1000 });
-  const video = page.getByLabel("Completed cartoon video");
+  const video = page.getByLabel(
+    options.segment ? "Completed segment video" : "Completed cartoon video",
+  );
   await expect
     .poll(() => video.evaluate((el: HTMLVideoElement) => el.readyState))
     .toBeGreaterThanOrEqual(2);
@@ -82,7 +106,12 @@ async function render(
     .toBeCloseTo(1.1, 1);
   const pending = page.waitForEvent("download");
   await page
-    .getByRole("button", { name: "Download completed video", exact: true })
+    .getByRole("button", {
+      name: options.segment
+        ? `Download segment ${options.segment}`
+        : "Download completed video",
+      exact: true,
+    })
     .click();
   const movie = await pending,
     path = info.outputPath(`${name}.webm`);
@@ -329,4 +358,153 @@ test("the complete original friendship demo exports as a playable sixty-second m
   test.setTimeout(150_000);
   await demo(page);
   await render(page, info, "friendship-demo", 60);
+});
+
+test("genuine consecutive parts retain camera, source artwork, subtitle timing and absolute music offsets", async ({
+  page,
+}, info) => {
+  test.setTimeout(100_000);
+  const png = execFileSync("ffmpeg", [
+    "-v",
+    "error",
+    "-f",
+    "lavfi",
+    "-i",
+    "color=c=magenta:s=32x32",
+    "-frames:v",
+    "1",
+    "-f",
+    "image2pipe",
+    "-vcodec",
+    "png",
+    "pipe:1",
+  ]);
+  const p = segmentedProject(`data:image/png;base64,${png.toString("base64")}`);
+  await restore(page, p);
+  const before = (await backup(page)).data;
+  const part1 = await render(page, info, "friendship-part-01", 4, {
+    segment: 1,
+    limit: 4,
+  });
+  const subtitles = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Segment 2 subtitles", exact: true })
+    .click();
+  const subtitleText = await import("node:fs/promises").then(async (fs) =>
+    fs.readFile((await (await subtitles).path())!, "utf8"),
+  );
+  expect(subtitleText).toContain("00:00:00,250 --> 00:00:01,600\nScene 3:");
+  expect(subtitleText).toContain("00:00:02,250 --> 00:00:03,600\nScene 4:");
+  expect(subtitleText).not.toContain("Scene 2:");
+  await page
+    .getByRole("button", { name: "Back to studio", exact: true })
+    .click();
+  const part2 = await render(page, info, "friendship-part-02", 4, {
+    segment: 2,
+    limit: 4,
+  });
+  const measurements = [];
+  for (const [i, part] of [part1, part2].entries()) {
+    const raw = execFileSync(
+      "ffmpeg",
+      [
+        "-v",
+        "error",
+        "-i",
+        part.path,
+        "-ss",
+        "1.2",
+        "-frames:v",
+        "1",
+        "-pix_fmt",
+        "rgb24",
+        "-f",
+        "rawvideo",
+        "pipe:1",
+      ],
+      { maxBuffer: 2 * 1024 * 1024 },
+    );
+    let xSum = 0,
+      pixels = 0;
+    for (let j = 0; j < raw.length; j += 3)
+      if (raw[j] > 180 && raw[j + 1] < 80 && raw[j + 2] > 180) {
+        xSum += (j / 3) % 800;
+        pixels++;
+      }
+    expect(pixels).toBeGreaterThan(1500);
+    const scene = p.scenes[i * 2],
+      el = elementAt(scene.elements[0], 1, 2),
+      camera = cameraAt(scene, 1),
+      expectedX = 400 + (el.x - camera.x) * camera.zoom,
+      centroid = xSum / pixels;
+    expect(Math.abs(centroid - expectedX)).toBeLessThan(4);
+    const plate = (400 * 800 + 30) * 3;
+    expect(Math.max(raw[plate], raw[plate + 1], raw[plate + 2])).toBeLessThan(
+      80,
+    );
+    const noCaption = execFileSync("ffmpeg", [
+      "-v",
+      "error",
+      "-i",
+      part.path,
+      "-ss",
+      "1.95",
+      "-vf",
+      "crop=2:2:30:400,format=rgb24",
+      "-frames:v",
+      "1",
+      "-f",
+      "rawvideo",
+      "pipe:1",
+    ]);
+    expect(Math.max(...noCaption)).toBeGreaterThan(100);
+    // A different original melody note is expected at this absolute story time.
+    // This fails if part 2 restarts the music instead of seeking its trimmed loop.
+    const start = Math.round(1.34 * 8000),
+      length = 800;
+    let dominant = 0,
+      power = 0;
+    for (let hz = 300; hz <= 500; hz++) {
+      let re = 0,
+        im = 0;
+      for (let k = 0; k < length; k++) {
+        const sample = part.pcm.readFloatLE((start + k) * 4),
+          angle = (2 * Math.PI * hz * k) / 8000;
+        re += sample * Math.cos(angle);
+        im += sample * Math.sin(angle);
+      }
+      const energy = re * re + im * im;
+      if (energy > power) {
+        power = energy;
+        dominant = hz;
+      }
+    }
+    expect(Math.abs(dominant - (i === 0 ? 349.23 : 440))).toBeLessThan(8);
+    measurements.push({
+      part: i + 1,
+      scenes: [i * 2 + 1, i * 2 + 2],
+      expectedArtworkX: expectedX,
+      decodedArtworkX: centroid,
+      magentaPixels: pixels,
+      expectedMusicHz: i === 0 ? 349.23 : 440,
+      decodedMusicHz: dominant,
+    });
+  }
+  await page
+    .getByRole("button", { name: "Back to studio", exact: true })
+    .click();
+  expect((await backup(page)).data).toEqual(before);
+  await info.attach("segmented-timeline-continuity", {
+    body: JSON.stringify(
+      {
+        parts: measurements,
+        subtitleText,
+        sourceUnchanged: true,
+        logicalStorySeconds: 8,
+      },
+      null,
+      2,
+    ),
+    contentType: "application/json",
+  });
 });

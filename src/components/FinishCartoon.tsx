@@ -12,6 +12,10 @@ import { captionText, srt, audioPlan } from "../production";
 import { Modal } from "./Modal";
 import { Stage } from "./Stage";
 import { CaptionOverlay } from "./CaptionOverlay";
+import { AudioDecodeCache } from "../audio-engine";
+import { SegmentExports } from "./SegmentExports";
+import { ReadinessChecklist } from "./ReadinessChecklist";
+import { productionReadiness } from "../readiness";
 export function FinishCartoon({
   project,
   onClose,
@@ -19,6 +23,7 @@ export function FinishCartoon({
   onCaptions,
   onPreview,
   saveStatus,
+  onScene,
 }: {
   project: Project;
   onClose: () => void;
@@ -26,9 +31,16 @@ export function FinishCartoon({
   onCaptions: () => void;
   onPreview: (sound: boolean) => void;
   saveStatus: string;
+  onScene: (index: number, panel?: "voices" | "captions") => void;
 }) {
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
+  const [audioCache] = useState(() => new AudioDecodeCache());
+  const blocking = productionReadiness(
+    project,
+    exportLimit(),
+    !!formats.length,
+  ).some((i) => i.blocking && !i.id.startsWith("limit:"));
   const [settings, setSettings] = useState<ExportSettings>({
       mime: formats[0] ?? "",
       width: 800,
@@ -55,32 +67,14 @@ export function FinishCartoon({
     return () => {
       alive.current = false;
       controller.current?.abort();
+      audioCache.clear();
     };
-  }, []);
+  }, [audioCache]);
   useEffect(
     () => () => {
       if (result) URL.revokeObjectURL(result.url);
     },
     [result],
-  );
-  const missing = project.scenes.filter(
-    (s, i) =>
-      s.narration.trim() &&
-      !project.audioClips.some(
-        (c) =>
-          (c.category === "narration" || c.category === "dialogue") &&
-          !c.muted &&
-          (c.sceneId === s.id ||
-            (!c.sceneId &&
-              c.start <
-                project.scenes
-                  .slice(0, i + 1)
-                  .reduce((n, s) => n + s.duration, 0) &&
-              c.start + c.duration >
-                project.scenes
-                  .slice(0, i)
-                  .reduce((n, s) => n + s.duration, 0))),
-      ),
   );
   async function makeVideo() {
     if (running) return;
@@ -90,9 +84,15 @@ export function FinishCartoon({
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const movie = await exportVideo(project, settings, abort.signal, (p) => {
-        if (alive.current) setProgress(p);
-      });
+      const movie = await exportVideo(
+        project,
+        settings,
+        abort.signal,
+        (p) => {
+          if (alive.current) setProgress(p);
+        },
+        audioCache,
+      );
       if (alive.current)
         setResult({
           blob: movie.blob,
@@ -154,13 +154,26 @@ export function FinishCartoon({
           <strong>{saveStatus}</strong>
         </div>
       </div>
-      {missing.length > 0 && (
-        <p className="media-notice">
-          {missing.length} scene(s) have written narration without an assigned
-          recorded voice. Text and browser voice previews do not become recorded
-          speech automatically.
-        </p>
-      )}
+      <ReadinessChecklist
+        project={project}
+        limit={exportLimit()}
+        supported={!!formats.length}
+        saveStatus={saveStatus}
+        onReview={(issue) => {
+          if (issue.sceneIndex !== undefined)
+            onScene(
+              issue.sceneIndex,
+              issue.action === "voices" || issue.action === "captions"
+                ? issue.action
+                : undefined,
+            );
+          else if (issue.action === "voices") onVoices();
+          else if (issue.action === "captions") onCaptions();
+          else if (issue.action === "browser" || issue.action === "backup")
+            exportProject(project);
+        }}
+      />
+
       {(!active.length ||
         project.mixer.muted ||
         project.mixer.master === 0) && (
@@ -292,8 +305,8 @@ export function FinishCartoon({
         )}
         {total > exportLimit() && (
           <p className="media-notice">
-            This story exceeds the export limit. Make shorter project copies to
-            export it in parts.
+            This story exceeds one movie’s limit. Use the whole-scene parts
+            below to keep every scene.
           </p>
         )}
         <details className="export-visual-preview">
@@ -315,7 +328,9 @@ export function FinishCartoon({
         <div className="animation-actions">
           <button
             className="button primary"
-            disabled={running || !formats.length || total > exportLimit()}
+            disabled={
+              running || blocking || !formats.length || total > exportLimit()
+            }
             onClick={() => void makeVideo()}
           >
             Export complete cartoon
@@ -372,6 +387,25 @@ export function FinishCartoon({
           </div>
         )}
       </section>
+      <SegmentExports
+        project={project}
+        settings={settings}
+        cache={audioCache}
+        busy={running}
+        available={!!formats.length && !blocking}
+        onBusy={(value) => {
+          setRunning(value);
+          if (value) {
+            setResult(null);
+            setProgress(null);
+            setError("");
+          }
+        }}
+        onController={(c) => {
+          controller.current = c;
+        }}
+        onScene={onScene}
+      />
       <div className="modal-actions">
         <button
           className="button secondary"

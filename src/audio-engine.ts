@@ -1,6 +1,12 @@
 import type { Project } from "./model";
-import type { Mixer } from "./media-model";
-import { audioPlan, categoryBus, clipGain } from "./production";
+import type { Mixer, AudioAsset } from "./media-model";
+import {
+  audioPlan,
+  categoryBus,
+  clipGain,
+  duckingAt,
+  duckingWindows,
+} from "./production";
 import { decodeAsset } from "./audio-files";
 
 export function mixingGraph(
@@ -45,6 +51,7 @@ export function scheduleAudio(
   when: number,
   nodes: Set<AudioBufferSourceNode>,
 ) {
+  const windows = duckingWindows(project);
   for (const plan of audioPlan(project, start, end)) {
     const clip = plan.clip,
       buffer = buffers.get(clip.assetId);
@@ -61,7 +68,35 @@ export function scheduleAudio(
     source.loopStart = clip.trimStart;
     source.loopEnd = Math.min(buffer.duration, clip.trimEnd);
     source.connect(gain);
-    gain.connect(graph.buses[categoryBus(clip.category)]);
+    const duck = context.createGain();
+    gain.connect(duck);
+    duck.connect(graph.buses[categoryBus(clip.category)]);
+    duck.gain.setValueAtTime(
+      clip.category === "music" ? duckingAt(windows, plan.from) : 1,
+      at,
+    );
+    if (clip.category === "music")
+      for (const point of [
+        ...new Set(
+          windows.flatMap((w) => [
+            w.start - 0.12,
+            w.start,
+            w.end,
+            w.end + 0.28,
+          ]),
+        ),
+      ]
+        .filter((t) => t > plan.from && t < plan.to)
+        .sort((a, b) => a - b))
+        duck.gain.linearRampToValueAtTime(
+          duckingAt(windows, point),
+          at + point - plan.from,
+        );
+    if (clip.category === "music")
+      duck.gain.linearRampToValueAtTime(
+        duckingAt(windows, plan.to),
+        at + length,
+      );
     gain.gain.setValueAtTime(clipGain(clip, plan.elapsed), at);
     const points = [clip.fadeIn, clip.duration - clip.fadeOut, clip.duration];
     if (clip.fadeIn + clip.fadeOut > clip.duration)
@@ -82,23 +117,99 @@ export function scheduleAudio(
       nodes.delete(source);
       source.disconnect();
       gain.disconnect();
+      duck.disconnect();
     };
     source.start(at, Math.min(plan.offset, buffer.duration - 0.001));
     source.stop(at + length);
+  }
+}
+export class AudioDecodeCache {
+  private entries = new Map<
+    string,
+    {
+      data: string;
+      duration: number;
+      rate: number;
+      buffer: AudioBuffer;
+      bytes: number;
+    }
+  >();
+  private bytes = 0;
+  private serial = 0;
+  decodes = 0;
+  private readonly budget: number;
+  constructor(budget = 64 * 1024 * 1024) {
+    this.budget = budget;
+  }
+  async get(context: AudioContext, asset: AudioAsset) {
+    const prior = this.entries.get(asset.id);
+    if (
+      prior &&
+      prior.data === asset.dataUrl &&
+      prior.duration === asset.duration &&
+      prior.rate === context.sampleRate
+    ) {
+      this.entries.delete(asset.id);
+      this.entries.set(asset.id, prior);
+      return prior.buffer;
+    }
+    if (prior) {
+      this.bytes -= prior.bytes;
+      this.entries.delete(asset.id);
+    }
+    const token = this.serial,
+      buffer = await decodeAsset(context, asset),
+      bytes = buffer.length * buffer.numberOfChannels * 4;
+    this.decodes++;
+    if (token === this.serial && bytes <= this.budget) {
+      while (this.bytes + bytes > this.budget && this.entries.size) {
+        const first = this.entries.keys().next().value!;
+        this.bytes -= this.entries.get(first)!.bytes;
+        this.entries.delete(first);
+      }
+      this.entries.set(asset.id, {
+        data: asset.dataUrl,
+        duration: asset.duration,
+        rate: context.sampleRate,
+        buffer,
+        bytes,
+      });
+      this.bytes += bytes;
+    }
+    return buffer;
+  }
+  clear() {
+    this.serial++;
+    this.entries.clear();
+    this.bytes = 0;
+  }
+  stats() {
+    return {
+      bytes: this.bytes,
+      sources: this.entries.size,
+      decodes: this.decodes,
+    };
   }
 }
 export async function prepareAudio(
   context: AudioContext,
   project: Project,
   onProgress?: (label: string) => void,
+  range = { start: 0, end: project.scenes.reduce((n, s) => n + s.duration, 0) },
+  cache?: AudioDecodeCache,
 ) {
   const ids = new Set(
-      project.audioClips.filter((c) => !c.muted).map((c) => c.assetId),
+      audioPlan(project, range.start, range.end).map((p) => p.clip.assetId),
     ),
     buffers = new Map<string, AudioBuffer>();
   for (const asset of project.audioAssets.filter((a) => ids.has(a.id))) {
     onProgress?.(`Decoding ${asset.name}…`);
-    buffers.set(asset.id, await decodeAsset(context, asset));
+    buffers.set(
+      asset.id,
+      cache
+        ? await cache.get(context, asset)
+        : await decodeAsset(context, asset),
+    );
   }
   return buffers;
 }

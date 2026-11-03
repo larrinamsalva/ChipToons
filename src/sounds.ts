@@ -13,6 +13,9 @@ export const SOUNDS = [
   ["birds", "Little birds", "effects", 2.2],
   ["notice", "Friendly notification", "effects", 0.8],
   ["transition", "Gentle transition", "effects", 1.2],
+  ["reassure", "Reassuring chimes", "effects", 2.4],
+  ["tidy", "Tidy-up rhythm", "music", 6],
+  ["garden", "Quiet garden breeze", "music", 6],
 ] as const;
 export type SoundId = (typeof SOUNDS)[number][0];
 export function wavBytes(
@@ -81,7 +84,22 @@ export function builtInSound(id: SoundId): AudioAsset {
           (sine(notes[n % notes.length]) * 0.12 +
             sine(notes[n % notes.length] / 2) * 0.06) *
           Math.exp(-phase * 5);
-      } else if (id === "steps")
+      } else if (id === "reassure") {
+        const note = [392, 493.88, 587.33][Math.min(2, Math.floor(t / 0.8))];
+        value =
+          (sine(note) + sine(note * 2) * 0.15) *
+          0.11 *
+          Math.exp(-(t % 0.8) * 3);
+      } else if (id === "tidy") {
+        const note = [261.63, 329.63, 392, 329.63][Math.floor(t * 2) % 4];
+        value =
+          (sine(note) * 0.1 + sine(note / 2) * 0.035) *
+          Math.exp(-(t % 0.5) * 7);
+      } else if (id === "garden")
+        value =
+          brown * 0.25 +
+          (sine(261.63) + sine(392)) * 0.025 * (0.6 + 0.2 * Math.sin(t));
+      else if (id === "steps")
         value = noise * 0.23 * Math.exp(-(t % 0.35) * 35);
       else if (id === "door")
         value =

@@ -4,6 +4,9 @@ import { Dashboard } from "./components/Dashboard";
 import { DrawingPad } from "./components/DrawingPad";
 import { Editor } from "./components/Editor";
 import { Icon, Logo } from "./components/Icon";
+import { CreatorGuide } from "./components/CreatorGuide";
+import { ArtworkStart } from "./components/ArtworkStart";
+import type { ArtworkRole } from "./story";
 import { IdeaWizard } from "./components/IdeaWizard";
 import { Modal } from "./components/Modal";
 import { ArtLibrary } from "./components/ArtLibrary";
@@ -21,7 +24,22 @@ import {
 } from "./storage";
 
 type Dialog =
-  | { type: "idea"; starterId?: string }
+  | {
+      type: "idea";
+      starterId?: string;
+      artwork?: {
+        asset: Asset;
+        name: string;
+        role: ArtworkRole;
+        source: "sketch" | "image";
+      };
+    }
+  | {
+      type: "art-start";
+      source: "sketch" | "image";
+      initial?: { asset: Asset; name: string };
+    }
+  | { type: "art-draw" }
   | { type: "draw" | "help" | "upload" }
   | { type: "delete"; project: Project }
   | { type: "library"; sceneIndex?: number; draft?: LibraryItem }
@@ -113,6 +131,27 @@ export default function App() {
     const timer = setTimeout(() => setNotice(""), 4500);
     return () => clearTimeout(timer);
   }, [notice]);
+  useEffect(() => {
+    if (!current || saveStatus === "Saved on this device") return;
+    const protect = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", protect);
+    return () => window.removeEventListener("beforeunload", protect);
+  }, [current, saveStatus]);
+  async function saveDraft(p: Project) {
+    try {
+      await saveProject(p);
+    } catch (e) {
+      throw new Error(friendlyStorageError(e), {cause:e});
+    }
+    setProjects((list) => [p, ...list.filter((item) => item.id !== p.id)]);
+    setDialog(null);
+    setNotice(
+      "Draft saved on this device. Choose Continue story whenever you are ready.",
+    );
+  }
   function open(project: Project) {
     setCurrent(clone(project));
     setDialog(null);
@@ -360,6 +399,7 @@ export default function App() {
         <Dashboard
           projects={projects}
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
+          onGuidedArt={(source) => setDialog({ type: "art-start", source })}
           onDemo={() => open(starterProject())}
           onUpload={() => {
             setUploadError("");
@@ -389,6 +429,47 @@ export default function App() {
           starterId={dialog.starterId}
           onClose={() => setDialog(null)}
           onCreate={open}
+          onSaveDraft={saveDraft}
+          artwork={dialog.artwork}
+          onBack={
+            dialog.artwork
+              ? () =>
+                  setDialog({
+                    type: "art-start",
+                    source: dialog.artwork!.source,
+                    initial: {
+                      asset: dialog.artwork!.asset,
+                      name: dialog.artwork!.name,
+                    },
+                  })
+              : undefined
+          }
+        />
+      )}
+      {dialog?.type === "art-start" && (
+        <ArtworkStart
+          source={dialog.source}
+          initial={dialog.initial}
+          onClose={() => setDialog(null)}
+          onDraw={() => setDialog({ type: "art-draw" })}
+          onNext={(asset, name, role) =>
+            setDialog({
+              type: "idea",
+              artwork: { asset, name, role, source: dialog.source },
+            })
+          }
+        />
+      )}
+      {dialog?.type === "art-draw" && (
+        <DrawingPad
+          onClose={() => setDialog({ type: "art-start", source: "sketch" })}
+          onSave={(asset, name) =>
+            setDialog({
+              type: "art-start",
+              source: "sketch",
+              initial: { asset, name },
+            })
+          }
         />
       )}
       {dialog?.type === "library" && (
@@ -474,68 +555,10 @@ export default function App() {
         </Modal>
       )}
       {dialog?.type === "help" && (
-        <Modal
-          title="From a tiny spark to your own little toon."
+        <CreatorGuide
           onClose={() => setDialog(null)}
-        >
-          <p className="section-description">
-            Welcome to ChipToons, your friendly creative corner. Here’s your
-            first little adventure.
-          </p>
-          <ol className="guide-steps">
-            {[
-              [
-                "bulb",
-                "Start with a spark",
-                "Type an idea, pick a starter, upload original artwork, or draw a character.",
-              ],
-              [
-                "film",
-                "Make the story yours",
-                "Revise the outline, then edit the words, feelings, and setting of every scene. Add or rearrange scenes as you go.",
-              ],
-              [
-                "play",
-                "Give it a little life",
-                "Select a character in the timeline, choose an action and preview it. Apply the action, then move its keyframe diamonds or edit exact times. Add a camera move and press Play.",
-              ],
-              [
-                "download",
-                "Keep your story",
-                "Changes save on this device. Download a project backup to move browsers or keep an extra copy. Restore it from My cartoons.",
-              ],
-            ].map(([icon, title, text], i) => (
-              <li key={title}>
-                <span className={`guide-number step-${i}`}>
-                  <Icon name={icon} size={24} />
-                </span>
-                <div>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="local-note">
-            <Icon name="lock" size={18} />
-            <span>
-              No login. No uploads to a server. Clearing browser data removes
-              local projects, so keep a backup of stories you love.
-            </span>
-          </div>
-          <p className="field-hint">
-            This version includes reusable art libraries, editable animation
-            keyframes, timed expressions, empathy hearts and camera movement.
-            Record voices, add sounds and timed captions, then use Finish My
-            Cartoon to export a playable WebM video in supported browsers.
-          </p>
-          <div className="modal-actions">
-            <button className="button primary" onClick={() => setDialog(null)}>
-              Let’s make something
-              <Icon name="arrow" />
-            </button>
-          </div>
-        </Modal>
+          onStep={() => setDialog({ type: "idea" })}
+        />
       )}
       {dialog?.type === "delete" && (
         <Modal

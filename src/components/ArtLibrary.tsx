@@ -12,16 +12,25 @@ import {
   starterLibrary,
 } from "../library";
 import type { LibraryItem, LibraryKind } from "../library";
-import { starterProject } from "../planner";
+import { DEFAULT_IDEA, planStory } from "../planner";
 import { readImage, downloadBlob, safeFilename } from "../files";
 import { Stage } from "./Stage";
 import { Modal } from "./Modal";
 import { Icon } from "./Icon";
 import { DrawingPad } from "./DrawingPad";
+import {
+  libraryBackup,
+  readLibraryBackup,
+  restoreLibraryBackup,
+} from "../library-backup";
+import { friendlyStorageError } from "../storage";
 import { ImageControls } from "./ImageControls";
 
 export function ArtThumbnail({ item }: { item: LibraryItem }) {
-  const base = useMemo(() => starterProject(), []);
+  const base = useMemo(
+    () => planStory({ ...DEFAULT_IDEA, idea: "An artwork preview" }),
+    [],
+  );
   const p = {
     ...base,
     assets: item.assets,
@@ -86,6 +95,46 @@ export function ArtLibrary({
   const [busy, setBusy] = useState(false);
   const [help, setHelp] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
+  async function downloadLibrary() {
+    setBusy(true);
+    setError("");
+    try {
+      const backup = await libraryBackup();
+      downloadBlob(
+        new Blob([JSON.stringify(backup)], { type: "application/json" }),
+        "chiptoons-art-library.json",
+      );
+      setNotice(
+        "Art-library backup downloaded. Project backups are kept separately.",
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : friendlyStorageError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function restoreLibrary(file?: File) {
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    try {
+      const count = await restoreLibraryBackup(await readLibraryBackup(file));
+      setItems(await listLibrary());
+      setNotice(
+        `Restored ${count} artwork copies. Existing entries and projects are unchanged.`,
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error && e.name !== "QuotaExceededError"
+          ? e.message
+          : friendlyStorageError(e),
+      );
+    } finally {
+      setBusy(false);
+      if (backupInput.current) backupInput.current.value = "";
+    }
+  }
   useEffect(() => {
     let alive = true;
     listLibrary()
@@ -479,6 +528,39 @@ export function ArtLibrary({
         Save a character once. Give it a hundred adventures. Your cartoons keep
         independent copies.
       </p>
+      <details className="library-backup">
+        <summary>Back up or restore my reusable art</summary>
+        <p className="field-hint">
+          Save your personal characters, backgrounds, props, editable drawings
+          and palette. Restore adds copies atomically; it never replaces an
+          entry or changes a project. Up to 120 entries / 64 MB per backup.
+        </p>
+        <input
+          ref={backupInput}
+          type="file"
+          accept=".json,application/json"
+          className="visually-hidden"
+          tabIndex={-1}
+          aria-label="Restore art-library backup file"
+          onChange={(e) => void restoreLibrary(e.target.files?.[0])}
+        />
+        <div className="animation-actions">
+          <button
+            className="button secondary small"
+            disabled={busy}
+            onClick={() => void downloadLibrary()}
+          >
+            Download art-library backup
+          </button>
+          <button
+            className="button secondary small"
+            disabled={busy}
+            onClick={() => backupInput.current?.click()}
+          >
+            Restore art-library copies
+          </button>
+        </div>
+      </details>
       <div className="library-tabs" aria-label="Artwork categories">
         {(["character", "background", "prop", "drawing"] as LibraryKind[]).map(
           (k) => (

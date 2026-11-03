@@ -1,4 +1,6 @@
 import { emptyProduction, validProduction } from "./media-model";
+import { CHAPTERS } from "./story-model";
+import type { ChapterId, CreationSource } from "./story-model";
 import type { Production } from "./media-model";
 import {
   validElementAnimation,
@@ -96,6 +98,8 @@ export interface SceneElement {
   animation?: ElementAnimation;
 }
 export interface Scene {
+  chapter?: ChapterId;
+  question?: string;
   id: string;
   title: string;
   narration: string;
@@ -118,6 +122,8 @@ export interface Outline {
   ending: string;
 }
 export interface Project extends Production {
+  creationSource?: CreationSource;
+  templateId?: string;
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   title: string;
@@ -224,6 +230,9 @@ export function validateProject(value: unknown): Project {
   const p = value;
   if (
     p.schemaVersion !== SCHEMA_VERSION ||
+    (p.creationSource !== undefined &&
+      !oneOf(p.creationSource, ["thought", "sketch", "image"])) ||
+    (p.templateId !== undefined && !validString(p.templateId, 80)) ||
     !validString(p.id, 100) ||
     !p.id ||
     !validString(p.title, 160) ||
@@ -315,6 +324,8 @@ export function validateProject(value: unknown): Project {
       !s.title.trim() ||
       !validString(s.narration) ||
       !validString(s.dialogue) ||
+      (s.chapter !== undefined && !CHAPTERS.some((c) => c.id === s.chapter)) ||
+      (s.question !== undefined && !validString(s.question, 500)) ||
       !bounded(s.duration, 2, 120) ||
       !oneOf(s.background, BACKGROUNDS) ||
       !oneOf(s.camera, ["wide", "close"]) ||

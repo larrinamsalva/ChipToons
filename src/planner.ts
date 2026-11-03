@@ -1,3 +1,4 @@
+import { CHAPTERS } from "./story-model";
 import { addDemoProduction } from "./demo-production";
 import { emptyProduction } from "./media-model";
 import { animateInclusion } from "./demo-animation";
@@ -93,6 +94,52 @@ export const STARTERS = [
     color: "peach",
     icon: "flower",
   },
+  {
+    id: "differences",
+    category: "Respecting differences",
+    title: "Every color in our parade",
+    description: "Different ways to join make a brighter parade.",
+    idea: "Friends design a pretend parade where everyone can join in their own comfortable way.",
+    lesson: "Ask what makes someone comfortable and respect their answer.",
+    background: "playground",
+    color: "lavender",
+    icon: "heart",
+  },
+  {
+    id: "privacy",
+    category: "Personal information safety",
+    title: "The puzzling prize message",
+    description: "Pause, keep details private, ask a trusted adult.",
+    idea: "A pretend tablet message asks for a home address to win a toy. The friends pause, do not reply, and show a trusted grown-up.",
+    lesson:
+      "Keep personal details private. Stop and ask a trusted grown-up about an unexpected request.",
+    background: "classroom",
+    color: "sky",
+    icon: "shield",
+  },
+  {
+    id: "nature",
+    category: "Caring for nature",
+    title: "A tiny home for the ladybird",
+    description: "Little helpers care for a living world.",
+    idea: "Children notice a ladybird in the garden and ask a trusted grown-up how to care for its habitat without disturbing it.",
+    lesson: "Watch gently, leave living things safe, and care for their home.",
+    background: "garden",
+    color: "mint",
+    icon: "flower",
+  },
+  {
+    id: "chores",
+    category: "Chores & responsibility",
+    title: "The sock basket adventure",
+    description: "Small shared jobs make a cozy home.",
+    idea: "Two friends turn sorting clean socks into a cheerful matching game and put their own things away.",
+    lesson:
+      "Small helpful jobs and asking for help are ways to care for our home.",
+    background: "house",
+    color: "yellow",
+    icon: "sun",
+  },
 ] as const;
 
 export const DEFAULT_IDEA: IdeaInput = {
@@ -183,6 +230,15 @@ export function planStory(input: IdeaInput): Project {
     return {
       ...scene,
       ...content,
+      chapter: CHAPTERS[i].id,
+      question: [
+        "What do you notice?",
+        "How might our friend feel?",
+        "What could we ask kindly?",
+        "Which safe idea could we try?",
+        "How did taking turns help?",
+        "What small kind thing could you try today?",
+      ][i],
       background: /class|room|school/i.test(setting)
         ? ("classroom" as const)
         : ("meadow" as const),
@@ -211,6 +267,7 @@ export function planStory(input: IdeaInput): Project {
     schemaVersion: 4,
     ...emptyProduction(),
     id: uid(),
+    creationSource: "thought",
     title: input.title.trim().slice(0, 160) || "My little big story",
     idea,
     lesson,
@@ -243,9 +300,21 @@ export function starterProject(id = "kindness"): Project {
     idea: starter.idea,
     lesson: starter.lesson,
   });
+  p.templateId = starter.id;
   p.scenes.forEach((s) => {
     s.background = starter.background;
   });
+  if (id !== "kindness") {
+    p.scenes[1].narration = `${starter.idea} ${starter.lesson}`;
+    p.scenes[2].dialogue =
+      'Pip: "Let’s pause and listen."\nSunny: "We can ask a trusted grown-up if we are unsure."';
+    p.scenes[4].narration = `The friends practice one small step together. ${starter.lesson} They leave time for everyone to answer and try.`;
+    p.scenes[5].question =
+      `What could you try with a trusted grown-up? ${starter.lesson}`.slice(
+        0,
+        500,
+      );
+  }
   if (id === "kindness") {
     const content = [
       [

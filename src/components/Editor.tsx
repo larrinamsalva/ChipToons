@@ -2,7 +2,13 @@ import { PreviewAudio } from "../audio-engine";
 import type { AudioCategory } from "../media-model";
 import { reconcileProduction, duplicateSceneMedia } from "../production";
 import { VoiceStudio } from "./VoiceStudio";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, memo, Suspense, useEffect, useRef, useState } from "react";
+import { StoryOverview } from "./StoryOverview";
+import { CharacterReference } from "./CharacterReference";
+import { CreatorGuide } from "./CreatorGuide";
+import { CHAPTERS } from "../story-model";
+import { chapterOf } from "../story";
+import type { ChapterId } from "../story-model";
 import { Modal } from "./Modal";
 import {
   makeScene,
@@ -43,6 +49,17 @@ const FinishCartoon = lazy(() =>
   import("./FinishCartoon").then((m) => ({ default: m.FinishCartoon })),
 );
 
+// Unchanged scene thumbnails do not rerender when another scene or media is edited.
+const SceneThumbnail = memo(
+  ({ project, scene }: { project: Project; scene: Scene }) => (
+    <Stage project={project} scene={scene} labelled={false} />
+  ),
+  (a, b) =>
+    a.scene === b.scene &&
+    a.project.characters === b.project.characters &&
+    a.project.assets === b.project.assets,
+);
+
 export function Editor({
   project,
   onChange,
@@ -68,6 +85,10 @@ export function Editor({
   onRetry: () => void;
   onLibrary: (sceneIndex: number, draft?: LibraryItem) => void;
 }) {
+  const [backupReminder, setBackupReminder] = useState(true);
+  const [overview, setOverview] = useState(false),
+    [reference, setReference] = useState(false),
+    [guide, setGuide] = useState(false);
   const [selected, setSelected] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [audio] = useState(() => new PreviewAudio());
@@ -93,6 +114,7 @@ export function Editor({
   const index = Math.min(selected, project.scenes.length - 1);
   const scene = project.scenes[index];
   const displayedIndex = index;
+  const pageStart = Math.floor(index / 12) * 12;
   const element =
     scene.elements[
       Math.max(0, Math.min(elementIndex, scene.elements.length - 1))
@@ -344,7 +366,10 @@ export function Editor({
   function addScene() {
     if (project.scenes.length >= 120) return;
     const scenes = [...project.scenes];
-    scenes.splice(index + 1, 0, makeScene(project.characters, scenes.length));
+    scenes.splice(index + 1, 0, {
+      ...makeScene(project.characters, scenes.length),
+      chapter: chapterOf(scene, index, project.scenes.length),
+    });
     try {
       validateProject({
         ...project,
@@ -510,6 +535,30 @@ export function Editor({
           </button>
         </div>
       </div>
+      {backupReminder && (
+        <div className="backup-reminder">
+          <span>
+            Local saving stays in this browser. Keep a portable project backup
+            before clearing browser data or changing devices.
+          </span>
+          <button
+            className="button text small"
+            onClick={() => {
+              exportProject(project);
+              setBackupReminder(false);
+            }}
+          >
+            Back up now
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Dismiss backup reminder"
+            onClick={() => setBackupReminder(false)}
+          >
+            <Icon name="close" size={16} />
+          </button>
+        </div>
+      )}
       <nav className="production-steps" aria-label="Cartoon production steps">
         {[
           "Story",
@@ -554,6 +603,24 @@ export function Editor({
           Let’s bring your story to life.
         </div>
         <div className="toolbar-actions">
+          <button
+            className="button secondary small"
+            onClick={() => {
+              halt();
+              setOverview(true);
+            }}
+          >
+            Story chapters
+          </button>
+          <button
+            className="button text small"
+            onClick={() => {
+              halt();
+              setGuide(true);
+            }}
+          >
+            Guided tutorial
+          </button>
           <button
             className="button primary small finish-button"
             onClick={() => {
@@ -648,59 +715,98 @@ export function Editor({
             <span className="count-badge">{project.scenes.length}</span>
           </div>
           <p className="panel-hint">Little moments, one big story.</p>
-          <ol className="scene-list">
-            {project.scenes.map((s, i) => (
-              <li className={displayedIndex === i ? "selected" : ""} key={s.id}>
-                <button
-                  aria-current={displayedIndex === i ? "step" : undefined}
-                  className="scene-card"
-                  onClick={() => selectScene(i)}
+          {project.scenes.length > 12 && (
+            <div className="scene-pagination">
+              <button
+                className="icon-button"
+                aria-label="Previous 12 storyboard scenes"
+                disabled={pageStart === 0}
+                onClick={() => selectScene(pageStart - 1)}
+              >
+                <Icon name="previous" />
+              </button>
+              <span>
+                {pageStart + 1}–
+                {Math.min(pageStart + 12, project.scenes.length)} of{" "}
+                {project.scenes.length}
+              </span>
+              <button
+                className="icon-button"
+                aria-label="Next 12 storyboard scenes"
+                disabled={pageStart + 12 >= project.scenes.length}
+                onClick={() => selectScene(pageStart + 12)}
+              >
+                <Icon name="next" />
+              </button>
+            </div>
+          )}
+          <ol className="scene-list" start={pageStart + 1}>
+            {project.scenes.slice(pageStart, pageStart + 12).map((s, n) => {
+              const i = pageStart + n;
+              return (
+                <li
+                  className={displayedIndex === i ? "selected" : ""}
+                  key={s.id}
                 >
-                  <span className="scene-thumbnail" data-scene-thumbnail={i}>
-                    <Stage project={project} scene={s} labelled={false} />
-                    <span>{String(i + 1).padStart(2, "0")}</span>
-                    <small>{s.duration}s</small>
-                  </span>
-                  <strong>{s.title}</strong>
-                </button>
-                {index === i && (
-                  <div className="scene-card-actions">
-                    <button
-                      className="icon-button"
-                      aria-label={`Move scene ${i + 1} up`}
-                      disabled={i === 0 || playing}
-                      onClick={() => moveScene(-1)}
-                    >
-                      <Icon name="up" size={16} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label={`Move scene ${i + 1} down`}
-                      disabled={i === project.scenes.length - 1 || playing}
-                      onClick={() => moveScene(1)}
-                    >
-                      <Icon name="down" size={16} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label="Duplicate scene"
-                      disabled={playing || project.scenes.length >= 120}
-                      onClick={duplicateScene}
-                    >
-                      <Icon name="copy" size={15} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label="Remove scene"
-                      disabled={playing || project.scenes.length === 1}
-                      onClick={removeScene}
-                    >
-                      <Icon name="trash" size={15} />
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
+                  <button
+                    aria-current={displayedIndex === i ? "step" : undefined}
+                    className="scene-card"
+                    onClick={() => selectScene(i)}
+                  >
+                    <span className="scene-thumbnail" data-scene-thumbnail={i}>
+                      <SceneThumbnail project={project} scene={s} />
+                      <span>{String(i + 1).padStart(2, "0")}</span>
+                      <small>{s.duration}s</small>
+                    </span>
+                    <strong>{s.title}</strong>
+                    <span className="scene-chapter-label" aria-hidden="true">
+                      {
+                        CHAPTERS.find(
+                          (c) =>
+                            c.id === chapterOf(s, i, project.scenes.length),
+                        )?.label
+                      }
+                    </span>
+                  </button>
+                  {index === i && (
+                    <div className="scene-card-actions">
+                      <button
+                        className="icon-button"
+                        aria-label={`Move scene ${i + 1} up`}
+                        disabled={i === 0 || playing}
+                        onClick={() => moveScene(-1)}
+                      >
+                        <Icon name="up" size={16} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label={`Move scene ${i + 1} down`}
+                        disabled={i === project.scenes.length - 1 || playing}
+                        onClick={() => moveScene(1)}
+                      >
+                        <Icon name="down" size={16} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="Duplicate scene"
+                        disabled={playing || project.scenes.length >= 120}
+                        onClick={duplicateScene}
+                      >
+                        <Icon name="copy" size={15} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="Remove scene"
+                        disabled={playing || project.scenes.length === 1}
+                        onClick={removeScene}
+                      >
+                        <Icon name="trash" size={15} />
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
           <button
             className="button dashed small add-scene"
@@ -808,6 +914,41 @@ export function Editor({
                     onLibrary(index, libraryItemFromElement(project, element));
                 }}
               />
+              {character && (
+                <button
+                  className="button secondary small"
+                  onClick={() => {
+                    halt();
+                    setReference(true);
+                  }}
+                >
+                  Character reference
+                </button>
+              )}
+              <label>
+                Chapter
+                <select
+                  value={chapterOf(scene, index, project.scenes.length)}
+                  onChange={(e) =>
+                    changeScene({ chapter: e.target.value as ChapterId })
+                  }
+                >
+                  {CHAPTERS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Learning question
+                <input
+                  maxLength={500}
+                  value={scene.question ?? ""}
+                  placeholder="What could our friend try?"
+                  onChange={(e) => changeScene({ question: e.target.value })}
+                />
+              </label>
               <label>
                 Scene title
                 <input
@@ -1284,6 +1425,56 @@ export function Editor({
           )}
         </aside>
       </div>
+      {overview && (
+        <StoryOverview
+          project={project}
+          selected={index}
+          onChange={updateProduction}
+          onScene={(i) => {
+            selectScene(i);
+            setOverview(false);
+            setMobilePanel("stage");
+          }}
+          onClose={() => setOverview(false)}
+        />
+      )}
+      {reference && element && character && (
+        <CharacterReference
+          project={project}
+          source={element}
+          sceneId={scene.id}
+          onChange={updateProduction}
+          onLibrary={() => {
+            setReference(false);
+            onLibrary(index);
+          }}
+          onClose={() => setReference(false)}
+        />
+      )}
+      {guide && (
+        <CreatorGuide
+          inEditor
+          onClose={() => setGuide(false)}
+          onStep={(step) => {
+            setGuide(false);
+            if (step === "art") onLibrary(index);
+            else if (step === "scenes") setOverview(true);
+            else if (step === "voice") openVoice(undefined, "narration");
+            else if (step === "music") openVoice(undefined, "music", "sound");
+            else if (step === "export") setFinish(true);
+            else {
+              setMobilePanel("stage");
+              requestAnimationFrame(() =>
+                document
+                  .querySelector(
+                    step === "animation" ? ".animation-studio" : ".stage-panel",
+                  )
+                  ?.scrollIntoView({ block: "start" }),
+              );
+            }
+          }}
+        />
+      )}
       {voiceStudio && (
         <VoiceStudio
           project={project}
@@ -1321,6 +1512,17 @@ export function Editor({
           <FinishCartoon
             project={project}
             saveStatus={saveStatus}
+            onScene={(i, reviewPanel) => {
+              setFinish(false);
+              selectScene(i);
+              setMobilePanel("properties");
+              if (reviewPanel)
+                openVoice(
+                  undefined,
+                  undefined,
+                  reviewPanel === "captions" ? "captions" : undefined,
+                );
+            }}
             onClose={() => setFinish(false)}
             onVoices={() => {
               setFinish(false);
