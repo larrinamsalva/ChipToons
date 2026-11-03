@@ -13,8 +13,16 @@ export function db(): Promise<IDBDatabase> {
           "This browser cannot save locally. Download a project backup to keep your work.",
         ),
       );
-    const req = indexedDB.open(DB_NAME, 2);
+    const req = indexedDB.open(DB_NAME, 4);
+    let blocked = false;
     req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains("media"))
+        req.result.createObjectStore("media", { keyPath: "key" });
+      const media = req.transaction!.objectStore("media");
+      if (!media.indexNames.contains("identity"))
+        media.createIndex("identity", ["key", "sha256", "size", "mime"], {
+          unique: true,
+        });
       if (!req.result.objectStoreNames.contains(STORE))
         req.result.createObjectStore(STORE, { keyPath: "id" });
       if (!req.result.objectStoreNames.contains("library"))
@@ -24,6 +32,10 @@ export function db(): Promise<IDBDatabase> {
     };
     req.onsuccess = () => {
       const result = req.result;
+      if (blocked) {
+        result.close();
+        return;
+      }
       result.onversionchange = () => {
         result.close();
         connection = undefined;
@@ -35,6 +47,7 @@ export function db(): Promise<IDBDatabase> {
       reject(req.error);
     };
     req.onblocked = () => {
+      blocked = true;
       connection = undefined;
       reject(
         new Error(
@@ -78,12 +91,31 @@ export async function saveProject(project: Project): Promise<void> {
   validateProject(project);
   const database = await db();
   return new Promise((resolve, reject) => {
-    const tx = database.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(project);
+    const tx = database.transaction([STORE, "media"], "readwrite");
+    try {
+      checkAudioReferences(tx, project);
+      tx.objectStore(STORE).put(project);
+    } catch (error) {
+      tx.abort();
+      reject(error);
+    }
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error("Could not save project."));
     tx.onabort = () => reject(tx.error ?? new Error("Saving was interrupted."));
   });
+}
+// Index keys verify immutable identities without reading any encoded payload.
+export function checkAudioReferences(tx: IDBTransaction, project: Project) {
+  for (const a of project.audioAssets)
+    if (a.file) {
+      const request = tx
+        .objectStore("media")
+        .index("identity")
+        .getKey([a.file.key, a.file.sha256, a.file.size, a.mime]);
+      request.onsuccess = () => {
+        if (request.result !== a.file!.key) tx.abort();
+      };
+    }
 }
 export async function deleteProject(id: string): Promise<void> {
   const database = await db();

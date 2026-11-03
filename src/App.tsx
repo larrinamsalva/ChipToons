@@ -1,3 +1,4 @@
+import { restoreProjectFile } from "./episode-package";
 import { emptyProduction } from "./media-model";
 import { useEffect, useRef, useState } from "react";
 import { Dashboard } from "./components/Dashboard";
@@ -12,8 +13,8 @@ import { Modal } from "./components/Modal";
 import { ArtLibrary } from "./components/ArtLibrary";
 import { placeLibraryItem } from "./library";
 import type { LibraryItem } from "./library";
-import { exportProject, readImage, readProject } from "./files";
-import { clone, duplicateProject, uid } from "./model";
+import { exportProject, readImage } from "./files";
+import { clone, duplicateProject } from "./model";
 import type { Asset, Project } from "./model";
 import { starterProject } from "./planner";
 import {
@@ -69,6 +70,26 @@ export default function App() {
   const imageInput = useRef<HTMLInputElement>(null);
   const [working, setWorking] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [backupProgress, setBackupProgress] = useState<{
+    phase: string;
+    fraction: number;
+  } | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const restoreController = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const progress = (e: Event) => setBackupProgress((e as CustomEvent).detail);
+    const error = (e: Event) => {
+      setBackupProgress(null);
+      setNotice((e as CustomEvent).detail);
+    };
+    window.addEventListener("chiptoons-backup-progress", progress);
+    window.addEventListener("chiptoons-backup-error", error);
+    return () => {
+      window.removeEventListener("chiptoons-backup-progress", progress);
+      window.removeEventListener("chiptoons-backup-error", error);
+      restoreController.current?.abort();
+    };
+  }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     try {
@@ -144,7 +165,7 @@ export default function App() {
     try {
       await saveProject(p);
     } catch (e) {
-      throw new Error(friendlyStorageError(e), {cause:e});
+      throw new Error(friendlyStorageError(e), { cause: e });
     }
     setProjects((list) => [p, ...list.filter((item) => item.id !== p.id)]);
     setDialog(null);
@@ -202,6 +223,22 @@ export default function App() {
       setWorking(false);
     }
   }
+  async function openDemo() {
+    if (working) return;
+    setWorking(true);
+    setNotice("Opening the original friendship example…");
+    try {
+      const { starterProject: voicedDemo } = await import("./demo-starter");
+      open(voicedDemo());
+      setNotice("");
+    } catch {
+      setNotice(
+        "The example’s local audio could not load. Try again when this page has finished loading.",
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
   function fromAsset(asset: Asset, name: string) {
     const p = starterProject();
     Object.assign(p, emptyProduction());
@@ -232,13 +269,13 @@ export default function App() {
     if (!file) return;
     setWorking(true);
     try {
-      const imported = await readProject(file);
-      const p = {
-        ...imported,
-        id: uid(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const controller = new AbortController();
+      restoreController.current = controller;
+      setRestoring(true);
+      const p = await restoreProjectFile(file, {
+        signal: controller.signal,
+        onProgress: setBackupProgress,
+      });
       open(p);
       setNotice(
         "Backup restored as a separate project. Your existing stories are safe.",
@@ -249,6 +286,9 @@ export default function App() {
       );
     } finally {
       setWorking(false);
+      restoreController.current = null;
+      setRestoring(false);
+      setBackupProgress(null);
       if (backupInput.current) backupInput.current.value = "";
     }
   }
@@ -359,6 +399,32 @@ export default function App() {
           </div>
         </div>
       </header>
+      {backupProgress && (
+        <div className="storage-banner" role="status">
+          <span>{backupProgress.phase}</span>
+          <progress
+            aria-label="Complete episode backup progress"
+            max={1}
+            value={backupProgress.fraction}
+          />
+          {restoring ? (
+            <button
+              className="button secondary small"
+              onClick={() => restoreController.current?.abort()}
+            >
+              Cancel restoration
+            </button>
+          ) : (
+            <button
+              className="icon-button"
+              aria-label="Dismiss backup progress"
+              onClick={() => setBackupProgress(null)}
+            >
+              <Icon name="close" />
+            </button>
+          )}
+        </div>
+      )}
       {storageError && (
         <div className="storage-banner" role="alert">
           <Icon name="folder" size={20} />
@@ -371,6 +437,12 @@ export default function App() {
               Download my work
             </button>
           )}
+          <button
+            className="button secondary small"
+            onClick={() => backupInput.current?.click()}
+          >
+            Restore backup as a new copy
+          </button>
         </div>
       )}
       {!loaded ? (
@@ -400,7 +472,7 @@ export default function App() {
           projects={projects}
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
-          onDemo={() => open(starterProject())}
+          onDemo={() => void openDemo()}
           onUpload={() => {
             setUploadError("");
             setDialog({ type: "upload" });
@@ -567,7 +639,9 @@ export default function App() {
         >
           <p>
             <strong>{dialog.project.title}</strong> will be removed from this
-            device. A downloaded backup can still restore it.
+            device. A downloaded backup can still restore it. Separate local
+            audio originals are retained for recovery and other episodes. Keep
+            complete backups before clearing browser data.
           </p>
           <div className="modal-actions">
             <button
@@ -590,7 +664,7 @@ export default function App() {
       <input
         type="file"
         ref={backupInput}
-        accept=".json,application/json"
+        accept=".json,.ctepisode,application/json,application/octet-stream"
         className="visually-hidden"
         tabIndex={-1}
         aria-label="Restore project backup file"

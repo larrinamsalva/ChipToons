@@ -5067,3 +5067,52 @@ input[type="color"] {
     font-size: 13px;
   }
 }
+.episode-audio-storage,
+.episode-readiness {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin: 18px 0;
+  background: var(--field);
+}
+.episode-audio-storage {
+  display: grid;
+  gap: 12px;
+}
+.episode-scene-review {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  max-height: 440px;
+  overflow: auto;
+}
+.episode-scene-review > div {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
+}
+.episode-scene-review span {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+@media (max-width: 740px) {
+  .episode-scene-review {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .episode-audio-storage .button,
+  .episode-scene-review .button {
+    min-height: 44px;
+  }
+  .storage-banner {
+    flex-wrap: wrap;
+  }
+  .storage-banner progress {
+    max-width: 180px;
+  }
+}

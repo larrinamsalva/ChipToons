@@ -1,3 +1,4 @@
+import { episodePackage } from "./episode-package";
 import { MAX_ASSET_BYTES, MAX_PROJECT_BYTES, parseBackup, uid } from "./model";
 import type { Asset, Project } from "./model";
 
@@ -17,6 +18,28 @@ export const safeFilename = (title: string) =>
     .replace(/^-|-$/g, "")
     .slice(0, 70) || "chiptoons-story";
 export function exportProject(project: Project) {
+  if (project.audioAssets.some((a) => a.file)) {
+    const progress = (detail: { phase: string; fraction: number }) =>
+      window.dispatchEvent(
+        new CustomEvent("chiptoons-backup-progress", { detail }),
+      );
+    void episodePackage(project, { onProgress: progress })
+      .then((blob) => {
+        downloadBlob(blob, `${safeFilename(project.title)}.ctepisode`);
+        progress({ phase: "Complete episode backup downloaded", fraction: 1 });
+      })
+      .catch((e) =>
+        window.dispatchEvent(
+          new CustomEvent("chiptoons-backup-error", {
+            detail:
+              e instanceof Error
+                ? e.message
+                : "Backup failed. Your project is unchanged.",
+          }),
+        ),
+      );
+    return;
+  }
   downloadBlob(
     new Blob([JSON.stringify(project, null, 2)], { type: "application/json" }),
     `${safeFilename(project.title)}.chiptoons.json`,

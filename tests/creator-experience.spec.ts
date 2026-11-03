@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
-import { starterProject } from "../src/planner";
+import { starterProject } from "../src/demo-starter";
 import { clone } from "../src/model";
 import {
   demo,

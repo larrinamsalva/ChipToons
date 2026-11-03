@@ -1,3 +1,4 @@
+import { audioBytes, storeAudio } from "./audio-vault";
 import { uid } from "./model";
 import {
   AUDIO_MIMES,
@@ -60,7 +61,7 @@ export async function decodeAsset(
   context: AudioContext,
   asset: AudioAsset,
 ): Promise<AudioBuffer> {
-  const bytes = dataBytes(asset.dataUrl);
+  const bytes = await audioBytes(asset);
   if (!audioSignature(bytes, asset.mime))
     throw new Error(`${asset.name} is not a valid audio file.`);
   await metadataDuration(
@@ -77,6 +78,7 @@ export async function decodeAsset(
   if (
     buffer.duration > MAX_AUDIO_SECONDS + 0.01 ||
     buffer.numberOfChannels > 2 ||
+    buffer.numberOfChannels !== asset.channels ||
     Math.abs(buffer.duration - asset.duration) > 0.2
   )
     throw new Error(
@@ -87,6 +89,8 @@ export async function decodeAsset(
 export async function readAudio(
   file: File,
   recordingSeconds?: number,
+  stored = false,
+  known: readonly AudioAsset[] = [],
 ): Promise<AudioAsset> {
   let mime = file.type.toLowerCase().split(";")[0];
   if (["audio/x-wav", "audio/wave", "audio/vnd.wave"].includes(mime))
@@ -130,15 +134,22 @@ export async function readAudio(
       type = recordingSeconds === undefined ? (mime as AudioMime) : "audio/wav";
     if (output.length > MAX_AUDIO_BYTES)
       throw new Error("This recording is too large. Keep it under 12 MB.");
-    return {
+    const asset: AudioAsset = {
       id: uid(),
       name: file.name.replace(/\.[^.]+$/, "").slice(0, 160) || "My recording",
       mime: type,
-      dataUrl: audioUrl(output, type),
+      dataUrl: stored ? "" : audioUrl(output, type),
       duration: buffer.duration,
       channels: recordingSeconds === undefined ? buffer.numberOfChannels : 1,
       sampleRate: buffer.sampleRate,
     };
+    return stored
+      ? await storeAudio(
+          asset,
+          new Blob([output as Uint8Array<ArrayBuffer>], { type }),
+          known,
+        )
+      : asset;
   } catch (error) {
     throw new Error(
       error instanceof Error

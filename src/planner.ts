@@ -1,5 +1,4 @@
 import { CHAPTERS } from "./story-model";
-import { addDemoProduction } from "./demo-production";
 import { emptyProduction } from "./media-model";
 import { animateInclusion } from "./demo-animation";
 import { makeScene, uid } from "./model";
@@ -360,7 +359,6 @@ export function starterProject(id = "kindness"): Project {
   }
   if (id === "kindness") {
     animateInclusion(p);
-    addDemoProduction(p);
   }
   return p;
 }

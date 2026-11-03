@@ -19,3 +19,7 @@ ffmpeg -f lavfi -i "flite=text='Thank you for making room for me.':voice=kal" -a
 ```
 
 Flite is by the Language Technologies Institute, Carnegie Mellon University, Alan W Black, David Huggins-Daines and contributors. Its permissive copyright notice is retained in `public/licenses/flite.txt` as attribution for the offline tool. This attribution does not imply endorsement. Original synthesized music and effects are implemented in `src/sounds.ts` without third-party recordings.
+
+## @noble/hashes
+
+The SHA-256 integrity fallback uses `@noble/hashes` by Paul Miller under the MIT license. Its license is retained in `public/licenses/noble-hashes-MIT.txt`. Web Crypto is preferred where available; both implementations produce the same standard SHA-256 digest. Checksums detect corruption and are not digital signatures or proof of authorship.

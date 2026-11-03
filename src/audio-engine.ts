@@ -137,6 +137,7 @@ export class AudioDecodeCache {
   private bytes = 0;
   private serial = 0;
   decodes = 0;
+  private pending = new Map<string, Promise<AudioBuffer>>();
   private readonly budget: number;
   constructor(budget = 64 * 1024 * 1024) {
     this.budget = budget;
@@ -145,7 +146,7 @@ export class AudioDecodeCache {
     const prior = this.entries.get(asset.id);
     if (
       prior &&
-      prior.data === asset.dataUrl &&
+      prior.data === (asset.file?.sha256 ?? asset.dataUrl) &&
       prior.duration === asset.duration &&
       prior.rate === context.sampleRate
     ) {
@@ -157,30 +158,42 @@ export class AudioDecodeCache {
       this.bytes -= prior.bytes;
       this.entries.delete(asset.id);
     }
-    const token = this.serial,
-      buffer = await decodeAsset(context, asset),
-      bytes = buffer.length * buffer.numberOfChannels * 4;
-    this.decodes++;
-    if (token === this.serial && bytes <= this.budget) {
-      while (this.bytes + bytes > this.budget && this.entries.size) {
-        const first = this.entries.keys().next().value!;
-        this.bytes -= this.entries.get(first)!.bytes;
-        this.entries.delete(first);
+    const pendingKey = `${asset.id}:${asset.file?.sha256 ?? asset.dataUrl}:${context.sampleRate}`;
+    const existing = this.pending.get(pendingKey);
+    if (existing) return existing;
+    const job = (async () => {
+      const token = this.serial,
+        buffer = await decodeAsset(context, asset),
+        bytes = buffer.length * buffer.numberOfChannels * 4;
+      this.decodes++;
+      if (token === this.serial && bytes <= this.budget) {
+        while (this.bytes + bytes > this.budget && this.entries.size) {
+          const first = this.entries.keys().next().value!;
+          this.bytes -= this.entries.get(first)!.bytes;
+          this.entries.delete(first);
+        }
+        this.entries.set(asset.id, {
+          data: asset.file?.sha256 ?? asset.dataUrl,
+          duration: asset.duration,
+          rate: context.sampleRate,
+          buffer,
+          bytes,
+        });
+        this.bytes += bytes;
       }
-      this.entries.set(asset.id, {
-        data: asset.dataUrl,
-        duration: asset.duration,
-        rate: context.sampleRate,
-        buffer,
-        bytes,
-      });
-      this.bytes += bytes;
+      return buffer;
+    })();
+    this.pending.set(pendingKey, job);
+    try {
+      return await job;
+    } finally {
+      if (this.pending.get(pendingKey) === job) this.pending.delete(pendingKey);
     }
-    return buffer;
   }
   clear() {
     this.serial++;
     this.entries.clear();
+    this.pending.clear();
     this.bytes = 0;
   }
   stats() {
@@ -199,9 +212,20 @@ export async function prepareAudio(
   cache?: AudioDecodeCache,
 ) {
   const ids = new Set(
-      audioPlan(project, range.start, range.end).map((p) => p.clip.assetId),
-    ),
-    buffers = new Map<string, AudioBuffer>();
+    audioPlan(project, range.start, range.end).map((p) => p.clip.assetId),
+  );
+  const estimate = project.audioAssets
+    .filter((a) => ids.has(a.id))
+    .reduce(
+      (n, a) => n + Math.ceil(a.duration * context.sampleRate) * a.channels * 4,
+      0,
+    );
+  if (estimate > 64 * 1024 * 1024)
+    throw new Error(
+      "This range needs more than 64 MB of decoded audio. Split long originals into shorter sections or reduce overlapping sources; your original files are unchanged.",
+    );
+  const buffers = new Map<string, AudioBuffer>();
+  let decodedBytes = 0;
   for (const asset of project.audioAssets.filter((a) => ids.has(a.id))) {
     onProgress?.(`Decoding ${asset.name}…`);
     buffers.set(
@@ -210,12 +234,20 @@ export async function prepareAudio(
         ? await cache.get(context, asset)
         : await decodeAsset(context, asset),
     );
+    const buffer = buffers.get(asset.id)!;
+    decodedBytes += buffer.length * buffer.numberOfChannels * 4;
+    if (decodedBytes > 64 * 1024 * 1024)
+      throw new Error(
+        "The decoded sources exceed this range’s 64 MB budget. Use shorter audio sections; original files are unchanged.",
+      );
   }
   return buffers;
 }
+// Schedule bounded windows against the same Web Audio clock used by export.
+// Future sources are read only when the next window is close, never episode-wide.
 export class PreviewAudio {
   private context?: AudioContext;
-  private buffers = new Map<string, { data: string; buffer: AudioBuffer }>();
+  private cache = new AudioDecodeCache();
   private nodes = new Set<AudioBufferSourceNode>();
   private graph?: MixGraph;
   private interval: ReturnType<typeof setInterval> | undefined;
@@ -228,6 +260,7 @@ export class PreviewAudio {
     rangeStart: number,
     rangeEnd: number,
     loop: boolean,
+    onError?: (error: Error) => void,
   ) {
     this.stop();
     const token = this.serial;
@@ -237,56 +270,88 @@ export class PreviewAudio {
       );
     const context = (this.context ??= new AudioContext());
     await context.resume();
-    const used = new Set(
-      project.audioClips.filter((c) => !c.muted).map((c) => c.assetId),
-    );
-    for (const id of this.buffers.keys())
-      if (!used.has(id)) this.buffers.delete(id);
-    for (const a of project.audioAssets.filter((a) => used.has(a.id))) {
-      if (this.buffers.get(a.id)?.data !== a.dataUrl)
-        this.buffers.set(a.id, {
-          data: a.dataUrl,
-          buffer: await decodeAsset(context, a),
-        });
+    let from = offset,
+      elapsed = 0,
+      pending = false,
+      done = false;
+    const cancelled = () => {
       if (token !== this.serial)
         throw new DOMException("Preview cancelled", "AbortError");
-    }
-    const buffers = new Map(
-      [...this.buffers].map(([id, value]) => [id, value.buffer]),
-    );
+    };
+    const prepare = async () => {
+      const to = Math.min(rangeEnd, from + 8),
+        buffers = await prepareAudio(
+          context,
+          project,
+          undefined,
+          { start: from, end: to },
+          this.cache,
+        );
+      cancelled();
+      return { from, to, buffers };
+    };
+    const first = await prepare();
+    cancelled();
     this.graph = mixingGraph(context, context.destination, project.mixer);
     this.anchor = context.currentTime + 0.12;
     this.origin = offset;
-    scheduleAudio(
-      context,
-      project,
-      buffers,
-      this.graph,
-      offset,
-      rangeEnd,
-      this.anchor,
-      this.nodes,
-    );
-    if (loop) {
-      let next = this.anchor + rangeEnd - offset;
-      const length = rangeEnd - rangeStart;
-      this.interval = setInterval(() => {
-        if (next < context.currentTime + 1 && this.graph) {
-          scheduleAudio(
-            context,
-            project,
-            buffers,
-            this.graph,
-            rangeStart,
-            rangeEnd,
-            next,
-            this.nodes,
-          );
-          next += length;
-        }
-      }, 150);
-    }
+    const schedule = (part: Awaited<ReturnType<typeof prepare>>) => {
+      if (!this.graph) return;
+      const when = this.anchor + elapsed;
+      if (when < context.currentTime - 0.02)
+        throw new Error(
+          "Audio preparation fell behind playback. Pause and retry this scene, or use shorter audio sections.",
+        );
+      scheduleAudio(
+        context,
+        project,
+        part.buffers,
+        this.graph,
+        part.from,
+        part.to,
+        when,
+        this.nodes,
+      );
+      elapsed += part.to - part.from;
+      from = part.to;
+      if (from >= rangeEnd) {
+        if (loop) from = rangeStart;
+        else done = true;
+      }
+    };
+    schedule(first);
+    this.interval = setInterval(() => {
+      if (
+        pending ||
+        done ||
+        token !== this.serial ||
+        context.currentTime < this.anchor + elapsed - 5
+      )
+        return;
+      pending = true;
+      void prepare()
+        .then((part) => {
+          cancelled();
+          schedule(part);
+        })
+        .catch((error) => {
+          if (token === this.serial) {
+            this.stop();
+            onError?.(
+              error instanceof Error
+                ? error
+                : new Error("Audio preview was interrupted."),
+            );
+          }
+        })
+        .finally(() => {
+          pending = false;
+        });
+    }, 150);
     return () => this.origin + Math.max(0, context.currentTime - this.anchor);
+  }
+  stats() {
+    return this.cache.stats();
   }
   stop() {
     this.serial++;
@@ -308,6 +373,6 @@ export class PreviewAudio {
     this.stop();
     void this.context?.close().catch(() => {});
     this.context = undefined;
-    this.buffers.clear();
+    this.cache.clear();
   }
 }

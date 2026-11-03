@@ -144,3 +144,86 @@ test("original art library and tutorial remain readable and keyboard accessible 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeAttached();
 });
+
+test("file-backed originals and complete package recovery work with portable checksums across browser engines", async ({
+  page,
+}) => {
+  const { voices } = await import("./production-helpers"),
+    { readFile } = await import("node:fs/promises"),
+    { inspectEpisodePackage } = await import("./episode-fixture");
+  page.on("console", (m) => {
+    if (m.text().includes("IndexedDB")) console.info(m.text());
+  });
+  await demo(page);
+  await saved(page);
+  await page.evaluate(() => {
+    const originalAdd = IDBObjectStore.prototype.add;
+    IDBObjectStore.prototype.add = function (
+      ...args: Parameters<IDBObjectStore["add"]>
+    ) {
+      try {
+        const request = originalAdd.apply(this, args);
+        request.addEventListener("error", () =>
+          console.info(
+            "IndexedDB add failed",
+            request.error?.name,
+            request.error?.message,
+          ),
+        );
+        return request;
+      } catch (e) {
+        console.info("IndexedDB add threw", String(e));
+        throw e;
+      }
+    };
+    Object.defineProperty(crypto, "subtle", {
+      configurable: true,
+      value: undefined,
+    });
+  });
+  await voices(page);
+  await page
+    .getByRole("button", { name: "Enable long-episode audio", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Long-episode audio is enabled",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Back to cartoon", exact: true })
+    .click();
+  await saved(page);
+  const pending = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Project backup", exact: true })
+    .click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toMatch(/\.ctepisode$/);
+  const bytes = await readFile((await download.path())!),
+    manifest = inspectEpisodePackage(bytes);
+  expect(manifest.files).toHaveLength(5);
+  expect(manifest.project.mediaVersion).toBe(1);
+  await page
+    .getByRole("button", {
+      name: "Save and return to my cartoons",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "voices.ctepisode",
+    mimeType: "application/octet-stream",
+    buffer: bytes,
+  });
+  await expect(page.locator(".editor")).toBeVisible();
+  await saved(page);
+  await page
+    .getByRole("button", { name: "Finish My Cartoon", exact: true })
+    .click();
+  await expect(page.getByText(/Episode narration review/)).toBeVisible();
+  await expect(
+    page.getByText("Checking local audio originals…"),
+  ).not.toBeAttached();
+  await expect(page.getByText(/Missing audio originals:/)).not.toBeAttached();
+});

@@ -36,7 +36,7 @@ const STEPS: [GuideStep, string, string, string][] = [
   [
     "voice",
     "Record speech",
-    "Open Voices & Sound. Select the scene and narration or dialogue. Press Start microphone recording, speak, then Stop recording. Listen to the preview and choose Save audio clip. Microphone permission is only requested when recording.",
+    "Open Voices & Sound. Select the scene and narration or dialogue. Press Start microphone recording, speak, then Stop recording. Listen to the preview and choose Save audio clip. Microphone permission is only requested when recording. For a fully narrated longer story, press Enable long-episode audio first.",
     "Open voice recording",
   ],
   [
@@ -100,11 +100,12 @@ export function CreatorGuide({
             changes are still on screen: download a backup before leaving.
           </li>
           <li>
-            Press Project backup and keep the JSON file somewhere you can find
-            it. Movie downloads cannot restore editable scenes.
+            Press Project backup and keep the JSON or complete .ctepisode file
+            somewhere you can find it. Movie downloads cannot restore editable
+            scenes.
           </li>
           <li>
-            On My cartoons, choose Restore a backup and select that JSON file.
+            On My cartoons, choose Restore a backup and select that backup file.
             It opens as a separate project, preserving your existing story.
           </li>
           <li>

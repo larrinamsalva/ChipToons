@@ -1,4 +1,4 @@
-import { starterProject } from "../src/planner";
+import { starterProject } from "../src/demo-starter";
 import { emptyProduction } from "../src/media-model";
 import { makeScene, uid } from "../src/model";
 import {

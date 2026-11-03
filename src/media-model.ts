@@ -19,6 +19,7 @@ export interface AudioAsset {
   name: string;
   mime: AudioMime;
   dataUrl: string;
+  file?: { key: string; sha256: string; size: number };
   duration: number;
   channels: number;
   sampleRate: number;
@@ -134,15 +135,16 @@ export function validProduction(
 ) {
   if (
     !Array.isArray(p.audioAssets) ||
-    p.audioAssets.length > MAX_AUDIO_ASSETS ||
+    p.audioAssets.length > (p.mediaVersion === 1 ? 256 : MAX_AUDIO_ASSETS) ||
     !Array.isArray(p.audioClips) ||
-    p.audioClips.length > MAX_AUDIO_CLIPS ||
+    p.audioClips.length > (p.mediaVersion === 1 ? 480 : MAX_AUDIO_CLIPS) ||
     !Array.isArray(p.captions) ||
     p.captions.length > MAX_CAPTIONS ||
     !record(p.mixer) ||
     !record(p.captionStyle)
   )
     return false;
+  const long = p.mediaVersion === 1;
   const mixer = p.mixer;
   if (
     ![mixer.master, mixer.voice, mixer.music, mixer.effects].every((n) =>
@@ -156,7 +158,9 @@ export function validProduction(
   )
     return false;
   const assets = new Map<string, AudioAsset>();
-  let seconds = 0;
+  const fileKeys = new Map<string, string>();
+  let seconds = 0,
+    bytes = 0;
   for (const a of p.audioAssets) {
     if (
       !record(a) ||
@@ -166,14 +170,35 @@ export function validProduction(
       !numberIn(a.sampleRate, 8000, 96000) ||
       !numberIn(a.channels, 1, 2) ||
       !Number.isInteger(a.channels) ||
-      !audioDataValid(a as unknown as AudioAsset)
+      !(a.file === undefined
+        ? audioDataValid(a as unknown as AudioAsset)
+        : long &&
+          a.dataUrl === "" &&
+          record(a.file) &&
+          text(a.file.key, 100) &&
+          /^[a-f0-9]{64}$/.test(String(a.file.sha256)) &&
+          numberIn(a.file.size, 1, MAX_AUDIO_BYTES) &&
+          Number.isInteger(a.file.size))
     )
       return false;
+    if (a.file) {
+      const f = a.file as { key: string; sha256: string; size: number };
+      const identity = `${f.sha256}:${f.size}:${a.mime}`;
+      if (fileKeys.has(f.key) && fileKeys.get(f.key) !== identity) return false;
+      fileKeys.set(f.key, identity);
+    }
     unique(a.id);
     assets.set(a.id as string, a as unknown as AudioAsset);
     seconds += a.duration;
+    bytes += a.file
+      ? (a.file as { size: number }).size
+      : String(a.dataUrl).length * 0.75;
   }
-  if (seconds > MAX_TOTAL_AUDIO_SECONDS + 0.001) return false;
+  if (
+    seconds > (long ? 1800 : MAX_TOTAL_AUDIO_SECONDS) + 0.001 ||
+    (long && bytes > 256 * 1024 * 1024)
+  )
+    return false;
   const total = [...scenes.values()].reduce((n, s) => n + s.duration, 0),
     overlaps: { time: number; delta: number }[] = [];
   for (const c of p.audioClips) {

@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { starterProject } from "./planner";
+import { starterProject } from "./demo-starter";
 import { clone, parseBackup, uid, validateProject } from "./model";
 import { legacyFixture } from "../tests/legacy-fixture";
 import { audioDataValid, emptyProduction } from "./media-model";

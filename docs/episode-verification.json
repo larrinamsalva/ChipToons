@@ -1,0 +1,729 @@
+{
+  "verifiedCommit": "26b5f86f0cf7695e4aa8f231dbec26f94cf2cc68",
+  "run": "https://github.com/larrinamsalva/ChipToons/actions/runs/41577239374",
+  "regressionCases": 153,
+  "regressionRetries": 0,
+  "regressionSkips": 0,
+  "projects": {
+    "media-export": 5,
+    "firefox": 4,
+    "webkit": 4,
+    "webkit-phone": 4,
+    "webkit-tablet": 4,
+    "desktop": 44,
+    "phone": 44,
+    "tablet": 44
+  },
+  "production": {
+    "title": "Mia and Pip's Garden of Welcome",
+    "logicalSeconds": 1200,
+    "originalNarrationSeconds": 1200,
+    "spokenNarrationSeconds": 561.4439999999993,
+    "uniqueSources": 68,
+    "originalBytes": 58821217,
+    "scenes": 60,
+    "chapters": 6,
+    "captions": 186,
+    "previewDecode": {
+      "calls": 5,
+      "seconds": 51.90789115646258
+    },
+    "seekDecodes": {
+      "calls": 7,
+      "seconds": 91.90784580498867
+    },
+    "previewPositions": [
+      0,
+      600,
+      1100
+    ],
+    "completePortableRestore": true,
+    "unchangedSource": true,
+    "parts": [
+      {
+        "part": 1,
+        "scenes": [
+          1,
+          6
+        ],
+        "storyStart": 0,
+        "storyEnd": 120,
+        "duration": 120.171972,
+        "frames": 1801,
+        "rms": 0.0833922741624125,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9974268539348358,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9871668555931049
+          },
+          {
+            "correlation": 0.9977127101343279,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9879954869148159
+          },
+          {
+            "correlation": 0.997434123030903,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9867372878745887
+          },
+          {
+            "correlation": 0.997769825948632,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9861232446018424
+          },
+          {
+            "correlation": 0.9976729194959084,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9862259943894697
+          },
+          {
+            "correlation": 0.997785491045218,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9856974341618787
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 2,
+        "scenes": [
+          7,
+          12
+        ],
+        "storyStart": 120,
+        "storyEnd": 240,
+        "duration": 120.16907,
+        "frames": 1801,
+        "rms": 0.08495186401379293,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9979372492883961,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9872012670428989
+          },
+          {
+            "correlation": 0.9979391240021939,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9874104978498626
+          },
+          {
+            "correlation": 0.9977206727920416,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9880339990188984
+          },
+          {
+            "correlation": 0.9974903048941672,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9872204251958823
+          },
+          {
+            "correlation": 0.9980744601566692,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9866992588939115
+          },
+          {
+            "correlation": 0.9980527432469336,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9867025117020959
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 3,
+        "scenes": [
+          13,
+          18
+        ],
+        "storyStart": 240,
+        "storyEnd": 360,
+        "duration": 120.16907,
+        "frames": 1801,
+        "rms": 0.08212996020216191,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9974995363002941,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9864167196511854
+          },
+          {
+            "correlation": 0.9979145471900716,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9877637011603169
+          },
+          {
+            "correlation": 0.9979971833354104,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9878451642896774
+          },
+          {
+            "correlation": 0.9979315087547814,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9873932747498684
+          },
+          {
+            "correlation": 0.9982248031679734,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9878124176954319
+          },
+          {
+            "correlation": 0.9981714834238301,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9882060917330113
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 4,
+        "scenes": [
+          19,
+          24
+        ],
+        "storyStart": 360,
+        "storyEnd": 480,
+        "duration": 120.16907,
+        "frames": 1801,
+        "rms": 0.08403520104905755,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9981316349071434,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9879527192584349
+          },
+          {
+            "correlation": 0.998146846772979,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9883892164927458
+          },
+          {
+            "correlation": 0.9970444920421038,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9855371799741581
+          },
+          {
+            "correlation": 0.9976748024791248,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9882371671495976
+          },
+          {
+            "correlation": 0.9964176875379072,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9883018873573289
+          },
+          {
+            "correlation": 0.9973751145825297,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.988149029140105
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 5,
+        "scenes": [
+          25,
+          30
+        ],
+        "storyStart": 480,
+        "storyEnd": 600,
+        "duration": 120.16907,
+        "frames": 1801,
+        "rms": 0.0821420015706791,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9973059812827761,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.986032586636137
+          },
+          {
+            "correlation": 0.9973631002290644,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.987093396818867
+          },
+          {
+            "correlation": 0.9976621485687831,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9878237384899968
+          },
+          {
+            "correlation": 0.9975680884537532,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9884324517877022
+          },
+          {
+            "correlation": 0.9975790719767833,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9871934543588756
+          },
+          {
+            "correlation": 0.9975032675453688,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9866654821818204
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 6,
+        "scenes": [
+          31,
+          36
+        ],
+        "storyStart": 600,
+        "storyEnd": 720,
+        "duration": 120.18068,
+        "frames": 1797,
+        "rms": 0.08813946173960817,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9959850661550634,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9860746727803273
+          },
+          {
+            "correlation": 0.996009368156666,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9856104697593218
+          },
+          {
+            "correlation": 0.9958911824583954,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9865452249311079
+          },
+          {
+            "correlation": 0.9959628424938378,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9869368844252898
+          },
+          {
+            "correlation": 0.996024288184766,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9863813456188423
+          },
+          {
+            "correlation": 0.9962754336775729,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9858000355110179
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 7,
+        "scenes": [
+          37,
+          42
+        ],
+        "storyStart": 720,
+        "storyEnd": 840,
+        "duration": 120.18068,
+        "frames": 1800,
+        "rms": 0.08890274383620947,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9963099859554707,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9873022981895178
+          },
+          {
+            "correlation": 0.9966386148410024,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9880385117289785
+          },
+          {
+            "correlation": 0.9962242348992235,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9861018546018905
+          },
+          {
+            "correlation": 0.9962810360674937,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9867822292600921
+          },
+          {
+            "correlation": 0.9976089362980339,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9874250440529859
+          },
+          {
+            "correlation": 0.9977619664850849,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9880113177222939
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 8,
+        "scenes": [
+          43,
+          48
+        ],
+        "storyStart": 840,
+        "storyEnd": 960,
+        "duration": 120.18068,
+        "frames": 1796,
+        "rms": 0.09098456913184567,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9971400897480805,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9888477265576787
+          },
+          {
+            "correlation": 0.9978108022563796,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.989336754826779
+          },
+          {
+            "correlation": 0.9978477539895547,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9883240463206399
+          },
+          {
+            "correlation": 0.9978276098316413,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9882487508180517
+          },
+          {
+            "correlation": 0.9978923081739628,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9893927614943862
+          },
+          {
+            "correlation": 0.9979061797140559,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9891618584183339
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 9,
+        "scenes": [
+          49,
+          54
+        ],
+        "storyStart": 960,
+        "storyEnd": 1080,
+        "duration": 120.16907,
+        "frames": 1800,
+        "rms": 0.08460688434260745,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9976856645157456,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9879033089969139
+          },
+          {
+            "correlation": 0.998040062153683,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9888402591661722
+          },
+          {
+            "correlation": 0.9969874704061727,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.983915878451718
+          },
+          {
+            "correlation": 0.9972897223818721,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9873124200268325
+          },
+          {
+            "correlation": 0.9966187360505104,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9868734747860476
+          },
+          {
+            "correlation": 0.9973581652799034,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9876211723671616
+          }
+        ],
+        "distinctFrames": 120
+      },
+      {
+        "part": 10,
+        "scenes": [
+          55,
+          60
+        ],
+        "storyStart": 1080,
+        "storyEnd": 1200,
+        "duration": 120.209705,
+        "frames": 1796,
+        "rms": 0.08016865036116272,
+        "voiceAlignment": [
+          {
+            "correlation": 0.9970346737388134,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9854996051846361
+          },
+          {
+            "correlation": 0.9972595868256396,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.98664137670323
+          },
+          {
+            "correlation": 0.9973710803292615,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.988018319704446
+          },
+          {
+            "correlation": 0.9978014978407513,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9880118630824709
+          },
+          {
+            "correlation": 0.9974260359044241,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9862230767236162
+          },
+          {
+            "correlation": 0.9969307557491027,
+            "delay": 0.16321875,
+            "coarseCorrelation": 0.9889079664768978
+          }
+        ],
+        "distinctFrames": 120
+      }
+    ]
+  },
+  "media": {
+    "short-cartoon-media-proof": {
+      "duration": 4.170884,
+      "decodedFrames": 61,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0.07725788246708339,
+      "peak": 0.814496636390686,
+      "distinctFrames": 4
+    },
+    "muted-cartoon-media-proof": {
+      "duration": 4.162176,
+      "decodedFrames": 61,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0,
+      "peak": 0,
+      "distinctFrames": 4
+    },
+    "silent-vp9-cartoon-media-proof": {
+      "duration": 4.167981,
+      "decodedFrames": 93,
+      "width": 1280,
+      "height": 720,
+      "video": "vp9",
+      "audio": null,
+      "rms": 0,
+      "peak": 0,
+      "distinctFrames": 4
+    },
+    "friendship-demo-media-proof": {
+      "duration": 60.16,
+      "decodedFrames": 900,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0.0436383146147601,
+      "peak": 0.9504523873329163,
+      "distinctFrames": 60
+    },
+    "friendship-part-01-media-proof": {
+      "duration": 4.167981,
+      "decodedFrames": 61,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0.02981174154935502,
+      "peak": 0.43490785360336304,
+      "distinctFrames": 4
+    },
+    "friendship-part-02-media-proof": {
+      "duration": 4.159274,
+      "decodedFrames": 61,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0.0325582638219272,
+      "peak": 0.3422315716743469,
+      "distinctFrames": 4
+    },
+    "segmented-timeline-continuity": {
+      "parts": [
+        {
+          "part": 1,
+          "scenes": [
+            1,
+            2
+          ],
+          "expectedArtworkX": 242.5,
+          "decodedArtworkX": 242.5,
+          "magentaPixels": 3968,
+          "expectedMusicHz": 349.23,
+          "decodedMusicHz": 349
+        },
+        {
+          "part": 2,
+          "scenes": [
+            3,
+            4
+          ],
+          "expectedArtworkX": 526.5,
+          "decodedArtworkX": 525.5,
+          "magentaPixels": 4624,
+          "expectedMusicHz": 440,
+          "decodedMusicHz": 440
+        }
+      ],
+      "subtitleText": "1\n00:00:00,250 --> 00:00:01,600\nScene 3: a kind hello makes room for a friend.\n\n2\n00:00:02,250 --> 00:00:03,600\nScene 4: a kind hello makes room for a friend.\n",
+      "sourceUnchanged": true,
+      "logicalStorySeconds": 8
+    },
+    "firefox-encoder-capabilities": {
+      "webmFormatCount": 1,
+      "fullExportAvailable": true
+    },
+    "webkit-encoder-capabilities": {
+      "webmFormatCount": 0,
+      "fullExportAvailable": false
+    },
+    "webkit-phone-encoder-capabilities": {
+      "webmFormatCount": 0,
+      "fullExportAvailable": false
+    },
+    "webkit-tablet-encoder-capabilities": {
+      "webmFormatCount": 0,
+      "fullExportAvailable": false
+    }
+  },
+  "samples": [
+    {
+      "file": "episode-sample-part-01.webm",
+      "part": 1,
+      "duration": 5.01,
+      "streams": [
+        {
+          "type": "video",
+          "codec": "vp8",
+          "width": 800,
+          "height": 450
+        },
+        {
+          "type": "audio",
+          "codec": "opus"
+        }
+      ]
+    },
+    {
+      "file": "episode-sample-part-05.webm",
+      "part": 5,
+      "duration": 5.019,
+      "streams": [
+        {
+          "type": "video",
+          "codec": "vp8",
+          "width": 800,
+          "height": 450
+        },
+        {
+          "type": "audio",
+          "codec": "opus"
+        }
+      ]
+    },
+    {
+      "file": "episode-sample-part-10.webm",
+      "part": 10,
+      "duration": 5.018,
+      "streams": [
+        {
+          "type": "video",
+          "codec": "vp8",
+          "width": 800,
+          "height": 450
+        },
+        {
+          "type": "audio",
+          "codec": "opus"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 13204652010,
+      "name": "browser-qa-report",
+      "sha256": "sha256:9889e32f693a795734d4d9047986da1188fff697333c3d0c16fe0bea47729e13",
+      "bytes": 20689587
+    },
+    {
+      "id": 13205193086,
+      "name": "complete-episode-qa-report",
+      "sha256": "sha256:fd2350f565e440bf070d7e8ee0ea7d6895a854bc8e549daf9606b212c98e776c",
+      "bytes": 185214068
+    }
+  ],
+  "files": [
+    {
+      "file": "episode-voices-desktop.png",
+      "bytes": 276607,
+      "sha256": "398bcf555e0e79ebe96a1106ccc1b88c1f2daf780031dabd0cb5b21753896109"
+    },
+    {
+      "file": "episode-voices-phone.png",
+      "bytes": 63703,
+      "sha256": "6d2a8ad8ee781343469ad0a367be2328013c07a685e84badc136d45762039792"
+    },
+    {
+      "file": "episode-readiness-tablet.png",
+      "bytes": 112797,
+      "sha256": "38cc6a09f09b5f93914a15113158c676e5c75d5ae32f182b851c7fd8ae0935b0"
+    },
+    {
+      "file": "episode-readiness-desktop.png",
+      "bytes": 262870,
+      "sha256": "16d9458d8dd64490cf8e3a3289591aac83ccbd55c057fe3d8c6b06b8bd0f15c9"
+    },
+    {
+      "file": "episode-part-1-frame.png",
+      "bytes": 206437,
+      "sha256": "34999f8cabfb5f3c35a5dc65fe4acbb1a532da9097b0ee289e7040351c046dc7"
+    },
+    {
+      "file": "episode-part-5-frame.png",
+      "bytes": 206572,
+      "sha256": "b6efeda05426d330d36b4e922ea3eac28160acae5a316f9a4788d525d8515613"
+    },
+    {
+      "file": "episode-part-10-frame.png",
+      "bytes": 202917,
+      "sha256": "80ef43862abf64701dfa9cf9e9e988fbbd1a9d82fbd77bccdaea8c89df3be8f9"
+    },
+    {
+      "file": "episode-sample-part-01.webm",
+      "bytes": 508827,
+      "sha256": "c6e62491b79e43195ecff7f8888d00adccabdc46d29495ea41ec74944f2f7b7a"
+    },
+    {
+      "file": "episode-sample-part-05.webm",
+      "bytes": 510329,
+      "sha256": "9ecb7eb54c761f8b7659525f7415895b577943279c0eaaee8ced6943740ba526"
+    },
+    {
+      "file": "episode-sample-part-10.webm",
+      "bytes": 509040,
+      "sha256": "fd2cf66c46ec61aad86863e4fe26748d482737c138c2a348ba8f5270c8e5bccf"
+    }
+  ]
+}

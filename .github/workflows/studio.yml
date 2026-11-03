@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "feat/creator-experience-longer-stories"]
+    branches: [main, "feat/long-form-narration"]
   workflow_dispatch:
 
 permissions:
@@ -51,10 +51,42 @@ jobs:
         with:
           path: dist
 
+  episode:
+    name: Complete 20-minute episode and genuine exports
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install verified browser and offline media tools
+        run: |
+          npx playwright install --with-deps chromium webkit
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Check binary-media compatibility before the real-time proof
+        run: npx playwright test --project=webkit --grep 'file-backed originals'
+      - name: Restore, reopen, export and decode a complete narrated episode
+        run: npm run test:episode
+      - name: Keep every genuine part and independent decoding measurements
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: complete-episode-qa-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
   deploy:
     name: Publish GitHub Pages
     if: github.ref == 'refs/heads/main'
-    needs: verify
+    needs: [verify, episode]
     runs-on: ubuntu-latest
     permissions:
       contents: read
