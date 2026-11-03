@@ -314,7 +314,10 @@ test("selected-scene looping, pause and resume keep exact timeline position", as
 }) => {
   await demo(page);
   await page.getByRole("checkbox", { name: "Sound", exact: true }).uncheck();
-  await page.clock.install();
+  const epoch = new Date("2030-01-01T00:00:00Z");
+  await page.clock.install({ time: epoch });
+  // Only runFor advances playback; locator actions must not add wall-clock time.
+  await page.clock.pauseAt(new Date(epoch.getTime() + 10_000));
   await page
     .getByRole("combobox", { name: "Preview scope", exact: true })
     .selectOption("scene");
