@@ -56,7 +56,7 @@ it("upgrades existing version-three Blob originals to indexed metadata without c
   const storage = await import("./storage"),
     vault = await import("./audio-vault"),
     database = await storage.db();
-  expect(database.version).toBe(4);
+  expect(database.version).toBe(5);
   expect((await storage.listProjects())[0]).toEqual(p);
   for (let i = 0; i < records.length; i++)
     expect(Buffer.from(await vault.audioBytes(p.audioAssets[i]))).toEqual(

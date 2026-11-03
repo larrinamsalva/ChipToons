@@ -5116,3 +5116,92 @@ input[type="color"] {
     max-width: 180px;
   }
 }
+
+.editing-status {
+  padding: 0.5rem 1rem;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem;
+  margin-block: 0.75rem;
+}
+
+.recovery-actions .button, .recovery-card .button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.recovery-actions [aria-pressed="true"] {
+  box-shadow: inset 0 -3px currentColor;
+}
+
+.recovery-status {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+}
+
+.recovery-list {
+  list-style: none;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+}
+
+.recovery-card {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.recovery-card p {
+  margin-block: 0.4rem;
+}
+
+.recovery-card audio {
+  display: block;
+  width: min(100%, 24rem);
+  margin-block: 0.55rem;
+}
+
+.recovery-actions label, .recovery-card label {
+  display: grid;
+  gap: 0.3rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.recovery-card label {
+  margin-block: 0.5rem;
+}
+
+.recovery-actions :is(input, select), .recovery-card :is(input, select) {
+  max-width: 100%;
+  min-height: 44px;
+}
+
+.recovery-card .recovery-check {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.recovery-readonly {
+  padding-block: 1rem 2rem;
+}
+
+@media (max-width: 540px) {
+  .recovery-actions > label {
+    flex: 1 1 100%;
+  }
+}

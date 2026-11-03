@@ -1,6 +1,11 @@
+import { browserLocks, holdLock, MEDIA_ACTIVITY_LOCK, projectLock } from "./edit-locks";
+import { persistSession } from "./project-session";
+import type { EditingSession } from "./project-session";
+import type { AudioFile } from "./audio-vault";
+import { ReadOnlyCartoon } from "./components/ReadOnlyCartoon";
 import { restoreProjectFile } from "./episode-package";
 import { emptyProduction } from "./media-model";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Dashboard } from "./components/Dashboard";
 import { DrawingPad } from "./components/DrawingPad";
 import { Editor } from "./components/Editor";
@@ -22,7 +27,11 @@ import {
   friendlyStorageError,
   listProjects,
   saveProject,
+  readProjectSnapshot,
+  ProjectConflict,
 } from "./storage";
+
+const RecoveryCenter = lazy(() => import("./components/RecoveryCenter").then(module => ({ default: module.RecoveryCenter })));
 
 type Dialog =
   | {
@@ -42,7 +51,8 @@ type Dialog =
     }
   | { type: "art-draw" }
   | { type: "draw" | "help" | "upload" }
-  | { type: "delete"; project: Project }
+  | { type: "recovery" }
+  | { type: "delete"; project: Project; revision: string | null }
   | { type: "library"; sceneIndex?: number; draft?: LibraryItem }
   | null;
 function initialTheme(): "light" | "dark" {
@@ -58,6 +68,17 @@ export default function App() {
   const [theme, setTheme] = useState(initialTheme);
   const [projects, setProjects] = useState<Project[]>([]);
   const [current, setCurrent] = useState<Project | null>(null);
+  const currentRef = useRef<Project | null>(null);
+  const session = useRef<EditingSession | null>(null);
+  const opening = useRef(false);
+  const [editMode, setEditMode] = useState<"edit" | "read" | "conflict">("edit");
+  const [takingOver, setTakingOver] = useState(false);
+  const [closingDraft, setClosingDraft] = useState(false);
+  function showProject(project: Project | null) {
+    currentRef.current = project;
+    setCurrent(project);
+  }
+  useEffect(() => () => session.current?.release(), []);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [loaded, setLoaded] = useState(false);
   const [storageError, setStorageError] = useState("");
@@ -120,11 +141,13 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    if (!current) return;
+    const active = session.current;
+    if (!current || !active || editMode !== "edit") return;
     let alive = true;
     const timer = setTimeout(() => {
+      if (session.current !== active) return;
       setSaveStatus("Saving…");
-      saveProject(current)
+      persistSession(active, current)
         .then(() => {
           if (!alive) return;
           setSaveStatus("Saved on this device");
@@ -136,7 +159,12 @@ export default function App() {
           );
         })
         .catch((error) => {
-          if (alive) {
+          if (session.current === active && error instanceof ProjectConflict) {
+            active.blocked = true;
+            setEditMode("conflict");
+            setSaveStatus("Saving paused");
+            setStorageError(error.message);
+          } else if (alive) {
             setSaveStatus("Save failed");
             setStorageError(friendlyStorageError(error));
           }
@@ -146,24 +174,24 @@ export default function App() {
       alive = false;
       clearTimeout(timer);
     };
-  }, [current, retry]);
+  }, [current, retry, editMode]);
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(""), 4500);
     return () => clearTimeout(timer);
   }, [notice]);
   useEffect(() => {
-    if (!current || saveStatus === "Saved on this device") return;
+    if (!current || editMode === "read" || saveStatus === "Saved on this device") return;
     const protect = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", protect);
     return () => window.removeEventListener("beforeunload", protect);
-  }, [current, saveStatus]);
+  }, [current, saveStatus, editMode]);
   async function saveDraft(p: Project) {
     try {
-      await saveProject(p);
+      await saveProject(p, { revision: null, create: true });
     } catch (e) {
       throw new Error(friendlyStorageError(e), { cause: e });
     }
@@ -173,63 +201,181 @@ export default function App() {
       "Draft saved on this device. Choose Continue story whenever you are ready.",
     );
   }
-  function open(project: Project) {
-    setCurrent(clone(project));
-    setDialog(null);
-    setPast([]);
-    setFuture([]);
-    setSaveStatus("Waiting to save");
-    window.scrollTo({ top: 0 });
+  async function open(project: Project, saved = false, mode: "edit" | "read" | "takeover" = "edit") {
+    if (opening.current) return;
+    opening.current = true;
+    let releaseMedia: (() => void) | null = null;
+    let releaseEdit: (() => void) | null = null;
+    let active: EditingSession | undefined;
+    let lost = false;
+    try {
+      releaseMedia = await holdLock(MEDIA_ACTIVITY_LOCK, { mode: "shared", ifAvailable: true });
+      if (!releaseMedia) throw new Error("Storage cleanup is finishing in another tab. Open the cartoon again in a moment.");
+      const lostLock = () => {
+        lost = true;
+        if (active && session.current === active) {
+          active.blocked = true;
+          setEditMode("conflict");
+          setSaveStatus("Saving paused");
+          setStorageError(new ProjectConflict().message);
+        }
+      };
+      if (mode !== "read")
+        releaseEdit = await holdLock(projectLock(project.id),
+          mode === "takeover" ? { steal: true } : { ifAvailable: true },
+          lostLock,
+        );
+      const readOnly = mode === "read" || !releaseEdit;
+      const snapshot = saved
+        ? await readProjectSnapshot(project.id, !readOnly && !!browserLocks())
+        : { project, revision: null };
+      if (!snapshot.project) throw new Error("This cartoon was removed in another tab. Restore a backup to reopen it.");
+      const draft = clone(snapshot.project);
+      const media = releaseMedia, edit = releaseEdit;
+      active = {
+        revision: snapshot.revision,
+        creating: !saved,
+        readOnly,
+        blocked: lost,
+        saved: null,
+        tail: Promise.resolve(),
+        release: () => { edit?.(); media(); },
+      };
+      const previous = session.current;
+      session.current = active;
+      if (previous) void previous.tail.then(previous.release);
+      showProject(draft);
+      setDialog(null);
+      setPast([]);
+      setFuture([]);
+      setEditMode(readOnly ? "read" : lost ? "conflict" : "edit");
+      setSaveStatus(readOnly ? "Open read-only" : lost ? "Saving paused" : "Waiting to save");
+      setStorageError(lost ? new ProjectConflict().message : "");
+      window.scrollTo({ top: 0 });
+      releaseMedia = null;
+      releaseEdit = null;
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "This cartoon could not be opened.");
+    } finally {
+      releaseEdit?.();
+      releaseMedia?.();
+      opening.current = false;
+      setTakingOver(false);
+    }
+  }
+
+  async function convert(expected: Project, next: Project, files: AudioFile[]) {
+    const active = session.current;
+    if (!active) throw new ProjectConflict();
+    try {
+      await persistSession(active, next, files, () => currentRef.current === expected && session.current === active);
+      if (currentRef.current === expected && session.current === active) update(next);
+    } catch (error) {
+      if (error instanceof ProjectConflict && session.current === active) {
+        setEditMode("conflict");
+        setSaveStatus("Saving paused");
+        setStorageError(error.message);
+      }
+      throw error;
+    }
+  }
+
+  async function saveSeparateCopy() {
+    if (!current || working) return;
+    setWorking(true);
+    const copy = duplicateProject(current);
+    try {
+      await saveProject(copy, { revision: null, create: true });
+      setProjects(list => [copy, ...list]);
+      if (currentRef.current === current) await open(copy, true);
+      setNotice("Your work was saved as a separate cartoon.");
+    } catch (error) {
+      setStorageError(friendlyStorageError(error));
+    } finally {
+      setWorking(false);
+    }
   }
   function update(project: Project) {
     if (!current) return;
     setPast((p) => [...p.slice(-39), current]);
     setFuture([]);
-    setCurrent({ ...project, updatedAt: new Date().toISOString() });
-    setSaveStatus("Unsaved changes");
+    showProject({ ...project, updatedAt: new Date().toISOString() });
+    setSaveStatus(editMode === "conflict" ? "Saving paused" : "Unsaved changes");
   }
   function undo() {
     const previous = past.at(-1);
     if (!previous || !current) return;
     setFuture((f) => [...f, current]);
     setPast((p) => p.slice(0, -1));
-    setCurrent({ ...previous, updatedAt: new Date().toISOString() });
-    setSaveStatus("Unsaved changes");
+    showProject({ ...previous, updatedAt: new Date().toISOString() });
+    setSaveStatus(editMode === "conflict" ? "Saving paused" : "Unsaved changes");
   }
   function redo() {
     const next = future.at(-1);
     if (!next || !current) return;
     setPast((p) => [...p, current]);
     setFuture((f) => f.slice(0, -1));
-    setCurrent({ ...next, updatedAt: new Date().toISOString() });
-    setSaveStatus("Unsaved changes");
+    showProject({ ...next, updatedAt: new Date().toISOString() });
+    setSaveStatus(editMode === "conflict" ? "Saving paused" : "Unsaved changes");
   }
   async function backHome() {
-    if (!current || working) return;
+    const active = session.current;
+    if (!current || !active || working) return;
+    if (active.blocked) {
+      setClosingDraft(true);
+      return;
+    }
     setWorking(true);
     try {
-      await saveProject(current);
-      setProjects((list) => [
-        current,
-        ...list.filter((p) => p.id !== current.id),
-      ]);
-      setCurrent(null);
+      if (!active.readOnly) {
+        // Even a clean snapshot may have lost a file since its previous save.
+        await persistSession(active, current, undefined, undefined, true);
+      }
+      if (currentRef.current !== current || session.current !== active) return;
+      setProjects(await listProjects());
+      if (currentRef.current !== current || session.current !== active) return;
+      session.current = null;
+      active.release();
+      showProject(null);
       setStorageError("");
       window.scrollTo({ top: 0 });
     } catch (e) {
-      setStorageError(friendlyStorageError(e));
-      setSaveStatus("Save failed");
+      if (e instanceof ProjectConflict) setEditMode("conflict");
+      setStorageError(e instanceof ProjectConflict ? e.message : friendlyStorageError(e));
+      setSaveStatus(e instanceof ProjectConflict ? "Saving paused" : "Save failed");
     } finally {
       setWorking(false);
     }
   }
+  async function closeConflictingDraft() {
+    const active = session.current;
+    if (!active?.blocked || working) return;
+    setWorking(true);
+    try {
+      const saved = await listProjects();
+      if (session.current !== active) return;
+      session.current = null;
+      void active.tail.then(active.release);
+      showProject(null);
+      setProjects(saved);
+      setStorageError("");
+      setClosingDraft(false);
+      window.scrollTo({ top: 0 });
+    } catch {
+      setNotice("Saved cartoons could not be opened. Your draft is still on this screen.");
+      setClosingDraft(false);
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function openDemo() {
     if (working) return;
     setWorking(true);
     setNotice("Opening the original friendship example…");
     try {
       const { starterProject: voicedDemo } = await import("./demo-starter");
-      open(voicedDemo());
+      await open(voicedDemo());
       setNotice("");
     } catch {
       setNotice(
@@ -260,13 +406,18 @@ export default function App() {
       s.narration = s.narration.replaceAll("Pip", name.slice(0, 80));
       s.action = s.action.replaceAll("Pip", name.slice(0, 80));
     });
-    open(p);
+    void open(p);
     setNotice(
       "Your original artwork is now a character. Choose Characters & movement to position and animate it.",
     );
   }
   async function importBackup(file?: File) {
-    if (!file) return;
+    if (!file || working) return;
+    // A restore opens a different saved project. Keep a genuinely unsaved
+    // editor draft on screen and put the restored copy on the dashboard.
+    const active = session.current;
+    const draft = currentRef.current;
+    const keepDraft = !!draft && !!active && !active.readOnly && active.saved !== draft;
     setWorking(true);
     try {
       const controller = new AbortController();
@@ -276,10 +427,13 @@ export default function App() {
         signal: controller.signal,
         onProgress: setBackupProgress,
       });
-      open(p);
-      setNotice(
-        "Backup restored as a separate project. Your existing stories are safe.",
-      );
+      if (keepDraft || currentRef.current !== draft) {
+        setProjects(list => [p, ...list]);
+        setNotice("Backup restored to My cartoons. Your open draft is still here.");
+      } else {
+        await open(p, true);
+        setNotice("Backup restored as a separate project. Your existing stories are safe.");
+      }
     } catch (e) {
       setNotice(
         e instanceof Error ? e.message : "The backup could not be restored.",
@@ -314,24 +468,38 @@ export default function App() {
   async function duplicate(p: Project) {
     const copy = duplicateProject(p);
     try {
-      await saveProject(copy);
+      await saveProject(copy, { revision: null, create: true });
       setProjects((list) => [copy, ...list]);
       setNotice("A fresh copy, ready for a new adventure.");
     } catch (e) {
-      open(copy);
+      await open(copy);
       setStorageError(friendlyStorageError(e));
     }
   }
-  async function remove(p: Project) {
-    setWorking(true);
+  async function confirmDelete(project: Project) {
     try {
-      await deleteProject(p.id);
-      setProjects((list) => list.filter((s) => s.id !== p.id));
+      const snapshot = await readProjectSnapshot(project.id);
+      if (!snapshot.project) throw new Error("This cartoon was already removed.");
+      setDialog({ type: "delete", project: snapshot.project, revision: snapshot.revision });
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "The cartoon could not be checked.");
+    }
+  }
+  async function remove(p: Project, revision: string | null) {
+    setWorking(true);
+    let release: (() => void) | null = null;
+    try {
+      release = await holdLock(projectLock(p.id), { ifAvailable: true });
+      if (!release) throw new Error("Close this cartoon in its editing tab before deleting it.");
+      await deleteProject(p.id, { revision });
+      setProjects(list => list.filter(s => s.id !== p.id));
       setDialog(null);
-      setNotice("Cartoon deleted from this device.");
-    } catch {
-      setNotice("This cartoon could not be deleted. Please try again.");
+      setNotice("Cartoon deleted from this device. Original recordings were kept.");
+    } catch (e) {
+      setDialog(null);
+      setNotice(e instanceof Error ? e.message : "This cartoon could not be deleted. Please try again.");
     } finally {
+      release?.();
       setWorking(false);
     }
   }
@@ -445,16 +613,31 @@ export default function App() {
           </button>
         </div>
       )}
+      {current && editMode === "conflict" && (
+        <div className="storage-banner" role="status">
+          <span>Saving is paused. Your edits are still here.</span>
+          <button className="button primary small" disabled={working} onClick={() => void saveSeparateCopy()}>
+            Save as a Separate Copy
+          </button>
+        </div>
+      )}
+      {current && editMode === "edit" && (
+        <div className="editing-status" role="status">{browserLocks() ? "Editing in this tab" : "Editing · Saved versions checked for conflicts"}</div>
+      )}
       {!loaded ? (
         <main id="main-content" className="loading-state">
           <span className="loading-star">✦</span>
           <p>Opening your creative corner…</p>
         </main>
+      ) : current && editMode === "read" ? (
+        <ReadOnlyCartoon project={current} onBack={() => void backHome()} onTakeover={() => setTakingOver(true)} />
       ) : current ? (
+        <div inert={working}>
         <Editor
           key={current.id}
           project={current}
           onChange={update}
+          onConvert={(next, files) => convert(current, next, files)}
           onBack={() => void backHome()}
           onUndo={undo}
           onRedo={redo}
@@ -467,6 +650,7 @@ export default function App() {
             setDialog({ type: "library", sceneIndex, draft })
           }
         />
+        </div>
       ) : (
         <Dashboard
           projects={projects}
@@ -478,9 +662,10 @@ export default function App() {
             setDialog({ type: "upload" });
           }}
           onDraw={() => setDialog({ type: "draw" })}
-          onOpen={open}
+          onOpen={(p) => void open(p, true)}
+          onRecovery={() => setDialog({ type: "recovery" })}
           onDuplicate={(p) => void duplicate(p)}
-          onDelete={(project) => setDialog({ type: "delete", project })}
+          onDelete={(project) => void confirmDelete(project)}
           onImport={() => backupInput.current?.click()}
           onHelp={() => setDialog({ type: "help" })}
           onLibrary={() => setDialog({ type: "library" })}
@@ -500,7 +685,7 @@ export default function App() {
         <IdeaWizard
           starterId={dialog.starterId}
           onClose={() => setDialog(null)}
-          onCreate={open}
+          onCreate={project => void open(project)}
           onSaveDraft={saveDraft}
           artwork={dialog.artwork}
           onBack={
@@ -632,6 +817,33 @@ export default function App() {
           onStep={() => setDialog({ type: "idea" })}
         />
       )}
+      {dialog?.type === "recovery" && (
+        <Suspense fallback={<Modal title="Project & Media Recovery" onClose={() => setDialog(null)}><p role="status">Opening the Recovery Center…</p></Modal>}>
+          <RecoveryCenter onClose={() => setDialog(null)}
+            onRestore={() => { setDialog(null); backupInput.current?.click(); }}
+            onOpenReadOnly={p => void open(p, true, "read")}
+            onProjectsChanged={() => { void listProjects().then(setProjects).catch(() => {}); }}
+          />
+        </Suspense>
+      )}
+      {closingDraft && (
+        <Modal title="Close this unsaved draft?" onClose={() => { if (!working) setClosingDraft(false); }}>
+          <p>Save a separate copy or download a backup first if you want to keep the edits on this screen. Closing returns to your saved cartoons.</p>
+          <div className="modal-actions">
+            <button className="button secondary" disabled={working} onClick={() => setClosingDraft(false)}>Keep Draft Open</button>
+            <button className="button danger" disabled={working} onClick={() => void closeConflictingDraft()}>Close Unsaved Draft</button>
+          </div>
+        </Modal>
+      )}
+      {takingOver && current && (
+        <Modal title="Edit this cartoon here?" onClose={() => setTakingOver(false)}>
+          <p>This opens the latest saved version for editing. The other tab keeps its open draft and can save it as a separate copy.</p>
+          <div className="modal-actions">
+            <button className="button secondary" onClick={() => setTakingOver(false)}>Keep Read-Only</button>
+            <button className="button primary" onClick={() => void open(current, true, "takeover")}>Take Over Editing</button>
+          </div>
+        </Modal>
+      )}
       {dialog?.type === "delete" && (
         <Modal
           title="Delete this little story?"
@@ -653,7 +865,7 @@ export default function App() {
             <button
               className="button danger"
               disabled={working}
-              onClick={() => void remove(dialog.project)}
+              onClick={() => void remove(dialog.project, dialog.revision)}
             >
               <Icon name="trash" />
               {working ? "Deleting…" : "Delete cartoon"}

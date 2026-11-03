@@ -411,7 +411,7 @@ it("streams binary writes one source at a time in one transaction and cancels pe
   expect(active).toBe(0);
   const get = vi.spyOn(IDBObjectStore.prototype, "get");
   await saveProject(p);
-  expect(get).not.toHaveBeenCalled();
+  expect(get.mock.contexts.some((store) => (store as IDBObjectStore).name === "media")).toBe(false);
   get.mockRestore();
   const other = plain(),
     file = await fileRecord(slowBlob(), source.mime),
@@ -435,8 +435,10 @@ it("streams binary writes one source at a time in one transaction and cancels pe
 it("rolls back binary originals if the final conversion metadata save is interrupted", async () => {
   const p = starterProject();
   await saveProject(p);
-  vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(() => {
-    throw new DOMException("Full", "QuotaExceededError");
+  const put = IDBObjectStore.prototype.put;
+  vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (this: IDBObjectStore, value, key) {
+    if (this.name === "projects") throw new DOMException("Full", "QuotaExceededError");
+    return put.call(this, value, key);
   });
   await expect(enableEpisodeAudio(p)).rejects.toThrow();
   vi.restoreAllMocks();
