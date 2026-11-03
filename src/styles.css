@@ -230,9 +230,7 @@ h3 {
   font-size: 14px;
   font-weight: 650;
   line-height: 1.25;
-  transition:
-    background 0.15s,
-    transform 0.15s;
+  transition: transform 0.15s;
   text-align: center;
 }
 .button.primary {
