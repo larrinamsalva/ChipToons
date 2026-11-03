@@ -128,13 +128,17 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
     restoredPage = await context.newPage();
   try {
     await restoredPage.goto(page.url());
+    const portableCopy = info.outputPath(
+      "downloaded-complete-garden.ctepisode",
+    );
+    writeFileSync(portableCopy, before.bytes);
+    await info.attach("complete-portable-episode", {
+      path: portableCopy,
+      contentType: "application/octet-stream",
+    });
     await restoredPage
       .getByLabel("Restore project backup file")
-      .setInputFiles({
-        name: "complete-garden.ctepisode",
-        mimeType: "application/octet-stream",
-        buffer: before.bytes,
-      });
+      .setInputFiles(portableCopy);
     await expect(restoredPage.locator(".editor")).toBeVisible({
       timeout: 30_000,
     });
@@ -190,6 +194,9 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   const measures = [];
   for (const [index, segment] of plan.segments.entries()) {
     const part = index + 1;
+    console.info(
+      `Rendering original story ${segment.start}–${segment.end}s as part ${part}/10`,
+    );
     if (index === 0) {
       await page
         .getByRole("button", { name: "Export segment 1", exact: true })
@@ -358,6 +365,10 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
     title: original.title,
     logicalSeconds: 1200,
     originalNarrationSeconds: 1200,
+    spokenNarrationSeconds: fixture.speechWindows.reduce(
+      (n, w) => n + w.end - w.start,
+      0,
+    ),
     uniqueSources: sourceHashes.length,
     originalBytes: fixture.packageBytes.length,
     scenes: 60,

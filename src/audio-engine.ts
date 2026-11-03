@@ -225,6 +225,7 @@ export async function prepareAudio(
       "This range needs more than 64 MB of decoded audio. Split long originals into shorter sections or reduce overlapping sources; your original files are unchanged.",
     );
   const buffers = new Map<string, AudioBuffer>();
+  let decodedBytes = 0;
   for (const asset of project.audioAssets.filter((a) => ids.has(a.id))) {
     onProgress?.(`Decoding ${asset.name}…`);
     buffers.set(
@@ -233,6 +234,12 @@ export async function prepareAudio(
         ? await cache.get(context, asset)
         : await decodeAsset(context, asset),
     );
+    const buffer = buffers.get(asset.id)!;
+    decodedBytes += buffer.length * buffer.numberOfChannels * 4;
+    if (decodedBytes > 64 * 1024 * 1024)
+      throw new Error(
+        "The decoded sources exceed this range’s 64 MB budget. Use shorter audio sections; original files are unchanged.",
+      );
   }
   return buffers;
 }

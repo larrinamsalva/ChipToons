@@ -292,3 +292,44 @@ it("uses the same SHA-256 integrity format without native Web Crypto", async () 
   vi.stubGlobal("crypto", {});
   expect(await sha256(bytes.buffer)).toBe(expected);
 });
+
+it("enforces the actual decoded budget even when declared durations underestimate memory", async () => {
+  const p = plain(),
+    source = builtInSound("notice");
+  p.audioAssets = [source];
+  p.audioClips = [
+    {
+      id: uid(),
+      assetId: source.id,
+      name: "Notice",
+      category: "effects",
+      sceneId: p.scenes[0].id,
+      start: 0,
+      trimStart: 0,
+      trimEnd: source.duration,
+      duration: source.duration,
+      volume: 1,
+      muted: false,
+      loop: false,
+      fadeIn: 0,
+      fadeOut: 0,
+    },
+  ];
+  vi.spyOn(audioFiles, "decodeAsset").mockResolvedValue({
+    length: 17 * 1024 * 1024,
+    numberOfChannels: 1,
+  } as AudioBuffer);
+  await expect(
+    prepareAudio({ sampleRate: 48000 } as AudioContext, p),
+  ).rejects.toThrow(/decoded sources.*64 MB/);
+});
+
+it("rejects changed file types at save without replacing the last committed project", async () => {
+  const p = await enableEpisodeAudio(starterProject());
+  const wrong = clone(p);
+  wrong.audioAssets[0].mime = "audio/mpeg";
+  await expect(saveProject(wrong)).rejects.toThrow();
+  expect((await listProjects())[0].audioAssets[0].mime).toBe(
+    p.audioAssets[0].mime,
+  );
+});

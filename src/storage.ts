@@ -14,6 +14,7 @@ export function db(): Promise<IDBDatabase> {
         ),
       );
     const req = indexedDB.open(DB_NAME, 3);
+    let blocked = false;
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains("media"))
         req.result.createObjectStore("media", { keyPath: "key" });
@@ -26,6 +27,10 @@ export function db(): Promise<IDBDatabase> {
     };
     req.onsuccess = () => {
       const result = req.result;
+      if (blocked) {
+        result.close();
+        return;
+      }
       result.onversionchange = () => {
         result.close();
         connection = undefined;
@@ -37,6 +42,7 @@ export function db(): Promise<IDBDatabase> {
       reject(req.error);
     };
     req.onblocked = () => {
+      blocked = true;
       connection = undefined;
       reject(
         new Error(
@@ -91,7 +97,8 @@ export async function saveProject(project: Project): Promise<void> {
               !r ||
               r.sha256 !== a.file!.sha256 ||
               r.size !== a.file!.size ||
-              r.blob?.size !== a.file!.size
+              r.blob?.size !== a.file!.size ||
+              r.mime !== a.mime
             )
               tx.abort();
           };

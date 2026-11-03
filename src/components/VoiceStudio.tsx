@@ -122,7 +122,9 @@ export function VoiceStudio({
       project.scenes[sceneIndex].dialogue ||
         project.scenes[sceneIndex].narration,
     ),
-    [lowStorage, setLowStorage] = useState(false);
+    [lowStorage, setLowStorage] = useState(false),
+    [availableBytes, setAvailableBytes] = useState<number | null>(null),
+    [protectedStorage, setProtectedStorage] = useState(false);
   const clip = project.audioClips.find((c) => c.id === selected),
     asset = project.audioAssets.find((a) => a.id === clip?.assetId);
   useEffect(() => {
@@ -136,10 +138,20 @@ export function VoiceStudio({
     void navigator.storage
       ?.estimate?.()
       .then((s) => {
-        if (alive.current)
+        if (alive.current) {
+          setAvailableBytes(
+            s.quota ? Math.max(0, s.quota - (s.usage ?? 0)) : null,
+          );
           setLowStorage(
             !!s.quota && s.quota - (s.usage ?? 0) < 15 * 1024 * 1024,
           );
+        }
+      })
+      .catch(() => {});
+    void navigator.storage
+      ?.persisted?.()
+      .then((value) => {
+        if (alive.current) setProtectedStorage(value);
       })
       .catch(() => {});
     return () => {
@@ -354,6 +366,45 @@ export function VoiceStudio({
             ? "Up to 30 minutes of unique sources / 256 MB / 256 sources. Audio originals are separate local files; preview loads small windows. Complete backups use .ctepisode files."
             : "The original JSON mode holds five minutes of audio. Enable long-episode storage for 20-minute narrated stories, preserving existing recordings."}
         </p>
+        <p className="field-hint">
+          {availableBytes === null
+            ? "This browser does not report its available storage."
+            : `About ${(availableBytes / 1024 / 1024).toFixed(0)} MB of browser storage available when this panel opened.`}{" "}
+          One minute of mono WAV at 24 kHz is about 2.9 MB. Available space is
+          an estimate; keep a complete backup.
+          {protectedStorage &&
+            " This browser has granted protection from automatic storage cleanup."}
+        </p>
+        {project.mediaVersion === 1 &&
+          !protectedStorage &&
+          navigator.storage?.persist && (
+            <button
+              className="button secondary small"
+              disabled={busy || recording}
+              onClick={() => {
+                void navigator.storage
+                  .persist()
+                  .then((granted) => {
+                    if (alive.current) {
+                      setProtectedStorage(granted);
+                      setMessage(
+                        granted
+                          ? "Local storage protection granted. Keep downloaded episode backups too."
+                          : "This browser did not grant storage protection. Your files remain saved; keep a complete episode backup before closing or clearing browser data.",
+                      );
+                    }
+                  })
+                  .catch(() => {
+                    if (alive.current)
+                      setMessage(
+                        "Storage protection is unavailable. Keep a complete episode backup.",
+                      );
+                  });
+              }}
+            >
+              Request local storage protection
+            </button>
+          )}
         <p>
           {(
             project.audioAssets.reduce((n, a) => n + sourceBytes(a), 0) /
@@ -431,7 +482,10 @@ export function VoiceStudio({
       {lowStorage && (
         <p className="media-notice">
           Browser space is running low. Download a project backup before adding
-          more recordings. You can remove unused sources below.
+          more recordings.{" "}
+          {project.mediaVersion === 1
+            ? "Stored originals are retained for recovery, including sources removed from a project. Back up your projects before clearing any site data."
+            : "You can remove unused sources below."}
         </p>
       )}
       <nav className="media-tabs" aria-label="Sound studio panels">

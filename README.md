@@ -29,8 +29,9 @@ npm run preview
 3. Edit the scenes, their narration, dialogue and learning questions. **Story chapters** organizes six story phases and adds reviewed batches of scene drafts. Keep a 15–20 minute goal beside the actual running time. Use **Character reference** to apply a familiar appearance while preserving scene-specific animation.
 4. Choose a background, expression, position and movement, then press **Play cartoon**. The episode uses each scene’s actual duration. Pause, seek, restart or jump between scenes.
 5. Open **Voices & Sound** to record or upload speech, add original music/effects and edit timed captions. **Finish My Cartoon** reviews and exports a genuine WebM with mixed audio. See [the production guide](docs/AUDIO_PRODUCTION.md).
-6. Changes autosave in this browser’s IndexedDB. Wait for **Saved on this device**. Download a **Project backup** for a portable copy, and restore it from the dashboard.
-7. **Download storyboard** produces a genuine SVG contact sheet containing scene art, narration and dialogue. It can be opened in a browser or printed.
+6. For twenty-minute narration, choose **Enable long-episode audio** in Voices & Sound before adding more takes. This allows up to thirty minutes of distinct sources within a 256 MiB original-audio budget, with bounded preview loading. See [Long-Form Episode Production](docs/EPISODE_PRODUCTION.md).
+7. Changes autosave in this browser’s IndexedDB. Wait for **Saved on this device**. Download a **Project backup** for a portable copy, and restore it from the dashboard.
+8. **Download storyboard** produces a genuine SVG contact sheet containing scene art, narration and dialogue. It can be opened in a browser or printed.
 
 **Upload a sketch or image** imports an original PNG, JPEG or WebP (4 MB / 24 megapixels maximum) as a movable image character. **Draw a character** offers a transparent drawing pad with brush, color, eraser and stroke undo. Image movement transforms the whole picture; it does not automatically rig an arbitrary photograph.
 
@@ -45,22 +46,23 @@ See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor 
 - Three guided creation paths, existing quick starts and a real project dashboard with thumbnails, dates, draft/ready status, duplicate, delete confirmation and restore.
 - Six complete scenes in the original “A little room for a friend” demo; twelve original editable lesson starters covering kindness, friendship, differences, feelings, helping, responsibility, trusted-adult safety, personal-information safety, nature, problem-solving and teamwork.
 - Six story chapters, editable batch scene drafts, duration goals, character consistency controls, and undo/redo for the last 40 edits.
+- Opt-in long-form narration, separate immutable local audio files, scene-level voice readiness, estimated space/protection controls, and complete checksummed episode-package backups with atomic copy restoration.
 - Ordered whole-scene WebM parts with independent retry, part-local SRT and an order manifest; readiness checks and portable reusable art-library backups.
 - Original SVG art and deterministic movement: enter left/right, walk, jump, rotate, grow and fade; shape-character expressions/blinks, wide/close camera and scene fades.
 - Sequential cartoon playback with shared audio timing, progress, timed captions and transport controls; real WebM export with mixed sound.
-- IndexedDB autosave, original asset preservation, full project JSON backup/restore and SVG storyboard download.
+- IndexedDB autosave, original asset preservation, full JSON/episode-package backup/restore and SVG storyboard download.
 - Responsive interfaces, keyboard navigation and browser QA including accessibility checks.
 
 ## Honest limitations
 
-- This studio follows the [five-PR roadmap](docs/ROADMAP.md). Editable keyframes, acting, camera tracks and background motion are now implemented alongside reusable art libraries, drawing tools, scene layers and non-destructive raster crops. Local recording, mixing, captions and video export are integrated with guided creation, longer-story chapters and production recovery.
+- This studio follows the [studio roadmap](docs/ROADMAP.md). Editable keyframes, acting, camera tracks and background motion are now implemented alongside reusable art libraries, drawing tools, scene layers and non-destructive raster crops. Local recording, mixing, captions and video export are integrated with guided creation, longer-story chapters and production recovery.
 - Video exports are WebM (VP8/Opus or VP9/Opus when supported). MP4 is not implemented. Browser speech synthesis is a preview only; recorded/uploaded audio provides dependable voice export. There is no automatic transcription or lip-sync.
 - Real-time export is limited to 60 seconds **per file** on phones and 120 seconds **per file** on wider screens. Longer stories export as consecutive whole-scene parts, each independently playable. No automatic joining or uninterrupted 20-minute file is supplied. Scenes longer than a file limit receive an actionable warning. Keep the tab visible. 800×450 at 15 fps is the lighter default; wider screens also offer 1280×720 / 24 fps. The exporter stops with an explanation if timing or encoding is interrupted.
 - The planner uses local, editable templates. It is not generative AI. Mood, art direction, age and desired episode length are planning notes. A longer episode goal still starts with six scenes (about one minute); add scenes to grow it.
 - Changing an outline or action/prop note does not automatically rewrite narration or create new props. Each scene and its actual motion are edited separately.
 - Raster uploads remain whole images. SVG uploads and remote image URLs are rejected. This avoids executing active imported SVG content.
 - Work is local to this browser and origin. Clearing browser/site data or using private browsing can remove it. Save backups, and use one editor tab per project. IndexedDB transactions are atomic, but collaborative editing and multi-tab conflict resolution are not implemented.
-- Up to 120 scenes, 20 characters and 40 assets per project; portable imports are capped at 64 MB. Very long text is supported in the data model but not automatically paced to match scene duration.
+- Up to 120 scenes, 20 characters and 40 assets per project; project/art metadata remains capped at 64 MiB; long-episode packages can additionally hold up to 256 MiB of original audio. Very long text is supported in the data model but not automatically paced to match scene duration.
 - Chromium desktop/phone/tablet automation and selected Firefox/WebKit workflows are provided. Physical iOS/Android/Safari microphone and export testing is still needed; emulation does not establish device compatibility.
 
 ## Architecture
@@ -78,9 +80,11 @@ See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor 
 
 `StoryProvider` is the extension boundary for future optional story services. Core planning, editing and playback work without a backend. No secret key belongs in the Vite bundle; future paid/connected services require an explicit user action and a secure server adapter.
 
+The long-media boundaries are in `src/audio-vault.ts` (immutable files and quota/atomic writes), `src/episode-package.ts` (versioned integrity-checked container), and `src/audio-engine.ts` (shared mixer, windowed preview and bounded range decoding). Project schema stays 4 with optional mediaVersion 1; IndexedDB upgrades to 3 without rewriting old originals. [Format and migration details](docs/EPISODE_PACKAGE.md).
+
 ## Privacy and reliability
 
-Stories, images, drawings, original audio, mixer settings and captions stay in IndexedDB. Project backups embed original artwork and audio as validated data URLs. Microphone access is requested only at Start recording; tracks stop on Stop or closing the studio. There are no analytics, external font calls, accounts, cloud photo uploads or AI requests. Fonts are bundled locally with their license notices. Uploaded image type/signatures, dimensions and size are checked; imported project graphs validate IDs, references, types, enumerations, numeric bounds, date strings and asset encodings before replacing any state. Backups restore as a separate project.
+Stories, images, drawings, original audio, mixer settings and captions stay in IndexedDB. Legacy backups embed original artwork/audio as validated data URLs. Opt-in long-episode mode keeps immutable audio Blobs in IndexedDB and includes them in checksummed .ctepisode packages; artwork remains embedded. Microphone access is requested only at Start recording; tracks stop on Stop or closing the studio. There are no analytics, external font calls, accounts, cloud photo uploads or AI requests. Fonts are bundled locally with their license notices. Uploaded image type/signatures, dimensions and size are checked; imported project graphs validate IDs, references, types, enumerations, numeric bounds, date strings and asset encodings before replacing any state. Backups restore as a separate project.
 
 The saved indicator updates only after the IndexedDB transaction commits. If saving fails or storage is full, the open work stays available and a working backup action is shown. Autosave is debounced by 650 ms; use the dashboard back button to explicitly await saving before leaving the editor.
 
@@ -90,6 +94,8 @@ The saved indicator updates only after the IndexedDB transaction commits. If sav
 npm run check
 npx playwright install --with-deps chromium firefox webkit
 npm run test:e2e
+# Requires FFmpeg/FFprobe with Flite. Complete real-time proof takes about 23 minutes.
+npm run test:episode
 ```
 
 Playwright starts the built production preview at `/ChipToons/`. Build first. `PLAYWRIGHT_BASE_URL` can target an already-running preview. Tests cover the idea wizard, persisted edits after reload, scene ordering and undo/redo, complete timed playback, actual backup/storyboard downloads, original asset preservation, drawing, rejected imports, quota failures, responsive layouts and WCAG A/AA scans. Automated accessibility scans supplement manual keyboard and visual review; they do not prove complete accessibility.
@@ -100,7 +106,9 @@ The Vite base path is `/ChipToons/`. The intended public URL is:
 
 <https://larrinamsalva.github.io/ChipToons/>
 
-The owner must select **Repository Settings → Pages → Build and deployment → Source → GitHub Actions**. The workflow runs checks on pull requests, `main`, and the PR #5 feature branch so verification can finish before the pull request opens. Publication runs only on `main` after all unit/build/browser checks pass; PRs are not deployed or automatically merged. The `github-pages` environment may require an owner’s approval depending on repository settings. No custom token is needed.
+The separate complete-episode CI job restores/reopens a fictional 20-minute narrated story and records/decodes every whole-scene part; it runs alongside the existing regressions. See [PR #6 verification](docs/PR6_VERIFICATION.md) for actual results and remaining limits.
+
+The owner must select **Repository Settings → Pages → Build and deployment → Source → GitHub Actions**. The workflow runs checks on pull requests, `main`, and the PR #6 feature branch so verification can finish before the pull request opens. Publication runs only on `main` after all unit/build/browser checks pass; PRs are not deployed or automatically merged. The `github-pages` environment may require an owner’s approval depending on repository settings. No custom token is needed.
 
 All application navigation stays on the entry page, so static hosting needs no SPA rewrite rule. A fresh clone plus `npm ci` uses the committed dependency lockfile.
 

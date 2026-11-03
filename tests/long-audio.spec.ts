@@ -247,3 +247,82 @@ test("long audio and scene readiness controls remain accessible in light and dar
     contentType: "image/png",
   });
 });
+
+test("missing stored originals block export and a complete backup restores a separate intact copy", async ({
+  page,
+}) => {
+  await demo(page);
+  await enable(page);
+  const protection = page.getByRole("button", {
+    name: "Request local storage protection",
+    exact: true,
+  });
+  if (await protection.isVisible()) {
+    await page.evaluate(() => {
+      Object.defineProperty(navigator.storage, "persist", {
+        configurable: true,
+        value: async () => false,
+      });
+    });
+    await protection.click();
+    await expect(
+      page
+        .getByRole("status")
+        .filter({ hasText: "did not grant storage protection" }),
+    ).toBeVisible();
+  }
+  await page
+    .getByRole("button", { name: "Back to cartoon", exact: true })
+    .click();
+  await saved(page);
+  const { bytes } = await packageDownload(page);
+  // Simulate lost browser-local media in this isolated test context.
+  await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const r = indexedDB.open("chiptoons-studio", 3);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      const tx = database.transaction("media", "readwrite"),
+        store = tx.objectStore("media"),
+        r = store.openCursor();
+      r.onsuccess = () => {
+        r.result?.delete();
+      };
+      tx.oncomplete = () => resolve();
+      tx.onabort = () => reject(tx.error);
+    });
+    database.close();
+  });
+  await page
+    .getByRole("button", { name: "Finish My Cartoon", exact: true })
+    .click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Missing audio originals:" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Export complete cartoon", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Back to studio", exact: true })
+    .click();
+  await page
+    .getByLabel("Restore project backup file")
+    .setInputFiles({
+      name: "recovered.ctepisode",
+      mimeType: "application/octet-stream",
+      buffer: bytes,
+    });
+  await saved(page);
+  expect((await packageDownload(page)).manifest.files).toHaveLength(5);
+  await page
+    .getByRole("button", { name: "Finish My Cartoon", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Export complete cartoon", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Missing audio originals:" }),
+  ).not.toBeAttached();
+});
