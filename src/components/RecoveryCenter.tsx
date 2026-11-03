@@ -169,7 +169,7 @@ export function RecoveryCenter({ onClose, onRestore, onOpenReadOnly, onProjectsC
       <p className="recovery-status" role="status" aria-live="polite">{message}</p>
       <div className="recovery-actions">
         <button className="button secondary" disabled={busy} onClick={() => verify.current?.click()}>Verify Backup File</button>
-        <input type="file" accept=".ctepisode,.json" ref={verify} hidden onChange={event => {
+        <input type="file" accept=".ctepisode,.json" ref={verify} className="visually-hidden" tabIndex={-1} aria-label="Backup file to verify" onChange={event => {
           const file = event.currentTarget.files?.[0];
           event.currentTarget.value = "";
           if (file) void run(async () => {
