@@ -333,3 +333,21 @@ it("rejects changed file types at save without replacing the last committed proj
     p.audioAssets[0].mime,
   );
 });
+
+it("honors restore cancellation while waiting for the database to open", async () => {
+  const storage = await import("./storage"),
+    database = await db(),
+    controller = new AbortController();
+  let finish!: (database: IDBDatabase) => void;
+  vi.spyOn(storage, "db").mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const pending = commitEpisode(plain(), [], controller.signal);
+  controller.abort();
+  finish(database);
+  await expect(pending).rejects.toThrow(/cancelled/);
+  expect(await listProjects()).toHaveLength(0);
+});

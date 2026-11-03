@@ -162,6 +162,11 @@ export async function commitEpisode(
       "AbortError",
     );
   const database = await db();
+  if (signal?.aborted)
+    throw new DOMException(
+      "Restore cancelled; existing projects are unchanged.",
+      "AbortError",
+    );
   await new Promise<void>((resolve, reject) => {
     const tx = database.transaction(["projects", "media"], "readwrite");
     const abort = () => tx.abort();
