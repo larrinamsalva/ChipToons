@@ -111,7 +111,11 @@ export async function readAudio(
     );
   const context = new AudioContext({ sampleRate: 24000 });
   try {
-    const buffer = await context.decodeAudioData(bytes.buffer as ArrayBuffer);
+    // Web Audio consumes/detaches its input buffer. Decode a copy so uploaded
+    // original bytes remain available for listening, persistence and backups.
+    const buffer = await context.decodeAudioData(
+      bytes.slice().buffer as ArrayBuffer,
+    );
     if (
       buffer.duration > MAX_AUDIO_SECONDS ||
       buffer.duration < 0.02 ||

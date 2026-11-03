@@ -350,6 +350,7 @@ export default function App() {
           canUndo={!!past.length}
           canRedo={!!future.length}
           saveStatus={saveStatus}
+          saveError={storageError}
           onRetry={() => setRetry((r) => r + 1)}
           onLibrary={(sceneIndex, draft) =>
             setDialog({ type: "library", sceneIndex, draft })

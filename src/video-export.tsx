@@ -309,6 +309,7 @@ export async function exportVideo(
         );
       let frames = 1,
         lastFrame = -1,
+        lastTime = 0,
         renderError: Error | undefined;
       const render = async () => {
         while (true) {
@@ -318,6 +319,11 @@ export async function exportVideo(
               "Audio timing was interrupted. Keep the tab active and try again.",
             );
           const time = Math.max(0, audio.currentTime - anchor);
+          if (time - lastTime > 0.5)
+            throw new Error(
+              "Frame timing was interrupted. Keep the tab visible and try 800×450, 15 fps or a shorter cartoon.",
+            );
+          lastTime = time;
           if (time >= duration) break;
           const frame = Math.floor(time * settings.fps);
           if (frame !== lastFrame) {
@@ -340,13 +346,24 @@ export async function exportVideo(
           }
           await new Promise<void>((resolve, reject) => {
             const abort = () => {
-              cancelAnimationFrame(handle);
+              clearTimeout(handle);
               reject(aborted());
             };
-            const handle = requestAnimationFrame(() => {
+            // Encoding must not depend on compositor RAF delivery, which can
+            // pause for an occluded canvas even while its audio clock runs.
+            const delay = Math.min(
+              1000 / settings.fps,
+              Math.max(
+                4,
+                ((lastFrame + 1) / settings.fps -
+                  (audio.currentTime - anchor)) *
+                  1000,
+              ),
+            );
+            const handle = setTimeout(() => {
               workSignal.removeEventListener("abort", abort);
               resolve();
-            });
+            }, delay);
             workSignal.addEventListener("abort", abort, { once: true });
           });
         }

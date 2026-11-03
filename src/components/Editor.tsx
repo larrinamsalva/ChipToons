@@ -52,6 +52,7 @@ export function Editor({
   canUndo,
   canRedo,
   saveStatus,
+  saveError,
   onRetry,
   onLibrary,
 }: {
@@ -63,6 +64,7 @@ export function Editor({
   canUndo: boolean;
   canRedo: boolean;
   saveStatus: string;
+  saveError: string;
   onRetry: () => void;
   onLibrary: (sceneIndex: number, draft?: LibraryItem) => void;
 }) {
@@ -518,6 +520,7 @@ export function Editor({
         ].map((step) => (
           <button
             key={step}
+            aria-label={`Production step: ${step}`}
             onClick={() => {
               halt();
               if (step === "Story") {
@@ -1299,6 +1302,7 @@ export function Editor({
             void play(false, true);
           }}
           saveStatus={saveStatus}
+          saveError={saveError}
           onRetry={onRetry}
         />
       )}

@@ -15,10 +15,40 @@ async function render(
   info: TestInfo,
   name: string,
   seconds: number,
+  options: {
+    width?: 800 | 1280;
+    fps?: 15 | 24;
+    codec?: "vp8" | "vp9";
+    audio?: boolean;
+    captions?: boolean;
+    silent?: boolean;
+  } = {},
 ) {
+  const width = options.width ?? 800,
+    height = (width * 450) / 800;
   await page
     .getByRole("button", { name: "Finish My Cartoon", exact: true })
     .click();
+  if (options.width)
+    await page
+      .getByLabel("Video export resolution")
+      .selectOption(String(width));
+  if (options.fps)
+    await page
+      .getByLabel("Video export frame rate")
+      .selectOption(String(options.fps));
+  if (options.codec)
+    await page
+      .getByLabel("Video export format")
+      .selectOption(`video/webm;codecs=${options.codec},opus`);
+  if (options.audio === false)
+    await page
+      .getByRole("checkbox", { name: "Include mixed audio", exact: true })
+      .uncheck();
+  if (options.captions === false)
+    await page
+      .getByRole("checkbox", { name: "Include timed captions", exact: true })
+      .uncheck();
   await page
     .getByRole("button", { name: "Export complete cartoon", exact: true })
     .click();
@@ -35,7 +65,7 @@ async function render(
       height: el.videoHeight,
       finite: Number.isFinite(el.duration),
     })),
-  ).toEqual({ width: 800, height: 450, finite: true });
+  ).toEqual({ width, height, finite: true });
   await video.evaluate((el: HTMLVideoElement) => {
     el.muted = true;
     return el.play();
@@ -79,29 +109,39 @@ async function render(
     audio = probe.streams.find(
       (s: { codec_type: string }) => s.codec_type === "audio",
     );
-  expect(picture).toMatchObject({ codec_name: "vp8", width: 800, height: 450 });
-  expect(Number(picture.nb_read_frames)).toBeGreaterThan(seconds * 8);
-  expect(audio).toMatchObject({ codec_name: "opus" });
+  expect(picture).toMatchObject({
+    codec_name: options.codec ?? "vp8",
+    width,
+    height,
+  });
+  expect(Number(picture.nb_read_frames)).toBeGreaterThan(
+    seconds * (options.fps === 24 ? 16 : 8),
+  );
+  if (options.audio === false) expect(audio).toBeUndefined();
+  else expect(audio).toMatchObject({ codec_name: "opus" });
   expect(Number(probe.format.duration)).toBeGreaterThanOrEqual(seconds - 0.1);
   expect(Number(probe.format.duration)).toBeLessThan(seconds + 1);
-  const pcm = execFileSync(
-    "ffmpeg",
-    [
-      "-v",
-      "error",
-      "-i",
-      path,
-      "-vn",
-      "-ac",
-      "1",
-      "-ar",
-      "8000",
-      "-f",
-      "f32le",
-      "pipe:1",
-    ],
-    { maxBuffer: 16 * 1024 * 1024 },
-  );
+  const pcm =
+    options.audio === false
+      ? Buffer.alloc(0)
+      : execFileSync(
+          "ffmpeg",
+          [
+            "-v",
+            "error",
+            "-i",
+            path,
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            "8000",
+            "-f",
+            "f32le",
+            "pipe:1",
+          ],
+          { maxBuffer: 16 * 1024 * 1024 },
+        );
   let sum = 0,
     peak = 0;
   for (let i = 0; i < pcm.length; i += 4) {
@@ -109,9 +149,12 @@ async function render(
     sum += value * value;
     peak = Math.max(peak, Math.abs(value));
   }
-  const rms = Math.sqrt(sum / (pcm.length / 4));
-  expect(rms).toBeGreaterThan(0.002);
-  expect(peak).toBeGreaterThan(0.02);
+  const rms = pcm.length ? Math.sqrt(sum / (pcm.length / 4)) : 0;
+  if (options.silent) expect(peak).toBeLessThan(0.00001);
+  else if (options.audio !== false) {
+    expect(rms).toBeGreaterThan(0.002);
+    expect(peak).toBeGreaterThan(0.02);
+  }
   const hashes = execFileSync(
     "ffmpeg",
     [
@@ -160,7 +203,7 @@ async function render(
         width: picture.width,
         height: picture.height,
         video: picture.codec_name,
-        audio: audio.codec_name,
+        audio: audio?.codec_name ?? null,
         rms,
         peak,
         distinctFrames: new Set(hashes).size,
@@ -177,10 +220,7 @@ async function render(
   return { path, pcm };
 }
 
-test("genuine short export decodes moving frames, embedded raster art, captions and mixed non-silent audio", async ({
-  page,
-}, info) => {
-  test.setTimeout(60_000);
+function shortProject() {
   let p = { ...starterProject("kindness"), ...emptyProduction() };
   p.scenes = p.scenes.slice(0, 2).map((s) => retimeScene(s, 2));
   const source = builtInSound("melody");
@@ -212,6 +252,14 @@ test("genuine short export decodes moving frames, embedded raster art, captions 
     "prop",
   );
   p = placeLibraryItem(p, 0, artwork);
+  return p;
+}
+
+test("genuine short export decodes moving frames, embedded raster art, captions and mixed non-silent audio", async ({
+  page,
+}, info) => {
+  test.setTimeout(60_000);
+  const p = shortProject();
   await restore(page, p);
   const { path } = await render(page, info, "short-cartoon", 4);
   // Read actual decoded bottom caption pixels: a dark, readable subtitle plate.
@@ -233,6 +281,46 @@ test("genuine short export decodes moving frames, embedded raster art, captions 
   expect(pixel[0]).toBeLessThan(60);
   expect(pixel[1]).toBeLessThan(60);
   expect(pixel[2]).toBeLessThan(70);
+});
+
+test("master mute records silence in an actual encoded audio track", async ({
+  page,
+}, info) => {
+  test.setTimeout(60_000);
+  const p = shortProject();
+  p.mixer.muted = true;
+  await restore(page, p);
+  await render(page, info, "muted-cartoon", 4, { silent: true });
+});
+
+test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecked", async ({
+  page,
+}, info) => {
+  test.setTimeout(60_000);
+  await restore(page, shortProject());
+  const { path } = await render(page, info, "silent-vp9-cartoon", 4, {
+    width: 1280,
+    fps: 24,
+    codec: "vp9",
+    audio: false,
+    captions: false,
+  });
+  const pixels = execFileSync("ffmpeg", [
+    "-v",
+    "error",
+    "-i",
+    path,
+    "-ss",
+    "1",
+    "-vf",
+    "crop=2:2:48:640,format=rgb24",
+    "-frames:v",
+    "1",
+    "-f",
+    "rawvideo",
+    "pipe:1",
+  ]);
+  expect(Math.max(...pixels)).toBeGreaterThan(100);
 });
 
 test("the complete original friendship demo exports as a playable sixty-second movie with voices, music and effects", async ({

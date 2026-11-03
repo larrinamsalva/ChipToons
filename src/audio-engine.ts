@@ -120,6 +120,10 @@ export class PreviewAudio {
   ) {
     this.stop();
     const token = this.serial;
+    if (typeof AudioContext === "undefined")
+      throw new Error(
+        "Sound preview needs Web Audio in this browser. Turn Sound off to preview animation, or try a current Chromium browser.",
+      );
     const context = (this.context ??= new AudioContext());
     await context.resume();
     const used = new Set(

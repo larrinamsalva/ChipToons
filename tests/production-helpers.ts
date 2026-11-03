@@ -7,7 +7,9 @@ export async function demo(page: Page) {
   await page.goto("./");
   await page.getByRole("button", { name: "Try a demo cartoon" }).click();
   await expect(page.locator(".editor")).toBeVisible();
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Production step: Preview", exact: true })
+    .click();
 }
 export async function voices(page: Page) {
   await page
@@ -31,15 +33,15 @@ export async function backup(page: Page) {
 }
 export async function restore(page: Page, project: Project) {
   await page.goto("./");
-  await page
-    .getByLabel("Restore project backup file")
-    .setInputFiles({
-      name: "production.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(project)),
-    });
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "production.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(project)),
+  });
   await expect(page.locator(".editor")).toBeVisible();
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Production step: Preview", exact: true })
+    .click();
 }
 export async function saved(page: Page) {
   await expect(

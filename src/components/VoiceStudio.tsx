@@ -50,6 +50,7 @@ export function VoiceStudio({
   onClose,
   onPreview,
   saveStatus,
+  saveError,
   onRetry,
 }: {
   project: Project;
@@ -62,6 +63,7 @@ export function VoiceStudio({
   onClose: () => void;
   onPreview: () => void;
   saveStatus: string;
+  saveError: string;
   onRetry: () => void;
 }) {
   const [tab, setTab] = useState(initialTab);
@@ -156,6 +158,7 @@ export function VoiceStudio({
     const same = project.audioAssets.find((a) => a.dataUrl === source.dataUrl),
       a = same ?? source,
       nextClip = newAudioClip(project, a, kind, sceneIndex, localTime);
+    nextClip.name = source.name.slice(0, 100);
     if (kind === "dialogue" && association) nextClip.characterId = association;
     if (
       commit({
@@ -292,6 +295,11 @@ export function VoiceStudio({
           </>
         )}
       </div>
+      {saveError && (
+        <p role="status" className="media-notice">
+          {saveError}
+        </p>
+      )}
       {lowStorage && (
         <p className="media-notice">
           Browser space is running low. Download a project backup before adding

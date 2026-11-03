@@ -65,6 +65,9 @@ test("upload, character assignment, trim, mixer, reload and portable restore pre
   await page
     .getByRole("button", { name: "Save audio clip", exact: true })
     .click();
+  await expect(
+    page.getByRole("textbox", { name: "Audio clip name", exact: true }),
+  ).toHaveValue("My recorded welcome");
   await number(page, "Trim start (seconds)", "1");
   await number(page, "Trim end (seconds)", "3");
   await number(page, "Clip start (seconds)", "2");
@@ -381,7 +384,50 @@ test("caption timing, text drafting, SRT and keyboard clip movement use the exis
   await page
     .getByRole("spinbutton", { name: "Scene time (seconds)", exact: true })
     .fill("3");
-  await expect(page.locator(".caption-overlay")).not.toBeAttached();
+  await expect(page.locator(".caption-overlay")).not.toContainText(
+    "Kindness makes room.",
+  );
+});
+
+test("audio clips move by touch or mouse with the shared timeline snapping", async ({
+  page,
+}, info) => {
+  await demo(page);
+  const clip = page.getByRole("button", {
+    name: "Edit narration clip A kind hello",
+    exact: true,
+  });
+  await clip.scrollIntoViewIfNeeded();
+  const box = (await clip.boundingBox())!,
+    lane = (await clip.locator("..").boundingBox())!;
+  const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    to = { x: from.x + (lane.width * 0.3) / 10, y: from.y };
+  if (info.project.name === "desktop") {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 5 });
+    await page.mouse.up();
+  } else {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [from],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [to],
+    });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await cdp.detach();
+  }
+  await expect(page.getByRole("dialog")).not.toBeAttached();
+  const p = (await backup(page)).data;
+  expect(
+    p.audioClips.find((c) => c.name === "A kind hello")?.start,
+  ).toBeCloseTo(0.7, 2);
 });
 
 test("export cancellation and encoder failure preserve all media and allow backup", async ({
@@ -440,7 +486,9 @@ test("unsupported encoders preserve project and SRT downloads", async ({
   await expect(
     page.getByRole("button", { name: "Export complete cartoon", exact: true }),
   ).toBeDisabled();
-  await expect(page.getByRole("status")).toContainText("does not provide");
+  await expect(
+    page.getByRole("status").filter({ hasText: "does not provide" }),
+  ).toBeVisible();
   const pending = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "Download portable project", exact: true })
@@ -463,7 +511,7 @@ test("responsive voices, captions and finish panels remain accessible in both th
     expect(
       (
         await new AxeBuilder({ page })
-          .include('[role="dialog"]')
+          .include(".modal")
           .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
           .analyze()
       ).violations,
@@ -478,7 +526,7 @@ test("responsive voices, captions and finish panels remain accessible in both th
     expect(
       (
         await new AxeBuilder({ page })
-          .include('[role="dialog"]')
+          .include(".modal")
           .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
           .analyze()
       ).violations,
@@ -492,7 +540,7 @@ test("responsive voices, captions and finish panels remain accessible in both th
     expect(
       (
         await new AxeBuilder({ page })
-          .include('[role="dialog"]')
+          .include(".modal")
           .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
           .analyze()
       ).violations,

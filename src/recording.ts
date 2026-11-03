@@ -65,8 +65,13 @@ export class VoiceRecorder {
           Math.min(60, (performance.now() - start) / 1000),
         );
     };
-    recorder.start(250);
-    this.timeout = setTimeout(() => this.stop(), 60000);
+    try {
+      recorder.start(250);
+      this.timeout = setTimeout(() => this.stop(), 60000);
+    } catch (error) {
+      this.cancel();
+      throw error;
+    }
   }
   stop() {
     clearTimeout(this.timeout);

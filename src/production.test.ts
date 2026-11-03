@@ -34,6 +34,18 @@ function project() {
 afterEach(() => vi.restoreAllMocks());
 
 describe("portable production data and historical migration", () => {
+  it("adds reused dialogue and a new effect to the complete demonstration", () => {
+    const p = starterProject("kindness"),
+      source = p.audioAssets.find((a) => a.name === "Kindness melody")!;
+    const c = newAudioClip(p, source, "dialogue", 0);
+    c.characterId = p.characters[0].id;
+    p.audioClips.push(c);
+    expect(validateProject(p)).toEqual(p);
+    const fx = builtInSound("notice");
+    p.audioAssets.push(fx);
+    p.audioClips.push(newAudioClip(p, fx, "effects", 0));
+    expect(validateProject(p)).toEqual(p);
+  });
   for (const version of [1, 2, 3])
     it(`migrates version ${version} without modifying its original art, motion or timing`, () => {
       const old = legacyFixture(starterProject("kindness"), version),
