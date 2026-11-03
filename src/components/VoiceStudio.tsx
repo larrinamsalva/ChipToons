@@ -13,30 +13,59 @@ import type { SoundId } from "../sounds";
 import { readAudio } from "../audio-files";
 import { newAudioClip } from "../production";
 import { exportProject, downloadBlob, safeFilename } from "../files";
-import { dataBytes } from "../audio-files";
+import {
+  audioBlob,
+  enableEpisodeAudio,
+  storeAudio,
+  sourceBytes,
+  MAX_EPISODE_AUDIO_BYTES,
+  MAX_EPISODE_AUDIO_SECONDS,
+  MAX_EPISODE_AUDIO_SOURCES,
+} from "../audio-vault";
 import { VoiceRecorder, recordingMime } from "../recording";
 import { Modal } from "./Modal";
 import { MediaNumber } from "./MediaNumber";
 
 function OriginalAudio({ asset }: { asset: AudioAsset }) {
-  const ref = useRef<HTMLAudioElement>(null);
+  const ref = useRef<HTMLAudioElement>(null),
+    [error, setError] = useState("");
   useEffect(() => {
+    let alive = true,
+      url: string | undefined;
     const el = ref.current;
-    if (el) el.src = asset.dataUrl;
+    if (!asset.file) {
+      if (el) el.src = asset.dataUrl;
+    } else
+      void audioBlob(asset)
+        .then((blob) => {
+          if (alive && el) {
+            url = URL.createObjectURL(blob);
+            el.src = url;
+            el.load();
+          }
+        })
+        .catch((e) => {
+          if (alive) setError((e as Error).message);
+        });
     return () => {
+      alive = false;
       el?.pause();
       el?.removeAttribute("src");
       el?.load();
+      if (url) URL.revokeObjectURL(url);
     };
-  }, [asset.dataUrl]);
+  }, [asset.dataUrl, asset.file?.key, asset]);
   return (
-    <audio
-      ref={ref}
-      controls
-      preload="metadata"
-      src={asset.dataUrl}
-      aria-label="Original audio source"
-    />
+    <>
+      <audio
+        ref={ref}
+        controls
+        preload="metadata"
+        src={asset.file ? undefined : asset.dataUrl}
+        aria-label="Original audio source"
+      />
+      {error && <p role="alert">{error}</p>}
+    </>
   );
 }
 export function VoiceStudio({
@@ -154,8 +183,42 @@ export function VoiceStudio({
       audioClips: project.audioClips.map((c) => (c.id === clip.id ? next : c)),
     });
   }
-  function addSource(source: AudioAsset, kind = category) {
-    const same = project.audioAssets.find((a) => a.dataUrl === source.dataUrl),
+  async function addSource(source: AudioAsset, kind = category) {
+    if (busy || recording) return;
+    if (
+      project.mediaVersion === 1 &&
+      (project.audioAssets.length >= MAX_EPISODE_AUDIO_SOURCES ||
+        project.audioAssets.reduce((n, a) => n + a.duration, 0) +
+          source.duration >
+          MAX_EPISODE_AUDIO_SECONDS ||
+        project.audioAssets.reduce((n, a) => n + sourceBytes(a), 0) +
+          sourceBytes(source) >
+          MAX_EPISODE_AUDIO_BYTES)
+    ) {
+      setMessage(
+        "This source would exceed the episode’s 30-minute / 256 MB / 256-source budget. Keep the original and use another chapter project.",
+      );
+      return;
+    }
+    setBusy(true);
+    if (project.mediaVersion === 1) {
+      try {
+        source = await storeAudio(source);
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "The original could not be stored.",
+        );
+        setBusy(false);
+        return;
+      }
+    }
+    const same = project.audioAssets.find((a) =>
+        source.file
+          ? a.file?.sha256 === source.file.sha256
+          : !a.file && a.dataUrl === source.dataUrl,
+      ),
       a = same ?? source,
       nextClip = newAudioClip(project, a, kind, sceneIndex, localTime);
     nextClip.name = source.name.slice(0, 100);
@@ -171,13 +234,14 @@ export function VoiceStudio({
       setDraft(null);
       setMessage("Audio clip added. Your original source stays intact.");
     }
+    setBusy(false);
   }
   async function upload(file?: File) {
     if (!file) return;
     setBusy(true);
     setMessage("");
     try {
-      const a = await readAudio(file);
+      const a = await readAudio(file, undefined, project.mediaVersion === 1);
       if (!alive.current) return;
       if (replacing.current && clip) {
         const old = clip,
@@ -228,6 +292,7 @@ export function VoiceStudio({
               type: blob.type,
             }),
             seconds,
+            project.mediaVersion === 1,
           )
             .then((a) => {
               if (alive.current) {
@@ -275,6 +340,69 @@ export function VoiceStudio({
     : totalDuration(project);
   return (
     <Modal title="Voices & Sound Studio" onClose={onClose} wide>
+      <section
+        className="episode-audio-storage"
+        aria-label="Episode audio storage"
+      >
+        <h3>
+          {project.mediaVersion === 1
+            ? "Long-episode audio is enabled"
+            : "Planning a fully narrated episode?"}
+        </h3>
+        <p className="field-hint">
+          {project.mediaVersion === 1
+            ? "Up to 30 minutes of unique sources / 256 MB / 256 sources. Audio originals are separate local files; preview loads small windows. Complete backups use .ctepisode files."
+            : "The original JSON mode holds five minutes of audio. Enable long-episode storage for 20-minute narrated stories, preserving existing recordings."}
+        </p>
+        <p>
+          {(
+            project.audioAssets.reduce((n, a) => n + sourceBytes(a), 0) /
+            1024 /
+            1024
+          ).toFixed(1)}{" "}
+          MB of{" "}
+          {project.mediaVersion === 1
+            ? MAX_EPISODE_AUDIO_BYTES / 1024 / 1024
+            : 64}{" "}
+          MB ·{" "}
+          {project.audioAssets.reduce((n, a) => n + a.duration, 0).toFixed(0)} /{" "}
+          {project.mediaVersion === 1
+            ? MAX_EPISODE_AUDIO_SECONDS
+            : MAX_TOTAL_AUDIO_SECONDS}{" "}
+          seconds of unique audio
+        </p>
+        {project.mediaVersion !== 1 && (
+          <button
+            className="button secondary"
+            disabled={busy || recording}
+            onClick={() => {
+              setBusy(true);
+              void enableEpisodeAudio(project)
+                .then((next) => {
+                  if (alive.current) {
+                    commit(next);
+                    setMessage(
+                      "Long-episode audio enabled. Existing originals are preserved. Use Project backup for a complete episode package.",
+                    );
+                  }
+                })
+                .catch((error) => {
+                  if (alive.current)
+                    setMessage(
+                      error instanceof Error
+                        ? error.message
+                        : "Storage could not be prepared. Existing sources are unchanged.",
+                    );
+                })
+                .finally(() => {
+                  if (alive.current) setBusy(false);
+                });
+            }}
+          >
+            Enable long-episode audio
+          </button>
+        )}
+      </section>
       <p className="section-description">
         Record a kind voice, add a little music, and place sounds in your story.
         Everything stays on this device.
@@ -448,7 +576,8 @@ export function VoiceStudio({
                   <div className="animation-actions">
                     <button
                       className="button primary"
-                      onClick={() => addSource(draft)}
+                      disabled={busy || recording}
+                      onClick={() => void addSource(draft)}
                     >
                       Save audio clip
                     </button>
@@ -472,6 +601,7 @@ export function VoiceStudio({
                     <button
                       className="button secondary small"
                       key={id}
+                      disabled={busy || recording}
                       onClick={() =>
                         addSource(builtInSound(id as SoundId), kind)
                       }
@@ -896,11 +1026,19 @@ export function VoiceStudio({
           </details>
           <details className="audio-sources">
             <summary>
-              Sources · {project.audioAssets.length}/{MAX_AUDIO_ASSETS} ·{" "}
+              Sources · {project.audioAssets.length}/
+              {project.mediaVersion === 1
+                ? MAX_EPISODE_AUDIO_SOURCES
+                : MAX_AUDIO_ASSETS}{" "}
+              ·{" "}
               {project.audioAssets
                 .reduce((n, a) => n + a.duration, 0)
                 .toFixed(0)}
-              /{MAX_TOTAL_AUDIO_SECONDS}s decoded budget
+              /
+              {project.mediaVersion === 1
+                ? MAX_EPISODE_AUDIO_SECONDS
+                : MAX_TOTAL_AUDIO_SECONDS}
+              s source budget
             </summary>
             <p className="field-hint">
               Original sources stay with the project. Remove a source only after
@@ -930,15 +1068,16 @@ export function VoiceStudio({
                 <span>{a.duration.toFixed(2)}s</span>
                 <button
                   className="button text small"
-                  onClick={() =>
-                    downloadBlob(
-                      new Blob(
-                        [dataBytes(a.dataUrl) as Uint8Array<ArrayBuffer>],
-                        { type: a.mime },
-                      ),
-                      `${safeFilename(a.name)}.${a.mime === "audio/mpeg" ? "mp3" : a.mime.split("/")[1]}`,
-                    )
-                  }
+                  onClick={() => {
+                    void audioBlob(a)
+                      .then((blob) =>
+                        downloadBlob(
+                          blob,
+                          `${safeFilename(a.name)}.${a.mime === "audio/mpeg" ? "mp3" : a.mime.split("/")[1]}`,
+                        ),
+                      )
+                      .catch((e) => setMessage((e as Error).message));
+                  }}
                 >
                   Download source
                 </button>

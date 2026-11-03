@@ -1,7 +1,7 @@
 import { emptyProduction } from "./media-model";
 import { legacyFixture } from "../tests/legacy-fixture";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { starterProject } from "./planner";
+import { starterProject } from "./demo-starter";
 import { clone, validateProject, parseBackup } from "./model";
 import type { Project } from "./model";
 import { ACTIONS, presetAnimation, actionsFor } from "./presets";

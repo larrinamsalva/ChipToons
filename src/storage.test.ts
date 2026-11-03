@@ -6,7 +6,7 @@ import {
   listProjects,
   saveProject,
 } from "./storage";
-import { starterProject } from "./planner";
+import { starterProject } from "./demo-starter";
 
 afterEach(() => vi.restoreAllMocks());
 describe("IndexedDB persistence", () => {

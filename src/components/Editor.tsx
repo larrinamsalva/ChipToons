@@ -227,6 +227,10 @@ export function Editor({
           start,
           end,
           mode === "scene" && loop,
+          (error) => {
+            halt();
+            setEditError(error.message);
+          },
         );
         if (playTicket.current !== ticket) return;
         clock.setTimeSource(source);

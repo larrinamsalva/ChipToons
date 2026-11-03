@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
-import { starterProject } from "../src/planner";
+import { starterProject } from "../src/demo-starter";
 const pixel = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=",
   "base64",

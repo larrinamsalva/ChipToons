@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { starterProject, planStory, DEFAULT_IDEA, STARTERS } from "./planner";
+import { planStory, DEFAULT_IDEA, STARTERS } from "./planner";
+import { starterProject } from "./demo-starter";
 import { clone, makeScene, uid, parseBackup, validateProject } from "./model";
 import { emptyProduction } from "./media-model";
 import {

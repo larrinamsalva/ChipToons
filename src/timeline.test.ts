@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { starterProject } from "./planner";
+import { starterProject } from "./demo-starter";
 import { frameAt, motionAt, sceneStart } from "./timeline";
 
 describe("deterministic cartoon playback", () => {

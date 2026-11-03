@@ -8,7 +8,8 @@ import {
   uid,
   validateProject,
 } from "./model";
-import { DEFAULT_IDEA, planStory, STARTERS, starterProject } from "./planner";
+import { DEFAULT_IDEA, planStory, STARTERS } from "./planner";
+import { starterProject } from "./demo-starter";
 
 describe("local story planning and project backups", () => {
   it("creates unique project IDs on local HTTP previews without randomUUID", () => {

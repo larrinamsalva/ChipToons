@@ -15,6 +15,7 @@ import { CaptionOverlay } from "./CaptionOverlay";
 import { AudioDecodeCache } from "../audio-engine";
 import { SegmentExports } from "./SegmentExports";
 import { ReadinessChecklist } from "./ReadinessChecklist";
+import { EpisodeReadiness } from "./EpisodeReadiness";
 import { productionReadiness } from "../readiness";
 export function FinishCartoon({
   project,
@@ -37,11 +38,13 @@ export function FinishCartoon({
     mobile = window.matchMedia("(max-width:740px)").matches;
   const [audioCache] = useState(() => new AudioDecodeCache());
   const [partPreview, setPartPreview] = useState(false);
-  const blocking = productionReadiness(
-    project,
-    exportLimit(),
-    !!formats.length,
-  ).some((i) => i.blocking && !i.id.startsWith("limit:"));
+  const [sourcesReady, setSourcesReady] = useState(
+    !project.audioAssets.some((a) => a.file),
+  );
+  const blocking =
+    productionReadiness(project, exportLimit(), !!formats.length).some(
+      (i) => i.blocking && !i.id.startsWith("limit:"),
+    ) || !sourcesReady;
   const [settings, setSettings] = useState<ExportSettings>({
       mime: formats[0] ?? "",
       width: 800,
@@ -155,6 +158,11 @@ export function FinishCartoon({
           <strong>{saveStatus}</strong>
         </div>
       </div>
+      <EpisodeReadiness
+        project={project}
+        onReady={setSourcesReady}
+        onScene={onScene}
+      />
       <ReadinessChecklist
         project={project}
         limit={exportLimit()}

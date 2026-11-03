@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
-import { starterProject } from "../src/planner";
+import { starterProject } from "../src/demo-starter";
 
 async function panel(page: Page, name: string) {
   const tab = page.getByRole("button", { name, exact: true });

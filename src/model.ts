@@ -124,6 +124,7 @@ export interface Outline {
 export interface Project extends Production {
   creationSource?: CreationSource;
   templateId?: string;
+  mediaVersion?: 1;
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   title: string;
@@ -230,6 +231,7 @@ export function validateProject(value: unknown): Project {
   const p = value;
   if (
     p.schemaVersion !== SCHEMA_VERSION ||
+    (p.mediaVersion !== undefined && p.mediaVersion !== 1) ||
     (p.creationSource !== undefined &&
       !oneOf(p.creationSource, ["thought", "sketch", "image"])) ||
     (p.templateId !== undefined && !validString(p.templateId, 80)) ||

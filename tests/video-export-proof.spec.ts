@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { starterProject } from "../src/planner";
+import { starterProject } from "../src/demo-starter";
 import { segmentedProject } from "./creator-fixtures";
 import { backup } from "./production-helpers";
 import { cameraAt, elementAt, retimeScene } from "../src/timeline";
