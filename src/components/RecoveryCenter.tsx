@@ -121,9 +121,9 @@ export function RecoveryCenter({ onClose, onRestore, onOpenReadOnly, onProjectsC
       const packageNeeded = project.audioAssets.some(asset => asset.file);
       const blob = packageNeeded
         ? await episodePackage(project, { onProgress: detail => setMessage(detail.phase) })
-        : new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+        : new Blob([JSON.stringify(project)], { type: "application/json" });
       downloadBlob(blob, `${safeFilename(project.title)}.${packageNeeded ? "ctepisode" : "chiptoons.json"}`);
-      return "Complete backup downloaded. Keep a copy outside this browser.";
+      return "Complete backup ready. Check your browser downloads and keep a copy outside this browser.";
     });
   }
 
@@ -195,7 +195,7 @@ export function RecoveryCenter({ onClose, onRestore, onOpenReadOnly, onProjectsC
                   <strong>{project.title}</strong>
                   <p>{sizeLabel(bytes)} · {lastSave ? `Last saved ${new Date(lastSave).toLocaleString()}` : `Saved version dated ${new Date(project.updatedAt).toLocaleString()}`}</p>
                   <p>{broken ? "Originals need attention before this cartoon can make a complete backup."
-                    : checked ? "Originals passed their integrity checks. A complete backup is available."
+                    : checked ? "Originals passed their integrity checks. Use Download Complete Backup to prepare your file."
                       : "No missing original links found. The originals are checked when you download a backup."}</p>
                   <div className="recovery-actions">
                     <button className="button secondary" disabled={busy || broken} aria-label={`Download Complete Backup for ${project.title}`} onClick={() => backup(project)}>Download Complete Backup</button>
