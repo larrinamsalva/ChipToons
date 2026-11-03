@@ -1,10 +1,20 @@
 import { uid, validateProject } from "./model";
 import type { Project } from "./model";
+import type { AudioMime } from "./media-model";
 
 const DB_NAME = "chiptoons-studio";
 const STORE = "projects";
 export const DATABASE_VERSION = 5;
 export const projectStores = [STORE, "media", "settings", "media-info"];
+export interface OriginalInfo {
+  key: string;
+  sha256: string;
+  size: number;
+  mime: AudioMime;
+  name?: string;
+  storedAt?: string;
+  committed: boolean;
+}
 let connection: Promise<IDBDatabase> | undefined;
 export function db(): Promise<IDBDatabase> {
   if (connection) return connection;
@@ -182,14 +192,17 @@ export function markCommittedOriginals(tx: IDBTransaction, ...projects: (Project
     seen.add(file.key);
     const found = info.get(file.key);
     found.onsuccess = () => {
-      const previous = found.result;
-      if (previous?.committed === true) return;
-      info.put({
-        ...previous,
-        key: file.key,
-        name: previous?.name ?? asset.name,
+      const previous = found.result as OriginalInfo | undefined;
+      const sameOriginal = previous?.sha256 === file.sha256 && previous.size === file.size && previous.mime === asset.mime;
+      if (sameOriginal && previous.committed) return;
+      const entry: OriginalInfo = {
+        ...file,
+        mime: asset.mime,
+        name: sameOriginal ? previous.name ?? asset.name : asset.name,
+        storedAt: sameOriginal ? previous.storedAt : undefined,
         committed: true,
-      });
+      };
+      info.put(entry);
     };
   }
 }

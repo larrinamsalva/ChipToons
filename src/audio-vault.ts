@@ -2,7 +2,7 @@ import { sha256 as portableSha256 } from "@noble/hashes/sha2.js";
 import type { AudioAsset, AudioMime } from "./media-model";
 import { audioSignature, MAX_AUDIO_BYTES } from "./media-model";
 import { db, checkAudioReferences, projectStores, guardedProjectWrite, markCommittedOriginals, readProjectSnapshot } from "./storage";
-import type { SaveGuard } from "./storage";
+import type { OriginalInfo, SaveGuard } from "./storage";
 import { uid, validateProject } from "./model";
 import type { Project } from "./model";
 export interface AudioFile {
@@ -255,8 +255,11 @@ export async function missingAudio(project: Project) {
   });
 }
 function rememberOriginals(tx: IDBTransaction, files: AudioFile[], committed: boolean) {
-  for (const { key, name, storedAt } of files)
-    tx.objectStore("media-info").add({ key, name, storedAt, committed });
+  const info = tx.objectStore("media-info");
+  for (const { key, sha256, size, mime, name, storedAt } of files) {
+    const entry: OriginalInfo = { key, sha256, size, mime, name, storedAt, committed };
+    info.add(entry);
+  }
 }
 
 export async function commitEpisode(project: Project, files: AudioFile[], signal?: AbortSignal) {

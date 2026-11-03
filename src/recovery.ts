@@ -6,6 +6,7 @@ import type { AudioAsset, AudioMime } from "./media-model";
 import { validateProject } from "./model";
 import type { Project } from "./model";
 import { db, projectStores, readProjectSnapshot, savedAtKey } from "./storage";
+import type { OriginalInfo } from "./storage";
 
 type Source = Pick<AudioAsset, "name" | "file" | "mime" | "dataUrl">;
 type Identity = NonNullable<AudioAsset["file"]> & { mime: AudioMime };
@@ -61,7 +62,7 @@ function readInventory(tx: IDBTransaction, ready: (inventory: RecoveryInventory)
   function finish() {
     if (!datesDone || !mediaDone) return;
     try {
-      const metadata = new Map((info.result as { key: string; name?: string; storedAt?: string; committed?: boolean }[])
+      const metadata = new Map((info.result as OriginalInfo[])
         .map(entry => [entry.key, entry]));
       const references = new Map<string, Reference[]>();
       const recordings: Recording[] = [];
@@ -88,11 +89,14 @@ function readInventory(tx: IDBTransaction, ready: (inventory: RecoveryInventory)
           if (!matches(identities.get(key), identity(ref.asset.file!, ref.asset.mime))) missing.push(ref);
       for (const [key, original] of identities) {
         const refs = references.get(key) ?? [];
-        const meta = metadata.get(key);
-        const name = meta?.name ?? refs[0]?.asset.name ?? "Unnamed original";
+        const savedInfo = metadata.get(key);
+        const meta = matches(savedInfo, original) ? savedInfo : undefined;
+        const name = typeof meta?.name === "string" && meta.name.trim()
+          ? meta.name : refs[0]?.asset.name ?? "Unnamed original";
         recordings.push({
           id: key, source: { name, mime: original.mime, file: original, dataUrl: "" }, bytes: original.size,
-          references: refs, storedAt: meta?.storedAt,
+          references: refs, storedAt: typeof meta?.storedAt === "string" && Number.isFinite(Date.parse(meta.storedAt))
+            ? meta.storedAt : undefined,
           candidate: refs.length === 0 && meta?.committed === true,
         });
       }
@@ -205,7 +209,7 @@ export async function recoverOriginal(projectId: string, input: Recording | File
     const blob = retained ? await verifiedRecording(retained) : input as File;
     const mime = target?.mime ?? retained?.source.mime;
     if (!mime) throw new Error("Choose an original recording from the list.");
-    const name = retained?.source.name ?? (input as File).name;
+    const name = (retained?.source.name ?? (input as File).name).slice(0, 160) || "My recording";
     const original = retained?.source.file
       ? { ...retained.source.file, mime: retained.source.mime, blob, name }
       : { ...await fileRecord(blob, mime), name, storedAt: new Date().toISOString() };

@@ -109,10 +109,20 @@ test("cleanup dry run is cancellable, respects active tabs and restores the comp
   await button(page, "Review Cleanup").click();
   await button(page, "Permanently Remove Selected Originals").click();
   await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/Close open cartoon editors/);
+  await other.getByLabel("Restore project backup file").setInputFiles({ ...pack, mimeType: "application/octet-stream" });
+  await expect(other.getByRole("heading", { name, exact: true })).toBeVisible();
+  await saved(other);
   await other.close();
+  await button(page, "Permanently Remove Selected Originals").click();
+  await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/Saved project references changed/);
+  await button(page, "Cancel Cleanup").click();
+  await button(page, "Review Storage").click();
+  await checkbox.check();
+  await button(page, "Review Cleanup").click();
   await button(page, "Permanently Remove Selected Originals").click();
   await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/Removed 1 original recording/);
   await button(page, "Find My Recordings").click();
+  await page.getByLabel("Filter recordings").selectOption("retained");
   await expect(page.getByText("No recordings match this view.")).toBeVisible();
   await button(page, "Close dialog").click();
   await page.getByLabel("Restore project backup file").setInputFiles({ ...pack, mimeType: "application/octet-stream" });
@@ -207,4 +217,23 @@ test("a missing recording can be reconnected with exact bytes without changing t
   expect(after.project.audioClips).toEqual(manifest.project.audioClips);
   expect(after.project.scenes).toEqual(manifest.project.scenes);
   expect(after.project.audioAssets[0].file.sha256).toBe(manifest.project.audioAssets[0].file.sha256);
+});
+
+
+test("a crashed renderer releases its editing lock and the last saved cartoon reopens", async ({ page, context }) => {
+  await seed(page, false);
+  await showSceneEditor(page);
+  await sceneTitle(page).fill("Saved before the interruption");
+  await saved(page);
+  const url = page.url();
+  const session = await context.newCDPSession(page);
+  const crashed = page.waitForEvent("crash");
+  void session.send("Page.crash").catch(() => {});
+  await crashed;
+  const recovered = await context.newPage();
+  await recovered.goto(url);
+  await button(recovered, `Continue ${name}`).click();
+  await expect(recovered.locator(".editor")).toBeVisible();
+  await showSceneEditor(recovered);
+  await expect(sceneTitle(recovered)).toHaveValue("Saved before the interruption");
 });
