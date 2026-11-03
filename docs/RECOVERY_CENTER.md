@@ -39,3 +39,9 @@ An unreferenced original may still matter. ChipToons protects unfinished takes, 
 Saving uses the existing project schema 4, optional media version 1, and episode-package format 1. The local database moves from version 4 to 5 to add recording metadata and guard project revisions. Existing project and media records stay in place and old project schemas still migrate on read. If the upgrade is blocked by another tab, close older ChipToons tabs and reload.
 
 In browsers without tab coordination, the editor still detects stale saves against the stored revision. Permanent cleanup is disabled in those browsers because ChipToons cannot reliably rule out an open draft. Private browsing, browser eviction, and clearing site data can remove local work. A downloaded, verified backup kept outside the browser is the recovery path for those cases.
+
+## Recovery Center on desktop and phone
+
+![Dark desktop view with recording search, format, project usage, and recovery controls.](recovery-desktop.png)
+
+![Light phone view with stacked recovery, backup, and recording search controls.](recovery-phone.png)
