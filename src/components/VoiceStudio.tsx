@@ -458,6 +458,11 @@ export function VoiceStudio({
         Record a kind voice, add a little music, and place sounds in your story.
         Everything stays on this device.
       </p>
+      <p className="field-hint">
+        New scene recordings: scene {sceneIndex + 1} ·{" "}
+        {project.scenes[sceneIndex].title}. Selecting an existing clip shows its
+        own scene or episode timing below.
+      </p>
       <div className="production-save">
         <span role="status">{saveStatus}</span>
         {saveStatus === "Save failed" && (

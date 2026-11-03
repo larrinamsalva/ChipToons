@@ -1524,7 +1524,11 @@ export function Editor({
               setMobilePanel("properties");
               if (reviewPanel)
                 openVoice(
-                  undefined,
+                  project.audioClips.find(
+                    (c) =>
+                      c.sceneId === project.scenes[i].id &&
+                      ["narration", "dialogue"].includes(c.category),
+                  )?.id ?? "",
                   undefined,
                   reviewPanel === "captions" ? "captions" : undefined,
                 );

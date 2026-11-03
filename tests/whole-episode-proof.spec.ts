@@ -165,9 +165,9 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
         const text = await page.locator(".time-display").innerText();
         return Number(text.match(/(\d+):(\d+)/)?.[2] ?? 0);
       },
-      { timeout: 20_000 },
+      { timeout: 40_000 },
     )
-    .toBeGreaterThanOrEqual(10);
+    .toBeGreaterThanOrEqual(25);
   await page
     .getByRole("button", { name: "Pause cartoon", exact: true })
     .click();
@@ -182,6 +182,33 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   expect(previewDecode.calls).toBeGreaterThan(0);
   expect(previewDecode.calls).toBeLessThan(8);
   expect(previewDecode.seconds).toBeLessThan(120);
+  // Seek distant chapters without decoding the sources between them.
+  for (const offset of [600, 1100]) {
+    const seek = page.getByRole("slider", {
+      name: "Cartoon play position",
+      exact: true,
+    });
+    await seek.fill(String(offset));
+    await page
+      .getByRole("button", { name: "Play cartoon", exact: true })
+      .click();
+    await expect
+      .poll(async () => Number(await seek.inputValue()), { timeout: 10_000 })
+      .toBeGreaterThan(offset + 1);
+    await page
+      .getByRole("button", { name: "Pause cartoon", exact: true })
+      .click();
+  }
+  const seekDecodes = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          episodeDecodes: { calls: number; seconds: number };
+        }
+      ).episodeDecodes,
+  );
+  expect(seekDecodes.calls).toBeLessThan(12);
+  expect(seekDecodes.seconds).toBeLessThan(180);
   await page
     .getByRole("button", { name: "Finish My Cartoon", exact: true })
     .click();
@@ -375,6 +402,8 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
     chapters: 6,
     captions: original.captions.length,
     previewDecode,
+    seekDecodes,
+    previewPositions: [0, 600, 1100],
     completePortableRestore: true,
     unchangedSource: true,
     parts: measures,

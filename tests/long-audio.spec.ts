@@ -246,6 +246,11 @@ test("long audio and scene readiness controls remain accessible in light and dar
     body: await page.screenshot(),
     contentType: "image/png",
   });
+  await page
+    .getByRole("button", { name: "Record or review scene 3", exact: true })
+    .click();
+  await expect(page.getByLabel("Audio clip", { exact: true })).toHaveValue("");
+  await expect(page.getByText(/New scene recordings: scene 3/)).toBeVisible();
 });
 
 test("missing stored originals block export and a complete backup restores a separate intact copy", async ({
@@ -307,13 +312,11 @@ test("missing stored originals block export and a complete backup restores a sep
   await page
     .getByRole("button", { name: "Back to studio", exact: true })
     .click();
-  await page
-    .getByLabel("Restore project backup file")
-    .setInputFiles({
-      name: "recovered.ctepisode",
-      mimeType: "application/octet-stream",
-      buffer: bytes,
-    });
+  await page.getByLabel("Restore project backup file").setInputFiles({
+    name: "recovered.ctepisode",
+    mimeType: "application/octet-stream",
+    buffer: bytes,
+  });
   await saved(page);
   expect((await packageDownload(page)).manifest.files).toHaveLength(5);
   await page
