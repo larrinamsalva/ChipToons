@@ -84,10 +84,10 @@ export async function episodePackage(
     type: "application/octet-stream",
   });
 }
-export async function restoreProjectFile(
+async function inspectPackage(
   file: File,
   options: PackageOptions = {},
-): Promise<Project> {
+): Promise<{ project: Project; files: AudioFile[]; storageBytes: number }> {
   check(options.signal);
   if (file.size > MAX_PACKAGE)
     throw new Error("Choose an episode package smaller than 320 MB.");
@@ -103,15 +103,7 @@ export async function restoreProjectFile(
       throw new Error(
         "This JSON only contains audio references. Restore the complete .ctepisode backup instead.",
       );
-    const next = {
-      ...p,
-      id: uid(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await checkStorage(file.size);
-    await commitEpisode(next, [], options.signal);
-    return next;
+    return { project: p, files: [], storageBytes: file.size };
   }
   if (header.length !== 16 || header.slice(12).some((n) => n !== 0))
     throw new Error("Unsupported episode package header.");
@@ -144,9 +136,8 @@ export async function restoreProjectFile(
   const expected = new Map(
     project.audioAssets.filter((a) => a.file).map((a) => [a.file!.key, a]),
   );
-  const seen = new Set<string>(),
-    files: AudioFile[] = [],
-    keys = new Map<string, string>();
+  const seen = new Set<string>();
+  const files: AudioFile[] = [];
   let offset = 16 + length;
   const bytes = value.files.reduce(
     (n: number, f: unknown) =>
@@ -155,7 +146,6 @@ export async function restoreProjectFile(
   );
   if (!Number.isFinite(bytes) || bytes > MAX_EPISODE_AUDIO_BYTES)
     throw new Error("The episode audio exceeds its 256 MB storage budget.");
-  await checkStorage(bytes + length);
   for (const [i, f] of value.files.entries()) {
     check(options.signal);
     if (
@@ -193,15 +183,31 @@ export async function restoreProjectFile(
       throw new Error(
         `${a.name}: its original failed the package integrity check. Nothing was restored.`,
       );
-    const key = uid();
     seen.add(f.key);
-    keys.set(f.key, key);
-    files.push({ key, blob, size, sha256: String(f.sha256), mime: a.mime });
+    files.push({ key: f.key, blob, size, sha256: String(f.sha256), mime: a.mime, name: a.name });
   }
   if (seen.size !== expected.size || offset !== file.size)
     throw new Error(
       "The episode is missing originals or contains unexpected trailing data.",
     );
+  check(options.signal);
+  return { project, files, storageBytes: bytes + length };
+}
+
+export async function verifyBackupFile(file: File, options: PackageOptions = {}) {
+  const { project, files } = await inspectPackage(file, options);
+  return { title: project.title, scenes: project.scenes.length, originals: files.length };
+}
+
+export async function restoreProjectFile(file: File, options: PackageOptions = {}): Promise<Project> {
+  const { project, files, storageBytes } = await inspectPackage(file, options);
+  await checkStorage(storageBytes);
+  const keys = new Map<string, string>();
+  const originals = files.map(file => {
+    const key = uid();
+    keys.set(file.key, key);
+    return { ...file, key };
+  });
   const next: Project = {
     ...project,
     id: uid(),
@@ -216,7 +222,7 @@ export async function restoreProjectFile(
     phase: "Saving the complete episode atomically…",
     fraction: 0.99,
   });
-  await commitEpisode(next, files, options.signal);
+  await commitEpisode(next, originals, options.signal);
   options.onProgress?.({ phase: "Complete episode restored", fraction: 1 });
   return next;
 }

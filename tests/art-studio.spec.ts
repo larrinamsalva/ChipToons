@@ -14,6 +14,7 @@ async function saved(page: Page) {
   ).toBeVisible();
 }
 async function properties(page: Page) {
+  await expect(page.locator(".editor")).toBeVisible();
   const tab = page.getByRole("button", { name: "Edit scene", exact: true });
   if (await tab.isVisible()) await tab.click();
 }

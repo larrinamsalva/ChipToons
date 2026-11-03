@@ -1,7 +1,8 @@
 import { sha256 as portableSha256 } from "@noble/hashes/sha2.js";
 import type { AudioAsset, AudioMime } from "./media-model";
 import { audioSignature, MAX_AUDIO_BYTES } from "./media-model";
-import { db, checkAudioReferences } from "./storage";
+import { db, checkAudioReferences, projectStores, guardedProjectWrite, markCommittedOriginals, readProjectSnapshot } from "./storage";
+import type { OriginalInfo, SaveGuard } from "./storage";
 import { uid, validateProject } from "./model";
 import type { Project } from "./model";
 export interface AudioFile {
@@ -10,6 +11,8 @@ export interface AudioFile {
   sha256: string;
   size: number;
   mime: AudioMime;
+  name?: string;
+  storedAt?: string;
 }
 interface StoredAudioFile extends Omit<AudioFile, "blob"> {
   bytes?: ArrayBuffer;
@@ -52,7 +55,9 @@ function queueOriginals(
       }
       return;
     }
-    const { blob, ...metadata } = files[index];
+    const { blob, name: _name, storedAt: _date, ...metadata } = files[index];
+    void _name;
+    void _date;
     void Promise.resolve()
       .then(() => blob.arrayBuffer())
       .then((bytes) => {
@@ -162,7 +167,7 @@ export async function storeAudio(
       ],
       { type: source.mime },
     );
-  const record = await fileRecord(data, source.mime);
+  const record = { ...await fileRecord(data, source.mime), name: source.name, storedAt: new Date().toISOString() };
   const prior = known.find(
     (a) =>
       a.mime === source.mime &&
@@ -180,15 +185,15 @@ export async function storeAudio(
   await checkStorage(data.size);
   const database = await db();
   await new Promise<void>((resolve, reject) => {
-    const tx = database.transaction("media", "readwrite");
-    queueOriginals(tx, [record], () => {});
+    const tx = database.transaction(["media", "media-info"], "readwrite");
+    queueOriginals(tx, [record], () => rememberOriginals(tx, [record], false));
     tx.oncomplete = () => resolve();
     tx.onabort = () => reject(tx.error);
     tx.onerror = () => reject(tx.error);
   });
   return fileAsset(source, record);
 }
-export async function audioBlob(source: AudioAsset): Promise<Blob> {
+export async function audioBlob(source: Pick<AudioAsset, "file" | "mime" | "name" | "dataUrl">): Promise<Blob> {
   if (!source.file)
     return new Blob(
       [
@@ -249,84 +254,80 @@ export async function missingAudio(project: Project) {
     tx.onabort = () => reject(tx.error);
   });
 }
-export async function commitEpisode(
+function rememberOriginals(tx: IDBTransaction, files: AudioFile[], committed: boolean) {
+  const info = tx.objectStore("media-info");
+  for (const { key, sha256, size, mime, name, storedAt } of files) {
+    const entry: OriginalInfo = { key, sha256, size, mime, name, storedAt, committed };
+    info.add(entry);
+  }
+}
+
+export async function commitEpisode(project: Project, files: AudioFile[], signal?: AbortSignal) {
+  await writeEpisode(project, files, undefined, signal);
+}
+
+export async function writeEpisode(
   project: Project,
   files: AudioFile[],
+  guard?: SaveGuard,
   signal?: AbortSignal,
-) {
+  repair = false,
+): Promise<string> {
   validateProject(project);
-  if (signal?.aborted)
-    throw new DOMException(
-      "Restore cancelled; existing projects are unchanged.",
-      "AbortError",
-    );
+  const cancelled = () => new DOMException("Restore cancelled; existing projects are unchanged.", "AbortError");
+  if (signal?.aborted) throw cancelled();
   const database = await db();
-  if (signal?.aborted)
-    throw new DOMException(
-      "Restore cancelled; existing projects are unchanged.",
-      "AbortError",
-    );
-  await new Promise<void>((resolve, reject) => {
-    const tx = database.transaction(["projects", "media"], "readwrite");
+  if (signal?.aborted) throw cancelled();
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(projectStores, "readwrite");
     const abort = () => tx.abort();
+    let revision: string;
+    let failure: unknown;
     signal?.addEventListener("abort", abort, { once: true });
     tx.oncomplete = () => {
       signal?.removeEventListener("abort", abort);
-      resolve();
+      resolve(revision);
     };
-    tx.onerror = () => reject(tx.error);
     tx.onabort = () => {
       signal?.removeEventListener("abort", abort);
-      reject(
-        tx.error ??
-          new DOMException(
-            "Restore cancelled; existing projects are unchanged.",
-            "AbortError",
-          ),
-      );
+      reject(failure ?? tx.error ?? cancelled());
     };
-    try {
+    guardedProjectWrite(tx, project.id, guard, (previous, nextRevision) => {
+      revision = nextRevision;
       queueOriginals(tx, files, () => {
-        checkAudioReferences(tx, project);
-        tx.objectStore("projects").add(project);
+        checkAudioReferences(tx, project, repair ? previous : undefined);
+        rememberOriginals(tx, files, true);
+        markCommittedOriginals(tx, previous, project);
+        const store = tx.objectStore("projects");
+        if (guard && !guard.create) store.put(project);
+        else store.add(project);
       });
-    } catch (error) {
-      tx.abort();
-      reject(error);
-    }
+    }, error => { failure = error; });
   });
 }
-export async function enableEpisodeAudio(project: Project) {
+
+export async function enableEpisodeAudio(
+  project: Project,
+  persist?: (project: Project, originals: AudioFile[]) => Promise<void>,
+) {
+  const snapshot = persist ? undefined : await readProjectSnapshot(project.id);
   const bytes = project.audioAssets.reduce((n, a) => n + sourceBytes(a), 0);
   await checkStorage(bytes);
-  const records: AudioFile[] = [],
-    assets: AudioAsset[] = [];
+  const records: AudioFile[] = [];
+  const assets: AudioAsset[] = [];
   for (const asset of project.audioAssets) {
     if (asset.file) {
       assets.push(asset);
       continue;
     }
-    const record = await fileRecord(await audioBlob(asset), asset.mime);
+    const record = { ...await fileRecord(await audioBlob(asset), asset.mime), name: asset.name };
     records.push(record);
     assets.push(fileAsset(asset, record));
   }
   const next: Project = { ...project, mediaVersion: 1, audioAssets: assets };
-  validateProject(next);
-  const database = await db();
-  await new Promise<void>((resolve, reject) => {
-    const tx = database.transaction(["projects", "media"], "readwrite");
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-    try {
-      queueOriginals(tx, records, () => {
-        checkAudioReferences(tx, next);
-        tx.objectStore("projects").put(next);
-      });
-    } catch (e) {
-      tx.abort();
-      reject(e);
-    }
-  });
+  if (persist) await persist(next, records);
+  else if (snapshot) {
+    await writeEpisode(next, records, { revision: snapshot.revision, create: !snapshot.project });
+  }
   return next;
 }

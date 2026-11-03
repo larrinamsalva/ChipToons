@@ -1,3 +1,4 @@
+import type { AudioFile } from "../audio-vault";
 import { PreviewAudio } from "../audio-engine";
 import type { AudioCategory } from "../media-model";
 import { reconcileProduction, duplicateSceneMedia } from "../production";
@@ -63,6 +64,7 @@ const SceneThumbnail = memo(
 export function Editor({
   project,
   onChange,
+  onConvert,
   onBack,
   onUndo,
   onRedo,
@@ -75,6 +77,7 @@ export function Editor({
 }: {
   project: Project;
   onChange: (p: Project) => void;
+  onConvert: (p: Project, files: AudioFile[]) => Promise<void>;
   onBack: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -1494,6 +1497,7 @@ export function Editor({
           initialCategory={voiceStudio.category}
           initialTab={voiceStudio.tab}
           onChange={updateProduction}
+          onConvert={onConvert}
           onClose={() => setVoiceStudio(null)}
           onPreview={() => {
             setVoiceStudio(null);

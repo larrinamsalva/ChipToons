@@ -12,6 +12,7 @@ export function Dashboard({
   onUpload,
   onDraw,
   onOpen,
+  onRecovery,
   onDuplicate,
   onDelete,
   onImport,
@@ -25,6 +26,7 @@ export function Dashboard({
   onUpload: () => void;
   onDraw: () => void;
   onOpen: (p: Project) => void;
+  onRecovery: () => void;
   onDuplicate: (p: Project) => void;
   onDelete: (p: Project) => void;
   onImport: () => void;
@@ -246,6 +248,9 @@ export function Dashboard({
             </h2>
           </div>
           <div className="section-actions">
+            <button className="button secondary small" onClick={onRecovery}>
+              Project &amp; Media Recovery
+            </button>
             <button className="button text small" onClick={onImport}>
               <Icon name="upload" size={17} />
               Restore a backup

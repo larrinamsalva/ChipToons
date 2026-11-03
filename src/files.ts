@@ -26,7 +26,7 @@ export function exportProject(project: Project) {
     void episodePackage(project, { onProgress: progress })
       .then((blob) => {
         downloadBlob(blob, `${safeFilename(project.title)}.ctepisode`);
-        progress({ phase: "Complete episode backup downloaded", fraction: 1 });
+        progress({ phase: "Complete episode backup ready. Check your browser downloads.", fraction: 1 });
       })
       .catch((e) =>
         window.dispatchEvent(

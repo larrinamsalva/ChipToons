@@ -1,3 +1,4 @@
+import type { AudioFile } from "../audio-vault";
 import { CaptionEditor } from "./CaptionEditor";
 import { useEffect, useRef, useState } from "react";
 import type { Project } from "../model";
@@ -76,6 +77,7 @@ export function VoiceStudio({
   initialCategory,
   initialTab = "sound",
   onChange,
+  onConvert,
   onClose,
   onPreview,
   saveStatus,
@@ -89,6 +91,7 @@ export function VoiceStudio({
   initialCategory?: AudioCategory;
   initialTab?: "sound" | "captions";
   onChange: (p: Project) => void;
+  onConvert: (p: Project, files: AudioFile[]) => Promise<void>;
   onClose: () => void;
   onPreview: () => void;
   saveStatus: string;
@@ -437,10 +440,9 @@ export function VoiceStudio({
             disabled={busy || recording}
             onClick={() => {
               setBusy(true);
-              void enableEpisodeAudio(project)
-                .then((next) => {
+              void enableEpisodeAudio(project, onConvert)
+                .then(() => {
                   if (alive.current) {
-                    commit(next);
                     setMessage(
                       "Long-episode audio enabled. Existing originals are preserved. Use Project backup for a complete episode package.",
                     );

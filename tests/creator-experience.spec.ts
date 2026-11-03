@@ -14,6 +14,7 @@ import {
 } from "./production-helpers";
 import { longProject, pixel, segmentedProject } from "./creator-fixtures";
 const properties = async (page: Page) => {
+  await expect(page.locator(".editor")).toBeVisible();
   const tab = page.getByRole("button", { name: "Edit scene", exact: true });
   if (await tab.isVisible()) await tab.click();
 };
