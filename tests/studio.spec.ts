@@ -4,6 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
 
 async function editPanel(page: Page) {
+  await expect(page.locator(".editor")).toBeVisible();
   if (
     await page
       .getByRole("button", { name: "Edit scene", exact: true })
@@ -12,12 +13,14 @@ async function editPanel(page: Page) {
     await page.getByRole("button", { name: "Edit scene", exact: true }).click();
 }
 async function previewPanel(page: Page) {
+  await expect(page.locator(".editor")).toBeVisible();
   if (
     await page.getByRole("button", { name: "Preview", exact: true }).isVisible()
   )
     await page.getByRole("button", { name: "Preview", exact: true }).click();
 }
 async function scenesPanel(page: Page) {
+  await expect(page.locator(".editor")).toBeVisible();
   if (
     await page.getByRole("button", { name: "Scenes", exact: true }).isVisible()
   )
