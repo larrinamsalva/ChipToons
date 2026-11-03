@@ -1,3 +1,4 @@
+import type { PuppetRig } from "./puppet-model";
 import { EMOTIONS, HEARTS } from "./animation-model";
 import type { CameraAnimation, Heart } from "./animation-model";
 import { POSES } from "./art-model";
@@ -13,7 +14,7 @@ import type {
   SceneElement,
 } from "./model";
 import { DEFAULT_IDEA, planStory } from "./planner";
-import { actionsFor, presetAnimation } from "./presets";
+import { actionsFor, actionsForPuppet, presetAnimation } from "./presets";
 import type { Action } from "./presets";
 import { CHAPTERS } from "./story-model";
 import { clamp, elementAt, roundTime } from "./timeline";
@@ -338,6 +339,8 @@ export function suggestScript(brief: StoryBrief, names: string[]) {
 }
 
 export function shapeActor(project: Project, element: SceneElement) {
+  const rig = puppetFor(project, element);
+  if (rig) return rig.face || rig.parts.some(p => !p.assetId && (p.role === "eyes" || p.role === "mouth"));
   return (
     !!element.characterId &&
     !element.assetId &&
@@ -345,10 +348,16 @@ export function shapeActor(project: Project, element: SceneElement) {
   );
 }
 
-export function gentleActions(shape: boolean) {
-  return actionsFor(shape).filter(([id]) =>
+export function puppetFor(project: Project, element?: SceneElement) {
+  return project.characters.find(c => c.id === element?.characterId)?.puppet;
+}
+
+export function gentleActions(shape: boolean, rig?: PuppetRig) {
+  return (rig ? actionsForPuppet(rig) : actionsFor(shape)).filter(([id]) =>
     [
       "walk",
+      "walk-in-place",
+      "celebrate",
       "jump",
       "wave",
       "nod",
@@ -394,17 +403,21 @@ export function suggestDirection(
   const actor =
     scene.chapter === "challenge" && sad ? actors.at(-1) : actors[0];
   const shape = !!actor && shapeActor(project, actor);
-  const action = !actor
+  const rig = puppetFor(project, actor);
+  const proposed = !actor
     ? "none"
     : walk
       ? "walk"
+      : rig && /\bwave(?:s|d| hello)?\b/i.test(text)
+        ? "wave"
       : celebration
-        ? expressive
+        ? rig ? "celebrate" : expressive
           ? "jump"
           : "dance"
-        : help && shape && !sad
+        : help && (shape || rig) && !sad
           ? "wave"
           : "none";
+  const action = proposed === "none" || gentleActions(shape, rig).some(([id]) => id === proposed) ? proposed : "none";
   const shot =
     existing && (scene.cameraAnimation || scene.camera !== "wide")
       ? "none"
@@ -428,6 +441,8 @@ export function suggestDirection(
     shot,
     emotion: !shape
       ? "keep"
+      : rig && /\bsurpris\w*\b/i.test(text)
+        ? "surprised"
       : sad
         ? "sad"
         : celebration
@@ -541,7 +556,7 @@ export function directScene(
   if (
     (direction.action !== "none" &&
       (!actor ||
-        !gentleActions(shape).some(([id]) => id === direction.action))) ||
+        !gentleActions(shape, puppetFor(project, actor)).some(([id]) => id === direction.action))) ||
     (!shape &&
       (direction.emotion !== "keep" ||
         direction.pose !== "keep" ||
@@ -573,6 +588,7 @@ export function directScene(
       action,
       direction.start,
       direction.seconds,
+      direction.action === "none" ? undefined : puppetFor(project, actor),
     );
     const destination = clamp(
       other

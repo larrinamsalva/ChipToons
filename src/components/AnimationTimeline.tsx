@@ -1,3 +1,4 @@
+import { neutralJoint } from "../puppet-model";
 import { AudioLanes } from "./AudioLanes";
 import type { AudioCategory } from "../media-model";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -30,7 +31,7 @@ import {
   roundTime,
   snapTime,
 } from "../timeline";
-import { actionsFor, presetAnimation } from "../presets";
+import { actionsFor, actionsForPuppet, presetAnimation } from "../presets";
 import type { Action } from "../presets";
 import { PlaybackClock } from "../playback";
 import { elementName, resolvedCharacter } from "../library";
@@ -357,7 +358,10 @@ export function AnimationTimeline({
     duration: number;
   } | null>(null);
   const element = scene.elements.find((e) => e.id === target);
-  const shape =
+  const rig = project.characters.find(c => c.id === element?.characterId)?.puppet;
+  const [jointId, setJointId] = useState("");
+  const activeJoint = rig?.parts.find(p => p.id === jointId) ?? rig?.parts[0];
+  const shape = rig ? rig.face || rig.parts.some(p => !p.assetId && (p.role === "eyes" || p.role === "mouth")) :
     !!element &&
     (element.kind === undefined || element.kind === "character") &&
     !element.assetId &&
@@ -545,12 +549,12 @@ export function AnimationTimeline({
       setSelection("");
   }
   function generated() {
-    const allowed = actionsFor(shape, element?.prop === "door");
+    const allowed = rig ? actionsForPuppet(rig) : actionsFor(shape, element?.prop === "door");
     const chosen = allowed.some(([id]) => id === action)
       ? action
       : allowed[0][0];
     return element
-      ? presetAnimation(element, scene.duration, chosen, start, length / speed)
+      ? presetAnimation(element, scene.duration, chosen, start, length / speed, rig)
       : undefined;
   }
   function apply() {
@@ -584,6 +588,7 @@ export function AnimationTimeline({
       base = elementBase(element);
     animation.keyframes = animation.keyframes.map((k) => ({
       ...k,
+      joints: k.joints && rig ? Object.fromEntries(Object.entries(k.joints).filter(([id]) => rig.parts.some(p => p.id === id))) : undefined,
       id: uid(),
       time: (k.time / clipboard.duration) * scene.duration,
       x: clamp(k.x - clipboard.base.x + base.x, -800, 1600),
@@ -725,7 +730,7 @@ export function AnimationTimeline({
       </div>
     );
   }
-  const available = actionsFor(shape, element?.prop === "door");
+  const available = rig ? actionsForPuppet(rig) : actionsFor(shape, element?.prop === "door");
   const validAction = available.some(([id]) => id === action)
     ? action
     : available[0][0];
@@ -945,6 +950,7 @@ export function AnimationTimeline({
               The action lasts{" "}
               {Math.min(length / speed, scene.duration - start).toFixed(2)}s and
               stops at this scene’s end. Its diamonds remain editable.
+              {rig && " Actions that need missing parts are hidden. Walk across can still move a puppet without legs as one piece."}
             </p>
             <div className="animation-actions">
               <button
@@ -956,6 +962,7 @@ export function AnimationTimeline({
                     validAction,
                     start,
                     length / speed,
+                    rig,
                   );
                   setPreview({
                     ...scene,
@@ -998,8 +1005,7 @@ export function AnimationTimeline({
             </div>
             {!shape && (
               <p className="field-hint">
-                This artwork moves as a whole object. Face, mouth and limb
-                controls are available for original shape characters.
+                {rig ? "This puppet uses its assigned artwork and available joints. Original face controls need expression overlays." : "This artwork moves as a whole object. Face, mouth and limb controls are available for original shape characters."}
               </p>
             )}
           </div>
@@ -1176,6 +1182,27 @@ export function AnimationTimeline({
             aria-label="Selected keyframe properties"
           >
             <h3>Selected moment</h3>
+            {rig && activeJoint && element && (
+              <fieldset className="puppet-keyframe">
+                <legend>Puppet joints</legend>
+                <label>Joint to animate<select value={activeJoint.id} onChange={e => setJointId(e.target.value)}>
+                  {rig.parts.map(p => <option key={p.id} value={p.id}>{p.role.replace(/([A-Z])/g, " $1")}</option>)}
+                </select></label>
+                {(["angle", "x", "y"] as const).map(axis => {
+                  const key = selected as ElementKeyframe;
+                  return <NumberEntry key={axis} label={axis === "angle" ? "Joint rotation (degrees)" : `Joint offset ${axis.toUpperCase()}`}
+                    value={key.joints?.[activeJoint.id]?.[axis] ?? 0} min={axis === "angle" ? -180 : -160} max={axis === "angle" ? 180 : 160}
+                    onCommit={n => editKey(key.id, { joints: { ...key.joints, [activeJoint.id]: {
+                      ...(key.joints?.[activeJoint.id] ?? neutralJoint), [axis]: n,
+                    } } })} />;
+                })}
+                <label>Copy a saved pose into this keyframe<select value="" onChange={e => {
+                  const pose = rig.poses.find(p => p.id === e.target.value);
+                  if (pose) editKey(selected.id, { joints: pose.joints, emotion: pose.emotion, mouth: pose.mouth });
+                }}><option value="">Choose a pose</option>{rig.poses.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+                <p className="field-hint">The keyframe keeps a pose snapshot. Later library edits do not change it.</p>
+              </fieldset>
+            )}
             <div className="animation-form-grid">
               <NumberEntry
                 label="Keyframe time (seconds)"

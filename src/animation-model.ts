@@ -1,3 +1,5 @@
+import { validJoints } from "./puppet-model";
+import type { JointSnapshot } from "./puppet-model";
 import { numberIn, record, POSES } from "./art-model";
 import type { Pose } from "./art-model";
 import type { Emotion } from "./model";
@@ -50,7 +52,9 @@ export interface ElementValues {
   gesture: Gesture;
   openness: number;
 }
-export interface ElementKeyframe extends TimedKey, ElementValues {}
+export interface ElementKeyframe extends TimedKey, ElementValues {
+  joints?: JointSnapshot;
+}
 export interface ElementAnimation {
   keyframes: ElementKeyframe[];
   blink: boolean;
@@ -109,6 +113,7 @@ export function validElementAnimation(
   v: unknown,
   duration: number,
   unique: (id: unknown) => void,
+  puppetParts?: ReadonlySet<string>,
 ): v is ElementAnimation {
   return (
     record(v) &&
@@ -129,7 +134,8 @@ export function validElementAnimation(
         inList(k.heart, HEARTS) &&
         numberIn(k.heartStrength, 0, 1) &&
         inList(k.gesture, GESTURES) &&
-        numberIn(k.openness, 0, 1),
+        numberIn(k.openness, 0, 1) &&
+        (k.joints === undefined || (!!puppetParts && validJoints(k.joints, puppetParts))),
       unique,
     )
   );

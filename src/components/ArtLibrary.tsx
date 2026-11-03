@@ -72,11 +72,15 @@ export function ArtThumbnail({ item }: { item: LibraryItem }) {
 export function ArtLibrary({
   onClose,
   onUse,
+  onPuppet,
+  onPuppetUpdate,
   draft: initial,
   inProject = false,
 }: {
   onClose: () => void;
   onUse: (item: LibraryItem, three?: boolean) => void;
+  onPuppet: (item?: LibraryItem) => void;
+  onPuppetUpdate?: (item: LibraryItem) => void;
   draft?: LibraryItem;
   inProject?: boolean;
 }) {
@@ -528,6 +532,7 @@ export function ArtLibrary({
         Save a character once. Give it a hundred adventures. Your cartoons keep
         independent copies.
       </p>
+      <button className="button primary" onClick={() => onPuppet()}>Create a Puppet Character</button>
       <details className="library-backup">
         <summary>Back up or restore my reusable art</summary>
         <p className="field-hint">
@@ -702,14 +707,15 @@ export function ArtLibrary({
                   Add to three scenes
                 </button>
               )}
+              {item.character?.puppet && onPuppetUpdate && <button className="button text small" onClick={() => onPuppetUpdate(item)}>Review scene puppet update</button>}
               <div className="library-card-options">
                 <button
                   className="button text small"
-                  onClick={() => edit(item)}
+                  onClick={() => item.character?.puppet ? onPuppet(item) : edit(item)}
                 >
                   {item.id.startsWith("starter-")
                     ? "Customize a copy"
-                    : "Edit / rename"}
+                    : item.character?.puppet ? "Edit puppet / rename" : "Edit / rename"}
                 </button>
                 <button
                   className="icon-button"

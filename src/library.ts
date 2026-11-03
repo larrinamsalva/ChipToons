@@ -1,3 +1,4 @@
+import { puppetAssetIds, remapPuppetAssets } from "./puppet-model";
 import { emptyProduction } from "./media-model";
 import { clone, makeScene, uid, validateProject, BACKGROUNDS } from "./model";
 import type {
@@ -147,7 +148,7 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     value.tags.length > 15 ||
     !value.tags.every((t) => typeof t === "string" && t.length <= 40) ||
     !Array.isArray(value.assets) ||
-    value.assets.length > 4 ||
+    value.assets.length > (record(value.character) && value.character.puppet ? 20 : 4) ||
     !record(value.transform) ||
     !Object.keys(value.transform).every((k) =>
       [
@@ -251,6 +252,7 @@ export function placeLibraryItem(
     const c = {
       ...clone(item.character),
       name: item.name,
+      ...(item.character.puppet ? { puppet: remapPuppetAssets(item.character.puppet, assetMap) } : {}),
       assetId: item.character.assetId
         ? assetMap.get(item.character.assetId)
         : undefined,
@@ -262,7 +264,7 @@ export function placeLibraryItem(
         a.skin === c.skin &&
         a.hair === c.hair &&
         a.accessory === c.accessory &&
-        a.assetId === c.assetId,
+        a.assetId === c.assetId && JSON.stringify(a.puppet) === JSON.stringify(c.puppet),
     );
     if (same) characterId = same.id;
     else {
@@ -317,7 +319,8 @@ export function libraryItemFromElement(
   item.character = c ? clone(c) : undefined;
   item.prop = e.prop;
   const aid = e.assetId ?? c?.assetId;
-  item.assets = aid ? p.assets.filter((a) => a.id === aid).map(clone) : [];
+  const needed = new Set([aid, ...(c?.puppet ? puppetAssetIds(c.puppet) : [])]);
+  item.assets = p.assets.filter(a => needed.has(a.id)).map(clone);
   item.assetId = aid;
   if (!c && !e.prop && !item.assets[0]?.drawing && !e.backdrop)
     item.kind = "prop";

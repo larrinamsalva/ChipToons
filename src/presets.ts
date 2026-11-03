@@ -1,3 +1,5 @@
+import { neutralJoint } from "./puppet-model";
+import type { JointSnapshot, PuppetRig } from "./puppet-model";
 import type { SceneElement } from "./model";
 import { uid } from "./model";
 import type {
@@ -9,6 +11,8 @@ import { clamp, elementBase, roundTime } from "./timeline";
 
 export const ACTIONS = [
   ["walk", "Walk across the stage"],
+  ["walk-in-place", "Walk in place"],
+  ["celebrate", "Celebrate"],
   ["enter-left", "Enter from left"],
   ["enter-right", "Enter from right"],
   ["jump", "Jump"],
@@ -39,15 +43,49 @@ const ACTING_ACTIONS: Action[] = [
 ];
 export function actionsFor(shape: boolean, door = false) {
   return ACTIONS.filter(([id]) =>
-    id === "door" ? door : shape || !ACTING_ACTIONS.includes(id),
+    id === "door" ? door : !["walk-in-place", "celebrate"].includes(id) && (shape || !ACTING_ACTIONS.includes(id)),
   );
 }
+export function actionsForPuppet(rig: PuppetRig) {
+  const has = (roles: RegExp) => rig.parts.some(part => roles.test(part.role));
+  return ACTIONS.filter(([action]) => {
+    if (["wave", "point"].includes(action)) return has(/^(left|right)Arm$/);
+    if (["nod", "shake"].includes(action)) return has(/^head$/);
+    if (["walk-in-place", "sit", "stand"].includes(action)) return has(/Leg|lowerBody/);
+    return ["walk", "jump", "bounce", "float", "dance", "celebrate", "fade-in", "fade-out"].includes(action);
+  });
+}
+
+function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnapshot {
+  const joints: JointSnapshot = {};
+  const arm = rig.parts.find(p => p.role === "rightArm") ?? rig.parts.find(p => p.role === "leftArm");
+  const wave = Math.sin(phase * Math.PI * 6);
+  const walk = Math.sin(phase * Math.PI * 4);
+  const envelope = Math.sin(phase * Math.PI);
+  for (const part of rig.parts) {
+    let angle = 0;
+    const side = part.role.startsWith("left") ? -1 : 1;
+    if ((action === "walk" || action === "walk-in-place") && /Arm|Leg|lowerBody/.test(part.role))
+      angle = walk * side * (/Arm/.test(part.role) ? 16 : -27);
+    if (action === "wave" && part.id === arm?.id) angle = -side * (115 + wave * 16) * Math.min(1, envelope * 3);
+    if (action === "point" && part.id === arm?.id) angle = -side * 75 * Math.min(1, envelope * 3);
+    if (part.role === "head" && (action === "nod" || action === "shake")) angle = wave * (action === "nod" ? 8 : 14);
+    if (/Leg|lowerBody/.test(part.role) && (action === "sit" || action === "stand"))
+      angle = side * 55 * (action === "sit" ? phase : 1 - phase);
+    if (/Arm/.test(part.role) && action === "celebrate") angle = -side * 110 * envelope;
+    if (/Arm|Leg/.test(part.role) && action === "dance") angle = walk * side * 25;
+    if (angle) joints[part.id] = { ...neutralJoint, angle };
+  }
+  return joints;
+}
+
 export function presetAnimation(
   element: SceneElement,
   sceneDuration: number,
   action: Action,
   start = 0,
   length = 3,
+  rig?: PuppetRig,
 ): ElementAnimation {
   const base = elementBase(element);
   const from = clamp(start, 0, sceneDuration - 0.1),
@@ -93,8 +131,9 @@ export function presetAnimation(
       at(0, { x: action === "enter-left" ? -140 : 940 });
       at(1);
       break;
+    case "celebrate":
     case "jump":
-      at(0.5, { y: base.y - 80 }, "ease-out");
+      at(0.5, { y: base.y - (action === "celebrate" || rig ? 32 : 80) }, "ease-out");
       at(1, {}, "ease-in");
       break;
     case "bounce":
@@ -171,8 +210,17 @@ export function presetAnimation(
     };
     keys.set(0, { ...hold, id: uid(), time: 0, easing: "linear" });
   }
+  if (rig && ["wave", "nod", "shake", "point", "walk-in-place", "sit", "stand"].includes(action))
+    for (let i = 0; i <= 12; i++) at(i / 12);
+  const keyframes = [...keys.values()].sort((a, b) => a.time - b.time);
   return {
-    keyframes: [...keys.values()].sort((a, b) => a.time - b.time),
+    keyframes: rig ? keyframes.map(key => ({
+      ...key,
+      ...(key.time >= roundTime(from) ? {
+        joints: puppetAction(rig, action, clamp((key.time - from) / span, 0, 1)),
+        ...(action === "celebrate" ? { emotion: "excited" as const, heart: "together" as const } : {}),
+      } : {}),
+    })) : keyframes,
     blink: true,
     idle: "none",
   };
