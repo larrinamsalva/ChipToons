@@ -74,6 +74,7 @@ export function Editor({
   saveError,
   onRetry,
   onLibrary,
+  onAssistant,
 }: {
   project: Project;
   onChange: (p: Project) => void;
@@ -87,6 +88,7 @@ export function Editor({
   saveError: string;
   onRetry: () => void;
   onLibrary: (sceneIndex: number, draft?: LibraryItem) => void;
+  onAssistant: () => void;
 }) {
   const [backupReminder, setBackupReminder] = useState(true);
   const [overview, setOverview] = useState(false),
@@ -628,6 +630,9 @@ export function Editor({
             }}
           >
             Guided tutorial
+          </button>
+          <button className="button text small" onClick={() => { halt(); setPlaying(false); onAssistant(); }}>
+            Review animation suggestions
           </button>
           <button
             className="button primary small finish-button"

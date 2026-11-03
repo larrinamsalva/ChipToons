@@ -5205,3 +5205,85 @@ input[type="color"] {
     flex: 1 1 100%;
   }
 }
+
+.assistant-quick-start {
+  margin-inline-start: 0.35rem;
+}
+.assistant-step {
+  font-weight: 700;
+  color: var(--text);
+}
+.assistant-fields, .assistant-review {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  margin-block: 1rem;
+}
+.assistant-fields :is(fieldset, details) {
+  min-width: 0;
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+.assistant-fields :is(fieldset, details) label + label {
+  margin-top: 0.65rem;
+}
+.assistant-fields legend {
+  padding-inline: 0.4rem;
+  font-weight: 700;
+}
+.assistant-fields label, .assistant-review > label, .assistant-preview > label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.assistant-fields :is(input:not([type="checkbox"]), select, textarea),
+.assistant-review > label select, .assistant-preview > label input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+}
+.assistant-fields .assistant-check, .assistant-actions .assistant-check {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.6rem;
+}
+.assistant-check input[type="checkbox"] {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.assistant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+.assistant-actions .button {
+  min-height: 44px;
+  white-space: normal;
+}
+.assistant-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.assistant-preview {
+  min-width: 0;
+}
+.assistant-preview svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.assistant-preview .assistant-actions {
+  margin-block: 0.7rem;
+}
+@media (max-width: 540px) {
+  .assistant-quick-start {
+    margin-inline-start: 0;
+    margin-block-start: 0.5rem;
+  }
+}

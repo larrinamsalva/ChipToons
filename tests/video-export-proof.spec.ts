@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
+import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/assistant";
 import { starterProject } from "../src/demo-starter";
 import { segmentedProject } from "./creator-fixtures";
 import { backup } from "./production-helpers";
@@ -507,4 +508,15 @@ test("genuine consecutive parts retain camera, source artwork, subtitle timing a
     ),
     contentType: "application/json",
   });
+});
+
+
+test("a generated assistant scene exports playable WebM with real character and camera movement", async ({ page }, info) => {
+  const plan = createAssistantDraft(PLAYGROUND_BRIEF, [{ name: "Shine" }, { name: "Sunny" }, { name: "Sam" }]);
+  const draft = applyDirections(plan.project, plan.directions);
+  const scene = draft.scenes[3];
+  expect(scene.cameraAnimation?.followId).toBe(scene.elements[0].id);
+  expect(scene.elements[0].animation?.keyframes.length).toBeGreaterThan(2);
+  await restore(page, { ...draft, scenes: [scene] });
+  await render(page, info, "kind-hearts-assistant", scene.duration, { audio: false, captions: false });
 });
