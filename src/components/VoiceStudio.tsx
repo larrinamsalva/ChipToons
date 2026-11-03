@@ -211,6 +211,7 @@ export function VoiceStudio({
         return;
       }
     }
+    if (!alive.current) return;
     const same = project.audioAssets.find((a) =>
         source.file
           ? a.file?.sha256 === source.file.sha256

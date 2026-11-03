@@ -376,3 +376,77 @@ it("reuses known immutable original bytes without storing duplicate files or nee
   expect(count).toBe(1);
   expect(original.dataUrl).not.toBe("");
 });
+
+it("streams binary writes one source at a time in one transaction and cancels pending reads without a partial project", async () => {
+  const source = builtInSound("notice"),
+    data = await audioBlob(source);
+  let active = 0,
+    maximum = 0;
+  function slowBlob() {
+    const blob = new Blob([data]);
+    Object.defineProperty(blob, "arrayBuffer", {
+      value: async () => {
+        active++;
+        maximum = Math.max(maximum, active);
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 8));
+          return await data.arrayBuffer();
+        } finally {
+          active--;
+        }
+      },
+    });
+    return blob;
+  }
+  const files = await Promise.all([
+    fileRecord(slowBlob(), source.mime),
+    fileRecord(slowBlob(), source.mime),
+  ]);
+  maximum = 0;
+  const p = plain();
+  p.mediaVersion = 1;
+  p.audioAssets = files.map((f) => fileAsset({ ...source, id: uid() }, f));
+  await commitEpisode(p, files);
+  expect(maximum).toBe(1);
+  expect(active).toBe(0);
+  const get = vi.spyOn(IDBObjectStore.prototype, "get");
+  await saveProject(p);
+  expect(get).not.toHaveBeenCalled();
+  get.mockRestore();
+  const other = plain(),
+    file = await fileRecord(slowBlob(), source.mime),
+    controller = new AbortController();
+  other.mediaVersion = 1;
+  other.audioAssets = [fileAsset({ ...source, id: uid() }, file)];
+  const pending = commitEpisode(other, [file], controller.signal);
+  setTimeout(() => controller.abort(), 2);
+  await expect(pending).rejects.toThrow(/cancelled/);
+  expect(await listProjects()).toHaveLength(1);
+  const database = await db();
+  const count = await new Promise<number>((resolve, reject) => {
+    const tx = database.transaction("media", "readonly"),
+      r = tx.objectStore("media").count();
+    tx.oncomplete = () => resolve(r.result);
+    tx.onabort = () => reject(tx.error);
+  });
+  expect(count).toBe(2);
+});
+
+it("rolls back binary originals if the final conversion metadata save is interrupted", async () => {
+  const p = starterProject();
+  await saveProject(p);
+  vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(() => {
+    throw new DOMException("Full", "QuotaExceededError");
+  });
+  await expect(enableEpisodeAudio(p)).rejects.toThrow();
+  vi.restoreAllMocks();
+  expect((await listProjects())[0]).toEqual(p);
+  const database = await db();
+  const count = await new Promise<number>((resolve, reject) => {
+    const tx = database.transaction("media", "readonly"),
+      r = tx.objectStore("media").count();
+    tx.oncomplete = () => resolve(r.result);
+    tx.onabort = () => reject(tx.error);
+  });
+  expect(count).toBe(0);
+});

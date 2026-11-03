@@ -1,7 +1,7 @@
 import { sha256 as portableSha256 } from "@noble/hashes/sha2.js";
 import type { AudioAsset, AudioMime } from "./media-model";
 import { audioSignature, MAX_AUDIO_BYTES } from "./media-model";
-import { db } from "./storage";
+import { db, checkAudioReferences } from "./storage";
 import { uid, validateProject } from "./model";
 import type { Project } from "./model";
 export interface AudioFile {
@@ -10,6 +10,85 @@ export interface AudioFile {
   sha256: string;
   size: number;
   mime: AudioMime;
+}
+interface StoredAudioFile extends Omit<AudioFile, "blob"> {
+  bytes?: ArrayBuffer;
+  blob?: Blob; // Read compatibility for early version-3 file records.
+}
+// Native Blob/File storage fails in some WebKit ports. Store portable binary
+// data instead. Keep one source read/write in flight, and queue an index-key
+// request while File IO is pending so the one atomic transaction stays active.
+function queueOriginals(
+  tx: IDBTransaction,
+  files: AudioFile[],
+  done: () => void,
+) {
+  const store = tx.objectStore("media");
+  let active = true,
+    index = 0,
+    ready: StoredAudioFile | undefined,
+    failed = false;
+  tx.addEventListener(
+    "abort",
+    () => {
+      active = false;
+    },
+    { once: true },
+  );
+  tx.addEventListener(
+    "complete",
+    () => {
+      active = false;
+    },
+    { once: true },
+  );
+  function read() {
+    if (!active) return;
+    if (index === files.length) {
+      try {
+        done();
+      } catch {
+        tx.abort();
+      }
+      return;
+    }
+    const { blob, ...metadata } = files[index];
+    void Promise.resolve()
+      .then(() => blob.arrayBuffer())
+      .then((bytes) => {
+        if (active) ready = { ...metadata, bytes };
+      })
+      .catch(() => {
+        failed = true;
+      });
+    pump();
+  }
+  function pump() {
+    if (!active) return;
+    const ping = store.getKey(files[index].key);
+    ping.onsuccess = () => {
+      if (!active) return;
+      if (failed) {
+        tx.abort();
+        return;
+      }
+      if (!ready) {
+        pump();
+        return;
+      }
+      try {
+        const write = store.add(ready);
+        ready = undefined;
+        write.onsuccess = () => {
+          index++;
+          read();
+        };
+      } catch {
+        tx.abort();
+      }
+    };
+  }
+  read();
 }
 export const MAX_EPISODE_AUDIO_BYTES = 256 * 1024 * 1024;
 export const MAX_EPISODE_AUDIO_SECONDS = 1800;
@@ -102,7 +181,7 @@ export async function storeAudio(
   const database = await db();
   await new Promise<void>((resolve, reject) => {
     const tx = database.transaction("media", "readwrite");
-    tx.objectStore("media").add(record);
+    queueOriginals(tx, [record], () => {});
     tx.oncomplete = () => resolve();
     tx.onabort = () => reject(tx.error);
     tx.onerror = () => reject(tx.error);
@@ -120,24 +199,26 @@ export async function audioBlob(source: AudioAsset): Promise<Blob> {
       { type: source.mime },
     );
   const database = await db();
-  const record = await new Promise<AudioFile | undefined>((resolve, reject) => {
-    const tx = database.transaction("media", "readonly"),
-      req = tx.objectStore("media").get(source.file!.key);
-    tx.oncomplete = () => resolve(req.result);
-    tx.onabort = () => reject(tx.error);
-    tx.onerror = () => reject(tx.error);
-  });
+  const record = await new Promise<StoredAudioFile | undefined>(
+    (resolve, reject) => {
+      const tx = database.transaction("media", "readonly"),
+        req = tx.objectStore("media").get(source.file!.key);
+      tx.oncomplete = () => resolve(req.result);
+      tx.onabort = () => reject(tx.error);
+      tx.onerror = () => reject(tx.error);
+    },
+  );
   if (
     !record ||
     record.sha256 !== source.file.sha256 ||
     record.size !== source.file.size ||
-    record.blob?.size !== source.file.size ||
+    (record.bytes?.byteLength ?? record.blob?.size) !== source.file.size ||
     record.mime !== source.mime
   )
     throw new Error(
       `${source.name}: the local original is missing or damaged. Restore its complete episode backup.`,
     );
-  return record.blob;
+  return record.blob ?? new Blob([record.bytes!], { type: record.mime });
 }
 export async function audioBytes(source: AudioAsset) {
   const blob = await audioBlob(source),
@@ -155,7 +236,10 @@ export async function missingAudio(project: Project) {
       tx = database.transaction("media", "readonly");
     for (const a of project.audioAssets)
       if (a.file) {
-        const request = tx.objectStore("media").getKey(a.file.key);
+        const request = tx
+          .objectStore("media")
+          .index("identity")
+          .getKey([a.file.key, a.file.sha256, a.file.size, a.mime]);
         request.onsuccess = () => {
           if (!request.result) missing.push(a.id);
         };
@@ -202,23 +286,10 @@ export async function commitEpisode(
       );
     };
     try {
-      for (const f of files) tx.objectStore("media").add(f);
-      for (const a of project.audioAssets)
-        if (a.file) {
-          const request = tx.objectStore("media").get(a.file.key);
-          request.onsuccess = () => {
-            const r = request.result;
-            if (
-              !r ||
-              r.sha256 !== a.file!.sha256 ||
-              r.size !== a.file!.size ||
-              r.blob?.size !== a.file!.size ||
-              r.mime !== a.mime
-            )
-              tx.abort();
-          };
-        }
-      tx.objectStore("projects").add(project);
+      queueOriginals(tx, files, () => {
+        checkAudioReferences(tx, project);
+        tx.objectStore("projects").add(project);
+      });
     } catch (error) {
       tx.abort();
       reject(error);
@@ -248,8 +319,10 @@ export async function enableEpisodeAudio(project: Project) {
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
     try {
-      for (const r of records) tx.objectStore("media").add(r);
-      tx.objectStore("projects").put(next);
+      queueOriginals(tx, records, () => {
+        checkAudioReferences(tx, next);
+        tx.objectStore("projects").put(next);
+      });
     } catch (e) {
       tx.abort();
       reject(e);

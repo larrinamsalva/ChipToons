@@ -293,7 +293,7 @@ test("missing stored originals block export and a complete backup restores a sep
   await saved(page);
   const storedOriginals = await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const r = indexedDB.open("chiptoons-studio", 3);
+      const r = indexedDB.open("chiptoons-studio", 4);
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);
     });
@@ -311,7 +311,7 @@ test("missing stored originals block export and a complete backup restores a sep
   // Simulate lost browser-local media in this isolated test context.
   await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const r = indexedDB.open("chiptoons-studio", 3);
+      const r = indexedDB.open("chiptoons-studio", 4);
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);
     });
