@@ -437,6 +437,12 @@ export default function App() {
               Download my work
             </button>
           )}
+          <button
+            className="button secondary small"
+            onClick={() => backupInput.current?.click()}
+          >
+            Restore backup as a new copy
+          </button>
         </div>
       )}
       {!loaded ? (

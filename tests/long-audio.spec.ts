@@ -312,7 +312,22 @@ test("missing stored originals block export and a complete backup restores a sep
   await page
     .getByRole("button", { name: "Back to studio", exact: true })
     .click();
-  await page.getByLabel("Restore project backup file").setInputFiles({
+  await page
+    .getByRole("button", {
+      name: "Save and return to my cartoons",
+      exact: true,
+    })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Save failed" }),
+  ).toBeVisible();
+  const recoveryChooser = page.waitForEvent("filechooser");
+  await page
+    .getByRole("button", { name: "Restore backup as a new copy", exact: true })
+    .click();
+  await (
+    await recoveryChooser
+  ).setFiles({
     name: "recovered.ctepisode",
     mimeType: "application/octet-stream",
     buffer: bytes,
