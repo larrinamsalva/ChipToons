@@ -148,7 +148,7 @@ The fresh inclusion demo shows noticing a lonely friend, walking over, sadness, 
 
 Schema 4 adds explicit audio/caption validation and migrations without changing older art or animation. Portable backups contain original sound files and editable clip/mixer settings. Audio sources are limited to 12 MB / 120 seconds, 24 sources / 300 seconds total decoded duration, and 240 clips / 24 simultaneous clips. The total portable JSON limit is 64 MB. Low-storage and quota failures retain the open work and offer backup/retry. Original uploads remain intact through trimming, replacement and timeline removal.
 
-Chromium media proof tests export actual short and complete-demo movies, then verify browser playback, finite duration, dimensions, changing decoded video frames, Opus audio and non-silent PCM with FFprobe/FFmpeg. CI installs FFmpeg and retains the movies, decoded frames and measurements with its browser report. Firefox and Safari remain unverified. All PR #1–#3 checks stay in the suite.
+Chromium media proof tests export actual short and complete-demo movies, then verify browser playback, finite duration, dimensions, changing decoded video frames, Opus audio and non-silent PCM with FFprobe/FFmpeg. CI installs FFmpeg and retains the movies, decoded frames and measurements with its browser report. Selected Firefox and WebKit creation, save, accessibility and capability checks are now included; physical Safari/iOS/Android recording and export remain unverified. All PR #1–#4 regression checks stay in the suite.
 
 ## Creator experience and longer storytelling
 
