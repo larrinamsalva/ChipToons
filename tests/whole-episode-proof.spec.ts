@@ -299,20 +299,23 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
       energy += decoded.readFloatLE(j) ** 2;
     const rms = Math.sqrt(energy / (decoded.length / 4));
     expect(rms).toBeGreaterThan(0.005);
-    const voiceAlignment = [segment.firstScene, segment.lastScene].map(
-      (scene) =>
-        alignment(
-          pcm(fixture.originals.get(original.audioAssets[scene].id)!),
-          decoded,
-          (scene - segment.firstScene) * 20,
-        ),
+    const voiceAlignment = Array.from(
+      { length: segment.lastScene - segment.firstScene + 1 },
+      (_, i) => segment.firstScene + i,
+    ).map((scene) =>
+      alignment(
+        pcm(fixture.originals.get(original.audioAssets[scene].id)!),
+        decoded,
+        (scene - segment.firstScene) * 20,
+      ),
     );
     for (const match of voiceAlignment) {
       expect(match.correlation).toBeGreaterThan(0.7);
       expect(Math.abs(match.delay)).toBeLessThan(0.3);
     }
     expect(
-      Math.abs(voiceAlignment[0].delay - voiceAlignment[1].delay),
+      Math.max(...voiceAlignment.map((a) => a.delay)) -
+        Math.min(...voiceAlignment.map((a) => a.delay)),
     ).toBeLessThan(0.06);
     const hashes = execFileSync(
       "ffmpeg",
