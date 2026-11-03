@@ -117,6 +117,8 @@ test("cleanup dry run is cancellable, respects active tabs and restores the comp
   await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/Saved project references changed/);
   await button(page, "Cancel Cleanup").click();
   await button(page, "Review Storage").click();
+  await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/Storage review is ready/);
+  await expect(checkbox).not.toBeChecked();
   await checkbox.check();
   await button(page, "Review Cleanup").click();
   await button(page, "Permanently Remove Selected Originals").click();
