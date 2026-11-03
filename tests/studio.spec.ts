@@ -137,6 +137,7 @@ test("full cartoon playback advances scenes, pauses, scrubs and finishes at the 
 }) => {
   await openDemo(page);
   await previewPanel(page);
+  await page.getByRole("checkbox", { name: "Sound", exact: true }).uncheck();
   await page.clock.install();
   await page.getByRole("button", { name: "Play cartoon", exact: true }).click();
   await page.clock.runFor(11_000);

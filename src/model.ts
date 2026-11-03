@@ -1,3 +1,5 @@
+import { emptyProduction, validProduction } from "./media-model";
+import type { Production } from "./media-model";
 import {
   validElementAnimation,
   validCameraAnimation,
@@ -19,7 +21,7 @@ import {
   rasterSignature,
 } from "./art-model";
 import type { Crop, DrawingDocument, Pose, PropName } from "./art-model";
-export const SCHEMA_VERSION = 3 as const;
+export const SCHEMA_VERSION = 4 as const;
 export const BACKGROUNDS = [
   "meadow",
   "playground",
@@ -115,7 +117,7 @@ export interface Outline {
   response: string;
   ending: string;
 }
-export interface Project {
+export interface Project extends Production {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   title: string;
@@ -192,7 +194,7 @@ export function makeScene(characters: Character[], index = 0): Scene {
     })),
   };
 }
-export const MAX_PROJECT_BYTES = 32 * 1024 * 1024;
+export const MAX_PROJECT_BYTES = 64 * 1024 * 1024;
 export const MAX_ASSET_BYTES = 4 * 1024 * 1024;
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -218,6 +220,7 @@ export function validateProject(value: unknown): Project {
   if (!isRecord(value)) return fail();
   if (value.schemaVersion === 1) return validateProject(migrateV1(value));
   if (value.schemaVersion === 2) return validateProject(migrateV2(value));
+  if (value.schemaVersion === 3) return validateProject(migrateV3(value));
   const p = value;
   if (
     p.schemaVersion !== SCHEMA_VERSION ||
@@ -407,19 +410,29 @@ export function validateProject(value: unknown): Project {
     )
       fail();
   }
+  const sceneMap = new Map<string, { duration: number; start: number }>();
+  let offset = 0;
+  for (const scene of p.scenes) {
+    sceneMap.set(scene.id as string, {
+      duration: scene.duration as number,
+      start: offset,
+    });
+    offset += scene.duration as number;
+  }
+  if (!validProduction(p, unique, characterIds, sceneMap)) return fail();
   if (
     new TextEncoder().encode(JSON.stringify(value)).byteLength >
     MAX_PROJECT_BYTES
   )
     throw new Error(
-      "This project exceeds the 32 MB portable project limit. Remove unused images or use smaller originals.",
+      "This project exceeds the 64 MB portable project limit. Remove unused artwork/audio sources or use shorter originals.",
     );
   // Keep validated data detached from the caller. Rendering uses text nodes and raster images.
   return JSON.parse(JSON.stringify(value)) as Project;
 }
 export function parseBackup(text: string): Project {
   if (new TextEncoder().encode(text).byteLength > MAX_PROJECT_BYTES)
-    throw new Error("This backup is too large. The limit is 32 MB.");
+    throw new Error("This backup is too large. The limit is 64 MB.");
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -478,4 +491,16 @@ export function migrateV2(
         fail();
     }
   return copy;
+}
+
+export function migrateV3(
+  value: Record<string, unknown>,
+): Record<string, unknown> {
+  if (
+    ["audioAssets", "audioClips", "captions", "mixer", "captionStyle"].some(
+      (k) => value[k] !== undefined,
+    )
+  )
+    return fail();
+  return { ...clone(value), schemaVersion: 4, ...emptyProduction() };
 }

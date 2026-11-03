@@ -1,3 +1,4 @@
+import { legacyFixture } from "./legacy-fixture";
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
@@ -312,7 +313,11 @@ test("selected-scene looping, pause and resume keep exact timeline position", as
   page,
 }) => {
   await demo(page);
-  await page.clock.install();
+  await page.getByRole("checkbox", { name: "Sound", exact: true }).uncheck();
+  const epoch = new Date("2030-01-01T00:00:00Z");
+  await page.clock.install({ time: epoch });
+  // Only runFor advances playback; locator actions must not add wall-clock time.
+  await page.clock.pauseAt(new Date(epoch.getTime() + 10_000));
   await page
     .getByRole("combobox", { name: "Preview scope", exact: true })
     .selectOption("scene");
@@ -404,7 +409,7 @@ test("animation survives reload and portable restore; v2 and malformed motion im
     "invalid or unsupported",
   );
   await expect(page.locator(".project-card")).toHaveCount(2);
-  const legacy = { ...starterProject("friendship"), schemaVersion: 2 };
+  const legacy = legacyFixture(starterProject("friendship"), 2);
   legacy.title = "Version two story";
   await page.getByLabel("Restore project backup file").setInputFiles({
     name: "old.json",
@@ -413,7 +418,7 @@ test("animation survives reload and portable restore; v2 and malformed motion im
   });
   await saved(page);
   const migrated = await backup(page);
-  expect(migrated.data.schemaVersion).toBe(3);
+  expect(migrated.data.schemaVersion).toBe(4);
   expect(migrated.data.scenes).toEqual(legacy.scenes);
 });
 

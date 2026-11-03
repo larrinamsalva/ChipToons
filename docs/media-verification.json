@@ -1,0 +1,63 @@
+{
+  "browser": "Chromium (Playwright 1.64.1)",
+  "workflowRun": 41552555611,
+  "unitTests": 78,
+  "browserTests": {
+    "total": 91,
+    "expected": 91,
+    "unexpected": 0,
+    "flaky": 0,
+    "skipped": 0,
+    "ok": true
+  },
+  "movies": [
+    {
+      "name": "short-cartoon-media-proof",
+      "duration": 4.167981,
+      "decodedFrames": 61,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0.07725996878749876,
+      "peak": 0.8151952028274536,
+      "distinctFrames": 4
+    },
+    {
+      "name": "muted-cartoon-media-proof",
+      "duration": 4.162176,
+      "decodedFrames": 61,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0,
+      "peak": 0,
+      "distinctFrames": 4
+    },
+    {
+      "name": "silent-vp9-cartoon-media-proof",
+      "duration": 4.162176,
+      "decodedFrames": 96,
+      "width": 1280,
+      "height": 720,
+      "video": "vp9",
+      "audio": null,
+      "rms": 0,
+      "peak": 0,
+      "distinctFrames": 4
+    },
+    {
+      "name": "friendship-demo-media-proof",
+      "duration": 60.168707,
+      "decodedFrames": 901,
+      "width": 800,
+      "height": 450,
+      "video": "vp8",
+      "audio": "opus",
+      "rms": 0.043641440652600436,
+      "peak": 0.9501082897186279,
+      "distinctFrames": 60
+    }
+  ]
+}

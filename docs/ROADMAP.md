@@ -30,7 +30,9 @@ Implemented: explicit transform/acting keyframes, shared deterministic sampling 
 - Basic original shape pose/mouth states, camera movement and lightweight animated backgrounds (implemented); advanced rigging remains outside this increment.
 - Timeline interaction at finer granularity; deterministic rendering shared with exports.
 
-## PR #4 — Audio and Export
+## PR #4 — Audio, Voices & Video Export
+
+Implemented: explicit local microphone capture and uploaded audio, four editable duration-based timeline lanes, trim/fade/loop controls and category mixer, original synthesized sounds and sample speech, text-based timed captions/SRT, guided finishing review, and a genuine deterministic Stage-to-canvas WebM renderer with mixed Opus sound. Schema 1→2→3→4 migration preserves older artwork and animation; portable backups contain originals. Chromium tests decode real exports and measure non-silent audio. See [Audio Production](AUDIO_PRODUCTION.md) for formats, limits, recovery and browser caveats.
 
 - Optional browser speech preview, uploaded narration and permission-based microphone recording.
 - Audio tracks, original/licensed effects, music, volumes and timed subtitles.
@@ -39,8 +41,8 @@ Implemented: explicit transform/acting keyframes, shared deterministic sampling 
 
 ## PR #5 — Polish and Expansion
 
-- Longer project performance, richer original templates, tutorials and usability polish.
-- Expanded assistive technology, phone and tablet testing.
+- Longer project performance, richer original templates and sound material, tutorials, export recovery and usability polish.
+- Expanded assistive technology and physical phone/tablet testing, including Firefox and Safari recording/export verification.
 - Optional AI providers behind explicit user actions, honest provider labels, and server-held secrets.
 
-The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by all three project schemas); it does not claim to generate a finished 15–20 minute episode automatically.
+The foundation generates a six-scene, roughly one-minute starting storyboard even when a longer episode goal is selected. It preserves that goal as a planning note. Longer projects can be built incrementally (up to 120 scenes, supported by all four project schemas); it does not claim to generate a finished 15–20 minute episode automatically.

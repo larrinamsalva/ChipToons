@@ -16,10 +16,12 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
+      testIgnore: "**/video-export-proof.spec.ts",
       use: { browserName: "chromium", viewport: { width: 1440, height: 1000 } },
     },
     {
       name: "phone",
+      testIgnore: "**/video-export-proof.spec.ts",
       use: {
         browserName: "chromium",
         viewport: { width: 390, height: 844 },
@@ -29,11 +31,17 @@ export default defineConfig({
     },
     {
       name: "tablet",
+      testIgnore: "**/video-export-proof.spec.ts",
       use: {
         browserName: "chromium",
         viewport: { width: 810, height: 1080 },
         hasTouch: true,
       },
+    },
+    {
+      name: "media-export",
+      testMatch: "**/video-export-proof.spec.ts",
+      use: { browserName: "chromium", viewport: { width: 1440, height: 1000 } },
     },
   ],
   webServer: externalUrl

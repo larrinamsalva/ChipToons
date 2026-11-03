@@ -78,7 +78,7 @@ describe("local story planning and project backups", () => {
   });
   it.each([
     (p: ReturnType<typeof starterProject>) => {
-      p.schemaVersion = 99 as 3;
+      p.schemaVersion = 99 as 4;
     },
     (p: ReturnType<typeof starterProject>) => {
       p.scenes = [];

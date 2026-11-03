@@ -1,3 +1,5 @@
+import { emptyProduction } from "./media-model";
+import { legacyFixture } from "../tests/legacy-fixture";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { starterProject } from "./planner";
 import { clone, validateProject, parseBackup } from "./model";
@@ -291,8 +293,9 @@ describe("editable actions and project graph safety", () => {
     expect(validateProject(p)).toEqual(p);
   });
   it("retimes all tracks proportionally when scene duration changes", () => {
-    const p = starterProject(),
-      s = p.scenes[1],
+    const p = starterProject();
+    Object.assign(p, emptyProduction());
+    const s = p.scenes[1],
       next = retimeScene(s, 5);
     expect(next.cameraAnimation?.keyframes.at(-1)?.time).toBe(5);
     expect(elementAt(next.elements[0], 2.5, 5, true).x).toBe(
@@ -371,10 +374,10 @@ describe("compatibility, persistence and playback", () => {
     "migrates schema %i without moving artwork or changing legacy presets",
     (version) => {
       const p = project(),
-        old = { ...clone(p), schemaVersion: version },
+        old = legacyFixture(p, version),
         before = JSON.stringify(old);
       const restored = parseBackup(before);
-      expect(restored.schemaVersion).toBe(3);
+      expect(restored.schemaVersion).toBe(4);
       expect(JSON.stringify(old)).toBe(before);
       const positions = (project: Project) =>
         project.scenes.map((s) => ({

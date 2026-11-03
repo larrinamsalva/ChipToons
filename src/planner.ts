@@ -1,3 +1,5 @@
+import { addDemoProduction } from "./demo-production";
+import { emptyProduction } from "./media-model";
 import { animateInclusion } from "./demo-animation";
 import { makeScene, uid } from "./model";
 import type { Character, IdeaInput, Project, StoryProvider } from "./model";
@@ -206,7 +208,8 @@ export function planStory(input: IdeaInput): Project {
   });
   const now = new Date().toISOString();
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
+    ...emptyProduction(),
     id: uid(),
     title: input.title.trim().slice(0, 160) || "My little big story",
     idea,
@@ -286,6 +289,9 @@ export function starterProject(id = "kindness"): Project {
       [s.title, s.narration, s.dialogue, s.action] = content[i];
     });
   }
-  if (id === "kindness") animateInclusion(p);
+  if (id === "kindness") {
+    animateInclusion(p);
+    addDemoProduction(p);
+  }
   return p;
 }

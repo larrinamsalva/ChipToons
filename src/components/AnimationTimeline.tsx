@@ -1,3 +1,5 @@
+import { AudioLanes } from "./AudioLanes";
+import type { AudioCategory } from "../media-model";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { PointerEvent } from "react";
 import { clone, uid, validateProject } from "../model";
@@ -313,6 +315,8 @@ export function AnimationTimeline({
   onSelect,
   onSeek,
   onChange,
+  onAudioEdit,
+  onAudioMove,
 }: {
   project: Project;
   scene: Scene;
@@ -322,6 +326,8 @@ export function AnimationTimeline({
   onSelect: (id: string) => void;
   onSeek: (time: number) => void;
   onChange: (patch: Partial<Scene>) => void;
+  onAudioEdit: (id?: string, category?: AudioCategory) => void;
+  onAudioMove: (id: string, start: number) => void;
 }) {
   const [choice, setChoice] = useState({
     id: selectedId ?? "camera",
@@ -829,6 +835,16 @@ export function AnimationTimeline({
             "Background",
             scene.backgroundAnimation?.keyframes ?? [],
           )}
+          <AudioLanes
+            project={project}
+            scene={scene}
+            clock={clock}
+            offset={sceneOffset}
+            width={width}
+            snap={snap}
+            onEdit={onAudioEdit}
+            onMove={onAudioMove}
+          />
           {scene.elements.map((e) => (
             <div key={e.id}>
               {trackRow(

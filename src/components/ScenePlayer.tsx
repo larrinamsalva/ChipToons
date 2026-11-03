@@ -1,3 +1,4 @@
+import { CaptionOverlay } from "./CaptionOverlay";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import type { Project } from "../model";
@@ -25,6 +26,9 @@ export function ScenePlayer({
   loop,
   onLoop,
   children,
+  sound,
+  onSound,
+  audioBusy,
 }: {
   project: Project;
   index: number;
@@ -43,6 +47,9 @@ export function ScenePlayer({
   loop: boolean;
   onLoop: (value: boolean) => void;
   children: ReactNode;
+  sound: boolean;
+  onSound: (value: boolean) => void;
+  audioBusy: boolean;
 }) {
   const snapshot = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
   const [captions, setCaptions] = useState(true);
@@ -86,6 +93,20 @@ export function ScenePlayer({
           onMove={snapshot.playing ? undefined : onMove}
           onResize={snapshot.playing ? undefined : onResize}
         />
+        {captions && (
+          <CaptionOverlay
+            text={project.captions
+              .filter(
+                (c) =>
+                  c.sceneId === scene.id &&
+                  localTime >= c.start &&
+                  localTime < c.end,
+              )
+              .map((c) => c.text)
+              .join(" ")}
+            style={project.captionStyle}
+          />
+        )}
         <div className="stage-scene-label">{scene.title}</div>
       </div>
       {captions && (
@@ -122,6 +143,7 @@ export function ScenePlayer({
             className="play-button"
             aria-label={snapshot.playing ? "Pause cartoon" : "Play cartoon"}
             onClick={onPlay}
+            disabled={audioBusy}
           >
             <Icon name={snapshot.playing ? "pause" : "play"} size={21} />
           </button>
@@ -138,6 +160,14 @@ export function ScenePlayer({
             <span> / {durationLabel(total)}</span>
           </span>
         </div>
+        <label className="caption-toggle">
+          <input
+            type="checkbox"
+            checked={sound}
+            onChange={(e) => onSound(e.target.checked)}
+          />
+          Sound
+        </label>
         <label className="caption-toggle">
           <input
             type="checkbox"
@@ -211,8 +241,11 @@ export function ScenePlayer({
       </div>
       <p className="preview-note">
         <Icon name="bulb" size={16} />
-        This preview is silent. Voices, sound, and video downloads are coming in
-        a future release.
+        {audioBusy
+          ? "Preparing local audio…"
+          : sound
+            ? "Sound uses recorded or uploaded clips and your cartoon mixer."
+            : "Sound is off for this preview. Saved audio is unchanged."}
       </p>
     </section>
   );
