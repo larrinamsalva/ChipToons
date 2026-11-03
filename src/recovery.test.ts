@@ -11,7 +11,7 @@ import { db, deleteProject, listProjects, ProjectConflict, projectStores, readPr
 
 beforeEach(() => vi.stubGlobal("navigator", {
   locks: {
-    request: async (name: string, _options: LockOptions, callback: LockGrantedCallback) =>
+    request: async (name: string, _options: LockOptions, callback: LockGrantedCallback<unknown>) =>
       callback({ name, mode: "exclusive" } as Lock),
   },
   storage: { estimate: async () => ({ quota: 2 ** 32, usage: 0 }) },

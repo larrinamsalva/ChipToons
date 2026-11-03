@@ -23,6 +23,11 @@ async function seed(page: Page, original = true) {
 }
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const dashboard = (page: Page) => button(page, "Save and return to my cartoons").click();
+const sceneTitle = (page: Page) => page.getByLabel("Scene title", { exact: true });
+async function showSceneEditor(page: Page) {
+  const edit = button(page, "Edit scene");
+  if (await edit.isVisible()) await edit.click();
+}
 async function recovery(page: Page) {
   await button(page, "Project & Media Recovery").click();
   await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/ready to review/);
@@ -132,18 +137,21 @@ test("a second tab opens read-only and takeover keeps both the newest version an
   await expect(page.getByRole("alert")).toContainText("Another tab changed this cartoon");
   await button(page, "Save and return to my cartoons").click();
   await button(page, "Keep Draft Open").click();
-  const sceneTitle = (tab: Page) => tab.getByLabel("Scene title", { exact: true });
+  await showSceneEditor(page);
+  await showSceneEditor(other);
   await sceneTitle(page).fill("The preserved conflicting draft");
   await sceneTitle(other).fill("The new saved scene");
   await saved(other);
   await button(page, "Save as a Separate Copy").click();
   await expect(page.getByRole("heading", { name: `${name} (copy)`, exact: true })).toBeVisible();
+  await showSceneEditor(page);
   await expect(sceneTitle(page)).toHaveValue("The preserved conflicting draft");
   await other.close();
   const after = await context.newPage();
   await after.goto(page.url());
   await button(after, `Continue ${name}`).click();
   await expect(after.locator(".editor")).toBeVisible();
+  await showSceneEditor(after);
   await expect(sceneTitle(after)).toHaveValue("The new saved scene");
 });
 
@@ -156,15 +164,17 @@ test("durable revisions reject stale saves when tab coordination is unavailable"
   await button(other, `Continue ${name}`).click();
   await expect(other.locator(".editor")).toBeVisible();
   await saved(other);
-  await other.getByLabel("Scene title", { exact: true }).fill("The later saved scene");
+  await showSceneEditor(other);
+  await showSceneEditor(page);
+  await sceneTitle(other).fill("The later saved scene");
   await saved(other);
-  await page.getByLabel("Scene title", { exact: true }).fill("An outdated tab's draft");
+  await sceneTitle(page).fill("An outdated tab's draft");
   await expect(page.getByRole("alert")).toContainText("Another tab changed this cartoon");
-  await expect(page.getByLabel("Scene title", { exact: true })).toHaveValue("An outdated tab's draft");
-  await expect(other.getByLabel("Scene title", { exact: true })).toHaveValue("The later saved scene");
+  await expect(sceneTitle(page)).toHaveValue("An outdated tab's draft");
+  await expect(sceneTitle(other)).toHaveValue("The later saved scene");
 });
 
-test("a missing recording can be reconnected with exact bytes without changing other projects", async ({ page }) => {
+test("a missing recording can be reconnected with exact bytes without changing the scene or clip settings", async ({ page }) => {
   await seed(page);
   const pack = await download(page, "Project backup");
   const manifest = JSON.parse(pack.buffer.subarray(16, 16 + pack.buffer.readUInt32LE(8)).toString());

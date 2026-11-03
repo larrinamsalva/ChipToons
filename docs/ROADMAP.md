@@ -1,6 +1,6 @@
 # ChipToons Studio roadmap
 
-The studio is delivered as five reviewable increments. Pull requests are never automatically merged.
+The studio is delivered in reviewable increments. Pull requests are never automatically merged.
 
 ## PR #1 — Functional Studio Foundation
 
@@ -55,4 +55,11 @@ Implemented: opt-in long-episode audio storage (thirty minutes of sources /256 M
 
 [Episode workflow](EPISODE_PRODUCTION.md), [format/migration](EPISODE_PACKAGE.md) and [PR #6 verification](PR6_VERIFICATION.md) document controls, actual proof and limits. The dedicated proof uses a complete original fictional twenty-minute episode with distinct narration, dialogue, music, effects, captions, six chapters and editable animation, and renders/decodes every numbered part. The original one-minute media proof and all previous regression assertions remain mandatory.
 
-Next: physical iOS/Android/Safari recording/thermal/memory tests, a deliberate original-file recovery/cleanup browser with reachability protection, cross-tab conflict handling, broader assistive-technology testing and optional verified movie joining. WebM files remain sixty seconds on phones /120 seconds on wider screens. No MP4, automatic joining, gapless guarantee or uninterrupted twenty-minute file is claimed.
+Next: physical iOS/Android/Safari recording/thermal/memory tests, broader assistive-technology testing and optional verified movie joining. WebM files remain sixty seconds on phones /120 seconds on wider screens. No MP4, automatic joining, gapless guarantee or uninterrupted twenty-minute file is claimed.
+
+
+## PR #7 — Safe Media Recovery & Multi-Tab Protection
+
+Adds the dashboard Recovery Center, original recording preview and download, exact-file reconnection, read-only backup checks, and cleanup with individual selection and an atomic reference recheck. Editing tabs coordinate ownership where supported. All project saves check a durable revision, and a conflicting draft can be saved as a separate cartoon. Project schema 4 and package format 1 stay compatible. Local database version 5 adds metadata and revisions without rewriting earlier projects or audio.
+
+See [Project & Media Recovery](RECOVERY_CENTER.md) for the workflow and browser limits.
