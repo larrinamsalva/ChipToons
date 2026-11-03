@@ -152,6 +152,8 @@ Chromium media proof tests export actual short and complete-demo movies, then ve
 
 ## Creator experience and longer storytelling
 
+![Story chapter planning in the finished creator studio](docs/creator-chapters-desktop.png)
+
 [Creator Guide](docs/CREATOR_GUIDE.md) documents the thought/sketch/image wizard, editable chapter batches, reference appearances, original lesson starters, gentle sound fades/music ducking, readiness checklist, segmented movie export, portable art-library backup and eight-step friendship tutorial. [PR #5 verification](docs/PR5_VERIFICATION.md) records actual tests, media measurements, responsive screenshots and known limits.
 
 Project schema remains **4** and IndexedDB remains **2**. Optional chapter, learning-question, creation-source, starter provenance and mixer-ducking fields are validated additions. Existing schema-4 documents need no rewrite; the tested 1→2→3→4 import chain remains intact. Export range/status data lives outside the creative project and never trims source artwork, animation or audio.

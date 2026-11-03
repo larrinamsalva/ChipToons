@@ -31,6 +31,8 @@ On phones, switch between **Scenes**, **Preview** and **Edit scene**. The toolba
 
 ## Build a longer educational episode
 
+![Six chapter overview and running-time planning.](creator-chapters-desktop.png)
+
 Use six chapter labels: **Opening**, **Introduction**, **Problem or challenge**, **Exploration**, **Helpful resolution**, **Closing lesson**. Existing projects without chapter metadata receive a suggested grouping for display; opening them does not rewrite their scenes.
 
 **Story chapters** shows a 15- or 20-minute goal beside the actual storyboard running time and remaining planned time. Sixty 20-second scenes total 20 minutes; begin with a smaller set and expand it as the story earns more time. A project supports up to 120 scenes. The scene strip displays twelve thumbnails at a time; previous/next page controls and **Jump to any scene** keep a large project manageable.
@@ -47,6 +49,8 @@ Twelve original editable starters now cover kindness/empathy, friendship/inclusi
 
 ## Keep familiar characters consistent
 
+![Scene character reference and supported appearance controls.](creator-reference.png)
+
 Select a character in **Edit scene**, then open **Character reference**. It shows the scene instance’s name, appearance, original artwork, supported expressions/poses and reusable motions. Single raster images are explicitly described as whole-image artwork.
 
 **Apply appearance to** chooses matching instances in this scene or throughout the episode. **Apply this appearance…** opens a confirmation. **Confirm appearance change** copies the name, colors, accessory, source image and crop to instances of the same character definition. Positions, layer order, poses, expressions and animation remain as authored. Undo reverses the operation.
@@ -62,7 +66,7 @@ In Finish My Cartoon:
 1. Inspect **Longer story? Make it in parts.** Set **Maximum seconds per segment** within this device’s limit. The planner packs consecutive whole scenes into numbered parts. It lists every scene exactly once, the part duration and its absolute position in the story.
 2. If any scene exceeds the chosen limit, the complete plan pauses and lists the affected scenes. **Review scene** opens the editor. Shorten/retime the scene or raise the limit within this device’s maximum. Nothing is silently cut. Valid shorter ranges can still be exported separately.
 3. Press **Export segment 1**. Keep the tab visible and device awake. Progress and **Cancel video export** are visible. The exporter samples the original timeline, including camera/acting, correct trimmed/looped audio offsets and captions. Scene transitions inside a part use the same renderer as full playback.
-4. Play **Completed segment video**, then **Download segment 1**. Only one completed part preview is retained in memory. Download it or explicitly **Discard this preview** before making another part. Downloaded files remain in the browser’s Downloads even after closing the review.
+4. Play **Completed segment video**, then **Download segment 1**. Only one completed part preview is retained in memory. Download it or explicitly **Discard this preview** before making another part. **Close segment preview** releases a downloaded part preview; **Close complete movie preview** releases a full-movie preview before starting a segment. Downloaded files remain in the browser’s Downloads even after closing the review.
 5. Repeat for each part. **Segment 1 subtitles** downloads only that part’s cues with times rebased to zero. **Download part order** saves an ordered JSON manifest with scene IDs, numbers and durations. It is a checklist, not a movie archive.
 6. **Choose a different whole-scene range** lets you retry an exact consecutive range independently. An interrupted planned part displays **Retry segment N**. The review remembers rendering/download status for the same saved project revision where local settings storage is available; it never stores the encoded movie in project data.
 
@@ -83,6 +87,8 @@ The finishing checklist checks empty scenes, missing artwork, narration without 
 Microphone takes remain limited to 60 seconds; uploaded audio to 12 MB / 120 seconds each; projects to 24 audio sources / 300 seconds decoded source duration / 240 clips / 64 MB JSON. A long timeline can reuse or loop short sources; it does not raise these media budgets. See [Audio Production](AUDIO_PRODUCTION.md), [Art Studio](ART_STUDIO.md) and [Animation Studio](ANIMATION_STUDIO.md).
 
 ## Browser and device boundaries
+
+![The chapter builder on a phone layout in dark mode.](creator-chapters-phone.png)
 
 Chromium is the primary verified WebM export engine. Firefox and WebKit automation cover selected creation, saving, navigation, accessibility and actual capability detection. A WebKit build that cannot record WebM keeps project/storyboard/SRT downloads available. Automated WebKit is not a physical Safari device, and viewport/touch emulation is not physical iOS/Android microphone or thermal testing.
 

@@ -21,7 +21,8 @@ function recoverParts(p: Project) {
   try {
     const saved = JSON.parse(localStorage.getItem(checkpointKey(p)) ?? "null");
     if (
-      saved?.revision !== p.updatedAt ||
+      saved?.version !== 1 ||
+      saved.revision !== p.updatedAt ||
       !saved.status ||
       typeof saved.status !== "object"
     )
@@ -69,6 +70,7 @@ export function SegmentExports({
   onBusy,
   onController,
   onScene,
+  onPreview,
 }: {
   project: Project;
   settings: ExportSettings;
@@ -78,6 +80,7 @@ export function SegmentExports({
   onBusy: (value: boolean) => void;
   onController: (c: AbortController | null) => void;
   onScene: (index: number) => void;
+  onPreview: (retained: boolean) => void;
 }) {
   const [segmentRunning, setSegmentRunning] = useState(false);
   const [recovered] = useState(() => recoverParts(project));
@@ -113,6 +116,7 @@ export function SegmentExports({
       localStorage.setItem(
         checkpointKey(project),
         JSON.stringify({
+          version: 1,
           revision: project.updatedAt,
           status,
           limit,
@@ -140,6 +144,7 @@ export function SegmentExports({
     onBusy(true);
     setSegmentRunning(true);
     setResult(null);
+    onPreview(false);
     setError("");
     setProgress(null);
     setStatus((s) => ({ ...s, [segment.id]: "Rendering" }));
@@ -154,6 +159,7 @@ export function SegmentExports({
         cache,
       );
       if (alive.current) {
+        onPreview(true);
         setResult({
           segment,
           label,
@@ -378,20 +384,22 @@ export function SegmentExports({
           <button className="button primary" onClick={download}>
             Download {result.label.toLowerCase()}
           </button>
-          {!result.downloaded && (
-            <button
-              className="button text"
-              onClick={() => {
-                setResult(null);
+          <button
+            className="button text"
+            onClick={() => {
+              setResult(null);
+              onPreview(false);
+              if (!result.downloaded)
                 setStatus((s) => ({
                   ...s,
                   [result.segment.id]: "Preview discarded; export again",
                 }));
-              }}
-            >
-              Discard this preview
-            </button>
-          )}
+            }}
+          >
+            {result.downloaded
+              ? "Close segment preview"
+              : "Discard this preview"}
+          </button>
         </div>
       )}
       {result && !result.downloaded && (

@@ -36,6 +36,7 @@ export function FinishCartoon({
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
   const [audioCache] = useState(() => new AudioDecodeCache());
+  const [partPreview, setPartPreview] = useState(false);
   const blocking = productionReadiness(
     project,
     exportLimit(),
@@ -77,7 +78,7 @@ export function FinishCartoon({
     [result],
   );
   async function makeVideo() {
-    if (running) return;
+    if (running || partPreview) return;
     setRunning(true);
     setResult(null);
     setError("");
@@ -329,7 +330,11 @@ export function FinishCartoon({
           <button
             className="button primary"
             disabled={
-              running || blocking || !formats.length || total > exportLimit()
+              running ||
+              partPreview ||
+              blocking ||
+              !formats.length ||
+              total > exportLimit()
             }
             onClick={() => void makeVideo()}
           >
@@ -344,6 +349,12 @@ export function FinishCartoon({
             </button>
           )}
         </div>
+        {partPreview && (
+          <p className="field-hint">
+            A segment preview is open below. Download or close it when you are
+            finished before exporting a complete movie.
+          </p>
+        )}
         {progress && (
           <div className="export-progress">
             <progress
@@ -384,6 +395,9 @@ export function FinishCartoon({
             >
               Download completed video
             </button>
+            <button className="button text" onClick={() => setResult(null)}>
+              Close complete movie preview
+            </button>
           </div>
         )}
       </section>
@@ -392,7 +406,8 @@ export function FinishCartoon({
         settings={settings}
         cache={audioCache}
         busy={running}
-        available={!!formats.length && !blocking}
+        available={!!formats.length && !blocking && !result}
+        onPreview={setPartPreview}
         onBusy={(value) => {
           setRunning(value);
           if (value) {

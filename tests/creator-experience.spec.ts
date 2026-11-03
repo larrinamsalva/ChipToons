@@ -353,7 +353,7 @@ test("segment cancellation recovers independently and gentle mixing settings sur
     .getByRole("button", { name: "Export segment 2", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Cancel video export", exact: true })
+    .getByRole("button", { name: "Cancel this segment", exact: true })
     .click();
   await expect(page.getByRole("alert")).toContainText("cancelled");
   await expect(
@@ -366,7 +366,12 @@ test("segment cancellation recovers independently and gentle mixing settings sur
   await page
     .getByRole("button", { name: "Finish My Cartoon", exact: true })
     .click();
-  await number(page, "Maximum seconds per segment", "4");
+  await expect(
+    page.getByRole("spinbutton", {
+      name: "Maximum seconds per segment",
+      exact: true,
+    }),
+  ).toHaveValue("4");
   await expect(
     page.getByRole("button", { name: "Retry segment 2", exact: true }),
   ).toBeEnabled();
@@ -376,6 +381,15 @@ test("segment cancellation recovers independently and gentle mixing settings sur
   await expect(
     page.getByRole("heading", { name: "Segment 2 is ready", exact: true }),
   ).toBeVisible({ timeout: 35000 });
+  await expect(
+    page.getByRole("button", { name: "Export complete cartoon", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Discard this preview", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Export complete cartoon", exact: true }),
+  ).toBeEnabled();
 });
 
 test("new chapter, reference and tutorial dialogs support keyboard exit and accessible light/dark layouts", async ({
