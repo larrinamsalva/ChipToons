@@ -52,7 +52,12 @@ test("thought wizard goes back, edits a scene outline and saves a recoverable tw
   await page
     .getByRole("button", { name: "Save Draft · Edit Later", exact: true })
     .click();
-  await expect(page.locator(".dashboard")).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toBeAttached();
+  await expect(
+    page
+      .locator(".project-card")
+      .filter({ hasText: "Our bigger friendship story" }),
+  ).toBeVisible();
   await page.reload();
   await page
     .getByRole("button", {
@@ -79,21 +84,17 @@ test("guided image import rejects SVG, preserves its source and uses the manuall
 }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Start with an Image" }).click();
-  await page
-    .getByLabel("Guided artwork file")
-    .setInputFiles({
-      name: "unsafe.svg",
-      mimeType: "image/svg+xml",
-      buffer: Buffer.from("<svg onload='alert(1)'/>"),
-    });
+  await page.getByLabel("Guided artwork file").setInputFiles({
+    name: "unsafe.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from("<svg onload='alert(1)'/>"),
+  });
   await expect(page.getByRole("alert")).toBeVisible();
-  await page
-    .getByLabel("Guided artwork file")
-    .setInputFiles({
-      name: "My toy.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(pixel.split(",")[1], "base64"),
-    });
+  await page.getByLabel("Guided artwork file").setInputFiles({
+    name: "My toy.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(pixel.split(",")[1], "base64"),
+  });
   await page.getByLabel("Artwork name", { exact: true }).fill("Helpful toy");
   await page.getByLabel("Use this artwork as").selectOption("prop");
   await page.getByRole("button", { name: "Next: plan my story" }).click();
@@ -261,13 +262,11 @@ test("art-library backup restores independent copies and rejects a malformed bat
     .getByText("Back up or restore my reusable art", { exact: true })
     .click();
   const file = await download(page, "Download art-library backup");
-  await page
-    .getByLabel("Restore art-library backup file")
-    .setInputFiles({
-      name: "art-library.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(file)),
-    });
+  await page.getByLabel("Restore art-library backup file").setInputFiles({
+    name: "art-library.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(file)),
+  });
   await expect(page.getByRole("dialog").getByRole("status")).toContainText(
     "Restored 1 artwork copies",
   );
@@ -276,13 +275,11 @@ test("art-library backup restores independent copies and rejects a malformed bat
     .fill("Mira backup");
   await expect(page.locator(".library-card")).toHaveCount(2);
   const bad = { ...file, items: [...file.items, ...file.items] };
-  await page
-    .getByLabel("Restore art-library backup file")
-    .setInputFiles({
-      name: "bad.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(bad)),
-    });
+  await page.getByLabel("Restore art-library backup file").setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(bad)),
+  });
   await expect(page.getByRole("alert")).toContainText("repeats an artwork ID");
   await expect(page.locator(".library-card")).toHaveCount(2);
 });
@@ -419,4 +416,51 @@ test("new chapter, reference and tutorial dialogs support keyboard exit and acce
       await expect(page.getByRole("dialog")).not.toBeAttached();
     }
   }
+});
+
+test("draft quota failures retain a portable outline and navigation protection until saving recovers", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Start with a Thought" }).click();
+  await page
+    .getByLabel("What’s your story idea?")
+    .fill("Our friends practice asking for help.");
+  await page
+    .getByLabel("Cartoon title", { exact: true })
+    .fill("Safe on this screen");
+  await page.evaluate(() => {
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = () => {
+      throw new DOMException("Full", "QuotaExceededError");
+    };
+    (window as unknown as { restorePut: () => void }).restorePut = () => {
+      IDBObjectStore.prototype.put = put;
+    };
+  });
+  await page.getByRole("button", { name: "Save Draft", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("storage is full");
+  const draft = await download(page, "Download draft backup");
+  expect(draft.title).toBe("Safe on this screen");
+  expect(draft.scenes).toHaveLength(6);
+  await page
+    .getByRole("button", { name: "Create my storyboard", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Save failed" }),
+  ).toBeVisible();
+  const guarded = () =>
+    page.evaluate(() => {
+      const event = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+  expect(await guarded()).toBe(true);
+  await page.evaluate(() =>
+    (window as unknown as { restorePut: () => void }).restorePut(),
+  );
+  await page.getByRole("button", { name: "Retry save", exact: true }).click();
+  await saved(page);
+  await expect.poll(guarded).toBe(false);
+  expect((await backup(page)).data.title).toBe("Safe on this screen");
 });

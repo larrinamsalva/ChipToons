@@ -11,7 +11,13 @@ import { srt } from "../production";
 import { MediaNumber } from "./MediaNumber";
 
 const checkpointKey = (p: Project) => `chiptoons-export-parts:${p.id}`;
-function recoverParts(p: Project): Record<string, string> {
+function recoverParts(p: Project) {
+  const fallback = {
+    status: {} as Record<string, string>,
+    limit: exportLimit(),
+    first: 0,
+    last: p.scenes.length - 1,
+  };
   try {
     const saved = JSON.parse(localStorage.getItem(checkpointKey(p)) ?? "null");
     if (
@@ -19,10 +25,29 @@ function recoverParts(p: Project): Record<string, string> {
       !saved.status ||
       typeof saved.status !== "object"
     )
-      return {};
-    return Object.fromEntries(
+      return fallback;
+    const first =
+      Number.isInteger(saved.first) &&
+      saved.first >= 0 &&
+      saved.first < p.scenes.length
+        ? saved.first
+        : 0;
+    const last =
+      Number.isInteger(saved.last) &&
+      saved.last >= first &&
+      saved.last < p.scenes.length
+        ? saved.last
+        : p.scenes.length - 1;
+    const limit =
+      Number.isFinite(saved.limit) &&
+      saved.limit >= 2 &&
+      saved.limit <= exportLimit()
+        ? saved.limit
+        : exportLimit();
+    const status = Object.fromEntries(
       Object.entries(saved.status)
         .filter(([key, value]) => key.length < 210 && typeof value === "string")
+        .slice(0, 120)
         .map(([key, value]) => [
           key,
           value === "Rendering" || value === "Ready to download"
@@ -30,8 +55,9 @@ function recoverParts(p: Project): Record<string, string> {
             : String(value),
         ]),
     );
+    return { status, limit, first, last };
   } catch {
-    return {};
+    return fallback;
   }
 }
 export function SegmentExports({
@@ -53,14 +79,14 @@ export function SegmentExports({
   onController: (c: AbortController | null) => void;
   onScene: (index: number) => void;
 }) {
-  const [limit, setLimit] = useState(exportLimit),
-    [first, setFirst] = useState(0),
-    [last, setLast] = useState(project.scenes.length - 1),
+  const [segmentRunning, setSegmentRunning] = useState(false);
+  const [recovered] = useState(() => recoverParts(project));
+  const [limit, setLimit] = useState(recovered.limit),
+    [first, setFirst] = useState(recovered.first),
+    [last, setLast] = useState(recovered.last),
     [progress, setProgress] = useState<ExportProgress | null>(null),
     [error, setError] = useState(""),
-    [status, setStatus] = useState<Record<string, string>>(() =>
-      recoverParts(project),
-    );
+    [status, setStatus] = useState(recovered.status);
   const [result, setResult] = useState<{
     segment: ExportSegment;
     label: string;
@@ -86,12 +112,18 @@ export function SegmentExports({
     try {
       localStorage.setItem(
         checkpointKey(project),
-        JSON.stringify({ revision: project.updatedAt, status }),
+        JSON.stringify({
+          revision: project.updatedAt,
+          status,
+          limit,
+          first,
+          last,
+        }),
       );
     } catch {
       /* Export progress still works without settings storage. */
     }
-  }, [project, status]);
+  }, [project, status, limit, first, last]);
   const resultUrl = result?.url;
   useEffect(
     () => () => {
@@ -106,6 +138,7 @@ export function SegmentExports({
     controller.current = abort;
     onController(abort);
     onBusy(true);
+    setSegmentRunning(true);
     setResult(null);
     setError("");
     setProgress(null);
@@ -145,6 +178,7 @@ export function SegmentExports({
     } finally {
       if (alive.current) {
         onBusy(false);
+        setSegmentRunning(false);
         onController(null);
       }
       controller.current = null;
@@ -302,6 +336,14 @@ export function SegmentExports({
           Export selected scene range
         </button>
       </details>
+      {segmentRunning && (
+        <button
+          className="button secondary"
+          onClick={() => controller.current?.abort()}
+        >
+          Cancel this segment
+        </button>
+      )}
       {progress && (
         <div className="export-progress">
           <progress

@@ -378,7 +378,7 @@ export function Dashboard({
             className="button text small"
             onClick={() => setAllStarters((s) => !s)}
           >
-            {allStarters ? "Show a few favorites" : "Browse all 8 starters"}
+            {allStarters ? "Show a few favorites" : `Browse all ${STARTERS.length} starters`}
             <Icon name="arrow" size={17} />
           </button>
         </div>

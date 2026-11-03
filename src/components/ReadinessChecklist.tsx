@@ -39,7 +39,11 @@ export function ReadinessChecklist({
     >
       <h3>A quick check before your movie</h3>
       <ul className="readiness-summary">
-        <li>✓ Whole-scene segment plan</li>
+        <li>
+          {issues.some((i) => i.id.startsWith("limit:"))
+            ? "Review whole-scene export limits"
+            : "✓ Whole-scene segment plan"}
+        </li>
         <li>
           {supported ? "✓ Browser encoder available" : "Review browser support"}
         </li>

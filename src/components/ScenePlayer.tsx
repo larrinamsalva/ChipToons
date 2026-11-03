@@ -248,6 +248,7 @@ export function ScenePlayer({
         <label className="scene-jump">
           Jump to any scene
           <select
+            aria-label="Jump to any scene"
             value={shown}
             onChange={(e) => onSceneSelect(Number(e.target.value))}
           >

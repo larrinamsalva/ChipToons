@@ -928,6 +928,7 @@ export function Editor({
               <label>
                 Chapter
                 <select
+                  aria-label="Chapter"
                   value={chapterOf(scene, index, project.scenes.length)}
                   onChange={(e) =>
                     changeScene({ chapter: e.target.value as ChapterId })

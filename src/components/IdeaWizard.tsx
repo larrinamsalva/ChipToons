@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { DEFAULT_IDEA, localStoryProvider, STARTERS } from "../planner";
 import type { Asset, IdeaInput, Project } from "../model";
@@ -8,6 +8,7 @@ import type { CreationSource } from "../story-model";
 import { CHAPTERS } from "../story-model";
 import { Icon } from "./Icon";
 import { Modal } from "./Modal";
+import { exportProject } from "../files";
 
 export function IdeaWizard({
   onClose,
@@ -62,9 +63,9 @@ export function IdeaWizard({
     setBusy(true);
     setError("");
     try {
-      await onSaveDraft(
-        proposal ?? prepare(await localStoryProvider.plan(input)),
-      );
+      const draft = proposal ?? prepare(await localStoryProvider.plan(input));
+      setProposal(draft);
+      await onSaveDraft(draft);
     } catch (e) {
       setError(
         e instanceof Error
@@ -75,6 +76,16 @@ export function IdeaWizard({
       setBusy(false);
     }
   }
+  const hasWork = !!input.idea.trim() || !!artwork;
+  useEffect(() => {
+    if (!hasWork) return;
+    const protect = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", protect);
+    return () => window.removeEventListener("beforeunload", protect);
+  }, [hasWork]);
   const field = <K extends keyof IdeaInput>(key: K, value: IdeaInput[K]) =>
     setInput((i) => ({ ...i, [key]: value }));
   async function generate(e: FormEvent) {
@@ -361,9 +372,17 @@ export function IdeaWizard({
             ))}
           </details>
           {error && (
-            <p role="alert" className="error-message">
-              {error}
-            </p>
+            <div>
+              <p role="alert" className="error-message">
+                {error}
+              </p>
+              <button
+                className="button secondary"
+                onClick={() => exportProject(proposal)}
+              >
+                Download draft backup
+              </button>
+            </div>
           )}
           <div className="local-note">
             <Icon name="film" size={18} />

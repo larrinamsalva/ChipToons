@@ -21,6 +21,7 @@ test("wizard draft, chapter navigation and keyboard scene editing work across br
   await page
     .getByRole("button", { name: "Save Draft · Edit Later", exact: true })
     .click();
+  await expect(page.getByRole("dialog")).not.toBeAttached();
   await page.reload();
   await page
     .getByRole("button", { name: "Continue A safe little pause", exact: true })
@@ -29,7 +30,7 @@ test("wizard draft, chapter navigation and keyboard scene editing work across br
   await page
     .getByRole("button", { name: "Story chapters", exact: true })
     .click();
-  await page.getByRole("button", { name: /^02 / }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /^02 / }).click();
   const edit = page.getByRole("button", { name: "Edit scene", exact: true });
   if (await edit.isVisible()) await edit.click();
   await page.getByLabel("Scene title", { exact: true }).fill("Stop and ask");
@@ -53,9 +54,10 @@ test("finish detects actual encoder capabilities while preserving portable proje
   await page
     .getByRole("button", { name: "Finish My Cartoon", exact: true })
     .click();
+  await expect(page.getByLabel("Video export format")).toBeVisible();
   const formats = await page
     .getByLabel("Video export format")
-    .locator("option")
+    .locator('option[value^="video/"]')
     .count();
   const complete = page.getByRole("button", {
     name: "Export complete cartoon",
@@ -73,6 +75,11 @@ test("finish detects actual encoder capabilities while preserving portable proje
     .getByRole("button", { name: "Download portable project", exact: true })
     .click();
   expect((await download).suggestedFilename()).toMatch(/\.json$/);
+  const captions = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Download SRT subtitles", exact: true })
+    .click();
+  expect((await captions).suggestedFilename()).toMatch(/\.srt$/);
   expect(
     (
       await new AxeBuilder({ page })
