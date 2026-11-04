@@ -6,7 +6,7 @@ import { changeTime, stepTime } from "./transform-model";
 import { FOCUS_STYLES, focusCueTime } from "./focus-model";
 import type { FocusCue, FocusGraphic, FocusTarget } from "./focus-model";
 import { clampFocus, focusAnchor, projectFocusPoint } from "./focus-motion";
-import { cameraAt, sceneFramesAt } from "./timeline";
+import { stageCameraAt, sceneFramesAt } from "./timeline";
 
 export type FocusSeed = { stepId?: string; changeId?: string; objectId?: string };
 export const cueKey = (cue: FocusCue) => cue.kind === "action" ?
@@ -56,7 +56,7 @@ export function newFocusGraphic(scene: Scene, time: number, seed: FocusSeed = {}
 
 export function reviewedFocusPlacement(project: Project, scene: Scene, graphic: FocusGraphic, time: number) {
   const frames = sceneFramesAt(project, scene, time);
-  const camera = cameraAt(scene, time, false, frames.get(scene.cameraAnimation?.followId ?? ""));
+  const camera = stageCameraAt(project, scene, time, false, frames);
   const point = focusAnchor(scene, graphic, frames, camera);
   const cast = scene.elements.flatMap(element => {
     const frame = frames.get(element.id);

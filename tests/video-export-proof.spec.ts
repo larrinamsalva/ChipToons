@@ -1,9 +1,10 @@
+import { cameraShotDemo } from "../src/camera-shot-demo";
 import { GARDEN_NARRATION_START, gardenSoundDemo } from "../src/sound-garden-demo";
 import { wateringWindow } from "../src/interaction-model";
 import { participationExample } from "../src/participation-examples";
 import { participationWindow } from "../src/participation-model";
 import { visualTeachingExample } from "../src/focus-examples";
-import { focusAnchor } from "../src/focus-motion";
+import { focusAnchor, projectFocusPoint } from "../src/focus-motion";
 import { transformExample } from "../src/transform-examples";
 import { EXAMPLE_NAMES } from "../src/transform-model";
 import { gardenInteractionDemo } from "../src/garden-demo";
@@ -20,7 +21,7 @@ import { starterProject } from "../src/demo-starter";
 import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup } from "./production-helpers";
-import { cameraAt, duplicateAnimatedScene, elementAt, retimeScene, sceneElementAt, sceneFramesAt } from "../src/timeline";
+import { cameraAt, duplicateAnimatedScene, elementAt, retimeScene, sceneElementAt, sceneFramesAt, stageCameraAt } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { EXPORT_RECORDING_LEAD_SECONDS } from "../src/segments";
@@ -1104,4 +1105,86 @@ test("decodes real garden footsteps, pickup, pouring, placement, chime and narra
   }
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [garden.duration, lesson.duration]);
+});
+
+test("decodes exact wagon camera cuts, a moving follow shot, teaching overlays and continuous voices in the joined movie", async ({ page }, info) => {
+  test.setTimeout(150_000);
+  const expected = cameraShotDemo();
+  const [repair, roll] = expected.scenes;
+  await page.goto("./");
+  await page.getByText("Try a Camera & Shot Director example", { exact: true }).click();
+  await page.getByRole("button", { name: expected.title, exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const limit = repair.duration;
+  const first = await render(page, info, "camera-wagon-workshop", repair.duration, { limit, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "camera-wagon-roll", roll.duration, { limit, segment: 2 });
+
+  const magenta = (r: number, g: number, b: number) => r >= 157 && r <= 246 && g >= 60 && g <= 153 && b - g >= 20 && r - b >= 28;
+  const wheel = (r: number, g: number, b: number) => r >= 57 && r <= 111 && g - r >= 12 && g - r <= 34 && b - g >= 16 && b - g <= 38;
+  const projector = (scene: typeof repair, at: number) => {
+    const frames = sceneFramesAt(expected, scene, at);
+    const camera = stageCameraAt(expected, scene, at, false, frames);
+    const object = scene.elements.find(item => item.prop === "toy-wagon")!;
+    return (x: number, y: number) => projectFocusPoint(scene, object, frames.get(object.id)!, camera, { x, y });
+  };
+  const centerPixels = (frame: Buffer, point: { x: number; y: number }, radius: number, match: typeof magenta) =>
+    pixels(frame, point.x - radius, point.y - radius, radius * 2, radius * 2, match);
+  const colorArea = (frame: Buffer) => pixels(frame, 0, 145, 800, 305, magenta);
+  const wide = rawFrame(first.path, 0.9);
+  const beforeCut = rawFrame(first.path, 3.30), detail = rawFrame(first.path, 3.66);
+  expect(colorArea(wide)).toBeGreaterThan(350);
+  expect(colorArea(detail)).toBeGreaterThan(colorArea(beforeCut) * 1.9);
+  expect(colorArea(detail)).toBeGreaterThan(colorArea(wide) * 2.3);
+  const loose = projector(repair, 3.66)(61, -6);
+  expect(centerPixels(detail, loose, 12, wheel)).toBeGreaterThan(90);
+
+  const revealAt = 8.25, reveal = rawFrame(first.path, revealAt);
+  const circle = repair.focusGraphics![0];
+  const revealFrames = sceneFramesAt(expected, repair, revealAt);
+  const center = focusAnchor(repair, circle, revealFrames, stageCameraAt(expected, repair, revealAt, false, revealFrames));
+  const marker = (r: number, g: number, b: number) => r < 60 && g > 68 && g < 157 && b - g > 22 && b - g < 90;
+  const graphic = centerPixels(reveal, center, 27, marker);
+  const caption = pixels(reveal, 40, 385, 720, 45, (r, g, b) => Math.min(r, g, b) > 210);
+  const answer = pixels(reveal, 98, 19, 604, 47, (r, g, b) => r >= 200 && r <= 249 && g >= 233 && g - r >= 8 && g - b >= 9 && Math.abs(r - b) <= 8);
+  expect(graphic).toBeGreaterThan(65);
+  expect(caption).toBeGreaterThan(115);
+  expect(answer).toBeGreaterThan(15_000);
+
+  const follow = [1.65, 3.9].map(at => {
+    const raw = rawFrame(second.path, at), center = projector(roll, at)(0, -35);
+    return { at, ...center, pixels: centerPixels(raw, center, 55, magenta), cameraX: stageCameraAt(expected, roll, at).x };
+  });
+  expect(follow.every(point => point.pixels > 600 && point.x >= 320 && point.x <= 630)).toBe(true);
+  expect(follow[1].cameraX - follow[0].cameraX).toBeGreaterThan(85);
+  const rms = (at: number, span = 0.30) => {
+    const start = Math.round((at + EXPORT_RECORDING_LEAD_SECONDS) * 8000), length = Math.round(span * 8000);
+    let power = 0;
+    for (let i = 0; i < length; i++) power += first.pcm.readFloatLE((start + i) * 4) ** 2;
+    return Math.sqrt(power / length);
+  };
+  const voice = { beforeCut: rms(2.93), afterCut: rms(3.55), thinking: rms(5.55) };
+  expect(voice.beforeCut).toBeGreaterThan(voice.thinking * 3);
+  expect(voice.afterCut).toBeGreaterThan(voice.thinking * 3);
+  await info.attach("decoded camera evidence", { body: JSON.stringify({
+    wide: colorArea(wide), beforeCut: colorArea(beforeCut), detail: colorArea(detail), loose, graphic, caption, answer, follow, voice,
+  }, null, 2), contentType: "application/json" });
+  for (const [label, movie, at] of [["wide-workshop", first.path, 0.9], ["close-up", first.path, 2.93],
+    ["wheel-detail", first.path, 3.66], ["wheel-reveal", first.path, revealAt], ["following-the-wagon", second.path, 3.9]] as const) {
+    const path = info.outputPath(`${label}.png`);
+    execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS), "-i", movie,
+      "-frames:v", "1", "-threads", "1", path]);
+    await info.attach(label, { path, contentType: "image/png" });
+  }
+
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  await downloadAndVerifyMovie(page, info, files, [repair.duration, roll.duration]);
 });

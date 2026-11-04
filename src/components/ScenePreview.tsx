@@ -8,13 +8,13 @@ import { sceneStart } from "../timeline";
 import { PlaybackClock } from "../playback";
 import { Stage } from "./Stage";
 
-export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition, soundPreview = false, initialSound = false, playFrom = 0 }: {
+export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition, soundPreview = false, initialSound = false, playFrom = 0, playTo = scene.duration, shotGuides }: {
   project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point; precision?: 1 | 2 | 3;
-  soundPreview?: boolean; initialSound?: boolean; playFrom?: number; captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
+  soundPreview?: boolean; initialSound?: boolean; playFrom?: number; playTo?: number; shotGuides?: { ids: string[]; offset: Point }; captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
 }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
-    playback.configure(0, scene.duration, false);
+    playback.configure(0, playTo, false);
     playback.seek(initialTime);
     return playback;
   });
@@ -28,9 +28,9 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
   const ticket = useRef(0);
   const frame = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
   useEffect(() => {
-    clock.configure(0, scene.duration, false);
+    clock.configure(0, playTo, false);
     return () => clock.pause();
-  }, [clock, scene.duration]);
+  }, [clock, playTo]);
   useEffect(() => {
     if (!audio) return;
     const playbackTicket = ticket;
@@ -58,7 +58,7 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
     const request = ++ticket.current;
     setBusy(true); setError("");
     try {
-      const source = await audio.start(project, offset + playFrom, offset + playFrom, offset + scene.duration, false,
+      const source = await audio.start(project, offset + playFrom, offset + playFrom, offset + playTo, false,
         problem => { stop(); setError(problem.message); });
       if (request !== ticket.current) return;
       clock.setTimeSource(() => source() - offset);
@@ -80,6 +80,7 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
           anchorMarkers={markers}
           releaseMarker={releaseMarker}
           captionGuide={captionGuide}
+          shotGuides={shotGuides}
           onFocusPosition={onFocusPosition}
         />
         {showCaptions && <CaptionOverlay text={sceneCaptionText(project, scene, frame.seconds)} style={project.captionStyle} />}
@@ -111,7 +112,7 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
         <input
           type="number"
           min={0}
-          max={scene.duration}
+          max={playTo}
           step={10 ** -precision}
           value={Number(frame.seconds.toFixed(precision))}
           onChange={(e) => {

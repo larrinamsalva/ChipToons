@@ -1,11 +1,11 @@
-import { focusAnchor, focusLayout, focusTiming, sceneCaptionBand } from "../focus-motion";
+import { projectFocusPoint, focusAnchor, focusLayout, focusTiming, sceneCaptionBand } from "../focus-motion";
 import { participationAt } from "../participation-model";
 import { participationCards } from "../participation-art";
 import { CaptionGuide, FocusArt, FocusCard } from "./FocusArt";
 import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
 import { PuppetArt } from "./PuppetArt";
-import { cameraAt, backgroundAt, sceneFramesAt, sceneStart } from "../timeline";
+import { stageCameraAt, backgroundAt, sceneFramesAt, sceneStart } from "../timeline";
 import { handAt, interactionPaintOrder } from "../interaction-motion";
 import type { InteractionFrame } from "../interaction-motion";
 import type { Grip, Point } from "../interaction-model";
@@ -316,6 +316,7 @@ export const Stage = memo(function Stage({
   anchorMarkers,
   releaseMarker,
   captionGuide = false,
+  shotGuides,
   onFocusPosition,
 }: {
   project: Project;
@@ -326,6 +327,7 @@ export const Stage = memo(function Stage({
   anchorMarkers?: { actorId: string; grip: Grip }[];
   releaseMarker?: Point;
   captionGuide?: boolean;
+  shotGuides?: { ids: string[]; offset: Point };
   onFocusPosition?: (point: Point) => void;
   showCaption?: boolean;
   labelled?: boolean;
@@ -353,7 +355,8 @@ export const Stage = memo(function Stage({
     ? sceneStart(project, project.scenes.findIndex(item => item.id === scene.id)) : 0;
   const t = time ?? progress * scene.duration;
   const frames = sceneFramesAt(project, scene, t, voiceStart, calmPreview);
-  const camera = cameraAt(scene, t, calmPreview, frames.get(scene.cameraAnimation?.followId ?? ""));
+  const camera = stageCameraAt(project, scene, t, calmPreview, frames, voiceStart);
+  const wholeStage = !!(camera.shotId || scene.cameraAnimation);
   const focus = scene.focusGraphics?.flatMap(graphic => {
     const timing = focusTiming(scene, graphic, t, calmPreview);
     if (!timing) return [];
@@ -437,8 +440,10 @@ export const Stage = memo(function Stage({
         }
       >
         <g
-          data-camera-transform={scene.cameraAnimation ? "animated" : "legacy"}
-          transform={scene.cameraAnimation ? cameraTransform : undefined}
+          data-camera-transform={wholeStage ? "animated" : "legacy"}
+          data-camera-shot={camera.shotId}
+          data-camera-zoom={camera.shotId ? camera.zoom : undefined}
+          transform={wholeStage ? cameraTransform : undefined}
         >
           <g
             data-background-motion={
@@ -578,7 +583,7 @@ export const Stage = memo(function Stage({
           </g>
           <g
             ref={objects}
-            transform={scene.cameraAnimation ? undefined : cameraTransform}
+            transform={wholeStage ? undefined : cameraTransform}
           >
             {paintOrder.map((element, i) => {
               const character = resolvedCharacter(project, element);
@@ -790,6 +795,21 @@ export const Stage = memo(function Stage({
             layout={focusLayout(graphic, point, band)} />)}
         {participation && cards && <g pointerEvents="none" aria-hidden="true" data-participation-phase={participation.phase}>
           {cards.map((card, index) => <FocusCard key={index} {...card} />)}
+        </g>}
+        {shotGuides && <g data-shot-guides="" pointerEvents="none" aria-hidden="true">
+          <path d="M266 24V426M534 24V426M24 150H776M24 300H776M390 225H410M400 215V235"
+            fill="none" stroke="#15263a" strokeWidth="3" strokeDasharray="7 6" />
+          <path d="M266 24V426M534 24V426M24 150H776M24 300H776M390 225H410M400 215V235"
+            fill="none" stroke="#fff" strokeWidth="1" strokeDasharray="7 6" />
+          <rect x="24" y="24" width="752" height="402" fill="none" rx="4" stroke="#172c46" strokeWidth="3" />
+          <rect x="24" y="24" width="752" height="402" fill="none" rx="4" stroke="#fff" />
+          {shotGuides.ids.map(id => {
+            const item = scene.elements.find(element => element.id === id), frame = frames.get(id);
+            if (!item || !frame) return null;
+            const mark = projectFocusPoint(scene, item, frame, camera, shotGuides.offset, calmPreview);
+            return <circle key={id} cx={mark.x} cy={mark.y} r="10" fill="none" stroke="#fff"
+              strokeWidth="4" style={{ paintOrder: "stroke" }} />;
+          })}
         </g>}
         {captionGuide && <CaptionGuide band={band} />}
         {showCaption && (
