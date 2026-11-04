@@ -1,3 +1,4 @@
+import { focusIssue, reconcileFocusReferences } from "../focus-model";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { elementName, saveLibraryItem } from "../library";
@@ -38,9 +39,10 @@ function AppearancePreview({ project, scene, object, state, label }: {
     <figcaption><strong>{label}</strong> · {state.name}</figcaption></figure>;
 }
 
-export function TransformStudio({ project, scene, objectId, changeId, time, onClose, onApply }: {
+export function TransformStudio({ project, scene, objectId, changeId, time, onClose, onApply, onFocus }: {
   project: Project; scene: Scene; objectId?: string; changeId?: string; time: number;
   onClose: () => void; onApply: (patch: Partial<Scene>, assets?: Asset[]) => boolean;
+  onFocus?: (objectId: string, changeId: string) => void;
 }) {
   const objects = scene.elements.filter(transformable);
   const [selected, setSelected] = useState(() => objects.find(item => item.id === objectId)?.id ?? objects[0]?.id ?? "");
@@ -54,7 +56,7 @@ export function TransformStudio({ project, scene, objectId, changeId, time, onCl
   const original = scene.objectTracks?.find(track => track.objectId === object.id);
   return <TransformForm key={object.id} project={project} scene={scene} object={object} original={original}
     changeId={object.id === objectId ? changeId : undefined} time={time} onClose={onClose} onApply={onApply}
-    onDirty={() => setDirty(true)}
+    onDirty={() => setDirty(true)} onFocus={onFocus}
     objectChoice={<>
       <label>Choose an Object<select aria-label="Choose an Object" value={selected} onChange={event => {
         if (event.target.value === selected) return;
@@ -71,10 +73,11 @@ export function TransformStudio({ project, scene, objectId, changeId, time, onCl
     </>} />;
 }
 
-function TransformForm({ project, scene, object, original, changeId, time, objectChoice, onDirty, onClose, onApply }: {
+function TransformForm({ project, scene, object, original, changeId, time, objectChoice, onDirty, onClose, onApply, onFocus }: {
   project: Project; scene: Scene; object: SceneElement; original?: ObjectTrack; changeId?: string; time: number;
   objectChoice: ReactNode; onDirty: () => void; onClose: () => void;
   onApply: (patch: Partial<Scene>, assets?: Asset[]) => boolean;
+  onFocus?: (objectId: string, changeId: string) => void;
 }) {
   const [track, setTrack] = useState(() => original ?? newObjectTrack(object));
   const [change, setChange] = useState(() => original?.changes.find(item => item.id === changeId) ?? freshChange(track, time, scene.duration));
@@ -98,7 +101,9 @@ function TransformForm({ project, scene, object, original, changeId, time, objec
   const replaceTrack = (next: ObjectTrack) => [...(scene.objectTracks ?? []).filter(item => item.objectId !== object.id), next];
   const nextTrack = { ...track, changes: [...track.changes.filter(item => item.id !== change.id), change] };
   const candidate = { ...scene, objectTracks: replaceTrack(nextTrack) };
+  const focusCandidate = reconcileFocusReferences(candidate, scene);
   const issue = transformIssue(candidate.objectTracks, candidate, new Set(assets.map(asset => asset.id))) ??
+    focusIssue(focusCandidate.focusGraphics, focusCandidate) ??
     (!start || !finish || start.id === finish.id || JSON.stringify(start.art) === JSON.stringify(finish.art)
       ? "Choose two visibly different appearances for the starting state and this change." : undefined);
   const attachedTimes = (scene.interactions ?? []).filter(action => action.objectId === object.id)
@@ -262,6 +267,8 @@ function TransformForm({ project, scene, object, original, changeId, time, objec
       }}>{remove === "track" ? "Restore object artwork" : remove === "change" ? "Remove change" : "Remove appearance"}</button>
     </div>}
     <div className="modal-actions">
+      {onFocus && original === track && original?.changes.some(item => item === change) && !remove &&
+        <button className="button secondary" onClick={() => onFocus(object.id, change.id)}>Show this change on screen</button>}
       {original && !remove && <button className="button text" onClick={() => setRemove("track")}>Restore the original object</button>}
       {changeId && !remove && <button className="button text" onClick={() => setRemove("change")}>Delete timed change</button>}
       <button className="button secondary" onClick={onClose}>Cancel</button>

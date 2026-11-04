@@ -16,6 +16,7 @@ export function Dashboard({
   onTalkingDemo,
   onGardenDemo,
   onTransformDemo,
+  onFocusDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -36,6 +37,7 @@ export function Dashboard({
   onTalkingDemo: () => void;
   onGardenDemo: () => void;
   onTransformDemo: (example: TransformExample) => void;
+  onFocusDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
   onOpen: (p: Project) => void;
@@ -191,6 +193,13 @@ export function Dashboard({
         <div className="series-actions">
           {(Object.entries(EXAMPLE_NAMES) as [TransformExample, string][]).map(([id, name]) =>
             <button className="button secondary small" key={id} onClick={() => onTransformDemo(id)}>Try {name}</button>)}
+        </div>
+      </details>
+      <details className="transform-examples">
+        <summary>Try a Visual Teaching example</summary>
+        <div className="series-actions">
+          {(Object.entries(EXAMPLE_NAMES) as [TransformExample, string][]).map(([id, name]) =>
+            <button className="button secondary small" key={id} onClick={() => onFocusDemo(id)}>{name} · Visual lesson</button>)}
         </div>
       </details>
       <div className="creative-actions" aria-label="Ways to create">

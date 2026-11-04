@@ -1,3 +1,4 @@
+import { FOCUS_TYPES, focusWindow, stepNeedsReview } from "../focus-model";
 import { changeTime } from "../transform-model";
 import { INTERACTION_LABELS, interactionEvents } from "../interaction-model";
 import { neutralJoint } from "../puppet-model";
@@ -322,6 +323,7 @@ export function AnimationTimeline({
   onAudioMove,
   onInteraction,
   onTransform,
+  onFocus,
 }: {
   project: Project;
   scene: Scene;
@@ -335,6 +337,7 @@ export function AnimationTimeline({
   onAudioMove: (id: string, start: number) => void;
   onInteraction: (id: string) => void;
   onTransform: (objectId: string, changeId?: string) => void;
+  onFocus: (graphicId?: string) => void;
 }) {
   const [choice, setChoice] = useState({
     id: selectedId ?? "camera",
@@ -891,6 +894,26 @@ export function AnimationTimeline({
               </div>
             </div>;
           })}
+          {!!scene.focusGraphics?.length && <div className="timeline-row interaction-row focus-track">
+            <button className="track-label" onClick={() => onFocus()} aria-label="Add teaching graphic">
+              <Icon name="sparkles" size={14} /><span>Teaching graphics</span>
+            </button>
+            <div className="track-lane" style={{ width }}>
+              <Playhead clock={clock} offset={sceneOffset} duration={scene.duration} />
+              {scene.focusGraphics.map(graphic => ({ graphic, ...focusWindow(scene, graphic) }))
+                .sort((a, b) => a.start - b.start).map(({ graphic, start, end }, index) => {
+                const title = graphic.text || FOCUS_TYPES[graphic.kind];
+                const review = end <= start || graphic.target.kind === "missing" || stepNeedsReview(scene, graphic);
+                return <button key={graphic.id} className={`interaction-event focus-event-${index % 3}`}
+                  style={{ left: `${start / scene.duration * 100}%` }}
+                  aria-label={`Edit teaching graphic: ${title} at ${start.toFixed(2)} seconds${review ? " · review needed" : ""}`}
+                  title={`${title} · ${start.toFixed(2)} s${review ? " · review needed" : ""}`}
+                  onClick={() => { onSeek(start); onFocus(graphic.id); }}>
+                  <span aria-hidden="true">{review ? "!" : "✦"}</span>
+                </button>;
+              })}
+            </div>
+          </div>}
           <AudioLanes
             project={project}
             scene={scene}

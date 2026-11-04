@@ -5781,3 +5781,11 @@ fieldset.interaction-fields {
 .transform-examples { margin: 1rem 0; padding: 0.75rem 1rem; border: 1px solid var(--line); border-radius: 0.85rem; }
 .transform-examples summary { cursor: pointer; padding-block: 0.35rem; }
 .transform-examples .series-actions { margin-top: 0.6rem; }
+
+.focus-appearance > :not(summary) { margin-block: 0.65rem; }
+.focus-layout input[type="color"] { min-width: 44px; width: 100%; padding: 4px; }
+.focus-layout .interaction-review .world-check { margin-block: 0.65rem; }
+.focus-layout .interaction-review > .button { margin-bottom: 0.45rem; }
+.focus-track { min-height: 84px; }
+.focus-track .focus-event-1 { top: 27px; }
+.focus-track .focus-event-2 { top: 54px; }

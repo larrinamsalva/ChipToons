@@ -105,3 +105,7 @@ Scene-local interaction events animate original story props through pickup, carr
 ## PR #17 — Fix, Build & Transform Studio
 
 Objects can have four named appearances with editable changes, interaction links, preview approval, and independent artwork copies. The existing Script Director can link teaching steps to animation moments and numbered lines. Four original examples demonstrate a supervised toy repair, tidying, time-lapse growth, and a paper bridge. Project, storage, and package versions stay compatible. [Audit and walkthrough](FIX_BUILD_TRANSFORM.md)
+
+## PR #18 — Visual Teaching & Focus Studio
+
+Six original teaching graphics can follow sampled objects and camera motion, or stay fixed on screen. They link to existing learning steps, interactions and transformations, use the existing caption layout for safe placement, and render through the shared Stage into WebM. Four separate visual lesson examples preserve the earlier demos. Project and backup versions remain compatible. [Audit and walkthrough](VISUAL_TEACHING_FOCUS.md)

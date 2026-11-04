@@ -1,3 +1,5 @@
+import { FOCUS_TITLE, focusIssue } from "../focus-model";
+import type { FocusSeed } from "../focus-studio";
 import { TRANSFORM_TITLE, TransformStudio } from "./TransformStudio";
 import { transformIssue } from "../transform-model";
 import { INTERACTION_TITLE, InteractionStudio } from "./InteractionStudio";
@@ -55,6 +57,7 @@ import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
 const VoiceMouthStudio = lazy(() => import("./VoiceMouthStudio").then(module => ({ default: module.VoiceMouthStudio })));
+const FocusStudio = lazy(() => import("./FocusStudio").then(module => ({ default: module.FocusStudio })));
 const ScriptDirector = lazy(() => import("./ScriptDirector").then(module => ({ default: module.ScriptDirector })));
 
 const FinishCartoon = lazy(() =>
@@ -128,6 +131,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
+  const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
   const [transformEditor, setTransformEditor] = useState<{ objectId?: string; changeId?: string }>();
   const [interactionEditor, setInteractionEditor] = useState<{ id?: string; suggestion?: InteractionSuggestion }>();
   const [editSeconds, setEditSeconds] = useState(0);
@@ -302,6 +306,11 @@ export function Editor({
       setEditError(transformationIssue);
       return false;
     }
+    const teachingIssue = focusIssue(next.focusGraphics, next);
+    if (teachingIssue) {
+      setEditError(teachingIssue);
+      return false;
+    }
     const scenes = project.scenes.map((s, i) => (i === index ? next : s));
     const updated = {
       ...project,
@@ -314,7 +323,11 @@ export function Editor({
       onChange(updated);
       setEditError("");
       const removedTransform = (scene.objectTracks?.length ?? 0) > (next.objectTracks?.length ?? 0);
-      setInteractionNotice(removedTransform ? "An appearance track was removed. Undo to bring back its changes."
+      const missingFocus = (next.focusGraphics?.filter(item => item.target.kind === "missing").length ?? 0) >
+        (scene.focusGraphics?.filter(item => item.target.kind === "missing").length ?? 0);
+      setInteractionNotice(missingFocus
+        ? "A teaching graphic lost its target. Open its timeline marker to choose another object or keep its screen position."
+        : removedTransform ? "An appearance track was removed. Undo to bring back its changes."
         : actionsBeforeCleanup > (next.interactions?.length ?? 0)
           ? "A character or object was removed, so its linked interaction was removed too. Undo to bring both back." : "");
     } catch (e) {
@@ -935,6 +948,7 @@ export function Editor({
             onChange={changeScene}
             onInteraction={(id) => { halt(); setInteractionEditor({ id }); }}
             onTransform={(objectId, changeId) => { halt(); setTransformEditor({ objectId, changeId }); }}
+            onFocus={graphicId => { halt(); setFocusEditor({ graphicId }); }}
           />
         </ScenePlayer>
         <aside className="properties-panel" aria-label="Editing controls">
@@ -972,6 +986,7 @@ export function Editor({
                 <button className="button secondary" onClick={() => {
                   halt(); setTransformEditor({ objectId: element?.id });
                 }}>{TRANSFORM_TITLE}</button>
+                <button className="button secondary" onClick={() => { halt(); setFocusEditor({}); }}>{FOCUS_TITLE}</button>
               </section>
               <section className="world-tools">
                 <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
@@ -1590,7 +1605,7 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
@@ -1602,6 +1617,7 @@ export function Editor({
             }}
             onAnimateVoice={clipId => { halt(); setMouthStudio({ clipId }); }}
             onInteraction={() => { halt(); setInteractionEditor({ suggestion: interactionSuggestion(project, scene) }); }}
+            onFocusStep={stepId => { halt(); setFocusEditor({ seed: { stepId } }); }}
             onTiming={clipId => openVoice(clipId)} onCaptions={() => openVoice(undefined, undefined, "captions")}
             onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} saveStatus={saveStatus} saveError={saveError}
           />
@@ -1618,7 +1634,16 @@ export function Editor({
       {transformEditor && (
         <TransformStudio project={project} scene={scene} objectId={transformEditor.objectId} changeId={transformEditor.changeId}
           time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
-          onClose={() => setTransformEditor(undefined)} onApply={changeScene} />
+          onClose={() => setTransformEditor(undefined)} onApply={changeScene}
+          onFocus={(objectId, changeId) => { setTransformEditor(undefined); setFocusEditor({ seed: { objectId, changeId } }); }} />
+      )}
+      {focusEditor && (
+        <Suspense fallback={<Modal title={FOCUS_TITLE} onClose={() => setFocusEditor(undefined)}><p role="status">Opening teaching graphics…</p></Modal>}>
+          <FocusStudio key={scene.id} project={project} scene={scene} graphicId={focusEditor.graphicId} seed={focusEditor.seed}
+            time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
+            onScene={next => { selectScene(next); setFocusEditor({}); }}
+            onClose={() => setFocusEditor(undefined)} onApply={changeScene} />
+        </Suspense>
       )}
       {mouthStudio && (
         <Suspense fallback={<Modal title="Make My Character Talk" onClose={() => setMouthStudio(undefined)}><p role="status">Opening the talking studio…</p></Modal>}>

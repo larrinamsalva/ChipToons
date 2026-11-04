@@ -1,3 +1,4 @@
+import { sceneCaptionText } from "../production";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
@@ -95,15 +96,7 @@ export function ScenePlayer({
         />
         {captions && (
           <CaptionOverlay
-            text={project.captions
-              .filter(
-                (c) =>
-                  c.sceneId === scene.id &&
-                  localTime >= c.start &&
-                  localTime < c.end,
-              )
-              .map((c) => c.text)
-              .join(" ")}
+            text={sceneCaptionText(project, scene, localTime)}
             style={project.captionStyle}
           />
         )}
