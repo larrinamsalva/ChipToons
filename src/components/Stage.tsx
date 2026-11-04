@@ -1,3 +1,4 @@
+import { PuppetArt } from "./PuppetArt";
 import { cameraAt, backgroundAt, elementAt } from "../timeline";
 import type { ElementFrame } from "../timeline";
 import { memo, useRef, useState } from "react";
@@ -546,7 +547,7 @@ export const Stage = memo(function Stage({
               );
               const frame = elementAt(element, t, scene.duration, calmPreview);
               const width =
-                element.width ?? (asset ? (element.backdrop ? 800 : 190) : 120);
+                element.width ?? (character?.puppet ? 230 : asset ? (element.backdrop ? 800 : 190) : 120);
               const height =
                 element.height ??
                 (asset ? (element.backdrop ? 450 : 245) : 260);
@@ -642,7 +643,11 @@ export const Stage = memo(function Stage({
                   }
                 >
                   <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />
-                  {asset ? (
+                  {character?.puppet ? (
+                    <PuppetArt character={character} assets={project.assets} joints={frame.joints}
+                      emotion={frame.emotion} mouth={frame.mouth} blink={frame.blink}
+                      heartOpacity={frame.heartOpacity} heartScale={frame.heartScale} />
+                  ) : asset ? (
                     <RasterArt
                       asset={asset}
                       width={width}

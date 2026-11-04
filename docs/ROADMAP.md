@@ -69,3 +69,7 @@ See [Project & Media Recovery](RECOVERY_CENTER.md) for the workflow and browser 
 Adds a local guided route from idea to an editable six-to-twelve-scene draft. Seven educational story patterns, a character director, scene review, and gentle action and camera suggestions reuse the existing schema-4 editor, timeline and player. The original example is **The Playground of Kind Hearts**. Existing cartoons can opt in to suggestions on unused tracks with a single undo step. The existing project revisions, media recovery, audio and segmented export workflows continue to apply.
 
 The assistant works from chosen patterns and visible wording cues after the app loads. Creators review the result and record their own narration or dialogue. See [Plan an animated first draft](CREATOR_GUIDE.md#plan-an-animated-first-draft).
+
+## PR #9 — Puppet Maker & Character Animation Studio
+
+Versioned puppet rigs and editable joint snapshots extend schema 4 without a database migration. The maker supports original parts, selected drawing objects, and separately prepared artwork. The art library makes independent project copies. Saved poses, joint tweening, supported presets, and assistant suggestions use the same stage renderer for playback and WebM export. See [Make a puppet with Sunny](CREATOR_GUIDE.md#make-a-puppet-with-sunny).

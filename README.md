@@ -189,3 +189,7 @@ Open **Project & Media Recovery** from **My cartoons** to check backups, find an
 ### Idea-to-Cartoon Assistant
 
 Choose **Help Me Make My Cartoon** to review a local story plan, audition real character and camera movement, and create an editable first draft. Try **The Playground of Kind Hearts** for an original walkthrough. The assistant uses transparent story patterns and action cues and works without an account or an AI service. See the [creator guide](docs/CREATOR_GUIDE.md#plan-an-animated-first-draft).
+
+### Puppet Maker & Character Animation Studio
+
+Choose **Create a Puppet Character** to assemble original parts, assign parts from a drawing or PNG/WebP files, move joints, and save reusable poses. Puppets use the existing timeline and WebM renderer. See [Make a puppet with Sunny](docs/CREATOR_GUIDE.md#make-a-puppet-with-sunny).

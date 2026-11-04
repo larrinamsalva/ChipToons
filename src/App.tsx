@@ -1,3 +1,5 @@
+import { PuppetMaker } from "./components/PuppetMaker";
+import { sunnyCartoon, updateScenePuppet } from "./puppet-project";
 import { browserLocks, holdLock, MEDIA_ACTIVITY_LOCK, projectLock } from "./edit-locks";
 import { persistSession } from "./project-session";
 import type { EditingSession } from "./project-session";
@@ -53,6 +55,8 @@ type Dialog =
   | { type: "art-draw" }
   | { type: "draw" | "help" | "upload" }
   | { type: "recovery" }
+  | { type: "puppet"; initial?: LibraryItem; sceneIndex?: number; fromLibrary?: boolean }
+  | { type: "puppet-update"; item: LibraryItem; sceneIndex: number; source: Project }
   | { type: "assistant"; source?: Project }
   | { type: "delete"; project: Project; revision: string | null }
   | { type: "library"; sceneIndex?: number; draft?: LibraryItem }
@@ -658,6 +662,7 @@ export default function App() {
         <Dashboard
           projects={projects}
           onAssistant={() => setDialog({ type: "assistant" })}
+          onPuppet={() => setDialog({ type: "puppet" })}
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
           onDemo={() => void openDemo()}
@@ -753,11 +758,51 @@ export default function App() {
           }
         />
       )}
+      {dialog?.type === "puppet" && (
+        <PuppetMaker
+          initial={dialog.initial}
+          onClose={() => setDialog(dialog.fromLibrary ? { type: "library", sceneIndex: dialog.sceneIndex } : null)}
+          onDemo={current ? undefined : () => void open(sunnyCartoon())}
+          onUse={async item => {
+            if (!current) {
+              const project = { ...starterProject(), title: `${item.name}’s cartoon` };
+              await open(placeLibraryItem(project, 0, item));
+              return;
+            }
+            if (currentRef.current !== current || editMode !== "edit" || session.current?.blocked)
+              throw new Error("This cartoon changed. Your puppet is saved in the library.");
+            update(placeLibraryItem(current, dialog.sceneIndex ?? 0, item));
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.type === "puppet-update" && (
+        <Modal title="Review scene puppet update" onClose={() => setDialog({ type: "library", sceneIndex: dialog.sceneIndex })}>
+          <p>Choose which scene puppet should use the latest library artwork and rig. Its placement and compatible animation stay in the scene. You can undo this change.</p>
+          {dialog.source.scenes[dialog.sceneIndex].elements.filter(e => e.sourceLibraryId === dialog.item.id).map((element, i) => (
+            <button className="button secondary" key={element.id} onClick={() => {
+              try {
+                if (currentRef.current !== dialog.source || editMode !== "edit" || session.current?.blocked)
+                  throw new Error("The cartoon changed while you reviewed. Open the library again.");
+                update(updateScenePuppet(dialog.source, dialog.sceneIndex, element.id, dialog.item));
+                setDialog(null);
+              } catch (e) {
+                setNotice(e instanceof Error ? e.message : "The puppet could not be updated.");
+                setDialog(null);
+              }
+            }}>Update {element.name ?? dialog.item.name} · {i + 1}</button>
+          ))}
+          {!dialog.source.scenes[dialog.sceneIndex].elements.some(e => e.sourceLibraryId === dialog.item.id) &&
+            <p>This scene has no puppet from this library entry. Use Add to scene for a new copy.</p>}
+        </Modal>
+      )}
       {dialog?.type === "library" && (
         <ArtLibrary
           onClose={() => setDialog(null)}
           draft={dialog.draft}
           inProject={!!current}
+          onPuppet={initial => setDialog({ type: "puppet", initial, sceneIndex: dialog.sceneIndex, fromLibrary: true })}
+          onPuppetUpdate={current ? item => setDialog({ type: "puppet-update", source: current, item, sceneIndex: dialog.sceneIndex ?? 0 }) : undefined}
           onUse={(item, three) => {
             let p = current ?? starterProject();
             const index = dialog.sceneIndex ?? 0;

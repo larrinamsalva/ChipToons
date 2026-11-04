@@ -1,3 +1,4 @@
+import { sunnyCartoon } from "../src/puppet-project";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
@@ -519,4 +520,29 @@ test("a generated assistant scene exports playable WebM with real character and 
   expect(scene.elements[0].animation?.keyframes.length).toBeGreaterThan(2);
   await restore(page, { ...draft, scenes: [scene] });
   await render(page, info, "kind-hearts-assistant", scene.duration, { audio: false, captions: false });
+});
+
+test("a puppet wave changes the arm region across decoded WebM frames", async ({ page }, info) => {
+  test.setTimeout(60_000);
+  const draft = sunnyCartoon();
+  const scene = draft.scenes[1];
+  scene.elements = [{ ...scene.elements[1], x: 400,
+    animation: { ...scene.elements[1].animation!, keyframes: scene.elements[1].animation!.keyframes.map(key => ({
+      ...key, x: 400, heart: "off" as const, mouth: "closed" as const,
+    })), blink: false } }];
+  scene.transition = "cut";
+  await restore(page, { ...draft, scenes: [scene] });
+  const { path } = await render(page, info, "sunny-puppet-wave", 5, { audio: false, captions: false });
+  const arm = (time: string) => execFileSync("ffmpeg", [
+    "-v", "error", "-ss", time, "-i", path, "-vf", "crop=120:112:445:156",
+    "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1",
+  ]);
+  const still = arm("0.05"), waving = arm("1.30");
+  expect(still.length).toBe(120 * 112 * 3);
+  expect(waving.length).toBe(still.length);
+  let pixels = 0;
+  for (let i = 0; i < still.length; i += 3) {
+    if (Math.abs(still[i] - waving[i]) + Math.abs(still[i + 1] - waving[i + 1]) + Math.abs(still[i + 2] - waving[i + 2]) > 55) pixels++;
+  }
+  expect(pixels).toBeGreaterThan(100);
 });

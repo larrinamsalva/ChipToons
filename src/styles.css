@@ -5287,3 +5287,47 @@ input[type="color"] {
     margin-block-start: 0.5rem;
   }
 }
+
+.puppet-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.puppet-workspace > section {
+  min-width: 0;
+}
+.puppet-preview {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  margin-bottom: 0.65rem;
+}
+.puppet-handle {
+  touch-action: none;
+  cursor: grab;
+  outline-offset: 0.25rem;
+}
+.puppet-keyframe {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  margin: 0 0 0.8rem;
+  padding: 0.8rem;
+}
+.puppet-keyframe label {
+  display: grid;
+  gap: 0.25rem;
+}
+.puppet-keyframe :is(input, select) {
+  width: 100%;
+  min-height: 44px;
+}
+@media (max-width: 650px) {
+  .puppet-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -17,6 +17,7 @@ import {
   PATTERNS,
   PLAYGROUND_BRIEF,
   shapeActor,
+  puppetFor,
   SHOTS,
   START_BRIEF,
   suggestDirection,
@@ -796,7 +797,7 @@ export function CartoonAssistant({
                         }
                       >
                         <option value="none">No movement</option>
-                        {gentleActions(shape).map(([id, label]) => (
+                        {gentleActions(shape, puppetFor(plan.project, actor)).map(([id, label]) => (
                           <option key={id} value={id}>
                             {label}
                           </option>

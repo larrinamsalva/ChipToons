@@ -108,3 +108,21 @@ The planner runs locally after the app loads. It matches cues against seven edit
 ![Desktop Scene Director showing the proposed playground animation.](assistant-desktop.png)
 
 ![Phone Scene Director with the playground stage and preview controls.](assistant-phone.png)
+
+## Make a puppet with Sunny
+
+1. Choose **Create a Puppet Character** on the dashboard or in the art library. **Build a Character** starts with Sunny’s original head, torso, arms, and legs. You can switch to a five-part layout, add lower limbs or face artwork, or use a single image as one movable part.
+2. Choose a part in **Body-part hierarchy**. Drag **Move joint**, use its arrow keys, or enter **Joint X/Y**. Change **Pivot X/Y** to move the art around that joint. **Reset Pivot** returns the selected part to its original pivot offsets. Connect forearms to arms or shins to legs to carry the child with its parent.
+3. **Use My Drawing** lets you choose objects from a saved editable drawing and assign a copy to a part. **Use My Uploaded Artwork** accepts individual PNG/WebP part images and keeps the original bytes. For photo artwork, choose whole-image movement or prepare your own separate parts. The maker does not separate a photo automatically.
+4. In **Pose Studio**, try **Standing**, **Waving**, or **Thinking**. Change the angle and offsets for individual parts. Try an expression, choose a mouth state, and save a custom pose. Original face overlays can show expressions and a talking cycle. Custom eye or mouth images display the art you assigned. A keyframe stores its own pose snapshot, so removing a library pose leaves existing episodes intact.
+5. Choose **Preview**, then **Save Character** or **Add to Cartoon**. In the existing animation timeline, select Sunny’s track, preview an action, and apply it. Select a keyframe to edit its joint angles and offsets or copy a saved pose into it. The action list adapts to the available joints. Whole-image walk still moves the image across the stage when a puppet has no legs.
+6. **Open Sunny’s animated example** builds a short cartoon with Sunny walking toward a friend, waving, and showing a glowing heart. Wait for **Saved on this device**, reopen the cartoon, or use **Finish My Cartoon** to export a WebM. The stage and video use the same joint sampling.
+7. Use **Edit puppet / rename** in the art library to change the reusable original. Existing scenes keep their previous copies. Choose **Review scene puppet update** to update a specific instance. If the new rig removes a joint used by that scene’s animation, add it as a new puppet instead.
+
+Puppets support up to 20 parts and 24 saved poses. Project and library backups include the rig and its required artwork. The maker works on the loaded studio with local storage. It supports simple parent–child joints, with authored angles and offsets you can edit in the timeline.
+
+![Puppet Maker starting choices on desktop.](puppet-maker.webp)
+![Sunny’s selected shoulder pivot and joint controls.](puppet-pivots.webp)
+![Pose Studio with a saved waving pose and expression controls.](puppet-poses.webp)
+![Selected timeline keyframe showing editable puppet joints.](puppet-timeline.webp)
+![Puppet Maker joint preview on a phone.](puppet-phone.webp)

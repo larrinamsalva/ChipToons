@@ -1,3 +1,4 @@
+import { interpolateJoints } from "./puppet-model";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
 
@@ -112,17 +113,14 @@ function sample<T extends object>(
   const values = { ...base };
   for (const field of Object.keys(base) as (keyof T)[])
     values[field] = left[field];
+  const p = right ? easeAt((time - left.time) / (right.time - left.time), right.easing) : 0;
   if (right) {
-    const p = easeAt(
-      (time - left.time) / (right.time - left.time),
-      right.easing,
-    );
     for (const field of numeric) {
       (values as Record<keyof T, unknown>)[field] =
         Number(left[field]) + (Number(right[field]) - Number(left[field])) * p;
     }
   }
-  return { values, anchor: left.time };
+  return { values, anchor: left.time, left, right, progress: p };
 }
 export function elementBase(element: SceneElement): ElementValues {
   return {
@@ -149,8 +147,8 @@ export function elementAt(
   const t = clamp(seconds, 0, duration),
     base = elementBase(element);
   const animation = element.animation;
-  const { values, anchor } = animation?.keyframes.length
-    ? sample(base, animation.keyframes, t, [
+  const sampled = animation?.keyframes.length
+    ? sample<ElementValues & Pick<ElementKeyframe, "joints">>(base, animation.keyframes, t, [
         "x",
         "y",
         "scale",
@@ -159,7 +157,8 @@ export function elementAt(
         "heartStrength",
         "openness",
       ])
-    : {
+    : undefined;
+  const { values, anchor } = sampled ?? {
         values: {
           ...base,
           ...motionAt(element, duration ? t / duration : 0),
@@ -183,6 +182,7 @@ export function elementAt(
   return {
     ...values,
     mouth,
+    joints: sampled && interpolateJoints(sampled.left.joints, sampled.right?.joints ?? (sampled.right ? undefined : sampled.left.joints), sampled.progress),
     y: values.y + (idle === "float" ? Math.sin(t * 1.8) * 4 : 0),
     scale:
       values.scale * (idle === "breathe" ? 1 + Math.sin(t * 2) * 0.012 : 1),
@@ -232,6 +232,7 @@ export function keyAt(
   return {
     ...values,
     mouth: authoredMouth,
+    ...(sampled.joints ? { joints: sampled.joints } : {}),
     id: uid(),
     time: roundTime(clamp(seconds, 0, duration)),
     easing: "ease-in-out",

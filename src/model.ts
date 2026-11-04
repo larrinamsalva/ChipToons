@@ -1,3 +1,5 @@
+import { validPuppet } from "./puppet-model";
+import type { PuppetRig } from "./puppet-model";
 import { emptyProduction, validProduction } from "./media-model";
 import { CHAPTERS } from "./story-model";
 import type { ChapterId, CreationSource } from "./story-model";
@@ -58,6 +60,7 @@ export interface Character {
   skin: string;
   hair: string;
   accessory: "none" | "bow" | "cap";
+  puppet?: PuppetRig;
   assetId?: string;
 }
 export interface Asset {
@@ -306,6 +309,7 @@ export function validateProject(value: unknown): Project {
     assetIds.add(asset.id as string);
   }
   const characterIds = new Set<string>();
+  const puppetParts = new Map<string, Set<string>>();
   for (const c of p.characters) {
     if (
       !isRecord(c) ||
@@ -313,11 +317,14 @@ export function validateProject(value: unknown): Project {
       !c.name.trim() ||
       ![c.shirt, c.hair, c.skin].every(validColor) ||
       !oneOf(c.accessory, ["none", "bow", "cap"]) ||
-      (c.assetId !== undefined && !assetIds.has(c.assetId as string))
+      (c.assetId !== undefined && !assetIds.has(c.assetId as string)) ||
+      (c.puppet !== undefined && !validPuppet(c.puppet, assetIds))
     )
       return fail();
     unique(c.id);
     characterIds.add(c.id as string);
+    const rig = c.puppet as PuppetRig | undefined;
+    if (rig) puppetParts.set(c.id as string, new Set(rig.parts.map(part => part.id)));
   }
   for (const s of p.scenes) {
     if (
@@ -396,7 +403,7 @@ export function validateProject(value: unknown): Project {
       unique(e.id);
       if (
         e.animation !== undefined &&
-        !validElementAnimation(e.animation, s.duration as number, animationId)
+        !validElementAnimation(e.animation, s.duration as number, animationId, puppetParts.get(e.characterId as string))
       )
         fail();
     }
