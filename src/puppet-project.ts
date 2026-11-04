@@ -115,6 +115,7 @@ export function updateScenePuppet(
         ? {
             ...e,
             characterId: placed.characterId,
+            voiceMouth: e.voiceMouth?.map(track => ({ ...track, speakerId: placed.characterId })),
             assetId: placed.assetId,
             name: placed.name,
           }

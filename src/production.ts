@@ -14,6 +14,10 @@ export function clipStart(project: Project, clip: AudioClip) {
     : -1;
   return clip.start + (i < 0 ? 0 : sceneStart(project, i));
 }
+export function clipOffset(clip: AudioClip, elapsed: number) {
+  const span = clip.trimEnd - clip.trimStart;
+  return clip.trimStart + (clip.loop ? elapsed % span : elapsed);
+}
 export function clipGain(clip: AudioClip, elapsed: number) {
   if (clip.muted || elapsed < 0 || elapsed >= clip.duration) return 0;
   return (
@@ -75,15 +79,14 @@ export function audioPlan(project: Project, start: number, end: number) {
       from = Math.max(start, absolute),
       to = Math.min(end, absolute + clip.duration);
     if (clip.muted || to <= from) return [];
-    const elapsed = from - absolute,
-      span = clip.trimEnd - clip.trimStart;
+    const elapsed = from - absolute;
     return [
       {
         clip,
         from,
         to,
         elapsed,
-        offset: clip.trimStart + (clip.loop ? elapsed % span : elapsed),
+        offset: clipOffset(clip, elapsed),
       },
     ];
   });

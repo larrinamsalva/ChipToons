@@ -1,5 +1,5 @@
 import { PuppetArt } from "./PuppetArt";
-import { cameraAt, backgroundAt, elementAt } from "../timeline";
+import { cameraAt, backgroundAt, sceneElementAt, sceneStart } from "../timeline";
 import type { ElementFrame } from "../timeline";
 import { memo, useRef, useState } from "react";
 import type { PointerEvent } from "react";
@@ -197,7 +197,8 @@ export function CartoonCharacter({
           />
         ) : acting?.mouth === "open" ||
           (emotion === "surprised" && acting?.mouth !== "smile") ? (
-          <ellipse cy="-149" rx="5" ry="7" fill="#653f3e" />
+          <ellipse cy="-149" rx={acting?.voiceOpening === undefined ? 5 : 5 + 5 * acting.voiceOpening}
+            ry={acting?.voiceOpening === undefined ? 7 : 1 + 10 * acting.voiceOpening} fill="#653f3e" />
         ) : (
           <path
             d={
@@ -329,6 +330,8 @@ export const Stage = memo(function Stage({
     scale?: number;
   } | null>(null);
   const objects = useRef<SVGGElement>(null);
+  const voiceStart = scene.elements.some(element => element.voiceMouth?.length)
+    ? sceneStart(project, project.scenes.findIndex(item => item.id === scene.id)) : 0;
   const t = time ?? progress * scene.duration;
   const camera = cameraAt(scene, t, calmPreview);
   const background = backgroundAt(scene, t, calmPreview);
@@ -545,7 +548,7 @@ export const Stage = memo(function Stage({
               const asset = project.assets.find(
                 (a) => a.id === (element.assetId ?? character?.assetId),
               );
-              const frame = elementAt(element, t, scene.duration, calmPreview);
+              const frame = sceneElementAt(project, scene, element, t, voiceStart, calmPreview);
               const width =
                 element.width ?? (character?.puppet ? 230 : asset ? (element.backdrop ? 800 : 190) : 120);
               const height =
@@ -557,6 +560,7 @@ export const Stage = memo(function Stage({
                   transform={`translate(${frame.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
                   opacity={frame.opacity}
                   data-element-id={element.id}
+                  data-voice-opening={frame.voiceOpening}
                   role={onSelect ? "button" : undefined}
                   tabIndex={onSelect ? 0 : undefined}
                   aria-label={
@@ -645,7 +649,7 @@ export const Stage = memo(function Stage({
                   <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />
                   {character?.puppet ? (
                     <PuppetArt character={character} assets={project.assets} joints={frame.joints}
-                      emotion={frame.emotion} mouth={frame.mouth} blink={frame.blink}
+                      emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening} blink={frame.blink}
                       heartOpacity={frame.heartOpacity} heartScale={frame.heartScale} />
                   ) : asset ? (
                     <RasterArt

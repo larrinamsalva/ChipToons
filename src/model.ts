@@ -1,3 +1,5 @@
+import { MAX_MOUTH_SAMPLE_BYTES, validVoiceMouthTracks } from "./voice-mouth-model";
+import type { VoiceMouthTrack } from "./voice-mouth-model";
 import { validPuppet } from "./puppet-model";
 import type { PuppetRig } from "./puppet-model";
 import { emptyProduction, validProduction } from "./media-model";
@@ -103,6 +105,7 @@ export interface SceneElement {
   sourceLibraryId?: string;
   backdrop?: boolean;
   animation?: ElementAnimation;
+  voiceMouth?: VoiceMouthTrack[];
 }
 export interface Scene {
   script?: SceneScript;
@@ -281,7 +284,7 @@ export function validateProject(value: unknown): Project {
   )
     return fail();
   const ids = new Set<string>();
-  let keyCount = 0;
+  let keyCount = 0, mouthBytes = 0;
   function animationId(id: unknown) {
     unique(id);
     if (++keyCount > MAX_PROJECT_KEYS) fail();
@@ -409,6 +412,10 @@ export function validateProject(value: unknown): Project {
       )
         return fail();
       unique(e.id);
+      if (e.voiceMouth !== undefined &&
+          ((e.kind !== undefined && e.kind !== "character") ||
+           !validVoiceMouthTracks(e.voiceMouth, e.characterId, length => (mouthBytes += length) <= MAX_MOUTH_SAMPLE_BYTES)))
+        return fail();
       if (
         e.animation !== undefined &&
         !validElementAnimation(e.animation, s.duration as number, animationId, puppetParts.get(e.characterId as string))

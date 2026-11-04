@@ -149,3 +149,9 @@ See [Series & Cast Continuity Studio](SERIES_STUDIO.md) for storage and restore 
 6. Choose **Download script** for a printable copy and **Project backup** for your editable script and recordings. Try **Add A Hello Heart sample** in the matching Kind Hearts Crew episode to hear an original example.
 
 See [Script & Voice Director Studio](SCRIPT_VOICE_DIRECTOR.md) for the recording and backup details.
+
+## Make a recorded character talk
+
+Open **Make My Character Talk** from the editor, or use **Animate This Voice** on an approved dialogue line. Choose the recording and character, analyze it, and compare the old and proposed motion. Use a talking style and sensitivity that suit the performance. Move the preview playhead to make a correction or add a pause, then apply the suggestion. Review a changed recording or trim before exporting. **Try Shine Says Hello** opens a short example with audible speech and a quiet pause.
+
+See [Voice-to-Mouth Animation Studio](VOICE_MOUTH_ANIMATION.md) for supported characters, timing and backups.

@@ -5,6 +5,7 @@ import { missingAudio } from "../audio-vault";
 import { downloadBlob, safeFilename } from "../files";
 import { listSeries } from "../series-storage";
 import { CREW_ID } from "../series-starter";
+import { mouthTrackIsCurrent, supportsVoiceMouth } from "../voice-mouth";
 import { chapterOf } from "../story";
 import { CHAPTERS } from "../story-model";
 import { directScene, directionFromScript, scriptSuggestions } from "../assistant";
@@ -30,11 +31,11 @@ const speakerName = (project: Project, line: ScriptLine) => line.kind === "narra
   : project.characters.find(character => character.id === line.speakerId)?.name ?? "Unassigned speaker";
 
 export function ScriptDirector({ project, index, selected, onSelect, onSelectScene, onChange, onScene, onClose,
-  onRecord, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
+  onRecord, onAnimateVoice, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
   project: Project; index: number; selected: string; onSelect: (id: string) => void;
   onSelectScene: (index: number) => void;
   onChange: (project: Project) => void; onScene: (patch: Partial<Scene>) => void; onClose: () => void;
-  onRecord: (id: string) => void; onTiming: (clipId?: string) => void; onCaptions: () => void;
+  onRecord: (id: string) => void; onAnimateVoice: (clipId: string) => void; onTiming: (clipId?: string) => void; onCaptions: () => void;
   onUndo: () => void; onRedo: () => void; canUndo: boolean; canRedo: boolean; saveStatus: string; saveError: string;
 }) {
   const scene = project.scenes[index];
@@ -103,6 +104,14 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
   const difference = totals.speech + totals.pauses - actual;
   const timing = scriptTiming(project, scene);
   const selectedCharacter = project.characters.find(character => character.id === line?.speakerId);
+  const dialogueActors = scene.elements.filter(element => !!line?.speakerId && element.characterId === line.speakerId);
+  const matchingMouth = dialogueActors.flatMap(element => (element.voiceMouth ?? [])
+    .filter(track => clip ? track.clipId === clip.id : line?.takes.some(take => take.assetId === track.sourceId))
+    .map(track => ({ element, track })));
+  const voiceStatus = !matchingMouth.length ? "No mouth animation" :
+    matchingMouth.some(({ element, track }) => supportsVoiceMouth(selectedCharacter, element) &&
+      !unavailable?.has(track.sourceId) && mouthTrackIsCurrent(project, scene, element, track))
+      ? "Applied" : "Needs timing review";
   const voiceCharacter = project.characters.find(character => character.id === voiceId) ?? selectedCharacter ?? project.characters[0];
   const thumbnail: LibraryItem | undefined = selectedCharacter && {
     id: selectedCharacter.id, name: selectedCharacter.name, kind: "character",
@@ -329,7 +338,11 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
             <div className="director-actions">
               <button className="button primary" disabled={!line.text.trim()} onClick={() => onRecord(line.id)}>Record This Line</button>
               {clip && <button className="button secondary" onClick={() => onTiming(clip.id)}>Edit audio timing</button>}
+              {clip && line.kind === "dialogue" && line.speakerId && stateOf(line) === "Approved" &&
+                <button className="button secondary" onClick={() => onAnimateVoice(clip.id)}>Animate This Voice</button>}
             </div>
+            {line.kind === "dialogue" && <p>Mouth animation · {voiceStatus}</p>}
+            {line.kind === "dialogue" && !clip && <p>Use Record This Line before animating the voice.</p>}
             {!!line.takes.length && <>
               <label>Listen to a take<select value={selectedAudio?.id ?? ""} onChange={event => setPreviewTake(event.target.value)}>
                 <option value="">Choose a take</option>

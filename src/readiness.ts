@@ -2,6 +2,7 @@ import type { Project } from "./model";
 import { clipStart, categoryBus } from "./production";
 import { totalDuration } from "./model";
 import { planSegments } from "./segments";
+import { mouthTrackIsCurrent, supportsVoiceMouth } from "./voice-mouth";
 import { sceneStart } from "./timeline";
 export interface ReadinessIssue {
   id: string;
@@ -31,6 +32,14 @@ export function productionReadiness(
   for (const [i, scene] of project.scenes.entries()) {
     const start = sceneStart(project, i),
       end = start + scene.duration;
+    if (scene.elements.some(element => element.voiceMouth?.some(track =>
+      !supportsVoiceMouth(project.characters.find(character => character.id === element.characterId), element) ||
+      !mouthTrackIsCurrent(project, scene, element, track))))
+      issues.push({
+        id: `mouth:${scene.id}`, title: `Scene ${i + 1} has mouth timing to review`,
+        detail: "Open Make My Character Talk to review a changed clip or character. Earlier cues stay saved.",
+        sceneIndex: i, blocking: false, action: "scene",
+      });
     if (
       !scene.elements.length &&
       !scene.narration.trim() &&

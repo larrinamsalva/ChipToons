@@ -6,12 +6,14 @@ import type { Mouth } from "../animation-model";
 function Face({
   emotion,
   mouth,
+  voiceOpening,
   blink,
   eyes = true,
   lips = true,
 }: {
   emotion: Emotion;
   mouth: Mouth;
+  voiceOpening?: number;
   blink: boolean;
   eyes?: boolean;
   lips?: boolean;
@@ -59,7 +61,8 @@ function Face({
       )}
       {lips &&
         (open ? (
-          <ellipse cy="15" rx="8" ry="6" fill="#382c34" />
+          <ellipse cy="15" rx={voiceOpening === undefined ? 8 : 6 + 5 * voiceOpening}
+            ry={voiceOpening === undefined ? 6 : 1 + 9 * voiceOpening} fill="#382c34" />
         ) : (
           <path
             d={
@@ -125,6 +128,7 @@ export function PuppetArt({
   joints,
   emotion,
   mouth = "auto",
+  voiceOpening,
   blink = false,
   heartOpacity = 0,
   heartScale = 1,
@@ -134,6 +138,7 @@ export function PuppetArt({
   joints?: JointSnapshot;
   emotion: Emotion;
   mouth?: Mouth;
+  voiceOpening?: number;
   blink?: boolean;
   heartOpacity?: number;
   heartScale?: number;
@@ -167,6 +172,7 @@ export function PuppetArt({
                 <Face
                   emotion={emotion}
                   mouth={mouth}
+                  voiceOpening={voiceOpening}
                   blink={blink}
                   lips={false}
                 />
@@ -174,6 +180,7 @@ export function PuppetArt({
                 <Face
                   emotion={emotion}
                   mouth={mouth}
+                  voiceOpening={voiceOpening}
                   blink={blink}
                   eyes={false}
                 />
@@ -191,6 +198,7 @@ export function PuppetArt({
                   <Face
                     emotion={emotion}
                     mouth={mouth}
+                  voiceOpening={voiceOpening}
                     blink={blink}
                     eyes={!separateEyes}
                     lips={!separateMouth}
