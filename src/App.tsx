@@ -385,12 +385,15 @@ export default function App() {
     }
   }
 
-  async function openDemo(talking = false) {
+  async function openDemo(talking: boolean | "garden" = false) {
     if (working) return;
     setWorking(true);
-    setNotice(talking ? "Opening Shine’s talking example…" : "Opening the original friendship example…");
+    setNotice(talking === "garden" ? "Opening the garden example…" : talking ? "Opening Shine’s talking example…" : "Opening the original friendship example…");
     try {
-      if (talking) {
+      if (talking === "garden") {
+        const { gardenInteractionDemo } = await import("./garden-demo");
+        await open(gardenInteractionDemo());
+      } else if (talking) {
         const { shineTalkDemo } = await import("./shine-demo");
         await open(await shineTalkDemo());
       } else {
@@ -400,7 +403,7 @@ export default function App() {
       setNotice("");
     } catch {
       setNotice(
-        "The example’s local audio could not load. Try again when this page has finished loading.",
+        "The example could not open. Try again when this page has finished loading.",
       );
     } finally {
       setWorking(false);
@@ -683,6 +686,7 @@ export default function App() {
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
           onDemo={() => void openDemo()}
           onTalkingDemo={() => void openDemo(true)}
+          onGardenDemo={() => void openDemo("garden")}
           onUpload={() => {
             setUploadError("");
             setDialog({ type: "upload" });

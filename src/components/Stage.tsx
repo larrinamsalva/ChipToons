@@ -1,7 +1,9 @@
 import { sceneryOffset } from "../world-model";
 import { PuppetArt } from "./PuppetArt";
-import { cameraAt, backgroundAt, sceneElementAt, sceneStart } from "../timeline";
-import type { ElementFrame } from "../timeline";
+import { cameraAt, backgroundAt, sceneFramesAt, sceneStart } from "../timeline";
+import { handAt, interactionPaintOrder } from "../interaction-motion";
+import type { InteractionFrame } from "../interaction-motion";
+import type { Grip, Point } from "../interaction-model";
 import { memo, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import type {
@@ -76,7 +78,7 @@ export function CartoonCharacter({
   emotion?: Emotion;
   blink?: boolean;
   pose?: Pose;
-  acting?: ElementFrame;
+  acting?: InteractionFrame;
 }) {
   const { shirt, skin, hair, accessory } = character;
   return (
@@ -99,7 +101,7 @@ export function CartoonCharacter({
           fill="#fff5e3"
         />
       </g>
-      <g transform={`rotate(${acting?.armAngle ?? 0} -28 -124)`}>
+      <g transform={`rotate(${(acting?.armAngle ?? 0) + (acting?.interactionArm?.left ?? 0)} -28 -124)`}>
         <path
           d={
             pose === "waving"
@@ -115,6 +117,7 @@ export function CartoonCharacter({
         />
       </g>
       <path
+        transform={acting?.interactionArm?.right ? `rotate(${acting.interactionArm.right} 28 -124)` : undefined}
         d={
           pose === "pointing"
             ? "M28-124 98-132"
@@ -305,12 +308,16 @@ export const Stage = memo(function Stage({
   onResize,
   time,
   calmPreview = false,
+  anchorMarkers,
+  releaseMarker,
 }: {
   project: Project;
   scene: Scene;
   progress?: number;
   time?: number;
   calmPreview?: boolean;
+  anchorMarkers?: { actorId: string; grip: Grip }[];
+  releaseMarker?: Point;
   showCaption?: boolean;
   labelled?: boolean;
   selectedId?: string;
@@ -334,7 +341,9 @@ export const Stage = memo(function Stage({
   const voiceStart = scene.elements.some(element => element.voiceMouth?.length)
     ? sceneStart(project, project.scenes.findIndex(item => item.id === scene.id)) : 0;
   const t = time ?? progress * scene.duration;
-  const camera = cameraAt(scene, t, calmPreview);
+  const frames = sceneFramesAt(project, scene, t, voiceStart, calmPreview);
+  const camera = cameraAt(scene, t, calmPreview, frames.get(scene.cameraAnimation?.followId ?? ""));
+  const paintOrder = scene.interactions?.length ? interactionPaintOrder(scene.elements, frames) : scene.elements;
   const background = backgroundAt(scene, t, calmPreview);
   const night = scene.background === "moonlight";
   const classroom = scene.background === "classroom";
@@ -544,12 +553,12 @@ export const Stage = memo(function Stage({
             ref={objects}
             transform={scene.cameraAnimation ? undefined : cameraTransform}
           >
-            {scene.elements.map((element) => {
+            {paintOrder.map((element) => {
               const character = resolvedCharacter(project, element);
               const asset = project.assets.find(
                 (a) => a.id === (element.assetId ?? character?.assetId),
               );
-              const frame = sceneElementAt(project, scene, element, t, voiceStart, calmPreview);
+              const frame = frames.get(element.id)!;
               const depth = sceneryOffset(scene, element, camera, !!calmPreview);
               const width =
                 element.width ?? (character?.puppet ? 230 : asset ? (element.backdrop ? 800 : 190) : 120);
@@ -562,6 +571,7 @@ export const Stage = memo(function Stage({
                   transform={`translate(${frame.x + depth.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + depth.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
                   opacity={frame.opacity}
                   data-element-id={element.id}
+                  data-held-by={frame.heldBy}
                   data-scenery-depth={element.sceneryDepth}
                   data-voice-opening={frame.voiceOpening}
                   role={onSelect ? "button" : undefined}
@@ -578,6 +588,7 @@ export const Stage = memo(function Stage({
                           e.preventDefault();
                           e.stopPropagation();
                           onSelect(element.id);
+                          if (frame.interactionPosition) return;
                           e.currentTarget.setPointerCapture(e.pointerId);
                           dragging.current = {
                             element: {
@@ -608,7 +619,7 @@ export const Stage = memo(function Stage({
                             e.preventDefault();
                             onSelect(element.id);
                           } else if (
-                            [
+                            !frame.interactionPosition && [
                               "ArrowLeft",
                               "ArrowRight",
                               "ArrowUp",
@@ -649,7 +660,7 @@ export const Stage = memo(function Stage({
                       : undefined
                   }
                 >
-                  <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />
+                  {!frame.heldBy && <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />}
                   {character?.puppet ? (
                     <PuppetArt character={character} assets={project.assets} joints={frame.joints}
                       emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening} blink={frame.blink}
@@ -673,6 +684,10 @@ export const Stage = memo(function Stage({
                       acting={frame}
                     />
                   ) : null}
+                  {!!frame.pointing && <g pointerEvents="none" opacity={frame.pointing} aria-hidden="true">
+                    <path d="M-12 9H12m-6-5 6 5-6 5m-28-5h-8" stroke="#fff7d9" strokeWidth="8" strokeLinecap="round" fill="none" />
+                    <path d="M-12 9H12m-6-5 6 5-6 5m-28-5h-8" stroke="#51416d" strokeWidth="4" strokeLinecap="round" fill="none" />
+                  </g>}
                   {onSelect && selectedId === element.id && (
                     <g pointerEvents="none">
                       <rect
@@ -686,7 +701,7 @@ export const Stage = memo(function Stage({
                         strokeDasharray="8 5"
                         vectorEffect="non-scaling-stroke"
                       />
-                      <rect
+                      {!frame.interactionPosition && <rect
                         data-resize="yes"
                         pointerEvents="all"
                         x={width / 2 - 9}
@@ -697,11 +712,31 @@ export const Stage = memo(function Stage({
                         stroke="#346bba"
                         strokeWidth="2"
                         className="stage-resize"
-                      />
+                      />}
                     </g>
                   )}
                 </g>
               );
+            })}
+            {[...frames].map(([id, frame]) => frame.watering && (
+              <g key={id} data-watering="" transform={`translate(${frame.watering.x} ${frame.watering.y})`}
+                pointerEvents="none" fill="none" strokeLinecap="round" aria-hidden="true">
+                <path d="M0 0Q-19 4-23 22M-3 1Q-33 7-42 34" stroke="#f0fcff" strokeWidth="6" />
+                <path d="M0 0Q-19 4-23 22M-3 1Q-33 7-42 34" stroke="#448ca8" strokeWidth="3" strokeDasharray="5 6"
+                  strokeDashoffset={calmPreview ? 0 : -t * 18} />
+              </g>
+            ))}
+            {releaseMarker && <g transform={`translate(${releaseMarker.x} ${releaseMarker.y})`}
+              pointerEvents="none" aria-hidden="true" data-release-point="">
+              <circle r="11" fill="#fff" stroke="#5933a6" strokeWidth="3" strokeDasharray="4 3" />
+              <path d="M-4 0h8m-4-4v8" stroke="#5933a6" strokeWidth="2" />
+            </g>}
+            {anchorMarkers?.map(({ actorId, grip }) => {
+              const actor = scene.elements.find(item => item.id === actorId);
+              if (!actor) return null;
+              const marker = handAt(resolvedCharacter(project, actor), actor, frames.get(actor.id)!, grip);
+              return <circle key={actorId} cx={marker.x} cy={marker.y} r="7" fill="#fff" stroke="#5933a6"
+                strokeWidth="3" pointerEvents="none" aria-hidden="true" data-hold-point="" />;
             })}
           </g>
         </g>

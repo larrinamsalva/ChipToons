@@ -1,3 +1,7 @@
+import { INTERACTION_TITLE, InteractionStudio } from "./InteractionStudio";
+import { interactionSuggestion } from "../interaction-studio";
+import type { InteractionSuggestion } from "../interaction-studio";
+import { interactionReferencesExist } from "../interaction-model";
 import type { AudioFile } from "../audio-vault";
 import { PreviewAudio } from "../audio-engine";
 import type { AudioCategory } from "../media-model";
@@ -121,6 +125,8 @@ export function Editor({
   const [scope, setScope] = useState<"episode" | "scene">("episode");
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
+  const [interactionNotice, setInteractionNotice] = useState("");
+  const [interactionEditor, setInteractionEditor] = useState<{ id?: string; suggestion?: InteractionSuggestion }>();
   const [editSeconds, setEditSeconds] = useState(0);
   const [panel, setPanel] = useState("scene");
   const [worldOpen, setWorldOpen] = useState(false);
@@ -279,6 +285,14 @@ export function Editor({
     let next = { ...scene, ...patch };
     if (patch.duration !== undefined && patch.duration !== scene.duration)
       next = retimeScene(scene, patch.duration);
+    const ids = new Set(next.elements.map(item => item.id));
+    const changedRole = next.interactions?.some(action => !interactionReferencesExist(action, next.elements) &&
+      ids.has(action.actorId) && ids.has(action.objectId) && (!action.transfer || ids.has(action.transfer.actorId)));
+    if (changedRole) {
+      setEditError("This object is part of an interaction. Remove that action in the timeline before changing the object's role.");
+      return false;
+    }
+    const actionsBeforeCleanup = next.interactions?.length ?? 0;
     next = cleanSceneReferences(next);
     const scenes = project.scenes.map((s, i) => (i === index ? next : s));
     const updated = {
@@ -290,11 +304,13 @@ export function Editor({
       validateProject(updated);
       onChange(updated);
       setEditError("");
+      setInteractionNotice(actionsBeforeCleanup > (next.interactions?.length ?? 0)
+        ? "A character or object was removed, so its linked interaction was removed too. Undo to bring both back." : "");
     } catch (e) {
       setEditError(
         e instanceof Error ? e.message : "This edit could not be saved.",
       );
-      return;
+      return false;
     }
     if (patch.duration !== undefined) {
       const local = clamp(
@@ -305,6 +321,7 @@ export function Editor({
       clock.configure(0, totalDuration(updated), false);
       clock.seek(sceneStart(updated, index) + local);
     }
+    return true;
   }
   function updateElement(id: string, patch: Partial<SceneElement>) {
     const source = scene.elements.find((e) => e.id === id);
@@ -744,6 +761,7 @@ export function Editor({
           {editError}
         </p>
       )}
+      {interactionNotice && <p role="status" className="animation-message">{interactionNotice}</p>}
       <div className={`editor-workspace mobile-show-${mobilePanel}`}>
         <aside className="scene-panel" aria-label="Storyboard scenes">
           <div className="panel-heading">
@@ -904,6 +922,7 @@ export function Editor({
             }
             onSeek={seekLocal}
             onChange={changeScene}
+            onInteraction={(id) => { halt(); setInteractionEditor({ id }); }}
           />
         </ScenePlayer>
         <aside className="properties-panel" aria-label="Editing controls">
@@ -934,6 +953,11 @@ export function Editor({
             </div>
           ) : panel === "scene" ? (
             <div className="property-fields">
+              <section className="world-tools">
+                <button className="button secondary" onClick={() => {
+                  halt(); setInteractionEditor({});
+                }}>{INTERACTION_TITLE}</button>
+              </section>
               <section className="world-tools">
                 <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
                   onClick={() => setWorldOpen(value => !value)}>Build My Cartoon World</button>
@@ -1551,7 +1575,7 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
@@ -1562,10 +1586,18 @@ export function Editor({
               setVoiceStudio({ lineId });
             }}
             onAnimateVoice={clipId => { halt(); setMouthStudio({ clipId }); }}
+            onInteraction={() => { halt(); setInteractionEditor({ suggestion: interactionSuggestion(project, scene) }); }}
             onTiming={clipId => openVoice(clipId)} onCaptions={() => openVoice(undefined, undefined, "captions")}
             onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} saveStatus={saveStatus} saveError={saveError}
           />
         </Suspense>
+      )}
+      {interactionEditor && (
+        <InteractionStudio project={project} scene={scene} selectedId={element?.id}
+          current={scene.interactions?.find(item => item.id === interactionEditor.id)}
+          suggestion={interactionEditor.suggestion}
+          time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
+          onClose={() => setInteractionEditor(undefined)} onApply={changeScene} />
       )}
       {mouthStudio && (
         <Suspense fallback={<Modal title="Make My Character Talk" onClose={() => setMouthStudio(undefined)}><p role="status">Opening the talking studio…</p></Modal>}>

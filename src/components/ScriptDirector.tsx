@@ -1,3 +1,5 @@
+import { interactionSuggestion } from "../interaction-studio";
+import { INTERACTION_LABELS } from "../interaction-model";
 import { useEffect, useState } from "react";
 import type { Project, Scene } from "../model";
 import { durationLabel, totalDuration, uid, validateProject } from "../model";
@@ -17,7 +19,7 @@ import { DEFAULT_SCRIPT, MAX_SCRIPT_LINES } from "../script-model";
 import type { SceneScript, ScriptLine } from "../script-model";
 import { ArtThumbnail } from "./ArtLibrary";
 import type { LibraryItem } from "../library";
-import { ScenePreview } from "./CartoonAssistant";
+import { ScenePreview } from "./ScenePreview";
 import { OriginalAudio } from "./VoiceStudio";
 import { VoiceCastFields } from "./VoiceCastFields";
 import { Modal } from "./Modal";
@@ -31,15 +33,17 @@ const speakerName = (project: Project, line: ScriptLine) => line.kind === "narra
   : project.characters.find(character => character.id === line.speakerId)?.name ?? "Unassigned speaker";
 
 export function ScriptDirector({ project, index, selected, onSelect, onSelectScene, onChange, onScene, onClose,
-  onRecord, onAnimateVoice, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
+  onRecord, onAnimateVoice, onInteraction, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
   project: Project; index: number; selected: string; onSelect: (id: string) => void;
   onSelectScene: (index: number) => void;
   onChange: (project: Project) => void; onScene: (patch: Partial<Scene>) => void; onClose: () => void;
   onRecord: (id: string) => void; onAnimateVoice: (clipId: string) => void; onTiming: (clipId?: string) => void; onCaptions: () => void;
+  onInteraction: () => void;
   onUndo: () => void; onRedo: () => void; canUndo: boolean; canRedo: boolean; saveStatus: string; saveError: string;
 }) {
   const scene = project.scenes[index];
   const script = scene.script;
+  const suggestion = interactionSuggestion(project, scene);
   const [seriesLink, setSeriesLink] = useState<{ title: string; helloHeart: boolean }>();
   const projectId = project.id;
   useEffect(() => {
@@ -260,6 +264,9 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
               .finally(() => setBusy(false));
           }}>Add A Hello Heart sample</button>
         </div>}
+        {suggestion && <button className="button secondary small" onClick={onInteraction}>
+          Review interaction suggestion: {INTERACTION_LABELS[suggestion.kind]}
+        </button>}
         <details className="director-card">
           <summary>Scene words and directing notes</summary>
           <label>Scene heading<input maxLength={160} value={scene.title} onChange={event => onScene({ title: event.target.value || "Untitled scene" })} /></label>

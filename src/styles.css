@@ -5683,3 +5683,85 @@ input[type="color"] {
   width: 1.125rem;
   height: 1.125rem;
 }
+
+.interaction-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: 1.15rem;
+}
+.interaction-controls, .interaction-grip {
+  display: grid;
+  gap: 0.7rem;
+}
+.interaction-controls label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.interaction-controls .world-check, .interaction-review .world-check {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+}
+.interaction-controls select, .interaction-controls input:not([type="checkbox"]),
+.interaction-review input[type="number"], .interaction-layout .button {
+  min-height: 44px;
+  max-width: 100%;
+}
+.interaction-controls select { width: 100%; }
+.interaction-controls details {
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  padding: 0 0.65rem 0.25rem;
+}
+.interaction-controls summary { padding: 0.8rem 0; cursor: pointer; }
+.interaction-fields, .interaction-add {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  min-width: 0;
+  margin: 0;
+}
+fieldset.interaction-fields {
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  padding: 0.6rem;
+}
+.interaction-add { align-items: end; }
+.interaction-review { min-width: 0; }
+.interaction-empty, .interaction-confirm {
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  padding: 0.75rem;
+  margin: 0.7rem 0;
+}
+.interaction-confirm .button { margin-inline-end: 0.4rem; }
+.interaction-row { height: 54px; }
+.interaction-event {
+  position: absolute;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  min-width: 38px;
+  min-height: 27px;
+  transform: translateX(-50%);
+}
+.interaction-event.event-1 { top: 26px; }
+.interaction-event span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 2px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: var(--mint);
+  font-size: 12px;
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  .interaction-layout { grid-template-columns: minmax(0, 1fr); }
+}

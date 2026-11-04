@@ -45,6 +45,7 @@ See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor 
 
 - Three guided creation paths, existing quick starts and a real project dashboard with thumbnails, dates, draft/ready status, duplicate, delete confirmation and restore.
 - Six complete scenes in the original “A little room for a friend” demo; twelve original editable lesson starters covering kindness, friendship, differences, feelings, helping, responsibility, trusted-adult safety, personal-information safety, nature, problem-solving and teamwork.
+- **Make My Character Do Something** animates pickups, carries, handoffs and releases with editable events and puppet hand anchors. [Character & Object Interaction Studio](docs/CHARACTER_OBJECT_INTERACTIONS.md).
 - **Build My Cartoon World** makes editable locations with reusable backgrounds, original props and optional layered depth. [Scene & World Builder](docs/SCENE_WORLD_BUILDER.md).
 - **My Cartoon Series** connects a series bible, recurring cast, and up to 100 episode plans to the existing Assistant and editor. The optional Kind Hearts Crew starter includes 30 editable plans and six original library puppets. See [Series Studio](docs/SERIES_STUDIO.md).
 - **Prepare My Complete Episode** checks the numbered WebM files you select, plays them in order, and makes a verifiable delivery ZIP with SRTs. [Episode delivery guide](docs/EPISODE_DELIVERY.md).

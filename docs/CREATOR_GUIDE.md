@@ -2,6 +2,11 @@
 
 ChipToons is a free, local-first studio for original educational cartoons. No login or paid service is needed. The planner uses local templates. You remain the storyteller: it does not interpret photographs, rig bodies, record voices automatically or produce finished footage from a duration goal.
 
+## Animate a character using a story prop
+
+Open **Edit scene** and choose **Make My Character Do Something**. Choose a character, add or select a story prop, and choose **Carry It**. Add a walk if the character is still, set the attach and release times, and use **Preview** to check the movement. Choose **Apply** when it looks right. Open the action row in the timeline to fine-tune timing, change hands, or set a new release spot. The dashboard example **Helping Hands Waters a Little Garden** shows the complete action. [Interaction Studio guide](CHARACTER_OBJECT_INTERACTIONS.md)
+
+
 ## Begin with what you have
 
 The dashboard has three guided starting cards. Existing quick starts still work.

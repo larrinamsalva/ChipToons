@@ -1,3 +1,5 @@
+import { gardenInteractionDemo } from "../src/garden-demo";
+import { stagePoint } from "../src/interaction-motion";
 import { kindHeartsCrew } from "../src/series-starter";
 import { episodeBrief } from "../src/series";
 import { sunnyCartoon } from "../src/puppet-project";
@@ -10,7 +12,7 @@ import { starterProject } from "../src/demo-starter";
 import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup } from "./production-helpers";
-import { cameraAt, elementAt, retimeScene, sceneElementAt } from "../src/timeline";
+import { cameraAt, duplicateAnimatedScene, elementAt, retimeScene, sceneElementAt, sceneFramesAt } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { newAudioClip } from "../src/production";
@@ -697,4 +699,63 @@ test("Shine’s exported second segment contains real speech with open mouth fra
     body: JSON.stringify({ cropCenter: mouth, speakingFrames, silentFrames }, null, 2),
     contentType: "application/json",
   });
+});
+
+test("decodes one watering can at its resting, carried, tilted and released positions", async ({ page }, info) => {
+  test.setTimeout(110_000);
+  const project = gardenInteractionDemo();
+  const scene = project.scenes[0];
+  const action = scene.interactions![0];
+  const can = scene.elements.find(item => item.id === action.objectId)!;
+  const opening = retimeScene({ ...duplicateAnimatedScene(scene), interactions: undefined }, 3);
+  opening.title = "Meet the garden helpers";
+  await restore(page, { ...project, scenes: [opening, scene] });
+  const first = await render(page, info, "garden-opening", opening.duration, {
+    audio: false, segment: 1, limit: scene.duration,
+  });
+  const finish = page.getByRole("button", { name: "Back to studio", exact: true });
+  await finish.click();
+  const { path } = await render(page, info, "helping-hands-garden", scene.duration, {
+    audio: false, segment: 2, limit: scene.duration,
+  });
+  function projectedCenter(time: number) {
+    const frame = sceneFramesAt(project, scene, time).get(can.id)!;
+    const p = stagePoint(can, frame, { x: 0, y: -29 });
+    const camera = cameraAt(scene, time);
+    return { x: (p.x - camera.x) * camera.zoom + 400, y: (p.y - camera.y) * camera.zoom + 225 };
+  }
+  const measurements = [];
+  for (const time of [0.4, 2.75, 4.45, 6.2, 9.1]) {
+    const frame = execFileSync("ffmpeg", ["-v", "error", "-ss", String(time), "-i", path,
+      "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
+    expect(frame.length).toBe(800 * 450 * 3);
+    const target = projectedCenter(time);
+    let inside = 0, outside = 0, totalX = 0, totalY = 0;
+    for (let y = 180; y < 440; y++) for (let x = 0; x < 800; x++) {
+      const i = (y * 800 + x) * 3;
+      // The can is the only large teal shape. Tolerate VP8 and RGB conversion shifts.
+      const [r, g, b] = [frame[i], frame[i + 1], frame[i + 2]];
+      if (r < 95 || r > 161 || g < 148 || g > 212 || b < 153 || b > 214 ||
+          b < g - 5 || g - r <= 33 || b - r < 34) continue;
+      if (Math.hypot(x - target.x, y - target.y) < 48) { inside++; totalX += x; totalY += y; }
+      else outside++;
+    }
+    expect(inside, `can at ${time}s`).toBeGreaterThan(190);
+    expect(outside, `no second can at ${time}s`).toBeLessThan(inside * 0.35);
+    measurements.push({ time, expectedX: target.x, expectedY: target.y, x: totalX / inside, y: totalY / inside, pixels: inside, outside });
+  }
+  expect(measurements[0].x - measurements[2].x).toBeGreaterThan(130);
+  expect(measurements[2].x - measurements[4].x).toBeGreaterThan(45);
+  await info.attach("decoded watering can positions", { body: JSON.stringify(measurements, null, 2), contentType: "application/json" });
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  // Compare every independently decoded picture in both segments with the complete movie.
+  await downloadAndVerifyMovie(page, info, files, [opening.duration, scene.duration], false);
 });
