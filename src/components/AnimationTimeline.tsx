@@ -1,3 +1,4 @@
+import { participationWindow } from "../participation-model";
 import { FOCUS_TYPES, focusWindow, stepNeedsReview } from "../focus-model";
 import { changeTime } from "../transform-model";
 import { INTERACTION_LABELS, interactionEvents } from "../interaction-model";
@@ -324,6 +325,7 @@ export function AnimationTimeline({
   onInteraction,
   onTransform,
   onFocus,
+  onParticipation,
 }: {
   project: Project;
   scene: Scene;
@@ -338,6 +340,7 @@ export function AnimationTimeline({
   onInteraction: (id: string) => void;
   onTransform: (objectId: string, changeId?: string) => void;
   onFocus: (graphicId?: string) => void;
+  onParticipation: (id?: string) => void;
 }) {
   const [choice, setChoice] = useState({
     id: selectedId ?? "camera",
@@ -910,6 +913,24 @@ export function AnimationTimeline({
                   title={`${title} · ${start.toFixed(2)} s${review ? " · review needed" : ""}`}
                   onClick={() => { onSeek(start); onFocus(graphic.id); }}>
                   <span aria-hidden="true">{review ? "!" : "✦"}</span>
+                </button>;
+              })}
+            </div>
+          </div>}
+          {!!scene.participation?.length && <div className="timeline-row interaction-row">
+            <button className="track-label" onClick={() => onParticipation()} aria-label="Add participation moment">
+              <Icon name="sparkles" size={14} /><span>Participation</span>
+            </button>
+            <div className="track-lane" style={{ width }}>
+              <Playhead clock={clock} offset={sceneOffset} duration={scene.duration} />
+              {[...scene.participation].sort((a, b) => a.at - b.at).map(moment => {
+                const { start, reveal } = participationWindow(moment);
+                const title = `${moment.question} · reveal at ${reveal.toFixed(2)} s`;
+                return <button key={moment.id} className="interaction-event focus-event-2"
+                  style={{ left: `${start / scene.duration * 100}%` }}
+                  aria-label={`Edit participation moment: ${title}`} title={title}
+                  onClick={() => { onSeek(start); onParticipation(moment.id); }}>
+                  <span aria-hidden="true">{moment.review ? "!" : "?"}</span>
                 </button>;
               })}
             </div>

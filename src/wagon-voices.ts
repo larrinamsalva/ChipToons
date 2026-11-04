@@ -10,14 +10,15 @@ import type { Project } from "./model";
 import { chooseScriptTake, setLineApproval } from "./script";
 import { WAGON_LINES } from "./transform-examples";
 
-export async function withWagonVoices(project: Project) {
+export async function withWagonVoices(project: Project, answerDelay = 0) {
   const recordings = { notice, shine, help, adult, roll, lesson };
   const audio = await Promise.all(WAGON_LINES.map(async ([name]) => {
     const blob = await (await fetch(recordings[name])).blob();
     return readAudio(new File([blob], `Wobbly Wagon · original synthetic ${name}.mp3`, { type: "audio/mpeg" }));
   }));
   let updated = project;
-  for (const [index, [, sceneIndex, start, text]] of WAGON_LINES.entries()) {
+  for (const [index, [, sceneIndex, authoredStart, text]] of WAGON_LINES.entries()) {
+    const start = !sceneIndex && index >= 2 ? authoredStart + answerDelay : authoredStart;
     const line = updated.scenes[sceneIndex].script!.lines.find(item => item.text === text)!;
     updated = chooseScriptTake(updated, line.id, audio[index], true);
     const chosen = updated.scenes[sceneIndex].script!.lines.find(item => item.id === line.id)!;

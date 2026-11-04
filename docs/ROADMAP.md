@@ -109,3 +109,10 @@ Objects can have four named appearances with editable changes, interaction links
 ## PR #18 — Visual Teaching & Focus Studio
 
 Six original teaching graphics can follow sampled objects and camera motion, or stay fixed on screen. They link to existing learning steps, interactions and transformations, use the existing caption layout for safe placement, and render through the shared Stage into WebM. Four separate visual lesson examples preserve the earlier demos. Project and backup versions remain compatible. [Audit and walkthrough](VISUAL_TEACHING_FOCUS.md)
+
+
+## PR #19 — Pause, Think & Try Studio
+
+- Adds five timed participation activities with choices, supportive reveals, optional script and lesson links, and normal scene editing and history.
+- Renders through Visual Teaching and the existing Stage. The voiced wagon example and decoded-video checks demonstrate a real thinking interval, moving highlights, and caption readability.
+- See [Pause, Think & Try](PAUSE_THINK_TRY.md) for the foundation audit, privacy boundaries, and creator walkthrough.

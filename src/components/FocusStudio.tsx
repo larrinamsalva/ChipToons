@@ -25,7 +25,9 @@ export function FocusStudio({ project, scene, time, seed, graphicId, onScene, on
   const [remove, setRemove] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
-  const window = focusWindow(scene, graphic);
+  const window = focusWindow(scene, graphic, true);
+  const displayWindow = focusWindow(scene, graphic);
+  const linked = scene.participation?.some(moment => moment.focusId === graphic.id);
   const others = (scene.focusGraphics ?? []).filter(item => item.id !== graphic.id);
   const proposed = { ...scene, focusGraphics: [...others, graphic] };
   const issue = (graphic.kind === "label" || graphic.kind === "card") && !graphic.text.trim()
@@ -115,6 +117,7 @@ export function FocusStudio({ project, scene, time, seed, graphicId, onScene, on
           placeholder="Keep it short and simple" /></label>
         {graphic.kind === "number" && <MediaNumber label="Step number" value={graphic.number} min={1} max={99} step={1}
           onChange={number => patch({ number: Math.round(number) })} />}
+        {linked && <p className="field-hint">This graphic appears during its participation reveal. The times below apply when it is unlinked.</p>}
         <fieldset className="interaction-fields">
           <legend>Choose When It Appears</legend>
           {!graphic.cue ? <MediaNumber label="Start time (seconds)" min={0} max={scene.duration - 0.01}
@@ -177,7 +180,7 @@ export function FocusStudio({ project, scene, time, seed, graphicId, onScene, on
           <p role="status">{reviewed ? "Ready to apply after your review." : "Preview again before applying the latest edits."}</p>
           <label className="world-check"><input type="checkbox" checked={guide} onChange={event => setGuide(event.target.checked)} /> Show caption safe area</label>
           <ScenePreview key={preview} project={project} scene={proposed} precision={2} showCaptions captionGuide={guide}
-            initialTime={Math.min(window.end - 0.001, window.start + 0.35)}
+            initialTime={Math.min(displayWindow.end - 0.001, displayWindow.start + 0.35)}
             onFocusPosition={pickPosition && target.kind !== "object" ? point => patch({ target: { kind: "screen", ...point } }) : undefined} />
           <p className="field-hint">Check faces, hands, and captions while the scene plays. Use a short phrase alongside the action or narration.</p>
         </>}

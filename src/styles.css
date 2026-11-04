@@ -5789,3 +5789,8 @@ fieldset.interaction-fields {
 .focus-track { min-height: 84px; }
 .focus-track .focus-event-1 { top: 27px; }
 .focus-track .focus-event-2 { top: 54px; }
+
+.participation-choices { min-inline-size: 0; display: grid; gap: .65rem; padding: .75rem; border: 1px solid var(--line); border-radius: .8rem; }
+.participation-choices legend { padding-inline: .4rem; font-weight: 700; }
+.participation-warnings { padding-inline-start: 1.4rem; display: grid; gap: .4rem; color: var(--muted); }
+.participation-layout .interaction-review { min-width: 0; }

@@ -1,3 +1,4 @@
+import { reconcileParticipation } from "./participation-model";
 import { reconcileLearningSteps } from "./transform-motion";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
@@ -26,7 +27,7 @@ export function scriptFor(scene: Scene): SceneScript {
 export function withScript(scene: Scene, script: SceneScript): Scene {
   const next = { ...scene, script, ...spokenFields(script.lines) };
   if (next.learningSteps) next.learningSteps = reconcileLearningSteps(next, scene);
-  return next;
+  return reconcileParticipation(next);
 }
 
 export function findScriptLine(project: Project, id: string) {
@@ -152,8 +153,12 @@ export function duplicateScript(copy: Scene, oldClips: AudioClip[], newClips: Au
   if (!copy.script) return copy;
   const clips = new Map(oldClips.map((clip, index) => [clip.id, newClips[index]?.id]));
   const ids = new Map(copy.script.lines.map(line => [line.id, uid()]));
-  const updated = copy.learningSteps ? { ...copy, learningSteps: copy.learningSteps.map(step =>
+  let updated = copy.learningSteps ? { ...copy, learningSteps: copy.learningSteps.map(step =>
     ({ ...step, lineId: step.lineId ? ids.get(step.lineId) : undefined })) } : copy;
+  if (copy.participation) updated = { ...updated, participation: copy.participation.map(moment => ({
+    ...moment, questionLineId: moment.questionLineId ? ids.get(moment.questionLineId) : undefined,
+    answerLineId: moment.answerLineId ? ids.get(moment.answerLineId) : undefined,
+  })) };
   return withScript(updated, { ...copy.script, lines: copy.script.lines.map(line =>
     ({ ...line, id: ids.get(line.id)!, clipId: line.clipId ? clips.get(line.clipId) : undefined })) });
 }

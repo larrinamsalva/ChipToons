@@ -61,6 +61,11 @@ export const record = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 export const numberIn = (v: unknown, min: number, max: number): v is number =>
   typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
+export const validDisplayText = (value: unknown, max: number): value is string =>
+  typeof value === "string" && value.length <= max && [...value].every(character => {
+    const code = character.charCodeAt(0);
+    return (code >= 32 && code !== 127) || code === 9 || code === 10 || code === 13;
+  });
 export function validCrop(v: unknown): v is Crop {
   return (
     record(v) &&

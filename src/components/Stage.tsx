@@ -1,5 +1,7 @@
 import { focusAnchor, focusLayout, focusTiming, sceneCaptionBand } from "../focus-motion";
-import { CaptionGuide, FocusArt } from "./FocusArt";
+import { participationAt } from "../participation-model";
+import { participationCards } from "../participation-art";
+import { CaptionGuide, FocusArt, FocusCard } from "./FocusArt";
 import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
 import { PuppetArt } from "./PuppetArt";
@@ -358,7 +360,9 @@ export const Stage = memo(function Stage({
     const point = focusAnchor(scene, graphic, frames, camera, calmPreview);
     return point.x < 0 || point.x > 800 || point.y < 0 || point.y > 450 ? [] : [{ graphic, point, ...timing }];
   }).sort((a, b) => Number(b.graphic.kind === "spotlight") - Number(a.graphic.kind === "spotlight"));
-  const band = captionGuide || focus?.length ? sceneCaptionBand(project, scene) : undefined;
+  const participation = participationAt(scene, t);
+  const band = captionGuide || focus?.length || participation ? sceneCaptionBand(project, scene) : undefined;
+  const cards = participation && participationCards(participation, band);
   const paintOrder = scene.interactions?.length ? interactionPaintOrder(scene.elements, frames) : scene.elements;
   const background = backgroundAt(scene, t, calmPreview);
   const night = scene.background === "moonlight";
@@ -416,7 +420,7 @@ export const Stage = memo(function Stage({
       style={onSelect || onFocusPosition ? { touchAction: "none" } : undefined}
       viewBox="0 0 800 450"
       role={onSelect ? "group" : labelled ? "img" : undefined}
-      aria-label={labelled ? `${scene.title}: ${scene.action}` : undefined}
+      aria-label={labelled ? `${scene.title}: ${scene.action}${cards ? ` ${cards.flatMap(card => card.lines.map(line => line.text)).join(" ")}` : ""}` : undefined}
       aria-hidden={!labelled || undefined}
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -784,6 +788,9 @@ export const Stage = memo(function Stage({
         {focus?.map(({ graphic, point, opacity, progress }) =>
           <FocusArt key={graphic.id} graphic={graphic} point={point} opacity={opacity} progress={progress}
             layout={focusLayout(graphic, point, band)} />)}
+        {participation && cards && <g pointerEvents="none" aria-hidden="true" data-participation-phase={participation.phase}>
+          {cards.map((card, index) => <FocusCard key={index} {...card} />)}
+        </g>}
         {captionGuide && <CaptionGuide band={band} />}
         {showCaption && (
           <g>
