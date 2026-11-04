@@ -5440,3 +5440,103 @@ input[type="color"] {
 .series-studio input[hidden] {
   display: none;
 }
+
+.director, .director-card {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.director :is(p, h3), .director-recording p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.director-card, .director-recording {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface);
+}
+.director-card > :is(label, .form-grid, .director-actions, p, div) {
+  min-width: 0;
+}
+.director-card[open] > * + *, .director-voice-notes[open] > * + * {
+  margin-top: 0.65rem;
+}
+.director-fields {
+  display: grid;
+  gap: 0.9rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.director-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.director :is(button, input, select), .director-guided-audio button {
+  min-height: 44px;
+}
+.director :is(input, select, textarea, audio), .director-guided-audio audio {
+  max-width: 100%;
+}
+.director label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.director-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  align-items: start;
+  gap: 0.7rem;
+}
+.director-lines {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 17rem;
+  overflow: auto;
+}
+.director-lines button {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.director-lines button[aria-current] {
+  background: var(--mint);
+  border-color: var(--ring);
+}
+.director-thumbnail {
+  max-width: 15rem;
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+.director-recording {
+  display: grid;
+  gap: 0.65rem;
+  background: var(--mint);
+  margin-bottom: 1rem;
+}
+.director-recording p {
+  font-size: clamp(1.15rem, 4vw, 1.55rem);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.director-guided-audio .voice-create {
+  padding-inline: 0;
+}
+@media (max-width: 640px) {
+  .director-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .director-lines {
+    max-height: 10rem;
+  }
+}

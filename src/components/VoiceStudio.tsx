@@ -25,9 +25,10 @@ import {
 } from "../audio-vault";
 import { VoiceRecorder, recordingMime } from "../recording";
 import { Modal } from "./Modal";
+import { chooseScriptTake, findScriptLine, reconcileScriptClips } from "../script";
 import { MediaNumber } from "./MediaNumber";
 
-function OriginalAudio({ asset }: { asset: AudioAsset }) {
+export function OriginalAudio({ asset }: { asset: AudioAsset }) {
   const ref = useRef<HTMLAudioElement>(null),
     [error, setError] = useState("");
   useEffect(() => {
@@ -74,6 +75,7 @@ export function VoiceStudio({
   sceneIndex,
   localTime,
   initialClip,
+  lineTarget,
   initialCategory,
   initialTab = "sound",
   onChange,
@@ -88,6 +90,7 @@ export function VoiceStudio({
   sceneIndex: number;
   localTime: number;
   initialClip?: string;
+  lineTarget?: string;
   initialCategory?: AudioCategory;
   initialTab?: "sound" | "captions";
   onChange: (p: Project) => void;
@@ -98,12 +101,14 @@ export function VoiceStudio({
   saveError: string;
   onRetry: () => void;
 }) {
+  const target = lineTarget ? findScriptLine(project, lineTarget)?.line : undefined;
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [tab, setTab] = useState(initialTab);
   const [selected, setSelected] = useState(
       initialClip ?? project.audioClips[0]?.id ?? "",
     ),
     [category, setCategory] = useState<AudioCategory>(
-      initialCategory ?? "narration",
+      target?.kind ?? initialCategory ?? "narration",
     ),
     [association, setAssociation] = useState("");
   const [draft, setDraft] = useState<AudioAsset | null>(null),
@@ -111,7 +116,7 @@ export function VoiceStudio({
     [busy, setBusy] = useState(false),
     [recording, setRecording] = useState(false),
     [elapsed, setElapsed] = useState(0),
-    [recordName, setRecordName] = useState("My voice clip");
+    [recordName, setRecordName] = useState(target ? target.text.slice(0, 75).trim() || "Script take" : "My voice clip");
   const [recorder] = useState(() => new VoiceRecorder()),
     alive = useRef(true),
     recordStarted = useRef(0),
@@ -177,8 +182,9 @@ export function VoiceStudio({
   }, [recording]);
   function commit(p: Project) {
     try {
-      validateProject(p);
-      onChange(p);
+      const next = reconcileScriptClips(p);
+      validateProject(next);
+      onChange(next);
       setMessage("");
       return true;
     } catch (e) {
@@ -241,18 +247,24 @@ export function VoiceStudio({
     }
     nextClip.name = source.name.slice(0, 100);
     if (kind === "dialogue" && association) nextClip.characterId = association;
-    if (
-      commit({
+    try {
+      const next = target ? chooseScriptTake(project, target.id, a, true) : {
         ...project,
         audioAssets: same ? project.audioAssets : [...project.audioAssets, a],
         audioClips: [...project.audioClips, nextClip],
-      })
-    ) {
-      setSelected(nextClip.id);
-      setDraft(null);
-      setMessage("Audio clip added. Your original source stays intact.");
+      };
+      if (commit(next)) {
+        setSelected(target ? findScriptLine(next, target.id)?.line.clipId ?? "" : nextClip.id);
+        setDraft(null);
+        setMessage(target
+          ? "Take linked to this line. Wait for Saved on this device before closing the project."
+          : "Audio clip added. Your original source stays intact.");
+      }
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "The take could not be assigned.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
   async function upload(file?: File) {
     if (!file) return;
@@ -362,9 +374,23 @@ export function VoiceStudio({
   const limit = clip?.sceneId
     ? project.scenes.find((s) => s.id === clip.sceneId)!.duration
     : totalDuration(project);
+  function close() {
+    if (target && (recording || draft || busy)) {
+      setConfirmDiscard(true);
+      return;
+    }
+    onClose();
+  }
   return (
-    <Modal title="Voices & Sound Studio" onClose={onClose} wide>
-      <section
+    <Modal title={target ? "Record This Line" : "Voices & Sound Studio"} onClose={close} wide>
+      {target && <section className="director-recording" aria-label="Recording script">
+        <strong>{target.kind === "narration" ? "Narrator" :
+          project.characters.find(character => character.id === target.speakerId)?.name ?? "Unassigned speaker"}</strong>
+        <p>{target.text}</p>
+        {target.delivery && <em>{target.delivery}</em>}
+        <small>Scene {sceneIndex + 1} · {project.scenes[sceneIndex].title}</small>
+      </section>}
+      {!target && <section
         className="episode-audio-storage"
         aria-label="Episode audio storage"
       >
@@ -464,8 +490,8 @@ export function VoiceStudio({
             Enable long-episode audio
           </button>
         )}
-      </section>
-      <p className="section-description">
+      </section>}
+      {!target && <><p className="section-description">
         Record a kind voice, add a little music, and place sounds in your story.
         Everything stays on this device.
       </p>
@@ -473,7 +499,7 @@ export function VoiceStudio({
         New scene recordings: scene {sceneIndex + 1} ·{" "}
         {project.scenes[sceneIndex].title}. Selecting an existing clip shows its
         own scene or episode timing below.
-      </p>
+      </p></>}
       <div className="production-save">
         <span role="status">{saveStatus}</span>
         {saveStatus === "Save failed" && (
@@ -504,7 +530,7 @@ export function VoiceStudio({
             : "You can remove unused sources below."}
         </p>
       )}
-      <nav className="media-tabs" aria-label="Sound studio panels">
+      {!target && <nav className="media-tabs" aria-label="Sound studio panels">
         <button
           className="button secondary"
           aria-pressed={tab === "sound"}
@@ -521,7 +547,7 @@ export function VoiceStudio({
         >
           Timed captions
         </button>
-      </nav>
+      </nav>}
       {tab === "captions" ? (
         <CaptionEditor
           project={project}
@@ -531,10 +557,10 @@ export function VoiceStudio({
         />
       ) : (
         <>
-          <div className="voice-studio-grid">
+          <div className={target ? "director-guided-audio" : "voice-studio-grid"}>
             <section className="voice-create">
-              <h3>Add a voice or sound</h3>
-              <div className="form-grid">
+              <h3>{target ? "Record or upload a take" : "Add a voice or sound"}</h3>
+              {!target && <div className="form-grid">
                 <label>
                   New clip category
                   <select
@@ -565,7 +591,7 @@ export function VoiceStudio({
                     </select>
                   </label>
                 )}
-              </div>
+              </div>}
               <label>
                 Recording name
                 <input
@@ -610,7 +636,7 @@ export function VoiceStudio({
                   input.current?.click();
                 }}
               >
-                Upload voice, music or sound
+                {target ? "Upload a take for this line" : "Upload voice, music or sound"}
               </button>
               <input
                 className="visually-hidden"
@@ -649,7 +675,7 @@ export function VoiceStudio({
                       disabled={busy || recording}
                       onClick={() => void addSource(draft)}
                     >
-                      Save audio clip
+                      {target ? "Save take to this line" : "Save audio clip"}
                     </button>
                     <button
                       className="button secondary"
@@ -660,7 +686,7 @@ export function VoiceStudio({
                   </div>
                 </div>
               )}
-              <details className="sound-collection" open>
+              {!target && <details className="sound-collection" open>
                 <summary>Original music & sound effects</summary>
                 <p className="field-hint">
                   A small synthesized collection made for ChipToons. No
@@ -680,9 +706,9 @@ export function VoiceStudio({
                     </button>
                   ))}
                 </div>
-              </details>
+              </details>}
             </section>
-            <section className="voice-edit">
+            {!target && <section className="voice-edit">
               <h3>Place and mix clips</h3>
               <label>
                 Audio clip
@@ -1020,9 +1046,9 @@ export function VoiceStudio({
                   Mute entire cartoon
                 </label>
               </section>
-            </section>
+            </section>}
           </div>
-          <details className="browser-voice">
+          {!target && <><details className="browser-voice">
             <summary>Browser voice preview (not exported)</summary>
             <p className="field-hint">
               This is a convenience voice preview. Record or upload audio to
@@ -1153,14 +1179,15 @@ export function VoiceStudio({
                 </button>
                 <button
                   className="button text small"
-                  disabled={project.audioClips.some((c) => c.assetId === a.id)}
+                  disabled={project.audioClips.some((c) => c.assetId === a.id) || project.scenes.some(scene =>
+                    scene.script?.lines.some(line => line.takes.some(take => take.assetId === a.id)))}
                   onClick={() => setDeleteId(a.id)}
                 >
                   Remove unused source
                 </button>
               </div>
             ))}
-          </details>
+          </details></>}
         </>
       )}
       {deleteId && (
@@ -1202,13 +1229,20 @@ export function VoiceStudio({
           {message}
         </p>
       )}
+      {target && confirmDiscard && (recording || draft || busy) && <div className="media-notice">
+        <p role="alert">This take has not been saved to the line. Keep working or discard it before leaving.</p>
+        <div className="animation-actions">
+          <button className="button primary" onClick={() => setConfirmDiscard(false)}>Keep working on this take</button>
+          <button className="button secondary" disabled={busy} onClick={onClose}>Discard unsaved take</button>
+        </div>
+      </div>}
       <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>
-          Back to cartoon
+        <button className="button secondary" onClick={close}>
+          {target ? "Back to script" : "Back to cartoon"}
         </button>
         <button
           className="button primary"
-          disabled={recording || busy}
+          disabled={recording || busy || !!(target && draft)}
           onClick={onPreview}
         >
           Preview with cartoon

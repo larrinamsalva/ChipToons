@@ -1,3 +1,5 @@
+import { chapterOf } from "./story";
+import type { ScriptLine, VoiceNotes } from "./script-model";
 import type { PuppetRig } from "./puppet-model";
 import { EMOTIONS, HEARTS } from "./animation-model";
 import type { CameraAnimation, Heart } from "./animation-model";
@@ -136,6 +138,7 @@ export interface CastChoice {
   name: string;
   library?: LibraryItem;
   seriesCastId?: string;
+  voice?: VoiceNotes;
   heart?: Heart;
 }
 export interface Direction {
@@ -734,7 +737,9 @@ export function createAssistantDraft(
     .map((character) => {
       const index = templates.findIndex(element => element.characterId === character.id);
       const seriesCastId = cast[index].seriesCastId;
-      return { ...character, name: names[index], ...(seriesCastId ? { seriesCastId } : {}) };
+      const voice = cast[index].voice;
+      return { ...character, name: names[index], ...(seriesCastId ? { seriesCastId } : {}),
+        ...(voice ? { voice } : {}) };
     });
   const positioned = templates.map((e, i) => ({
     ...e,
@@ -804,4 +809,51 @@ export function createAssistantDraft(
       ? { ...direction, heart: choice.heart } : direction;
   });
   return { project, positioned, directions };
+}
+
+// Use the same chapter patterns and on-stage cast as the storyboard assistant.
+export function scriptSuggestions(project: Project, scene: Scene, index: number) {
+  const chapter = chapterOf(scene, index, project.scenes.length);
+  const speakers = project.characters.filter(character => scene.elements.some(element => element.characterId === character.id));
+  const lead = speakers[0];
+  const friend = speakers[1] ?? lead;
+  const [, patternGoal, challenge, choice] = PATTERNS[suggestPattern(project.idea)];
+  const goal = project.idea.match(/(?:wants|hopes|plans) to ([^.!?]{3,150})/iu)?.[1]?.trim() ?? patternGoal;
+  const sceneCue = scene.narration.trim().split(/(?<=[.!?])\s+/u)[0]?.slice(0, 210);
+  const setting = project.setting.trim() || "our neighborhood";
+  const lesson = project.lesson.trim() || "We can help each other.";
+  const prompts: Record<typeof chapter, [string, string, string]> = {
+    opening: [`In ${setting}, ${lead?.name ?? "a young friend"} has a new idea.`, `Come with me. Let’s find a place in ${setting} to begin.`, "Friendly and curious"],
+    introduction: [sceneCue || `They hope to ${goal}.`, `I have an idea about how to ${goal}. Will you try it with me?`, "Invite a response"],
+    challenge: [sceneCue || `They pause to ${challenge}.`, scene.question || `Could you help me ${challenge}?`, "Leave room for a pause"],
+    exploration: [sceneCue || `They try to ${choice}.`, `What if we try to ${choice}?`, "Think out loud"],
+    resolution: [sceneCue || lesson, `Here is what I learned. ${lesson}`, "Sound quietly pleased"],
+    closing: [lesson, scene.question || `What could we try tomorrow in ${setting}?`, "Give the audience time to think"],
+  };
+  const [narration, dialogue, delivery] = prompts[chapter];
+  return [
+    { kind: "narration" as const, text: narration, delivery: "" },
+    { kind: "dialogue" as const, speakerId: (chapter === "challenge" ? friend : lead)?.id, text: dialogue, delivery },
+  ];
+}
+
+export function directionFromScript(project: Project, scene: Scene, line?: ScriptLine) {
+  const text = [scene.script?.acting, scene.script?.emotion, line?.delivery].filter(Boolean).join(" ");
+  const actors = openActors(scene, true);
+  const actor = (line?.speakerId ? actors.find(item => item.characterId === line.speakerId) : actors[0]);
+  if (!actor || !text.trim()) return;
+  const rig = puppetFor(project, actor), shape = shapeActor(project, actor);
+  const allowed = gentleActions(shape, rig);
+  const direction = suggestDirection(project, {
+    ...scene, title: "", narration: "", dialogue: "", action: text, elements: [actor],
+  }, true);
+  const wave = /\bwave\w*\b/i.test(text) && allowed.some(([action]) => action === "wave");
+  const proposal: Direction = {
+    ...direction, actorId: actor.id, shot: "none", enabled: true,
+    action: wave ? "wave" : direction.action,
+    emotion: shape && /\b(laugh\w*|happy|smil\w*)\b/i.test(text) ? "happy"
+      : shape && /\b(calm|listen\w*|quietly)\b/i.test(text) ? "calm" : direction.emotion,
+    heart: shape && /\b(help\w*|kind\w*)\b/i.test(text) ? "warm" : direction.heart,
+  };
+  return proposal.action !== "none" || proposal.emotion !== "keep" || proposal.heart !== "off" ? proposal : undefined;
 }

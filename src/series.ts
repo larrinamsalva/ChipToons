@@ -1,4 +1,6 @@
 import { BACKGROUNDS, uid } from "./model";
+import { validVoiceNotes } from "./script-model";
+import type { VoiceNotes } from "./script-model";
 import type { Project } from "./model";
 import { START_BRIEF } from "./assistant";
 import type { StoryBrief } from "./assistant";
@@ -32,6 +34,7 @@ export interface CastMember {
   strengths: string;
   expressions: string;
   relationships: string;
+  voice?: VoiceNotes;
   heart: (typeof HEARTS)[number];
 }
 export interface EpisodePlan {
@@ -107,14 +110,15 @@ export function validateSeries(value: unknown): SeriesPlan {
   const castIds = new Set<string>();
   const cast = value.cast.map((entry: unknown): CastMember => {
     if (!record(entry)) return invalid();
-    const { id: key, name, libraryId, role, appearance, strengths, expressions, relationships, heart } = entry;
+    const { id: key, name, libraryId, role, appearance, strengths, expressions, relationships, heart, voice } = entry;
     if (!id(key) || castIds.has(key) || !str(name, 80) || !name.trim() ||
         !str(libraryId, 100) || !str(role, 160) || !str(appearance, 1500) ||
         !str(strengths, 1500) || !str(expressions, 1500) || !str(relationships, 1500) ||
+        (voice !== undefined && !validVoiceNotes(voice)) ||
         !HEARTS.includes(heart as CastMember["heart"])) return invalid();
     castIds.add(key);
     return { id: key, name, libraryId, role, appearance, strengths, expressions, relationships,
-      heart: heart as CastMember["heart"] };
+      heart: heart as CastMember["heart"], ...(voice ? { voice } : {}) };
   });
   const episodeIds = new Set<string>();
   const projects = new Set<string>();

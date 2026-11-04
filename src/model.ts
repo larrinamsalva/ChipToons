@@ -1,6 +1,8 @@
 import { validPuppet } from "./puppet-model";
 import type { PuppetRig } from "./puppet-model";
 import { emptyProduction, validProduction } from "./media-model";
+import { validateScripts, validVoiceNotes } from "./script-model";
+import type { SceneScript, ScriptOptions, VoiceNotes } from "./script-model";
 import { CHAPTERS } from "./story-model";
 import type { ChapterId, CreationSource } from "./story-model";
 import type { Production } from "./media-model";
@@ -62,6 +64,7 @@ export interface Character {
   accessory: "none" | "bow" | "cap";
   puppet?: PuppetRig;
   seriesCastId?: string;
+  voice?: VoiceNotes;
   assetId?: string;
 }
 export interface Asset {
@@ -102,6 +105,7 @@ export interface SceneElement {
   animation?: ElementAnimation;
 }
 export interface Scene {
+  script?: SceneScript;
   chapter?: ChapterId;
   question?: string;
   id: string;
@@ -126,6 +130,7 @@ export interface Outline {
   ending: string;
 }
 export interface Project extends Production {
+  scriptOptions?: ScriptOptions;
   creationSource?: CreationSource;
   templateId?: string;
   mediaVersion?: 1;
@@ -320,6 +325,7 @@ export function validateProject(value: unknown): Project {
       !oneOf(c.accessory, ["none", "bow", "cap"]) ||
       (c.assetId !== undefined && !assetIds.has(c.assetId as string)) ||
       (c.seriesCastId !== undefined && (!validString(c.seriesCastId, 100) || !c.seriesCastId.trim())) ||
+      (c.voice !== undefined && !validVoiceNotes(c.voice)) ||
       (c.puppet !== undefined && !validPuppet(c.puppet, assetIds))
     )
       return fail();
@@ -441,7 +447,7 @@ export function validateProject(value: unknown): Project {
     });
     offset += scene.duration as number;
   }
-  if (!validProduction(p, unique, characterIds, sceneMap)) return fail();
+  if (!validProduction(p, unique, characterIds, sceneMap) || !validateScripts(p, unique, characterIds)) return fail();
   if (
     new TextEncoder().encode(JSON.stringify(value)).byteLength >
     MAX_PROJECT_BYTES

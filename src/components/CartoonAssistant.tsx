@@ -33,12 +33,14 @@ import { clamp } from "../timeline";
 import { Modal } from "./Modal";
 import { Stage } from "./Stage";
 
+import type { VoiceNotes } from "../script-model";
+
 type CastRow = { name: string; source: string; recurring?: string };
 
 export interface AssistantSeed {
   brief: StoryBrief;
   question: string;
-  cast: { id: string; name: string; role: string; library: LibraryItem; heart: (typeof HEARTS)[number] }[];
+  cast: { id: string; name: string; role: string; voice?: VoiceNotes; library: LibraryItem; heart: (typeof HEARTS)[number] }[];
   selected: string[];
 }
 type Plan = {
@@ -63,7 +65,7 @@ const hearts = {
 const backgroundName = (value: string) =>
   ({ town: "Town street", magical: "Magical world" })[value] ?? word(value);
 
-function ScenePreview({ project, scene }: { project: Project; scene: Scene }) {
+export function ScenePreview({ project, scene }: { project: Project; scene: Scene }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
     playback.configure(0, scene.duration, false);
@@ -228,6 +230,7 @@ export function CartoonAssistant({
                 name: c.name,
                 library: member?.library ?? library.find(item => item.id === c.source),
                 seriesCastId: member?.id,
+                voice: member?.voice,
                 heart: member?.heart,
               };
             }),
