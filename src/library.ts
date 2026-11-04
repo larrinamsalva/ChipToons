@@ -9,11 +9,14 @@ import type {
   Project,
   SceneElement,
 } from "./model";
-import { POSES, PROPS, record } from "./art-model";
+import { POSES, PROPS, propLabel, record } from "./art-model";
 import type { Pose, PropName } from "./art-model";
 import { db } from "./storage";
+import { applyScenery, captureLocation, validLocation } from "./world-model";
+import type { LocationLayout } from "./world-model";
+import { starterLocations } from "./world-starters";
 
-export type LibraryKind = "character" | "background" | "prop" | "drawing";
+export type LibraryKind = "character" | "background" | "prop" | "drawing" | "location";
 export type ImageSettings = Partial<
   Pick<
     SceneElement,
@@ -31,6 +34,7 @@ export interface LibraryItem {
   assets: Asset[];
   assetId?: string;
   background?: Background;
+  location?: LocationLayout;
   prop?: PropName;
   transform: ImageSettings;
   pose: Pose;
@@ -79,7 +83,7 @@ export function imageLibraryItem(
 export const elementName = (project: Project, e: SceneElement) =>
   e.name ||
   project.characters.find((c) => c.id === e.characterId)?.name ||
-  (e.prop ? e.prop[0].toUpperCase() + e.prop.slice(1) : "Artwork");
+  (e.prop ? propLabel(e.prop) : "Artwork");
 export function resolvedCharacter(
   project: Project,
   e?: SceneElement,
@@ -117,11 +121,12 @@ export function starterLibrary(): LibraryItem[] {
       group: "Original starters",
     })),
     ...PROPS.map((prop) => ({
-      ...newLibraryItem(prop[0].toUpperCase() + prop.slice(1), "prop"),
+      ...newLibraryItem(propLabel(prop), "prop"),
       id: `starter-prop-${prop}`,
       prop,
       group: "Original starters",
     })),
+    ...starterLocations(),
   ];
 }
 export function validateLibraryItem(value: unknown): LibraryItem {
@@ -139,7 +144,7 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     typeof value.name !== "string" ||
     !value.name.trim() ||
     value.name.length > 80 ||
-    !["character", "background", "prop", "drawing"].includes(
+    !["character", "background", "prop", "drawing", "location"].includes(
       String(value.kind),
     ) ||
     typeof value.group !== "string" ||
@@ -148,7 +153,7 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     value.tags.length > 15 ||
     !value.tags.every((t) => typeof t === "string" && t.length <= 40) ||
     !Array.isArray(value.assets) ||
-    value.assets.length > (record(value.character) && value.character.puppet ? 20 : 4) ||
+    value.assets.length > (value.kind === "location" || (record(value.character) && value.character.puppet) ? 20 : 4) ||
     !record(value.transform) ||
     !Object.keys(value.transform).every((k) =>
       [
@@ -171,6 +176,9 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     return bad();
   const item = value as unknown as LibraryItem;
   if (item.kind === "character" && !item.character) return bad();
+  if (item.kind === "location" ? !validLocation(item.location) || !!item.character || !!item.assetId ||
+      item.assets.some(asset => !asset || !item.location!.elements.some(element => element.assetId === asset.id))
+    : item.location !== undefined) return bad();
   if (item.assetId && !item.assets.some((a) => a.id === item.assetId))
     return bad();
   if (
@@ -194,6 +202,11 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     pose: item.pose,
     emotion: item.emotion,
   };
+  if (item.location) {
+    scene.background = item.location.background;
+    scene.camera = item.location.camera;
+    scene.elements = item.location.elements;
+  }
   validateProject({
     schemaVersion: 4,
     ...emptyProduction(),
@@ -231,7 +244,7 @@ export function placeLibraryItem(
     scene.background = item.background!;
     return validateProject(p);
   }
-  if (scene.elements.length >= 20)
+  if (item.kind !== "location" && scene.elements.length >= 20)
     throw new Error(
       "This scene has 20 objects. Remove an object before adding another.",
     );
@@ -247,6 +260,12 @@ export function placeLibraryItem(
       p.assets.push(match);
     }
     assetMap.set(asset.id, match.id);
+  }
+  if (item.location) {
+    p.scenes[sceneIndex] = applyScenery(scene, item.location, item.location.elements.map(element => ({
+      ...element, id: uid(), assetId: element.assetId ? assetMap.get(element.assetId) : undefined,
+    })));
+    return validateProject(p);
   }
   let characterId = "";
   if (item.character) {
@@ -418,5 +437,12 @@ export async function savePalette(colors: string[]): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
+  });
+}
+
+export function libraryItemFromLocation(project: Project, scene: Project["scenes"][number]) {
+  return validateLibraryItem({
+    ...newLibraryItem("My cartoon location", "location"),
+    ...captureLocation(project, scene),
   });
 }

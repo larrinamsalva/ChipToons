@@ -161,3 +161,7 @@ See [Voice-to-Mouth Animation Studio](VOICE_MOUTH_ANIMATION.md) for supported ch
 In **Finish My Cartoon**, download every numbered segment, then open **Prepare My Complete Episode**. Choose those WebM files, confirm any suggested assignments, and check the list for missing parts. **Watch My Episode** plays the checked files in order and can show separate subtitles. Download the delivery ZIP and verify it with **Check an Episode Package**. Keep your editable project backup separately. [Complete Episode Delivery guide](EPISODE_DELIVERY.md)
 
 On a supported larger Chromium screen, choose **Make One Complete Movie** after all matching VP8 exports pass delivery checks. Preview and seek through the result, then download the complete WebM and its separate SRT. Keep the original numbered parts and project backup. [Single-Movie Builder guide](SINGLE_MOVIE_BUILDER.md)
+
+## Reuse a cartoon world
+
+Open **Build My Cartoon World** to start with one of six original locations, arrange objects with the existing scene controls, and save a reusable layout. Series Studio can copy the same location into the opening scenes of multiple episodes. [Scene & World Builder walkthrough](SCENE_WORLD_BUILDER.md)

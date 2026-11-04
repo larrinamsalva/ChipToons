@@ -24,7 +24,7 @@ import {
   suggestPattern,
 } from "../assistant";
 import type { Direction, StoryBrief } from "../assistant";
-import { listLibrary } from "../library";
+import { listLibrary, placeLibraryItem } from "../library";
 import type { LibraryItem } from "../library";
 import { BACKGROUNDS, durationLabel, totalDuration, uid } from "../model";
 import type { Project, Scene, SceneElement } from "../model";
@@ -42,6 +42,7 @@ export interface AssistantSeed {
   question: string;
   cast: { id: string; name: string; role: string; voice?: VoiceNotes; library: LibraryItem; heart: (typeof HEARTS)[number] }[];
   selected: string[];
+  location?: LibraryItem;
 }
 type Plan = {
   project: Project;
@@ -219,25 +220,28 @@ export function CartoonAssistant({
   }
   function generate() {
     try {
-      setPlan(
-        createAssistantDraft(
-          brief,
-          cast
-            .filter((c) => c.name.trim())
-            .map((c) => {
-              const member = seed?.cast.find(item => item.id === c.recurring);
-              return {
-                name: c.name,
-                library: member?.library ?? library.find(item => item.id === c.source),
-                seriesCastId: member?.id,
-                voice: member?.voice,
-                heart: member?.heart,
-              };
-            }),
-          prop || undefined,
-          seed?.question,
-        ),
+      const next = createAssistantDraft(
+        brief,
+        cast
+          .filter((c) => c.name.trim())
+          .map((c) => {
+            const member = seed?.cast.find(item => item.id === c.recurring);
+            return {
+              name: c.name,
+              library: member?.library ?? library.find(item => item.id === c.source),
+              seriesCastId: member?.id,
+              voice: member?.voice,
+              heart: member?.heart,
+            };
+          }),
+        prop || undefined,
+        seed?.question,
       );
+      if (seed?.location?.location) {
+        next.project = placeLibraryItem(next.project, 0, seed.location);
+        next.directions[0] = { ...next.directions[0], shot: seed.location.location.camera === "close" ? "feeling" : "wide" };
+      }
+      setPlan(next);
       setIndex(0);
       setError("");
       setStep(3);
@@ -654,6 +658,7 @@ export function CartoonAssistant({
               ? "Select the scenes to update. The assistant adds suggestions to unused tracks and keeps existing motion, audio, captions, artwork and scene timing. You can undo the applied suggestions together."
               : `${plan.project.scenes.length} editable scenes · about ${durationLabel(totalDuration(plan.project))}. This preview shows your proposed draft.`}
           </p>
+          {seed?.location && <p className="field-hint">Opening location: {seed.location.name}. The location is copied into this draft.</p>}
           <div className="assistant-review">
             <label>
               Review scene

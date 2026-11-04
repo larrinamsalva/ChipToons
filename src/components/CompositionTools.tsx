@@ -1,6 +1,9 @@
 import type { Project, Scene, SceneElement } from "../model";
 import { duplicateElement } from "../timeline";
 import { elementName } from "../library";
+import { DEPTH_LABELS, sceneryDepthAt, setSceneryDepth } from "../world-model";
+import { SCENERY_DEPTHS } from "../art-model";
+import type { SceneryDepth } from "../art-model";
 import { Icon } from "./Icon";
 import { ImageControls } from "./ImageControls";
 
@@ -14,6 +17,7 @@ export function CompositionTools({
   onElementChange,
   onLibrary,
   onSave,
+  worldOpen = false,
 }: {
   project: Project;
   scene: Scene;
@@ -24,6 +28,7 @@ export function CompositionTools({
   onElementChange?: (patch: Partial<SceneElement>) => void;
   onLibrary: () => void;
   onSave: () => void;
+  worldOpen?: boolean;
 }) {
   const shown = selected ? { ...selected, ...frame } : undefined;
   const index = scene.elements.findIndex((e) => e.id === selected?.id);
@@ -44,6 +49,11 @@ export function CompositionTools({
     if (index < 0 || next < 0 || next >= scene.elements.length) return;
     const elements = [...scene.elements];
     [elements[index], elements[next]] = [elements[next], elements[index]];
+    for (const position of [index, next]) {
+      const element = elements[position];
+      if (element.sceneryDepth && !element.backdrop)
+        elements[position] = { ...element, sceneryDepth: sceneryDepthAt(elements, position) };
+    }
     onChange({ elements });
   }
   const asset =
@@ -94,6 +104,16 @@ export function CompositionTools({
       </label>
       {selected && (
         <>
+          {worldOpen && !selected.characterId && !selected.backdrop && <label>
+            Scenery placement
+            <select value={selected.sceneryDepth ?? ""} onChange={event => {
+              const depth = event.target.value as SceneryDepth | "";
+              onChange({ elements: setSceneryDepth(scene.elements, selected.id, depth || undefined) });
+            }}>
+              <option value="">Story prop (keep separate)</option>
+              {SCENERY_DEPTHS.map(depth => <option key={depth} value={depth}>{DEPTH_LABELS[depth]}</option>)}
+            </select>
+          </label>}
           <div className="layer-actions">
             <button
               className="button secondary small"
@@ -102,7 +122,7 @@ export function CompositionTools({
               onClick={() => layer(-1)}
             >
               <Icon name="down" size={16} />
-              Back
+              Move backward
             </button>
             <button
               className="button secondary small"
@@ -111,7 +131,7 @@ export function CompositionTools({
               onClick={() => layer(1)}
             >
               <Icon name="up" size={16} />
-              Forward
+              Move forward
             </button>
             <button
               className="icon-button"

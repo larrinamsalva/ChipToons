@@ -43,8 +43,8 @@ import {
 import { Icon } from "./Icon";
 import { Stage } from "./Stage";
 import { CompositionTools } from "./CompositionTools";
-import { resolvedCharacter, libraryItemFromElement } from "../library";
-import type { LibraryItem } from "../library";
+import { resolvedCharacter, libraryItemFromElement, libraryItemFromLocation } from "../library";
+import type { LibraryItem, LibraryKind } from "../library";
 import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
@@ -94,7 +94,7 @@ export function Editor({
   saveStatus: string;
   saveError: string;
   onRetry: () => void;
-  onLibrary: (sceneIndex: number, draft?: LibraryItem) => void;
+  onLibrary: (sceneIndex: number, draft?: LibraryItem, kind?: LibraryKind) => void;
   onAssistant: () => void;
 }) {
   const [backupReminder, setBackupReminder] = useState(true);
@@ -123,6 +123,7 @@ export function Editor({
   const [editError, setEditError] = useState("");
   const [editSeconds, setEditSeconds] = useState(0);
   const [panel, setPanel] = useState("scene");
+  const [worldOpen, setWorldOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState("stage");
   const [elementIndex, setElementIndex] = useState(0);
 
@@ -933,7 +934,39 @@ export function Editor({
             </div>
           ) : panel === "scene" ? (
             <div className="property-fields">
+              <section className="world-tools">
+                <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
+                  onClick={() => setWorldOpen(value => !value)}>Build My Cartoon World</button>
+                <div className="world-fields" id="world-controls" hidden={!worldOpen}>
+                  <h3>Arrange My Scene</h3>
+                  <p className="field-hint">Choose a starter, or build with a background and props. Drag items on the stage or use the object controls below.
+                    Mark decorations as scenery to include them in your saved location.</p>
+                  <div className="series-actions">
+                    <button className="button secondary small" onClick={() => onLibrary(index, undefined, "location")}>Browse reusable locations</button>
+                    <button className="button secondary small" onClick={() => onLibrary(index, undefined, "background")}>Choose a background</button>
+                    <button className="button secondary small" onClick={() => onLibrary(index, undefined, "prop")}>Add scenery props</button>
+                    <button className="button primary small" onClick={() => {
+                      try { onLibrary(index, libraryItemFromLocation(project, scene)); }
+                      catch (error) { setEditError(error instanceof Error ? error.message : "This location could not be prepared."); }
+                    }}>Save as reusable location</button>
+                  </div>
+                  <label className="world-check"><input type="checkbox" checked={!!scene.gentleDepth}
+                    onChange={event => changeScene({ gentleDepth: event.target.checked })} /> Gentle depth during camera pans</label>
+                  <label className="world-check"><input type="checkbox" checked={!!scene.backgroundAnimation?.enabled}
+                    onChange={event => changeScene({ backgroundAnimation: {
+                      ...scene.backgroundAnimation, enabled: event.target.checked,
+                      style: scene.backgroundAnimation?.style ?? "drift", keyframes: scene.backgroundAnimation?.keyframes ?? [],
+                    } })} /> Gentle scenery animation</label>
+                  <button className="button secondary small" onClick={() => {
+                    setScope("scene");
+                    void play(false, sound, "scene");
+                  }}>Preview this scene with characters</button>
+                  <p className="field-hint">Choose Walk across for a character to see how foreground objects overlap it.
+                    Use Camera view below for a wide or closer shot.</p>
+                </div>
+              </section>
               <CompositionTools
+                worldOpen={worldOpen}
                 project={project}
                 scene={scene}
                 selected={element}
@@ -941,7 +974,11 @@ export function Editor({
                 onSelect={(id) =>
                   setElementIndex(scene.elements.findIndex((e) => e.id === id))
                 }
-                onChange={changeScene}
+                onChange={patch => {
+                  changeScene(patch);
+                  const next = patch.elements?.findIndex(item => item.id === element?.id);
+                  if (next !== undefined && next >= 0) setElementIndex(next);
+                }}
                 onElementChange={changeElement}
                 onLibrary={() => onLibrary(index)}
                 onSave={() => {

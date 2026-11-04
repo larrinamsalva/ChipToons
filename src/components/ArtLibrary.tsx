@@ -40,8 +40,8 @@ export function ArtThumbnail({ item }: { item: LibraryItem }) {
     ...base.scenes[0],
     title: item.name,
     action: `${item.kind} artwork`,
-    background: item.background ?? "meadow",
-    elements: [] as (typeof base.scenes)[0]["elements"],
+    background: item.location?.background ?? item.background ?? "meadow",
+    elements: item.location?.elements ?? [] as (typeof base.scenes)[0]["elements"],
   };
   if (item.character || item.assetId || item.prop)
     scene.elements = [
@@ -76,6 +76,7 @@ export function ArtLibrary({
   onPuppetUpdate,
   draft: initial,
   inProject = false,
+  initialKind = initial?.kind ?? "character",
 }: {
   onClose: () => void;
   onUse: (item: LibraryItem, three?: boolean) => void;
@@ -83,16 +84,18 @@ export function ArtLibrary({
   onPuppetUpdate?: (item: LibraryItem) => void;
   draft?: LibraryItem;
   inProject?: boolean;
+  initialKind?: LibraryKind;
 }) {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const starters = useMemo(() => starterLibrary(), []);
-  const [kind, setKind] = useState<LibraryKind>("character");
+  const [kind, setKind] = useState<LibraryKind>(initialKind);
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState("all");
   const [source, setSource] = useState("all");
   const [draft, setDraft] = useState<LibraryItem | null>(initial ?? null);
   const [isNew, setIsNew] = useState(true);
   const [drawing, setDrawing] = useState<LibraryItem | boolean>(false);
+  const [placing, setPlacing] = useState<LibraryItem | null>(null);
   const [deleting, setDeleting] = useState<LibraryItem | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -160,7 +163,7 @@ export function ArtLibrary({
     (i) =>
       i.kind === kind &&
       (group === "all" || i.group === group) &&
-      `${i.name} ${i.tags.join(" ")} ${i.group}`
+      `${i.name} ${i.tags.join(" ")} ${i.group} ${i.location?.description ?? ""}`
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
@@ -222,7 +225,9 @@ export function ArtLibrary({
     try {
       onUse(item, three);
       setNotice(
-        three
+        item.location
+          ? `Placed ${item.name}. Close the library to arrange the scene.`
+          : three
           ? `Added ${item.name} to up to three scenes. Each copy can be edited independently.`
           : `Added ${item.name}. Close the library to arrange it on your stage.`,
       );
@@ -263,10 +268,19 @@ export function ArtLibrary({
       />
     );
   }
+  if (placing)
+    return <Modal title="Use this location in your scene?" onClose={() => setPlacing(null)}>
+      <p><strong>{placing.name}</strong> replaces this scene’s backdrop and objects marked as scenery, and brings its gentle scenery settings.
+        Characters, story props, camera framing, dialogue and audio stay in the scene. Undo is available in the editor.</p>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={() => setPlacing(null)}>Keep current scenery</button>
+        <button className="button primary" onClick={() => { use(placing); setPlacing(null); }}>Replace scene scenery</button>
+      </div>
+    </Modal>;
   if (deleting)
     return (
       <Modal
-        title="Remove this saved artwork?"
+        title={deleting.location ? "Remove this saved location?" : "Remove this saved artwork?"}
         onClose={() => setDeleting(null)}
       >
         <p>
@@ -316,7 +330,8 @@ export function ArtLibrary({
     return (
       <Modal
         title={
-          isNew ? "Save a little creative magic." : "Edit your saved artwork."
+          draft.location ? (isNew ? "Save a reusable location" : "Edit your saved location") :
+            isNew ? "Save a little creative magic." : "Edit your saved artwork."
         }
         onClose={() => setDraft(null)}
         wide
@@ -325,7 +340,7 @@ export function ArtLibrary({
           <div className="asset-large-preview">
             <ArtThumbnail item={draft} />
             <span className="asset-type">{draft.kind}</span>
-            {draft.assets[0] && (
+            {!draft.location && draft.assets[0] && (
               <>
                 <p className="field-hint">
                   Your source image is preserved. Cropping and transforms are
@@ -348,7 +363,7 @@ export function ArtLibrary({
                 </button>
               </>
             )}
-            {draft.assets[0]?.drawing && (
+            {!draft.location && draft.assets[0]?.drawing && (
               <button
                 className="button secondary small"
                 onClick={() => setDrawing(draft)}
@@ -359,15 +374,19 @@ export function ArtLibrary({
           </div>
           <div className="asset-editor-fields">
             <label>
-              Artwork name
+              {draft.location ? "Location name" : "Artwork name"}
               <input
-                aria-label="Artwork name"
+                aria-label={draft.location ? "Location name" : "Artwork name"}
                 maxLength={80}
                 required
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               />
             </label>
+            {draft.location && <label>Location description
+              <textarea rows={3} maxLength={500} value={draft.location.description}
+                onChange={event => setDraft({ ...draft, location: { ...draft.location!, description: event.target.value } })} />
+            </label>}
             <div className="form-grid compact">
               <label>
                 Collection
@@ -483,7 +502,7 @@ export function ArtLibrary({
                 </div>
               </>
             )}
-            {draft.assets.length > 0 && (
+            {!draft.location && draft.assets.length > 0 && (
               <ImageControls
                 value={draft.transform}
                 defaultSize={
@@ -567,7 +586,7 @@ export function ArtLibrary({
         </div>
       </details>
       <div className="library-tabs" aria-label="Artwork categories">
-        {(["character", "background", "prop", "drawing"] as LibraryKind[]).map(
+        {(["character", "background", "prop", "drawing", "location"] as LibraryKind[]).map(
           (k) => (
             <button
               key={k}
@@ -585,7 +604,9 @@ export function ArtLibrary({
           ),
         )}
       </div>
-      <div className="library-actions">
+      {kind === "location" ? <p className="field-hint">
+        Use a starter or a saved location as editable scenery. Save a new location from Build My Cartoon World in the scene editor.
+      </p> : <div className="library-actions">
         <button
           className="button primary small"
           onClick={() => {
@@ -621,8 +642,8 @@ export function ArtLibrary({
           <Icon name="help" />
           Show me how
         </button>
-      </div>
-      {help && (
+      </div>}
+      {kind !== "location" && help && (
         <ol className="library-guide">
           <li>
             Create or draw a character, then choose{" "}
@@ -689,17 +710,19 @@ export function ArtLibrary({
             <div className="library-card-info">
               <small>{item.group}</small>
               <h3>{item.name}</h3>
+              {item.location?.description && <p className="field-hint">{item.location.description}</p>}
+              {item.location && <p className="field-hint">Suggested view: {item.location.camera === "wide" ? "wide" : "close"}</p>}
               {item.tags.length > 0 && (
                 <p className="field-hint">{item.tags.join(" · ")}</p>
               )}
               <button
                 className="button primary small"
-                onClick={() => use(item)}
+                onClick={() => inProject && item.location ? setPlacing(item) : use(item)}
               >
-                {inProject ? "Add to scene" : "Start cartoon with this"}
+                {inProject ? (item.location ? "Use this location" : "Add to scene") : "Start cartoon with this"}
                 <Icon name="plus" size={16} />
               </button>
-              {inProject && item.kind !== "background" && (
+              {inProject && item.kind !== "background" && !item.location && (
                 <button
                   className="button text small"
                   onClick={() => use(item, true)}

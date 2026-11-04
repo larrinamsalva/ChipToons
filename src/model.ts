@@ -25,10 +25,11 @@ import {
   validDrawing,
   POSES,
   PROPS,
+  SCENERY_DEPTHS,
   numberIn,
   rasterSignature,
 } from "./art-model";
-import type { Crop, DrawingDocument, Pose, PropName } from "./art-model";
+import type { Crop, DrawingDocument, Pose, PropName, SceneryDepth } from "./art-model";
 export const SCHEMA_VERSION = 4 as const;
 export const BACKGROUNDS = [
   "meadow",
@@ -104,6 +105,7 @@ export interface SceneElement {
   >;
   sourceLibraryId?: string;
   backdrop?: boolean;
+  sceneryDepth?: SceneryDepth;
   animation?: ElementAnimation;
   voiceMouth?: VoiceMouthTrack[];
 }
@@ -125,6 +127,7 @@ export interface Scene {
   elements: SceneElement[];
   cameraAnimation?: CameraAnimation;
   backgroundAnimation?: BackgroundAnimation;
+  gentleDepth?: boolean;
 }
 export interface Outline {
   beginning: string;
@@ -349,6 +352,7 @@ export function validateProject(value: unknown): Project {
       !bounded(s.duration, 2, 120) ||
       !oneOf(s.background, BACKGROUNDS) ||
       !oneOf(s.camera, ["wide", "close"]) ||
+      (s.gentleDepth !== undefined && typeof s.gentleDepth !== "boolean") ||
       !oneOf(s.transition, ["cut", "fade"]) ||
       !validString(s.action) ||
       !validString(s.props, 500) ||
@@ -379,6 +383,8 @@ export function validateProject(value: unknown): Project {
         (e.sourceLibraryId !== undefined &&
           !validString(e.sourceLibraryId, 100)) ||
         (e.backdrop !== undefined && typeof e.backdrop !== "boolean") ||
+        (e.sceneryDepth !== undefined && (!oneOf(e.sceneryDepth, SCENERY_DEPTHS) ||
+          e.characterId !== "" || (e.kind !== "prop" && e.kind !== "art"))) ||
         (e.appearance !== undefined &&
           (!isRecord(e.appearance) ||
             !Object.entries(e.appearance).every(([k, v]) =>
