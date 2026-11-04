@@ -1,3 +1,5 @@
+import { shotIssue } from "./camera-shots";
+import type { CameraShot } from "./camera-shots";
 import { isAtmosphere, validSoundLinks } from "./sound-cues";
 import type { AtmosphereId } from "./sound-cues";
 import { participationIssue } from "./participation-model";
@@ -137,6 +139,7 @@ export interface Scene {
   audioRefs: string[];
   elements: SceneElement[];
   cameraAnimation?: CameraAnimation;
+  cameraShots?: CameraShot[];
   backgroundAnimation?: BackgroundAnimation;
   gentleDepth?: boolean;
   suggestedAtmosphere?: AtmosphereId;
@@ -474,6 +477,7 @@ export function validateProject(value: unknown): Project {
       )
     )
       fail();
+    if (shotIssue(s.cameraShots, scene, unique)) fail();
   }
   const sceneMap = new Map<string, { duration: number; start: number }>();
   let offset = 0;

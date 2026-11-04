@@ -7,7 +7,7 @@ import { focusWindow } from "./focus-model";
 import { sceneryOffset } from "./world-model";
 
 type Transform = { x: number; y: number; rotation: number; scale: number };
-type Camera = { x: number; y: number; zoom: number };
+type Camera = { x: number; y: number; zoom: number; shotId?: string };
 type Band = NonNullable<ReturnType<typeof captionBand>>;
 export type Rectangle = { x: number; y: number; width: number; height: number };
 export const clampFocus = (n: number, low: number, high: number) => Math.min(high, Math.max(low, n));

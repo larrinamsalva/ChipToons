@@ -1,3 +1,4 @@
+import { SHOT_STYLES, shotNeedsReview } from "../camera-shots";
 import { participationWindow } from "../participation-model";
 import { FOCUS_TYPES, focusWindow, stepNeedsReview } from "../focus-model";
 import { changeTime } from "../transform-model";
@@ -326,6 +327,7 @@ export function AnimationTimeline({
   onTransform,
   onFocus,
   onParticipation,
+  onShot,
 }: {
   project: Project;
   scene: Scene;
@@ -341,6 +343,7 @@ export function AnimationTimeline({
   onTransform: (objectId: string, changeId?: string) => void;
   onFocus: (graphicId?: string) => void;
   onParticipation: (id?: string) => void;
+  onShot: (id?: string) => void;
 }) {
   const [choice, setChoice] = useState({
     id: selectedId ?? "camera",
@@ -847,6 +850,25 @@ export function AnimationTimeline({
             </div>
           </div>
           {trackRow("camera", "Camera", scene.cameraAnimation?.keyframes ?? [])}
+          <div className="timeline-row interaction-row shot-track">
+            <button className="track-label" onClick={() => onShot()} aria-label="Add camera shot">
+              <span>Camera shots</span>
+            </button>
+            <div className="track-lane" style={{ width }}>
+              <Playhead clock={clock} offset={sceneOffset} duration={scene.duration} />
+              {[...(scene.cameraShots ?? [])].sort((a, b) => a.start - b.start).map(shot => {
+                const name = SHOT_STYLES[shot.style].label;
+                const review = shotNeedsReview(scene, shot);
+                const title = `${name} · ${shot.start.toFixed(2)}–${shot.end.toFixed(2)} s${review ? " · review needed" : ""}`;
+                return <button key={shot.id} className="shot-event"
+                  style={{ left: `${shot.start / scene.duration * 100}%`, width: `${(shot.end - shot.start) / scene.duration * 100}%` }}
+                  aria-label={`Edit camera shot: ${title}`} title={title}
+                  onClick={() => { onSeek(shot.start); onShot(shot.id); }}>
+                  {review ? "! " : ""}{name}
+                </button>;
+              })}
+            </div>
+          </div>
           {trackRow(
             "background",
             "Background",

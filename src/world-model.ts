@@ -1,3 +1,4 @@
+import { reconcileShotReferences } from "./camera-shots";
 import { isAtmosphere } from "./sound-cues";
 import type { AtmosphereId } from "./sound-cues";
 import { reconcileParticipation } from "./participation-model";
@@ -64,14 +65,14 @@ export function applyScenery(scene: Scene, layout: LocationLayout, copies: Scene
   const elements = [...copies.filter(element => element.backdrop), ...scene.elements.filter(element => !isScenery(element))];
   for (const depth of SCENERY_DEPTHS)
     insertScenery(elements, copies.filter(element => !element.backdrop && element.sceneryDepth === depth), depth);
-  return reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences({
+  return reconcileShotReferences(reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences({
     ...scene, elements, suggestedAtmosphere: layout.suggestedAtmosphere, background: layout.background, gentleDepth: layout.gentleDepth,
     backgroundAnimation: scene.backgroundAnimation?.keyframes.length ? scene.backgroundAnimation :
       layout.atmosphere ? { style: layout.atmosphere, enabled: true, keyframes: [] } : undefined,
     cameraAnimation: scene.cameraAnimation?.followId &&
       !elements.some(element => element.id === scene.cameraAnimation?.followId)
       ? { ...scene.cameraAnimation, followId: undefined } : scene.cameraAnimation,
-  }, scene), scene));
+  }, scene), scene)));
 }
 
 // Keep editable geometry, artwork and ordering. Exclude episode animation and media.
@@ -113,8 +114,8 @@ export function validLocation(value: unknown): value is LocationLayout {
       element.motion === "still" && SCENERY_DEPTHS.includes(element.sceneryDepth as SceneryDepth));
 }
 
-export function sceneryOffset(scene: Scene, element: SceneElement, camera: { x: number; y: number }, calm: boolean) {
-  if (calm || !scene.gentleDepth || !scene.cameraAnimation || !element.sceneryDepth || element.backdrop)
+export function sceneryOffset(scene: Scene, element: SceneElement, camera: { x: number; y: number; shotId?: string }, calm: boolean) {
+  if (calm || !scene.gentleDepth || (!scene.cameraAnimation && !camera.shotId) || !element.sceneryDepth || element.backdrop)
     return { x: 0, y: 0 };
   const factor = element.sceneryDepth === "behind" ? 0.2 : element.sceneryDepth === "front" ? -0.12 : 0;
   return { x: Math.max(-28, Math.min(28, (camera.x - 400) * factor)),

@@ -1,8 +1,10 @@
+import { reconcileShotReferences, shotAt } from "./camera-shots";
+import type { CameraShot } from "./camera-shots";
 import { reconcileParticipation } from "./participation-model";
 import { reconcileFocusReferences } from "./focus-model";
 import { reconcileTransformReferences } from "./transform-motion";
 import { interactionReferencesExist } from "./interaction-model";
-import { sampleInteractions } from "./interaction-motion";
+import { sampleInteractions, stagePoint } from "./interaction-motion";
 import { supportsVoiceMouth, voiceMouthAt } from "./voice-mouth";
 import { interpolateJoints } from "./puppet-model";
 import { totalDuration } from "./model";
@@ -305,6 +307,43 @@ export function cameraAt(scene: Scene, seconds: number, calm = false, followed?:
   }
   return values;
 }
+export type StageCamera = CameraValues & { shotId?: string };
+type StageFrames = ReturnType<typeof sceneFramesAt>;
+
+export function shotFraming(scene: Scene, shot: CameraShot, frames: StageFrames): CameraValues {
+  const points = shot.targets.flatMap(id => {
+    const element = scene.elements.find(item => item.id === id), frame = frames.get(id);
+    return element && frame ? [stagePoint(element, frame, shot.offset)] : [];
+  });
+  const { frame } = shot;
+  const subject = points[0], second = points[1];
+  const zoom = second ? Math.min(frame.zoom, 580 / (Math.abs(subject.x - second.x) + 110),
+    305 / (Math.abs(subject.y - second.y) + 105)) : frame.zoom;
+  const scale = clamp(zoom, 1, 3);
+  const placement = !subject ? 0 : shot.placement === "left" ? 120 : shot.placement === "right" ? -120 : 0;
+  const x = second ? (subject.x + second.x) / 2 : subject?.x ?? frame.x;
+  const y = second ? (subject.y + second.y) / 2 : subject?.y ?? frame.y;
+  return { x: clamp(x + placement / scale, 400 / scale, 800 - 400 / scale),
+    y: clamp(y, 225 / scale, 450 - 225 / scale), zoom: scale };
+}
+
+export function stageCameraAt(project: Project, scene: Scene, time: number, calm = false,
+  frames?: StageFrames, voiceStart = 0): StageCamera {
+  const shot = shotAt(scene, time);
+  if (!shot) return cameraAt(scene, time, calm, frames?.get(scene.cameraAnimation?.followId ?? ""));
+  const sampleFrames = (at: number) => at === time && frames ? frames : sceneFramesAt(project, scene, at, voiceStart, calm);
+  const frameFor = (item: CameraShot, at: number) => shotFraming(scene, item,
+    item.targets.length ? sampleFrames(item.follow ? at : item.start) : new Map());
+  const target = frameFor(shot, time);
+  if (calm || !shot.move || time >= shot.start + shot.move) return { ...target, shotId: shot.id };
+  const previous = scene.cameraShots?.find(item => item.id !== shot.id && Math.abs(item.end - shot.start) < 1e-8);
+  const from = previous ? frameFor(previous, shot.start) :
+    cameraAt(scene, shot.start, calm, sampleFrames(shot.start).get(scene.cameraAnimation?.followId ?? ""));
+  const p = easeAt((time - shot.start) / shot.move, "ease-in-out");
+  return { x: from.x + (target.x - from.x) * p, y: from.y + (target.y - from.y) * p,
+    zoom: from.zoom + (target.zoom - from.zoom) * p, shotId: shot.id };
+}
+
 export const backgroundBase: BackgroundValues = {
   x: 0,
   y: 0,
@@ -410,6 +449,10 @@ export function duplicateAnimatedScene(scene: Scene, cues = new Map<string, stri
     if (copy.cameraAnimation.followId)
       copy.cameraAnimation.followId = ids.get(copy.cameraAnimation.followId);
   }
+  if (copy.cameraShots) copy.cameraShots = copy.cameraShots.map(shot => ({
+    ...shot, id: uid(), targets: shot.targets.map(id => ids.get(id)!),
+    cue: shot.cue && { ...shot.cue, anchor: { ...shot.cue.anchor, id: cues.get(shot.cue.anchor.id)! } },
+  }));
   copy.backgroundAnimation?.keyframes.forEach((k) => {
     k.id = uid();
   });
@@ -418,7 +461,7 @@ export function duplicateAnimatedScene(scene: Scene, cues = new Map<string, stri
 export function cleanSceneReferences(scene: Scene, previous = scene): Scene {
   if (scene.interactions?.some(action => !interactionReferencesExist(action, scene.elements)))
     scene = { ...scene, interactions: scene.interactions.filter(action => interactionReferencesExist(action, scene.elements)) };
-  scene = reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences(scene, previous), previous));
+  scene = reconcileShotReferences(reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences(scene, previous), previous)));
   if (
     !scene.cameraAnimation?.followId ||
     scene.elements.some((e) => e.id === scene.cameraAnimation?.followId)
@@ -452,6 +495,10 @@ export function retimeScene(scene: Scene, duration: number): Scene {
     graphic.fadeOut = Math.min(1.5, graphic.fadeOut * ratio);
     if (graphic.stepSource) graphic.stepSource.at = Math.min(duration, graphic.stepSource.at * ratio);
   }
+  if (copy.cameraShots) copy.cameraShots = copy.cameraShots.map(shot => ({
+    ...shot, start: Math.min(duration, shot.start * ratio), end: Math.min(duration, shot.end * ratio), move: shot.move * ratio,
+    cue: shot.cue && { ...shot.cue, reviewedAt: Math.min(duration, shot.cue.reviewedAt * ratio) },
+  }));
   copy.elements.forEach((e) =>
     e.animation?.keyframes.forEach((k) => {
       k.time = Math.min(duration, k.time * ratio);

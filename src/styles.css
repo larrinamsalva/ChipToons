@@ -5800,3 +5800,25 @@ fieldset.interaction-fields {
 .sound-review-summary dt { font-weight: 700; }
 .sound-review-summary dd { margin: 0; overflow-wrap: anywhere; }
 .sound-director .interaction-review { min-width: 0; }
+
+.shot-list ol { list-style: none; padding: 0; display: grid; gap: .5rem; }
+.shot-list li { display: grid; gap: .35rem; min-width: 0; }
+.shot-list li .button { display: grid; justify-items: start; width: 100%; text-align: start; overflow-wrap: anywhere; }
+.shot-list li .button[aria-current] { outline: 2px solid var(--ring); outline-offset: -2px; }
+.shot-list li svg { display: block; width: 100%; max-width: 14rem; height: auto; border-radius: .5rem; }
+.shot-event {
+  position: absolute;
+  z-index: 2;
+  inset-block: 6px;
+  padding: 0 .2rem;
+  border: 1px solid var(--line);
+  border-radius: .3rem;
+  background: var(--mint);
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 650;
+  font-size: .75rem;
+}
+.shot-event:focus-visible { z-index: 3; }

@@ -2,6 +2,10 @@
 
 ChipToons is a free, local-first studio for original educational cartoons. No login or paid service is needed. The planner uses local templates. You remain the storyteller: it does not interpret photographs, rig bodies, record voices automatically or produce finished footage from a duration goal.
 
+## Direct the camera
+
+Open **Edit scene → Direct My Cartoon Camera**. Choose a shot style and subject, set the start and length, then preview it before applying. Use the **Camera shots** lane to edit it again. A shot keeps the scene’s animation and voices running. Try **The Wobbly Wagon — A Closer Look** to see a close-up, a wheel detail, and a moving follow shot. [Camera walkthrough](CAMERA_SHOT_DIRECTOR.md)
+
 ## Add sound to actions and locations
 
 Open **Edit scene → Add Sounds to My Cartoon**. Choose a real action or a scene time, pick an original or saved sound, and preview it with animation. In **Build My Cartoon World**, review an optional location atmosphere and choose which consecutive scenes should share its loop. Keep effects quiet around voices. [Sound Director walkthrough](SOUND_EFFECTS_ATMOSPHERE.md)

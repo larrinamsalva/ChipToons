@@ -20,6 +20,7 @@ export function Dashboard({
   onTransformDemo,
   onFocusDemo,
   onParticipationDemo,
+  onCameraDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -42,6 +43,7 @@ export function Dashboard({
   onSoundGardenDemo: () => void;
   onTransformDemo: (example: TransformExample) => void;
   onFocusDemo: (example: TransformExample) => void;
+  onCameraDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
@@ -218,6 +220,12 @@ export function Dashboard({
         <summary>Try a Sound Director example</summary>
         <div className="series-actions">
           <button className="button secondary small" onClick={onSoundGardenDemo}>Helping Hands — A Garden Full of Sounds</button>
+        </div>
+      </details>
+      <details className="transform-examples">
+        <summary>Try a Camera &amp; Shot Director example</summary>
+        <div className="series-actions">
+          <button className="button secondary small" onClick={onCameraDemo}>The Wobbly Wagon — A Closer Look</button>
         </div>
       </details>
       <div className="creative-actions" aria-label="Ways to create">

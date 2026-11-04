@@ -123,3 +123,8 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Links existing audio clips to saved animation events, transformations, learning steps, and participation moments, with local offsets and review when a link changes.
 - Adds reviewed location atmosphere presets, episode-wide loops, original effects, and nonblocking mix reminders.
 - The voiced garden demo uses the regular playback and WebM export path. See [Sound Effects & Atmosphere Director](SOUND_EFFECTS_ATMOSPHERE.md) for timing, storage, licensing, and creator instructions.
+
+## PR #21 — Camera & Shot Director Studio
+
+- Adds editable camera shots within a scene, with precise cuts, gentle moves, stable subjects, and an explicit review when shots overlay a camera track.
+- Connects the shot timeline with existing script and teaching events. The voiced wagon example uses the existing Stage, audio clock, and WebM exporter. See [Camera & Shot Director Studio](CAMERA_SHOT_DIRECTOR.md).

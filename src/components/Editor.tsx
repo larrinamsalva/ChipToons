@@ -1,4 +1,5 @@
 import { SOUND_DIRECTOR_TITLE } from "../sound-director";
+import { SHOT_TITLE, shotIssue } from "../camera-shots";
 import type { SoundDirectorSeed } from "./SoundDirector";
 import { ATMOSPHERES, editSoundClip, isAtmosphere, reconcileSoundClips } from "../sound-cues";
 import { PARTICIPATION_TITLE, participationIssue } from "../participation-model";
@@ -61,6 +62,7 @@ import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
 const VoiceMouthStudio = lazy(() => import("./VoiceMouthStudio").then(module => ({ default: module.VoiceMouthStudio })));
+const ShotDirector = lazy(() => import("./ShotDirector").then(module => ({ default: module.ShotDirector })));
 const SoundDirector = lazy(() => import("./SoundDirector").then(module => ({ default: module.SoundDirector })));
 const ParticipationStudio = lazy(() => import("./ParticipationStudio").then(module => ({ default: module.ParticipationStudio })));
 const FocusStudio = lazy(() => import("./FocusStudio").then(module => ({ default: module.FocusStudio })));
@@ -138,6 +140,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
+  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string }>();
   const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
@@ -317,7 +320,7 @@ export function Editor({
       setEditError(transformationIssue);
       return false;
     }
-    const teachingIssue = participationIssue(next.participation, next) || focusIssue(next.focusGraphics, next);
+    const teachingIssue = participationIssue(next.participation, next) || focusIssue(next.focusGraphics, next) || shotIssue(next.cameraShots, next);
     if (teachingIssue) {
       setEditError(teachingIssue);
       return false;
@@ -968,6 +971,7 @@ export function Editor({
             onTransform={(objectId, changeId) => { halt(); setTransformEditor({ objectId, changeId }); }}
             onFocus={graphicId => { halt(); setFocusEditor({ graphicId }); }}
             onParticipation={id => { halt(); setParticipationEditor({ id }); }}
+            onShot={id => { halt(); setShotEditor({ id }); }}
           />
         </ScenePlayer>
         <aside className="properties-panel" aria-label="Editing controls">
@@ -1008,6 +1012,7 @@ export function Editor({
                 <button className="button secondary" onClick={() => { halt(); setFocusEditor({}); }}>{FOCUS_TITLE}</button>
                 <button className="button secondary" onClick={() => { halt(); setParticipationEditor({}); }}>{PARTICIPATION_TITLE}</button>
                 <button className="button secondary" onClick={() => { halt(); setSoundDirector({}); }}>{SOUND_DIRECTOR_TITLE}</button>
+                <button className="button secondary" onClick={() => { halt(); setShotEditor({}); }}>{SHOT_TITLE}</button>
               </section>
               <section className="world-tools">
                 <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
@@ -1637,11 +1642,12 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && !soundDirector && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && !soundDirector && !shotEditor && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
             onClose={() => { setScriptOpen(false); setScriptStep(undefined); }}
+            onShot={lineId => { halt(); setShotEditor({ lineId }); }}
             onRecord={lineId => {
               halt();
               setScriptLine(lineId);
@@ -1686,6 +1692,16 @@ export function Editor({
               return applied;
             }}
             onVoices={clipId => { setSoundDirector(undefined); openVoice(clipId); }} />
+        </Suspense>
+      )}
+      {shotEditor && (
+        <Suspense fallback={<Modal title={SHOT_TITLE} onClose={() => setShotEditor(undefined)}>
+          <p role="status">Opening camera director…</p>
+        </Modal>}>
+          <ShotDirector key={scene.id} project={project} scene={scene} id={shotEditor.id} lineId={shotEditor.lineId}
+            time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
+            onScene={next => { selectScene(next); setShotEditor({}); }}
+            onClose={() => setShotEditor(undefined)} onApply={changeScene} />
         </Suspense>
       )}
       {participationEditor && (

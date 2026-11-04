@@ -34,11 +34,11 @@ const speakerName = (project: Project, line: ScriptLine) => line.kind === "narra
   : project.characters.find(character => character.id === line.speakerId)?.name ?? "Unassigned speaker";
 
 export function ScriptDirector({ project, index, selected, onSelect, onSelectScene, onChange, onScene, onClose,
-  onRecord, onAnimateVoice, onInteraction, onFocusStep, learningStepId, onParticipation, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
+  onRecord, onShot, onAnimateVoice, onInteraction, onFocusStep, learningStepId, onParticipation, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
   project: Project; index: number; selected: string; onSelect: (id: string) => void;
   onSelectScene: (index: number) => void;
   onChange: (project: Project) => void; onScene: (patch: Partial<Scene>) => boolean | void; onClose: () => void;
-  onRecord: (id: string) => void; onAnimateVoice: (clipId: string) => void; onTiming: (clipId?: string) => void; onCaptions: () => void;
+  onRecord: (id: string) => void; onShot: (lineId: string) => void; onAnimateVoice: (clipId: string) => void; onTiming: (clipId?: string) => void; onCaptions: () => void;
   onInteraction: () => void;
   onFocusStep: (stepId: string) => void;
   learningStepId?: string; onParticipation: (stepId: string) => void;
@@ -350,6 +350,7 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
               <p className="media-notice">The recording may be cut off at the end of this scene. Review clip timing.</p>}
             <div className="director-actions">
               <button className="button primary" disabled={!line.text.trim()} onClick={() => onRecord(line.id)}>Record This Line</button>
+              <button className="button secondary" onClick={() => onShot(line.id)}>Review Camera Shot for This Line</button>
               {clip && <button className="button secondary" onClick={() => onTiming(clip.id)}>Edit audio timing</button>}
               {clip && line.kind === "dialogue" && line.speakerId && stateOf(line) === "Approved" &&
                 <button className="button secondary" onClick={() => onAnimateVoice(clip.id)}>Animate This Voice</button>}

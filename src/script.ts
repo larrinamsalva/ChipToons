@@ -1,3 +1,4 @@
+import { reconcileShotReferences } from "./camera-shots";
 import { reconcileParticipation } from "./participation-model";
 import { reconcileLearningSteps } from "./transform-motion";
 import { sha256 } from "@noble/hashes/sha2.js";
@@ -27,7 +28,7 @@ export function scriptFor(scene: Scene): SceneScript {
 export function withScript(scene: Scene, script: SceneScript): Scene {
   const next = { ...scene, script, ...spokenFields(script.lines) };
   if (next.learningSteps) next.learningSteps = reconcileLearningSteps(next, scene);
-  return reconcileParticipation(next);
+  return reconcileShotReferences(reconcileParticipation(next));
 }
 
 export function findScriptLine(project: Project, id: string) {
@@ -158,6 +159,9 @@ export function duplicateScript(copy: Scene, oldClips: AudioClip[], newClips: Au
   if (copy.participation) updated = { ...updated, participation: copy.participation.map(moment => ({
     ...moment, questionLineId: moment.questionLineId ? ids.get(moment.questionLineId) : undefined,
     answerLineId: moment.answerLineId ? ids.get(moment.answerLineId) : undefined,
+  })) };
+  if (copy.cameraShots) updated = { ...updated, cameraShots: copy.cameraShots.map(shot => ({
+    ...shot, lineId: shot.lineId ? ids.get(shot.lineId) : undefined,
   })) };
   return withScript(updated, { ...copy.script, lines: copy.script.lines.map(line =>
     ({ ...line, id: ids.get(line.id)!, clipId: line.clipId ? clips.get(line.clipId) : undefined })) });
