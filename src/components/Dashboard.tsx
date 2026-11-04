@@ -16,6 +16,7 @@ export function Dashboard({
   onDemo,
   onTalkingDemo,
   onGardenDemo,
+  onSoundGardenDemo,
   onTransformDemo,
   onFocusDemo,
   onParticipationDemo,
@@ -38,6 +39,7 @@ export function Dashboard({
   onDemo: () => void;
   onTalkingDemo: () => void;
   onGardenDemo: () => void;
+  onSoundGardenDemo: () => void;
   onTransformDemo: (example: TransformExample) => void;
   onFocusDemo: (example: TransformExample) => void;
   onParticipationDemo: (example: TransformExample) => void;
@@ -210,6 +212,12 @@ export function Dashboard({
         <div className="series-actions">
           {(Object.entries(PARTICIPATION_EXAMPLES) as [TransformExample, string][]).map(([id, name]) =>
             <button className="button secondary small" key={id} onClick={() => onParticipationDemo(id)}>{name}</button>)}
+        </div>
+      </details>
+      <details className="transform-examples">
+        <summary>Try a Sound Director example</summary>
+        <div className="series-actions">
+          <button className="button secondary small" onClick={onSoundGardenDemo}>Helping Hands — A Garden Full of Sounds</button>
         </div>
       </details>
       <div className="creative-actions" aria-label="Ways to create">

@@ -12,6 +12,7 @@ import {
 import { SOUNDS, builtInSound } from "../sounds";
 import type { SoundId } from "../sounds";
 import { readAudio } from "../audio-files";
+import { editSoundClip, reconcileSoundClips } from "../sound-cues";
 import { newAudioClip } from "../production";
 import { exportProject, downloadBlob, safeFilename } from "../files";
 import {
@@ -182,7 +183,7 @@ export function VoiceStudio({
   }, [recording]);
   function commit(p: Project) {
     try {
-      const next = reconcileScriptClips(p);
+      const next = reconcileScriptClips({ ...p, audioClips: reconcileSoundClips(p.audioClips, p.scenes) });
       validateProject(next);
       onChange(next);
       setMessage("");
@@ -196,7 +197,7 @@ export function VoiceStudio({
   }
   function edit(patch: Partial<AudioClip>) {
     if (!clip) return;
-    const next = { ...clip, ...patch };
+    const next = editSoundClip(clip, patch);
     next.fadeIn = Math.min(next.fadeIn, next.duration);
     next.fadeOut = Math.min(next.fadeOut, next.duration);
     commit({
@@ -837,6 +838,7 @@ export function VoiceStudio({
                       max={limit - clip.duration}
                       onChange={(start) => edit({ start })}
                     />
+                  {(clip.soundCue || clip.ambience) && <p className="field-hint">Moving this clip directly releases its timing link. Open Add Sounds to My Cartoon to adjust the event offset or scene range.</p>}
                     <MediaNumber
                       label="Clip play length (seconds)"
                       value={clip.duration}

@@ -359,16 +359,16 @@ export function duplicateElement(
     }));
   return e;
 }
-export function duplicateAnimatedScene(scene: Scene): Scene {
+export function duplicateAnimatedScene(scene: Scene, cues = new Map<string, string>()): Scene {
   const copy = clone(scene);
   copy.id = uid();
   const ids = new Map<string, string>();
   copy.elements = scene.elements.map((e) => {
     const c = duplicateElement(e);
     ids.set(e.id, c.id);
+    e.animation?.keyframes.forEach((key, i) => cues.set(key.id, c.animation!.keyframes[i].id));
     return c;
   });
-  const cues = new Map<string, string>();
   function nextCue(id: string) {
     const next = uid();
     cues.set(id, next);
@@ -400,12 +400,12 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
     stepSource: graphic.stepSource?.id ? { ...graphic.stepSource, id: cues.get(graphic.stepSource.id)! } : graphic.stepSource,
   }));
   if (copy.participation) copy.participation = copy.participation.map(moment => ({
-    ...moment, id: uid(), stepId: moment.stepId ? cues.get(moment.stepId) : undefined,
+    ...moment, id: nextCue(moment.id), stepId: moment.stepId ? cues.get(moment.stepId) : undefined,
     focusId: moment.focusId ? cues.get(moment.focusId) : undefined,
   }));
   if (copy.cameraAnimation) {
     copy.cameraAnimation.keyframes.forEach((k) => {
-      k.id = uid();
+      k.id = nextCue(k.id);
     });
     if (copy.cameraAnimation.followId)
       copy.cameraAnimation.followId = ids.get(copy.cameraAnimation.followId);

@@ -14,6 +14,7 @@ import type {
 import { POSES, PROPS, propLabel, record } from "./art-model";
 import type { Pose, PropName } from "./art-model";
 import { db } from "./storage";
+import { reconcileSoundClips } from "./sound-cues";
 import { applyScenery, captureLocation, validLocation } from "./world-model";
 import type { LocationLayout } from "./world-model";
 import { starterLocations } from "./world-starters";
@@ -276,6 +277,7 @@ export function placeLibraryItem(
     p.scenes[sceneIndex] = applyScenery(scene, item.location, item.location.elements.map(element => ({
       ...element, id: uid(), assetId: element.assetId ? assetMap.get(element.assetId) : undefined,
     })));
+    p.audioClips = reconcileSoundClips(p.audioClips, p.scenes);
     return validateProject(p);
   }
   let characterId = "";

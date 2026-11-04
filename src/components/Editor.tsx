@@ -1,3 +1,6 @@
+import { SOUND_DIRECTOR_TITLE } from "../sound-director";
+import type { SoundDirectorSeed } from "./SoundDirector";
+import { ATMOSPHERES, editSoundClip, isAtmosphere, reconcileSoundClips } from "../sound-cues";
 import { PARTICIPATION_TITLE, participationIssue } from "../participation-model";
 import { FOCUS_TITLE, focusIssue } from "../focus-model";
 import type { FocusSeed } from "../focus-studio";
@@ -58,6 +61,7 @@ import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
 const VoiceMouthStudio = lazy(() => import("./VoiceMouthStudio").then(module => ({ default: module.VoiceMouthStudio })));
+const SoundDirector = lazy(() => import("./SoundDirector").then(module => ({ default: module.SoundDirector })));
 const ParticipationStudio = lazy(() => import("./ParticipationStudio").then(module => ({ default: module.ParticipationStudio })));
 const FocusStudio = lazy(() => import("./FocusStudio").then(module => ({ default: module.FocusStudio })));
 const ScriptDirector = lazy(() => import("./ScriptDirector").then(module => ({ default: module.ScriptDirector })));
@@ -134,6 +138,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
+  const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
   const [transformEditor, setTransformEditor] = useState<{ objectId?: string; changeId?: string }>();
@@ -194,14 +199,16 @@ export function Editor({
   function updateProduction(next: Project) {
     halt();
     try {
-      const reconciled = reconcileScriptClips(next);
+      const reconciled = reconcileScriptClips({ ...next, audioClips: reconcileSoundClips(next.audioClips, next.scenes) });
       validateProject(reconciled);
       onChange(reconciled);
       setEditError("");
+      return true;
     } catch (e) {
       setEditError(
         e instanceof Error ? e.message : "Media could not be saved.",
       );
+      return false;
     }
   }
 
@@ -464,8 +471,9 @@ export function Editor({
   }
   function duplicateScene() {
     if (project.scenes.length >= 120) return;
-    const animated = duplicateAnimatedScene(scene);
-    const media = duplicateSceneMedia(project, scene, animated);
+    const cues = new Map<string, string>();
+    const animated = duplicateAnimatedScene(scene, cues);
+    const media = duplicateSceneMedia(project, scene, animated, cues);
     const originals = project.audioClips.filter(clip => clip.sceneId === scene.id);
     const copies = media.audioClips.slice(project.audioClips.length);
     const copy = duplicateScript(copySceneVoice(scene, animated, originals, copies), originals, copies);
@@ -937,12 +945,17 @@ export function Editor({
             clock={clock}
             sceneOffset={sceneStart(project, index)}
             selectedId={element?.id}
-            onAudioEdit={(id, category) => openVoice(id, category)}
+            onAudioEdit={(id, category) => {
+              const clip = project.audioClips.find(item => item.id === id);
+              if (clip?.soundCue || clip?.ambience || clip?.soundReview) {
+                halt(); setSoundDirector({ clipId: id, atmosphere: !!clip.ambience || clip.soundReview === "range-changed" });
+              } else openVoice(id, category);
+            }}
             onAudioMove={(id, start) =>
               updateProduction({
                 ...project,
                 audioClips: project.audioClips.map((c) =>
-                  c.id === id ? { ...c, start } : c,
+                  c.id === id ? editSoundClip(c, { start }) : c,
                 ),
               })
             }
@@ -994,6 +1007,7 @@ export function Editor({
                 }}>{TRANSFORM_TITLE}</button>
                 <button className="button secondary" onClick={() => { halt(); setFocusEditor({}); }}>{FOCUS_TITLE}</button>
                 <button className="button secondary" onClick={() => { halt(); setParticipationEditor({}); }}>{PARTICIPATION_TITLE}</button>
+                <button className="button secondary" onClick={() => { halt(); setSoundDirector({}); }}>{SOUND_DIRECTOR_TITLE}</button>
               </section>
               <section className="world-tools">
                 <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
@@ -1006,11 +1020,22 @@ export function Editor({
                     <button className="button secondary small" onClick={() => onLibrary(index, undefined, "location")}>Browse reusable locations</button>
                     <button className="button secondary small" onClick={() => onLibrary(index, undefined, "background")}>Choose a background</button>
                     <button className="button secondary small" onClick={() => onLibrary(index, undefined, "prop")}>Add scenery props</button>
+                    <button className="button secondary small" onClick={() => { halt(); setSoundDirector({ atmosphere: true }); }}>
+                      Review location atmosphere
+                    </button>
                     <button className="button primary small" onClick={() => {
                       try { onLibrary(index, libraryItemFromLocation(project, scene)); }
                       catch (error) { setEditError(error instanceof Error ? error.message : "This location could not be prepared."); }
                     }}>Save as reusable location</button>
                   </div>
+                  <label>Suggested atmosphere for this location<select value={scene.suggestedAtmosphere ?? ""}
+                    onChange={event => {
+                      const value = event.target.value;
+                      changeScene({ suggestedAtmosphere: isAtmosphere(value) ? value : undefined });
+                    }}>
+                    <option value="">No suggested sound</option>
+                    {Object.entries(ATMOSPHERES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+                  </select></label>
                   <label className="world-check"><input type="checkbox" checked={!!scene.gentleDepth}
                     onChange={event => changeScene({ gentleDepth: event.target.checked })} /> Gentle depth during camera pans</label>
                   <label className="world-check"><input type="checkbox" checked={!!scene.backgroundAnimation?.enabled}
@@ -1612,7 +1637,7 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && !soundDirector && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
@@ -1638,13 +1663,30 @@ export function Editor({
           suggestion={interactionEditor.suggestion}
           time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
           onClose={() => setInteractionEditor(undefined)} onApply={changeScene}
+          onSound={(id, moment) => { setInteractionEditor(undefined); setSoundDirector({ anchor: { kind: "action", id, moment } }); }}
           onShowTransform={objectId => { setInteractionEditor(undefined); setTransformEditor({ objectId }); }} />
       )}
       {transformEditor && (
         <TransformStudio project={project} scene={scene} objectId={transformEditor.objectId} changeId={transformEditor.changeId}
           time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
           onClose={() => setTransformEditor(undefined)} onApply={changeScene}
-          onFocus={(objectId, changeId) => { setTransformEditor(undefined); setFocusEditor({ seed: { objectId, changeId } }); }} />
+          onFocus={(objectId, changeId) => { setTransformEditor(undefined); setFocusEditor({ seed: { objectId, changeId } }); }}
+          onSound={id => { setTransformEditor(undefined); setSoundDirector({ anchor: { kind: "change", id } }); }} />
+      )}
+      {soundDirector && (
+        <Suspense fallback={<Modal title={SOUND_DIRECTOR_TITLE} onClose={() => setSoundDirector(undefined)}>
+          <p role="status">Opening Sound Director…</p>
+        </Modal>}>
+          <SoundDirector project={project} index={index} seed={soundDirector}
+            time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
+            onClose={() => setSoundDirector(undefined)}
+            onApply={(next, nextIndex) => {
+              const applied = updateProduction(next);
+              if (applied && nextIndex !== index) selectScene(nextIndex);
+              return applied;
+            }}
+            onVoices={clipId => { setSoundDirector(undefined); openVoice(clipId); }} />
+        </Suspense>
       )}
       {participationEditor && (
         <Suspense fallback={<Modal title={PARTICIPATION_TITLE} onClose={() => setParticipationEditor(undefined)}>
@@ -1654,6 +1696,7 @@ export function Editor({
             time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
             onScene={next => { selectScene(next); setParticipationEditor({}); }}
             onClose={() => setParticipationEditor(undefined)}
+            onSound={id => { setParticipationEditor(undefined); setSoundDirector({ anchor: { kind: "participation", id, moment: "reveal" } }); }}
             onApply={(patch, dedicated) => dedicated ? addScene(dedicated) : changeScene(patch)}
             onScript={(lineId, stepId) => {
               setParticipationEditor(undefined); setScriptLine(lineId ?? ""); setScriptStep(stepId); setScriptOpen(true);

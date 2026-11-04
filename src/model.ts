@@ -1,3 +1,5 @@
+import { isAtmosphere, validSoundLinks } from "./sound-cues";
+import type { AtmosphereId } from "./sound-cues";
 import { participationIssue } from "./participation-model";
 import type { Participation } from "./participation-model";
 import { focusIssue } from "./focus-model";
@@ -15,7 +17,7 @@ import { validateScripts, validVoiceNotes } from "./script-model";
 import type { SceneScript, ScriptOptions, VoiceNotes } from "./script-model";
 import { CHAPTERS } from "./story-model";
 import type { ChapterId, CreationSource } from "./story-model";
-import type { Production } from "./media-model";
+import type { AudioClip, Production } from "./media-model";
 import {
   validElementAnimation,
   validCameraAnimation,
@@ -137,6 +139,7 @@ export interface Scene {
   cameraAnimation?: CameraAnimation;
   backgroundAnimation?: BackgroundAnimation;
   gentleDepth?: boolean;
+  suggestedAtmosphere?: AtmosphereId;
   interactions?: Interaction[];
   objectTracks?: ObjectTrack[];
   learningSteps?: LearningStep[];
@@ -446,6 +449,7 @@ export function validateProject(value: unknown): Project {
     if (interactionIssue(s.interactions, s.duration as number, s.elements as SceneElement[])) fail();
     for (const action of (s.interactions ?? []) as Interaction[]) unique(action.id);
     const scene = s as unknown as Scene;
+    if (s.suggestedAtmosphere !== undefined && !isAtmosphere(s.suggestedAtmosphere)) fail();
     if (transformIssue(s.objectTracks, scene, assetIds, unique) || learningIssue(s.learningSteps, scene, unique) ||
       participationIssue(s.participation, scene, unique) || focusIssue(s.focusGraphics, scene, unique)) fail();
     const elementIds = new Set(
@@ -480,7 +484,8 @@ export function validateProject(value: unknown): Project {
     });
     offset += scene.duration as number;
   }
-  if (!validProduction(p, unique, characterIds, sceneMap) || !validateScripts(p, unique, characterIds)) return fail();
+  if (!validProduction(p, unique, characterIds, sceneMap) || !validateScripts(p, unique, characterIds) ||
+    !validSoundLinks(p.audioClips as AudioClip[], p.scenes as Scene[])) return fail();
   if (
     new TextEncoder().encode(JSON.stringify(value)).byteLength >
     MAX_PROJECT_BYTES

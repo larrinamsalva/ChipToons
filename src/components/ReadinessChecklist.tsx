@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { productionReadiness } from "../readiness";
 import type { ReadinessIssue } from "../readiness";
 import type { Project } from "../model";
@@ -17,7 +17,7 @@ export function ReadinessChecklist({
 }) {
   const [dismissed, setDismissed] = useState<string[]>([]),
     [low, setLow] = useState(false),
-    issues = productionReadiness(project, limit, supported),
+    issues = useMemo(() => productionReadiness(project, limit, supported), [project, limit, supported]),
     shown = issues.filter((i) => !dismissed.includes(i.id));
   useEffect(() => {
     let alive = true;

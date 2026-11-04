@@ -5794,3 +5794,9 @@ fieldset.interaction-fields {
 .participation-choices legend { padding-inline: .4rem; font-weight: 700; }
 .participation-warnings { padding-inline-start: 1.4rem; display: grid; gap: .4rem; color: var(--muted); }
 .participation-layout .interaction-review { min-width: 0; }
+
+.sound-review-summary { margin: 0 0 .8rem; display: grid; gap: .4rem; }
+.sound-review-summary div { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: .45rem; }
+.sound-review-summary dt { font-weight: 700; }
+.sound-review-summary dd { margin: 0; overflow-wrap: anywhere; }
+.sound-director .interaction-review { min-width: 0; }

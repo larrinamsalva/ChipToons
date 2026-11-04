@@ -1,3 +1,4 @@
+import { WATER_TILT } from "./interaction-model";
 import type { Character, Project, Scene, SceneElement } from "./model";
 import { neutralJoint, puppetTransforms } from "./puppet-model";
 import type { PuppetRig } from "./puppet-model";
@@ -169,10 +170,10 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
       ? (action.transfer && time >= action.transfer.time ? action.transfer.actorId : action.actorId) : undefined;
     const progress = (t - action.attach) / Math.max(0.01, end - action.attach);
     const tilt = action.kind === "water"
-      ? smooth(0.45, 0.59, progress) * (1 - smooth(0.72, 0.87, progress)) : 0;
+      ? smooth(WATER_TILT.lean, WATER_TILT.upright, progress) * (1 - smooth(WATER_TILT.return, WATER_TILT.rest, progress)) : 0;
     const rotation = frame.rotation - 53 * tilt * (prop.flip ? -1 : 1);
     const pose = { ...frame, ...position, rotation, heldBy, interactionPosition: true };
-    frames.set(prop.id, { ...pose, watering: tilt > 0.75
+    frames.set(prop.id, { ...pose, watering: tilt > WATER_TILT.threshold
       ? stagePoint(prop, pose, { x: -67, y: -55 }) : undefined });
     if (time >= end) resting.set(prop.id, position);
   }

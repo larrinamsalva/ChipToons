@@ -1,3 +1,4 @@
+import type { AmbienceRange, SoundCue, SoundReview } from "./sound-cues";
 import { record, numberIn } from "./art-model";
 
 export const AUDIO_MIMES = [
@@ -40,6 +41,9 @@ export interface AudioClip {
   loop: boolean;
   fadeIn: number;
   fadeOut: number;
+  soundCue?: SoundCue;
+  ambience?: AmbienceRange;
+  soundReview?: SoundReview;
 }
 export interface Caption {
   id: string;

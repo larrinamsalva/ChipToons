@@ -1,3 +1,5 @@
+import { isAtmosphere } from "./sound-cues";
+import type { AtmosphereId } from "./sound-cues";
 import { reconcileParticipation } from "./participation-model";
 import { reconcileFocusReferences } from "./focus-model";
 import { reconcileTransformReferences } from "./transform-motion";
@@ -11,6 +13,7 @@ export interface LocationLayout {
   background: Scene["background"];
   camera: Scene["camera"];
   gentleDepth: boolean;
+  suggestedAtmosphere?: AtmosphereId;
   atmosphere?: "drift" | "sway" | "twinkle" | "parallax";
   elements: SceneElement[];
 }
@@ -62,7 +65,7 @@ export function applyScenery(scene: Scene, layout: LocationLayout, copies: Scene
   for (const depth of SCENERY_DEPTHS)
     insertScenery(elements, copies.filter(element => !element.backdrop && element.sceneryDepth === depth), depth);
   return reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences({
-    ...scene, elements, background: layout.background, gentleDepth: layout.gentleDepth,
+    ...scene, elements, suggestedAtmosphere: layout.suggestedAtmosphere, background: layout.background, gentleDepth: layout.gentleDepth,
     backgroundAnimation: scene.backgroundAnimation?.keyframes.length ? scene.backgroundAnimation :
       layout.atmosphere ? { style: layout.atmosphere, enabled: true, keyframes: [] } : undefined,
     cameraAnimation: scene.cameraAnimation?.followId &&
@@ -86,12 +89,13 @@ export function captureLocation(project: Project, scene: Scene): { location: Loc
   const used = new Set(elements.map(element => element.assetId));
   return clone({
     location: { description: "", background: scene.background, camera: scene.camera, gentleDepth: !!scene.gentleDepth,
+      suggestedAtmosphere: scene.suggestedAtmosphere,
       atmosphere: scene.backgroundAnimation?.enabled ? scene.backgroundAnimation.style : undefined, elements },
     assets: project.assets.filter(asset => used.has(asset.id)),
   });
 }
 
-const layoutFields = ["description", "background", "camera", "gentleDepth", "atmosphere", "elements"];
+const layoutFields = ["description", "background", "camera", "gentleDepth", "atmosphere", "suggestedAtmosphere", "elements"];
 const elementFields = ["id", "kind", "x", "y", "scale", "rotation", "flip", "flipY", "opacity", "width",
   "height", "crop", "name", "assetId", "prop", "propAppearance", "backdrop", "characterId", "emotion", "motion", "sceneryDepth"];
 
@@ -101,6 +105,7 @@ export function validLocation(value: unknown): value is LocationLayout {
     BACKGROUNDS.includes(value.background as Scene["background"]) &&
     (value.camera === "wide" || value.camera === "close") &&
     typeof value.gentleDepth === "boolean" &&
+    (value.suggestedAtmosphere === undefined || isAtmosphere(value.suggestedAtmosphere)) &&
     (value.atmosphere === undefined || ["drift", "sway", "twinkle", "parallax"].includes(String(value.atmosphere))) &&
     Array.isArray(value.elements) && value.elements.length <= 20 &&
     value.elements.every(element => record(element) && Object.keys(element).every(key => elementFields.includes(key)) &&

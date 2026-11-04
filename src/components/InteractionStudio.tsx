@@ -20,9 +20,10 @@ import { ScenePreview } from "./ScenePreview";
 
 export const INTERACTION_TITLE = "Make My Character Do Something";
 
-export function InteractionStudio({ project, scene, current, time, selectedId, suggestion, previewScene, onClose, onApply, onShowTransform }: {
+export function InteractionStudio({ project, scene, current, time, selectedId, suggestion, previewScene, onClose, onApply, onShowTransform, onSound }: {
   project: Project; scene: Scene; current?: Interaction; time: number; selectedId?: string;
   onShowTransform?: (objectId: string) => void;
+  onSound?: (id: string, moment: "Attach" | "Start") => void;
   suggestion?: InteractionSuggestion; previewScene?: (scene: Scene) => Scene; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean | void;
 }) {
   const [elements, setElements] = useState(scene.elements);
@@ -222,6 +223,8 @@ export function InteractionStudio({ project, scene, current, time, selectedId, s
         {current && draft === current && onShowTransform && <button className="button text" onClick={() => onShowTransform(current.objectId)}>
           Show how this object changes
         </button>}
+        {current && draft === current && onSound && !remove && <button className="button secondary" onClick={() =>
+          onSound(current.id, current.kind === "point" ? "Start" : "Attach")}>Add sound to this action</button>}
         {current && !remove && <button className="button text" onClick={() => setRemove(true)}>Delete interaction</button>}
         <button className="button secondary" onClick={onClose}>Cancel</button>
         <button className="button primary" disabled={!!issue || !review} onClick={apply}>Apply</button>

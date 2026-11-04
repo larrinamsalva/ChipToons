@@ -16,6 +16,15 @@ export const SOUNDS = [
   ["reassure", "Reassuring chimes", "effects", 2.4],
   ["tidy", "Tidy-up rhythm", "music", 6],
   ["garden", "Quiet garden breeze", "music", 6],
+  ["pour", "Gentle water pouring", "effects", 1.55],
+  ["wheels", "Toy wheels rolling", "effects", 1.8],
+  ["pickup", "Soft object pickup", "effects", 0.46],
+  ["place", "Wooden object set down", "effects", 0.58],
+  ["paper", "Paper folding", "effects", 0.72],
+  ["sweep", "Light sweeping", "effects", 1.6],
+  ["success", "Friendly success cue", "effects", 0.92],
+  ["room", "Quiet indoor room tone", "effects", 3],
+  ["workshop", "Subtle workshop activity", "effects", 3],
 ] as const;
 export type SoundId = (typeof SOUNDS)[number][0];
 export function wavBytes(
@@ -136,6 +145,27 @@ export function builtInSound(id: SoundId): AudioAsset {
           sine(t < 0.4 ? 440 : 660) *
           0.12 *
           Math.sin((Math.PI * (t % 0.4)) / 0.4);
+      else if (id === "pour")
+        value = (noise * 0.16 + brown * 0.48 + sine(290 + 24 * Math.sin(t * 18)) * 0.025) *
+          (0.65 + 0.35 * Math.sin(t * 24) ** 2) * Math.sin(Math.PI * t / duration) ** 0.55;
+      else if (id === "wheels")
+        value = (brown * 0.36 + sine(94) * 0.055) * (0.62 + 0.38 * Math.sin(2 * Math.PI * t * 7) ** 2);
+      else if (id === "pickup")
+        value = (sine(490) * 0.12 + sine(705) * 0.055 + noise * 0.046) * Math.exp(-t * 11);
+      else if (id === "place")
+        value = (sine(196) * 0.26 + sine(273) * 0.12 + brown * 0.28) * Math.exp(-t * 11);
+      else if (id === "paper")
+        value = noise * 0.21 * Math.exp(-((t - 0.18) ** 2) / 0.012) +
+          brown * 0.38 * Math.exp(-((t - 0.42) ** 2) / 0.012);
+      else if (id === "sweep")
+        value = (noise * 0.14 + brown * 0.32) * Math.sin(Math.PI * (t % 0.54) / 0.54) ** 2;
+      else if (id === "success") {
+        const note = t < 0.23 ? 523.25 : t < 0.46 ? 659.25 : 783.99;
+        value = (sine(note) * 0.18 + sine(note * 2) * 0.035) * Math.exp(-(t % 0.23) * 8);
+      } else if (id === "room")
+        value = brown * 0.23 + sine(60) * 0.011;
+      else if (id === "workshop")
+        value = brown * 0.21 + sine(112) * 0.019 + Math.exp(-((t - 1.4) ** 2) / 0.032) * sine(212) * 0.036;
       else
         value = sine(220 + t * 160) * 0.1 * Math.sin((Math.PI * t) / duration);
       data[i] = value * Math.max(0, env);

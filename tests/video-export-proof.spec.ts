@@ -1,3 +1,5 @@
+import { GARDEN_NARRATION_START, gardenSoundDemo } from "../src/sound-garden-demo";
+import { wateringWindow } from "../src/interaction-model";
 import { participationExample } from "../src/participation-examples";
 import { participationWindow } from "../src/participation-model";
 import { visualTeachingExample } from "../src/focus-examples";
@@ -1016,4 +1018,90 @@ test("decodes a voiced wagon question, both choices, quiet thinking time and its
   }
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [repair.duration, roll.duration]);
+});
+
+test("decodes real garden footsteps, pickup, pouring, placement, chime and narration at their authored times", async ({ page }, info) => {
+  test.setTimeout(140_000);
+  const project = gardenSoundDemo();
+  const [garden, lesson] = project.scenes;
+  const [action] = garden.interactions!;
+  const water = wateringWindow(action);
+  const effect = (name: string) => project.audioClips.find(clip => clip.name === name)!;
+  await page.goto("./");
+  await page.getByText("Try a Sound Director example", { exact: true }).click();
+  await page.getByRole("button", { name: project.title, exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const first = await render(page, info, "garden-sound-actions", garden.duration, { limit: garden.duration, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "garden-sound-lesson", lesson.duration, { limit: garden.duration, segment: 2 });
+
+  const rate = 8000;
+  function samples(pcm: Buffer, time: number, span: number) {
+    const begin = Math.round((time + EXPORT_RECORDING_LEAD_SECONDS) * rate);
+    return Array.from({ length: Math.round(span * rate) }, (_, i) => pcm.readFloatLE((begin + i) * 4));
+  }
+  function rms(pcm: Buffer, time: number, span: number, high = false) {
+    const values = samples(pcm, time, span);
+    const total = values.reduce((sum, value, index) => sum + (high ? value - (values[index - 1] ?? value) : value) ** 2, 0);
+    return Math.sqrt(total / values.length);
+  }
+  function tone(pcm: Buffer, time: number, frequency: number, span = 0.14) {
+    const values = samples(pcm, time, span);
+    let real = 0, imaginary = 0;
+    for (const [i, value] of values.entries()) {
+      const phase = 2 * Math.PI * i * frequency / rate;
+      const taper = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / values.length);
+      real += value * taper * Math.cos(phase);
+      imaginary += value * taper * Math.sin(phase);
+    }
+    return Math.hypot(real, imaginary) / values.length;
+  }
+  const walking = effect("Little footsteps").start, pickup = effect("Soft object pickup").start;
+  const place = effect("Wooden object set down").start, success = effect("Friendly success cue").start;
+  const measurements = [
+    { event: "walk", at: walking,
+      near: Math.min(rms(first.pcm, walking - 0.04, 0.14, true), rms(first.pcm, walking + 0.31, 0.14, true)),
+      before: Math.max(rms(first.pcm, walking - 0.44, 0.14, true), rms(first.pcm, walking + 0.17, 0.12, true)) },
+    { event: "pick up", at: pickup, near: tone(first.pcm, pickup + 0.035, 490), before: tone(first.pcm, pickup - 0.21, 490) },
+    { event: "pour", at: water.start, near: rms(first.pcm, water.start + 0.28, 0.42, true), before: rms(first.pcm, water.start - 0.52, 0.32, true),
+      after: rms(first.pcm, water.end + 0.19, 0.27, true) },
+    { event: "set down", at: place, near: tone(first.pcm, place + 0.035, 196), before: tone(first.pcm, place - 0.27, 196) },
+    { event: "success", at: success, near: tone(first.pcm, success + 0.045, 523.25), before: tone(first.pcm, success - 0.24, 523.25) },
+  ];
+  for (const sample of measurements) {
+    expect(sample.near, sample.event).toBeGreaterThan(0.0015);
+    expect(sample.near, sample.event).toBeGreaterThan(sample.before * 3);
+    if (sample.after !== undefined) expect(sample.near, sample.event).toBeGreaterThan(sample.after * 3);
+  }
+  const waterAt = water.start + 0.48;
+  const stream = sceneFramesAt(project, garden, waterAt).get(action.objectId)!.watering!;
+  const camera = cameraAt(garden, waterAt);
+  const streamX = (stream.x - camera.x) * camera.zoom + 400, streamY = (stream.y - camera.y) * camera.zoom + 225;
+  const waterPixels = pixels(rawFrame(first.path, waterAt), streamX - 48, streamY - 3, 53, 42,
+    (r, g, b) => r > 198 && g > 227 && b >= 236 && b - r > 6);
+  expect(waterPixels).toBeGreaterThan(45);
+  const bedBefore = rms(first.pcm, garden.duration - 0.48, 0.28);
+  const bedAfter = rms(second.pcm, 0.06, 0.25);
+  expect(bedBefore).toBeGreaterThan(0.00045);
+  expect(bedAfter).toBeGreaterThan(0.00045);
+  const speech = rms(second.pcm, GARDEN_NARRATION_START + 0.3, 2.5);
+  expect(speech).toBeGreaterThan(bedAfter * 5);
+  const voicedFrame = rawFrame(second.path, GARDEN_NARRATION_START + 1.4);
+  const caption = pixels(voicedFrame, 40, 365, 720, 65, (r, g, b) => Math.min(r, g, b) > 210);
+  expect(caption).toBeGreaterThan(160);
+  await info.attach("decoded garden cue measurements", {
+    body: JSON.stringify({ measurements, waterPixels, bedBefore, bedAfter, speech, caption }, null, 2),
+    contentType: "application/json",
+  });
+
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  await downloadAndVerifyMovie(page, info, files, [garden.duration, lesson.duration]);
 });

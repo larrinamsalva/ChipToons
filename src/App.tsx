@@ -386,12 +386,15 @@ export default function App() {
     }
   }
 
-  async function openDemo(example: "friendship" | "talking" | "garden" | TransformExample = "friendship", variant?: "focus" | "participation") {
+  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | TransformExample = "friendship", variant?: "focus" | "participation") {
     if (working) return;
     setWorking(true);
     setNotice("Opening your cartoon example…");
     try {
-      if (example === "garden") {
+      if (example === "sound-garden") {
+        const { voicedGardenSoundDemo } = await import("./sound-garden-demo");
+        await open(await voicedGardenSoundDemo());
+      } else if (example === "garden") {
         const { gardenInteractionDemo } = await import("./garden-demo");
         await open(gardenInteractionDemo());
       } else if (example === "talking") {
@@ -700,6 +703,7 @@ export default function App() {
           onDemo={() => void openDemo()}
           onTalkingDemo={() => void openDemo("talking")}
           onGardenDemo={() => void openDemo("garden")}
+          onSoundGardenDemo={() => void openDemo("sound-garden")}
           onTransformDemo={example => void openDemo(example)}
           onFocusDemo={example => void openDemo(example, "focus")}
           onParticipationDemo={example => void openDemo(example, "participation")}
