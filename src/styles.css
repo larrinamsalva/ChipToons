@@ -5596,3 +5596,53 @@ input[type="color"] {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.delivery-studio, .delivery-card, .delivery-stack, .delivery-fields, .delivery-parts {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+}
+.delivery-studio p, .delivery-card p, .delivery-card h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.delivery-card {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.delivery-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.delivery-parts {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.delivery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.delivery-actions button, .delivery-card select, .delivery-card > button {
+  min-height: 44px;
+}
+.delivery-card :is(video, select), .delivery-studio progress {
+  width: 100%;
+  min-width: 0;
+}
+.delivery-card video {
+  display: block;
+  background: #15191e;
+  border-radius: 0.6rem;
+  max-height: 52vh;
+}
+.delivery-studio [hidden] {
+  display: none;
+}

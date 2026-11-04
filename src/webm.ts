@@ -8,7 +8,8 @@ type Element = {
   sizeWidth: number;
   unknown: boolean;
 };
-function element(bytes: Uint8Array, start: number): Element {
+function element(bytes: Uint8Array, start: number, unknownEnd = bytes.length): Element {
+  if (start < 0 || start >= bytes.length) throw new Error("Invalid WebM element");
   let n = 1;
   while (n <= 4 && !(bytes[start] & (1 << (8 - n)))) n++;
   if (n > 4) throw new Error("Invalid WebM element");
@@ -30,7 +31,7 @@ function element(bytes: Uint8Array, start: number): Element {
     id,
     start,
     data,
-    end: unknown ? bytes.length : data + size,
+    end: unknown ? unknownEnd : data + size,
     sizeWidth: width,
     unknown,
   };
@@ -106,4 +107,85 @@ export function webmDuration(bytes: Uint8Array, seconds: number) {
       segment.data - segment.sizeWidth,
     );
   return result;
+}
+
+export const WEBM_METADATA_LIMIT = 1024 * 1024;
+export interface WebmTracks {
+  codec: "VP8" | "VP9";
+  width: number;
+  height: number;
+  audio?: "Opus" | "Vorbis";
+  fps?: number;
+}
+
+function webmChildren(bytes: Uint8Array, parent: Element) {
+  if (parent.unknown || parent.end > bytes.length || parent.end < parent.data)
+    throw new Error("Incomplete WebM track information.");
+  const children: Element[] = [];
+  for (let at = parent.data; at < parent.end;) {
+    const child = element(bytes, at);
+    if (child.unknown || child.end > parent.end || child.end <= at || children.length >= 256)
+      throw new Error("Invalid WebM track information.");
+    children.push(child);
+    at = child.end;
+  }
+  return children;
+}
+
+function webmNumber(bytes: Uint8Array, item?: Element) {
+  if (!item || item.end - item.data > 6) return 0;
+  let number = 0;
+  for (let i = item.data; i < item.end; i++) number = number * 256 + bytes[i];
+  return number;
+}
+
+export function readWebmTracks(bytes: Uint8Array, fileSize: number): WebmTracks {
+  const header = element(bytes, 0);
+  if (header.id !== 0x1a45dfa3) throw new Error("This file is not a WebM container.");
+  const docType = webmChildren(bytes, header).find(child => child.id === 0x4282);
+  const decode = (item?: Element) => item && new TextDecoder().decode(bytes.subarray(item.data, item.end));
+  if (decode(docType) !== "webm") throw new Error("This file is not a WebM container.");
+  const segment = element(bytes, header.end, fileSize);
+  if (segment.id !== 0x18538067 || segment.end > fileSize)
+    throw new Error("The WebM segment is damaged or incomplete.");
+  let video: WebmTracks | undefined;
+  let audio: WebmTracks["audio"];
+  for (let at = segment.data; at < Math.min(segment.end, bytes.length);) {
+    const child = element(bytes, at);
+    if (child.id === 0x1f43b675) break;
+    if (child.unknown || child.end <= at || child.end > segment.end || child.end > bytes.length)
+      throw new Error("WebM track information is missing or outside the metadata limit.");
+    if (child.id === 0x1654ae6b) {
+      for (const entry of webmChildren(bytes, child)) {
+        if (entry.id !== 0xae) continue;
+        const fields = webmChildren(bytes, entry);
+        const get = (id: number) => fields.find(field => field.id === id);
+        const type = webmNumber(bytes, get(0x83));
+        const codec = decode(get(0x86));
+        if (type === 1) {
+          if (video || (codec !== "V_VP8" && codec !== "V_VP9"))
+            throw new Error("Choose a WebM with one VP8 or VP9 video track.");
+          const picture = get(0xe0);
+          if (!picture) throw new Error("WebM dimensions are missing.");
+          const dimensions = webmChildren(bytes, picture);
+          const width = webmNumber(bytes, dimensions.find(field => field.id === 0xb0));
+          const height = webmNumber(bytes, dimensions.find(field => field.id === 0xba));
+          if (!width || !height || width > 4096 || height > 4096)
+            throw new Error("This WebM has missing or unsupported video dimensions.");
+          const frameDuration = webmNumber(bytes, get(0x23e383));
+          const fps = frameDuration ? 1e9 / frameDuration : undefined;
+          video = { codec: codec === "V_VP8" ? "VP8" : "VP9", width, height,
+            ...(fps && fps >= 1 && fps <= 240 ? { fps } : {}) };
+        } else if (type === 2) {
+          if (audio || (codec !== "A_OPUS" && codec !== "A_VORBIS"))
+            throw new Error("Choose a WebM with one Opus or Vorbis audio track.");
+          audio = codec === "A_OPUS" ? "Opus" : "Vorbis";
+        }
+      }
+      break;
+    }
+    at = child.end;
+  }
+  if (!video) throw new Error("No readable WebM video track was found.");
+  return { ...video, ...(audio ? { audio } : {}) };
 }

@@ -1,0 +1,45 @@
+{
+  "title": "Kindness in two little parts",
+  "plannedSeconds": 8,
+  "archiveBytes": 524951,
+  "parts": [
+    {
+      "part": 1,
+      "sceneRange": [
+        1,
+        2
+      ],
+      "plannedStorySeconds": [
+        0,
+        4
+      ],
+      "containerDuration": 4.170884,
+      "decodedVideoFrames": 61,
+      "size": 254383,
+      "sha256": "49eb1848ba187e74a545086bc6de33d34bc8d5607970e544bc8e5005830425ff",
+      "codec": "vp8",
+      "audioCodec": "opus",
+      "decodedAudioRms": 0.029797,
+      "subtitleChecksumMatches": true
+    },
+    {
+      "part": 2,
+      "sceneRange": [
+        3,
+        4
+      ],
+      "plannedStorySeconds": [
+        4,
+        8
+      ],
+      "containerDuration": 4.170884,
+      "decodedVideoFrames": 61,
+      "size": 267536,
+      "sha256": "dcdca10b36b135fdfebd9a899088ec9073097ffef34db63c9ea42cf4904339cd",
+      "codec": "vp8",
+      "audioCodec": "opus",
+      "decodedAudioRms": 0.032555,
+      "subtitleChecksumMatches": true
+    }
+  ]
+}

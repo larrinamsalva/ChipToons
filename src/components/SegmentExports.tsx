@@ -8,6 +8,9 @@ import type { ExportSettings, ExportProgress } from "../video-export";
 import type { AudioDecodeCache } from "../audio-engine";
 import { downloadBlob, safeFilename } from "../files";
 import { srt } from "../production";
+import { deliveryDigest } from "../delivery-bytes";
+import { partTag, rememberExportReceipt } from "../episode-delivery";
+import type { ExportReceipt } from "../episode-delivery";
 import { MediaNumber } from "./MediaNumber";
 
 const checkpointKey = (p: Project) => `chiptoons-export-parts:${p.id}`;
@@ -71,6 +74,7 @@ export function SegmentExports({
   onController,
   onScene,
   onPreview,
+  onDelivery,
 }: {
   project: Project;
   settings: ExportSettings;
@@ -81,6 +85,7 @@ export function SegmentExports({
   onController: (c: AbortController | null) => void;
   onScene: (index: number) => void;
   onPreview: (retained: boolean) => void;
+  onDelivery: (limit: number, focus: (part: ExportSegment, index: number) => void) => void;
 }) {
   const [segmentRunning, setSegmentRunning] = useState(false);
   const [recovered] = useState(() => recoverParts(project));
@@ -99,6 +104,7 @@ export function SegmentExports({
     downloaded: boolean;
     width: number;
     height: number;
+    receipt?: ExportReceipt;
   } | null>(null);
   const alive = useRef(true),
     controller = useRef<AbortController | null>(null),
@@ -135,6 +141,21 @@ export function SegmentExports({
     },
     [resultUrl],
   );
+  const exportRangeDetails = useRef<HTMLDetailsElement>(null);
+  const rangeButton = useRef<HTMLButtonElement>(null);
+  function focusPart(part: ExportSegment, index: number) {
+    const planned = plan.segments[index]?.id === part.id;
+    if (!planned) {
+      setFirst(part.firstScene);
+      setLast(part.lastScene);
+      if (exportRangeDetails.current) exportRangeDetails.current.open = true;
+    }
+    requestAnimationFrame(() => {
+      const button = planned ? document.getElementById(`episode-export-part-${index}`) : rangeButton.current;
+      button?.scrollIntoView({ block: "center" });
+      button?.focus();
+    });
+  }
   const locked = busy || !available || !!(result && !result.downloaded);
   async function render(segment: ExportSegment, label: string, tag: string) {
     if (locked) return;
@@ -158,6 +179,10 @@ export function SegmentExports({
         },
         cache,
       );
+      const digest = await deliveryDigest(movie.blob, abort.signal).catch(problem => {
+        if (abort.signal.aborted) throw problem;
+        return undefined;
+      });
       if (alive.current) {
         onPreview(true);
         setResult({
@@ -169,6 +194,11 @@ export function SegmentExports({
           downloaded: false,
           width: movie.width,
           height: movie.height,
+          ...(digest ? { receipt: {
+            first: segment.firstScene, last: segment.lastScene, start: segment.start, end: segment.end,
+            width: movie.width, height: movie.height, size: movie.blob.size, sha256: digest.sha256,
+            fps: settings.fps, audio: settings.audio, captions: settings.captions,
+          } } : {}),
         });
         setStatus((s) => ({ ...s, [segment.id]: "Ready to download" }));
       }
@@ -196,12 +226,15 @@ export function SegmentExports({
       result.blob,
       `${safeFilename(project.title)}-${result.tag}.webm`,
     );
+    if (result.receipt) rememberExportReceipt(project, result.receipt);
     setStatus((s) => ({ ...s, [result.segment.id]: "Downloaded" }));
     setResult({ ...result, downloaded: true });
   }
   return (
     <section className="segment-exports" aria-label="Scene segment exports">
       <h3>Longer story? Make it in parts.</h3>
+      <button id="prepare-episode-delivery" className="button primary" disabled={busy}
+        onClick={() => onDelivery(limit, focusPart)}>Prepare My Complete Episode</button>
       <p>
         Export consecutive whole scenes as playable WebM parts. Watch them in
         order. Every scene appears once in the plan below. This does not create
@@ -249,12 +282,13 @@ export function SegmentExports({
               </div>
               <button
                 className="button secondary"
+                id={`episode-export-part-${i}`}
                 disabled={locked}
                 onClick={() =>
                   void render(
                     s,
                     `Segment ${i + 1}`,
-                    `part-${String(i + 1).padStart(2, "0")}-scenes-${s.firstScene + 1}-${s.lastScene + 1}`,
+                    partTag(i, s),
                   )
                 }
               >
@@ -279,7 +313,7 @@ export function SegmentExports({
           ))}
         </ol>
       )}
-      <details>
+      <details ref={exportRangeDetails}>
         <summary>Choose a different whole-scene range</summary>
         <div className="form-grid">
           <label>
@@ -330,6 +364,7 @@ export function SegmentExports({
         )}
         <button
           className="button secondary"
+          ref={rangeButton}
           disabled={locked || chosen.duration > exportLimit()}
           onClick={() =>
             void render(

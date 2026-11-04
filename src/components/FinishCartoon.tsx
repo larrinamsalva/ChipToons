@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Project } from "../model";
 import { totalDuration, durationLabel } from "../model";
 import {
@@ -13,10 +13,13 @@ import { Modal } from "./Modal";
 import { Stage } from "./Stage";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { AudioDecodeCache } from "../audio-engine";
+import type { ExportSegment } from "../segments";
 import { SegmentExports } from "./SegmentExports";
 import { ReadinessChecklist } from "./ReadinessChecklist";
 import { EpisodeReadiness } from "./EpisodeReadiness";
 import { productionReadiness } from "../readiness";
+const EpisodeDelivery = lazy(() => import("./EpisodeDelivery").then(module => ({ default: module.EpisodeDelivery })));
+
 export function FinishCartoon({
   project,
   onClose,
@@ -36,6 +39,8 @@ export function FinishCartoon({
 }) {
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [delivery, setDelivery] = useState<{ limit: number; focus: (segment: ExportSegment, index: number) => void }>();
   const [audioCache] = useState(() => new AudioDecodeCache());
   const [partPreview, setPartPreview] = useState(false);
   const [sourcesReady, setSourcesReady] = useState(
@@ -119,13 +124,14 @@ export function FinishCartoon({
   }
   return (
     <Modal
-      title="Finish My Cartoon"
+      title={deliveryOpen ? "Prepare My Complete Episode" : "Finish My Cartoon"}
       onClose={() => {
         controller.current?.abort();
         onClose();
       }}
       wide
     >
+      <div hidden={deliveryOpen}>
       <p className="section-description">
         Review your story, listen once, then make a real WebM movie. Export runs
         on this device and does not record the editor or your screen.
@@ -428,6 +434,10 @@ export function FinishCartoon({
           controller.current = c;
         }}
         onScene={onScene}
+        onDelivery={(limit, focus) => {
+          setDelivery({ limit, focus });
+          setDeliveryOpen(true);
+        }}
       />
       <div className="modal-actions">
         <button
@@ -461,6 +471,20 @@ export function FinishCartoon({
           Back to studio
         </button>
       </div>
+      </div>
+      {delivery && <div hidden={!deliveryOpen}>
+        <Suspense fallback={<p role="status">Opening episode delivery…</p>}>
+          <EpisodeDelivery project={project} initialLimit={delivery.limit} initialAudio={settings.audio} active={deliveryOpen}
+            onBack={() => {
+              setDeliveryOpen(false);
+              requestAnimationFrame(() => document.getElementById("prepare-episode-delivery")?.focus());
+            }}
+            onReExport={(segment, index) => {
+              setDeliveryOpen(false);
+              delivery.focus(segment, index);
+            }} />
+        </Suspense>
+      </div>}
     </Modal>
   );
 }

@@ -85,3 +85,7 @@ Versioned puppet rigs and editable joint snapshots extend schema 4 without a dat
 ## PR #12 — Voice-to-Mouth Animation Studio
 
 Optional local waveform analysis links compact mouth cues to narration or dialogue, with preview, correction, manual-key precedence and Script Director integration. The stage uses the same saved timing for preview and genuine WebM export. Schema 4 and IndexedDB 6 stay compatible. See [the studio audit and guide](VOICE_MOUTH_ANIMATION.md).
+
+## PR #13 — Complete Episode Delivery Studio
+
+The finish dialog can collect the actual downloaded WebM parts, match recorded export hashes, check timing and tracks, and play the parts in order. A bounded delivery ZIP preserves original video bytes, SRTs, the scene-order manifest and checksums. The verifier checks the package without modifying the cartoon. Continuous WebM joining remains a separate feasibility task. [Complete Episode Delivery Studio](EPISODE_DELIVERY.md)

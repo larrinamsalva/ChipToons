@@ -155,3 +155,7 @@ See [Script & Voice Director Studio](SCRIPT_VOICE_DIRECTOR.md) for the recording
 Open **Make My Character Talk** from the editor, or use **Animate This Voice** on an approved dialogue line. Choose the recording and character, analyze it, and compare the old and proposed motion. Use a talking style and sensitivity that suit the performance. Move the preview playhead to make a correction or add a pause, then apply the suggestion. Review a changed recording or trim before exporting. **Try Shine Says Hello** opens a short example with audible speech and a quiet pause.
 
 See [Voice-to-Mouth Animation Studio](VOICE_MOUTH_ANIMATION.md) for supported characters, timing and backups.
+
+## Deliver a complete episode
+
+In **Finish My Cartoon**, download every numbered segment, then open **Prepare My Complete Episode**. Choose those WebM files, confirm any suggested assignments, and check the list for missing parts. **Watch My Episode** plays the checked files in order and can show separate subtitles. Download the delivery ZIP and verify it with **Check an Episode Package**. Keep your editable project backup separately. [Complete Episode Delivery guide](EPISODE_DELIVERY.md)
