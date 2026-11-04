@@ -1,3 +1,4 @@
+import { supportsVoiceMouth, voiceMouthAt } from "./voice-mouth";
 import { interpolateJoints } from "./puppet-model";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
@@ -182,6 +183,7 @@ export function elementAt(
   return {
     ...values,
     mouth,
+    authoredMouth: values.mouth,
     joints: sampled && interpolateJoints(sampled.left.joints, sampled.right?.joints ?? (sampled.right ? undefined : sampled.left.joints), sampled.progress),
     y: values.y + (idle === "float" ? Math.sin(t * 1.8) * 4 : 0),
     scale:
@@ -215,7 +217,16 @@ export function elementAt(
               : 0.5),
   };
 }
-export type ElementFrame = ReturnType<typeof elementAt>;
+export type ElementFrame = ReturnType<typeof elementAt> & { voiceOpening?: number };
+export function sceneElementAt(project: Project, scene: Scene, element: SceneElement,
+  local: number, start: number, calm = false): ElementFrame {
+  const frame = elementAt(element, local, scene.duration, calm);
+  if (!element.voiceMouth?.length || calm ||
+      !supportsVoiceMouth(project.characters.find(character => character.id === element.characterId), element)) return frame;
+  const voice = voiceMouthAt(project, scene, element, start + local, frame.authoredMouth !== "auto");
+  return voice ? { ...frame, mouth: voice.opening ? "open" : "closed", voiceOpening: voice.opening,
+    emotion: voice.expression === "keep" ? frame.emotion : voice.expression } : frame;
+}
 export function keyAt(
   element: SceneElement,
   seconds: number,
@@ -330,6 +341,7 @@ export function duplicateElement(
 ): SceneElement {
   const e = clone(element);
   e.id = uid();
+  delete e.voiceMouth;
   e.x = clamp(e.x + offset, 0, 800);
   if (e.animation)
     e.animation.keyframes = e.animation.keyframes.map((k) => ({

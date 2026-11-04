@@ -3,6 +3,7 @@ import { PreviewAudio } from "../audio-engine";
 import type { AudioCategory } from "../media-model";
 import { reconcileProduction, duplicateSceneMedia } from "../production";
 import { duplicateScript, reconcileScriptClips } from "../script";
+import { copySceneVoice } from "../voice-mouth";
 import { VoiceStudio } from "./VoiceStudio";
 import { lazy, memo, Suspense, useEffect, useRef, useState } from "react";
 import { StoryOverview } from "./StoryOverview";
@@ -47,6 +48,7 @@ import type { LibraryItem } from "../library";
 import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
+const VoiceMouthStudio = lazy(() => import("./VoiceMouthStudio").then(module => ({ default: module.VoiceMouthStudio })));
 const ScriptDirector = lazy(() => import("./ScriptDirector").then(module => ({ default: module.ScriptDirector })));
 
 const FinishCartoon = lazy(() =>
@@ -105,6 +107,7 @@ export function Editor({
   const [sound, setSound] = useState(true),
     [audioBusy, setAudioBusy] = useState(false);
   const playTicket = useRef(0);
+  const [mouthStudio, setMouthStudio] = useState<{ clipId?: string }>();
   const [scriptOpen, setScriptOpen] = useState(startScript);
   const [scriptLine, setScriptLine] = useState("");
   const [voiceStudio, setVoiceStudio] = useState<{
@@ -208,7 +211,7 @@ export function Editor({
     setSelected(i);
     setElementIndex(0);
   }
-  async function play(forceEpisode = false, withSound = sound) {
+  async function play(forceEpisode = false, withSound = sound, playScope = scope) {
     if (clock.getSnapshot().playing && !forceEpisode) {
       const t = clock.getSnapshot().seconds;
       setEditSeconds(t);
@@ -220,7 +223,7 @@ export function Editor({
     halt();
     const ticket = ++playTicket.current;
     setSound(withSound);
-    const mode = forceEpisode ? "episode" : scope,
+    const mode = forceEpisode ? "episode" : playScope,
       start = mode === "scene" ? sceneStart(project, index) : 0,
       end = mode === "scene" ? start + scene.duration : total;
     if (forceEpisode) {
@@ -416,8 +419,9 @@ export function Editor({
     if (project.scenes.length >= 120) return;
     const animated = duplicateAnimatedScene(scene);
     const media = duplicateSceneMedia(project, scene, animated);
-    const copy = duplicateScript(animated, project.audioClips.filter(clip => clip.sceneId === scene.id),
-      media.audioClips.slice(project.audioClips.length));
+    const originals = project.audioClips.filter(clip => clip.sceneId === scene.id);
+    const copies = media.audioClips.slice(project.audioClips.length);
+    const copy = duplicateScript(copySceneVoice(scene, animated, originals, copies), originals, copies);
     copy.title = `${copy.title.slice(0, 150)} (copy)`;
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, copy);
@@ -636,6 +640,9 @@ export function Editor({
           </button>
           <button className="button secondary small" onClick={() => { halt(); setScriptOpen(true); }}>
             Write My Episode Script
+          </button>
+          <button className="button secondary small" onClick={() => { halt(); setMouthStudio({}); }}>
+            Make My Character Talk
           </button>
           <button
             className="button text small"
@@ -1507,7 +1514,7 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && (
+      {scriptOpen && !voiceStudio && !mouthStudio && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
@@ -1517,8 +1524,28 @@ export function Editor({
               setScriptLine(lineId);
               setVoiceStudio({ lineId });
             }}
+            onAnimateVoice={clipId => { halt(); setMouthStudio({ clipId }); }}
             onTiming={clipId => openVoice(clipId)} onCaptions={() => openVoice(undefined, undefined, "captions")}
             onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} saveStatus={saveStatus} saveError={saveError}
+          />
+        </Suspense>
+      )}
+      {mouthStudio && (
+        <Suspense fallback={<Modal title="Make My Character Talk" onClose={() => setMouthStudio(undefined)}><p role="status">Opening the talking studio…</p></Modal>}>
+          <VoiceMouthStudio project={project} index={index} initialClip={mouthStudio.clipId}
+            onClose={() => setMouthStudio(undefined)}
+            onApply={next => {
+              validateProject(next);
+              onChange(next);
+              setMouthStudio(undefined);
+            }}
+            onPlay={() => {
+              setMouthStudio(undefined);
+              setScriptOpen(false);
+              setScope("scene");
+              seek(sceneStart(project, index));
+              void play(false, true, "scene");
+            }}
           />
         </Suspense>
       )}

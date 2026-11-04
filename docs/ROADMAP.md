@@ -81,3 +81,7 @@ Versioned puppet rigs and editable joint snapshots extend schema 4 without a dat
 ## PR #11 — Script & Voice Director Studio
 
 **Write My Episode Script** organizes numbered spoken lines by scene and chapter, reuses the episode cast, estimates pacing, and integrates the existing audio recorder and mixer. It adds per-line take selection and review, recurring voice notes, additive caption drafts, and a reviewed acting preview. Project schema 4 and IndexedDB 6 stay compatible. The original **A Hello Heart** example includes a genuine embedded narration take. See the [foundation audit and workflow](SCRIPT_VOICE_DIRECTOR.md).
+
+## PR #12 — Voice-to-Mouth Animation Studio
+
+Optional local waveform analysis links compact mouth cues to narration or dialogue, with preview, correction, manual-key precedence and Script Director integration. The stage uses the same saved timing for preview and genuine WebM export. Schema 4 and IndexedDB 6 stay compatible. See [the studio audit and guide](VOICE_MOUTH_ANIMATION.md).

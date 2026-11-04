@@ -8,12 +8,12 @@ import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/
 import { starterProject } from "../src/demo-starter";
 import { segmentedProject } from "./creator-fixtures";
 import { backup } from "./production-helpers";
-import { cameraAt, elementAt, retimeScene } from "../src/timeline";
+import { cameraAt, elementAt, retimeScene, sceneElementAt } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { newAudioClip } from "../src/production";
 import { imageLibraryItem, placeLibraryItem } from "../src/library";
-import { uid } from "../src/model";
+import { makeScene, uid } from "../src/model";
 import { demo, restore } from "./production-helpers";
 
 async function render(
@@ -576,4 +576,78 @@ test("A Hello Heart previews its linked narrator and exports genuine spoken audi
   expect(project.audioClips[0]).toMatchObject({ id: narrator?.clipId, sceneId: project.scenes[0].id, category: "narration", start: 0 });
   expect(project.captions[0]).toMatchObject({ start: 0, text: narrator?.text });
   await render(page, info, "a-hello-heart-script", project.scenes[0].duration);
+});
+
+test("Shine’s exported second segment contains real speech with open mouth frames and closes during silence", async ({ page }, info) => {
+  test.setTimeout(80_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Try Shine Says Hello", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "A Hello Heart — Shine Says Hello", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Make My Character Talk", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: "Recorded voice", exact: true }).selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Analyze recording", exact: true }).click();
+  await expect(dialog.getByText("Mouth animation suggested", { exact: true })).toBeVisible();
+  const seek = dialog.getByRole("spinbutton", { name: "Preview scene time (seconds)", exact: true });
+  await seek.fill("0.72");
+  await seek.press("Enter");
+  const actor = dialog.getByRole("figure").nth(1).locator("[data-voice-opening]");
+  await expect.poll(async () => Number(await actor.getAttribute("data-voice-opening"))).toBeGreaterThan(0.2);
+  const mouth = await actor.locator('[data-puppet-part="head"] ellipse[cy="15"]').evaluate((node: SVGEllipseElement) => {
+    const svg = node.ownerSVGElement!;
+    const center = new DOMPoint(node.cx.baseVal.value, node.cy.baseVal.value)
+      .matrixTransform(node.getCTM()!).matrixTransform(svg.getCTM()!.inverse());
+    return { x: Math.round(center.x), y: Math.round(center.y) };
+  });
+  await page.getByRole("button", { name: "Apply mouth animation", exact: true }).click();
+  const project = (await backup(page)).data;
+  const scene = project.scenes[0], element = scene.elements[0];
+  const speech = [0.72, 0.82, 4.3, 4.4];
+  expect(speech.every(time => (sceneElementAt(project, scene, element, time, 0).voiceOpening ?? 0) > 0.2)).toBe(true);
+  const silence = [2.88, 3.2, 3.55];
+  expect(silence.every(time => sceneElementAt(project, scene, element, time, 0).voiceOpening === 0)).toBe(true);
+  const intro = { ...makeScene(project.characters), title: "Before Shine greets the neighbor", elements: [], duration: 3 };
+  await restore(page, { ...project, scenes: [intro, scene] });
+  const { path, pcm } = await render(page, info, "shine-says-hello-segment-2", scene.duration, { segment: 2, limit: 8 });
+  const crop = `crop=36:34:${mouth.x - 18}:${mouth.y - 17}`;
+  const pixels = execFileSync("ffmpeg", [
+    "-v", "error", "-i", path, "-vf", crop, "-fps_mode", "passthrough",
+    "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1",
+  ]);
+  const { frames } = JSON.parse(execFileSync("ffprobe", [
+    "-v", "error", "-select_streams", "v:0", "-show_frames",
+    "-show_entries", "frame=best_effort_timestamp_time", "-of", "json", path,
+  ], { encoding: "utf8" })) as { frames: { best_effort_timestamp_time: string }[] };
+  const frameBytes = 36 * 34 * 3;
+  expect(pixels.length).toBe(frames.length * frameBytes);
+  function audioAt(time: number) {
+    const start = Math.floor((time - 0.05) * 8000);
+    let sum = 0;
+    for (let i = start; i < start + 800; i++) sum += pcm.readFloatLE(i * 4) ** 2;
+    return Math.sqrt(sum / 800);
+  }
+  const measurements = frames.flatMap((frame, index) => {
+    const time = Number(frame.best_effort_timestamp_time);
+    if (time < 0.55 || time > 5.6) return [];
+    let ink = 0;
+    const first = index * frameBytes;
+    for (let i = first; i < first + frameBytes; i += 3)
+      if (pixels[i] < 95 && pixels[i + 1] < 75 && pixels[i + 2] < 95) ink++;
+    return [{ time, ink, rms: audioAt(time) }];
+  });
+  const silentFrames = measurements.filter(frame => frame.time >= 2.92 && frame.time <= 3.55);
+  expect(silentFrames.length).toBeGreaterThanOrEqual(6);
+  expect(Math.max(...silentFrames.map(frame => frame.rms))).toBeLessThan(0.006);
+  expect(Math.max(...silentFrames.map(frame => frame.ink))).toBeLessThan(100);
+  const closedInk = Math.max(...silentFrames.map(frame => frame.ink));
+  const speakingFrames = [[0.55, 2.5], [4.1, 5.6]].map(([from, to]) => {
+    const matches = measurements.filter(frame => frame.time >= from && frame.time <= to &&
+      frame.rms > 0.035 && frame.ink > closedInk + 20);
+    expect(matches.length).toBeGreaterThanOrEqual(5);
+    return matches;
+  });
+  await info.attach("shine-speech-and-silence-measurements", {
+    body: JSON.stringify({ cropCenter: mouth, speakingFrames, silentFrames }, null, 2),
+    contentType: "application/json",
+  });
 });

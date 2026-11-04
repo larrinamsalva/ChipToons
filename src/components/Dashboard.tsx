@@ -11,6 +11,7 @@ export function Dashboard({
   onAssistant,
   onPuppet,
   onDemo,
+  onTalkingDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -28,6 +29,7 @@ export function Dashboard({
   onAssistant: () => void;
   onPuppet: () => void;
   onDemo: () => void;
+  onTalkingDemo: () => void;
   onUpload: () => void;
   onDraw: () => void;
   onOpen: (p: Project) => void;
@@ -92,6 +94,7 @@ export function Dashboard({
           </button>
           <button className="button text assistant-quick-start" onClick={() => onIdea()}>Start with an idea</button>
           <button className="button secondary small" onClick={onPuppet}>Create a Puppet Character</button>
+          <button className="button secondary small" onClick={onTalkingDemo}>Try Shine Says Hello</button>
           <span className="hero-note">
             No experience needed. Just your imagination.
           </span>

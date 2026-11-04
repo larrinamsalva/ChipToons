@@ -384,13 +384,18 @@ export default function App() {
     }
   }
 
-  async function openDemo() {
+  async function openDemo(talking = false) {
     if (working) return;
     setWorking(true);
-    setNotice("Opening the original friendship example…");
+    setNotice(talking ? "Opening Shine’s talking example…" : "Opening the original friendship example…");
     try {
-      const { starterProject: voicedDemo } = await import("./demo-starter");
-      await open(voicedDemo());
+      if (talking) {
+        const { shineTalkDemo } = await import("./shine-demo");
+        await open(await shineTalkDemo());
+      } else {
+        const { starterProject: voicedDemo } = await import("./demo-starter");
+        await open(voicedDemo());
+      }
       setNotice("");
     } catch {
       setNotice(
@@ -676,6 +681,7 @@ export default function App() {
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
           onDemo={() => void openDemo()}
+          onTalkingDemo={() => void openDemo(true)}
           onUpload={() => {
             setUploadError("");
             setDialog({ type: "upload" });

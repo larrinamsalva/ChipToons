@@ -5540,3 +5540,59 @@ input[type="color"] {
     max-height: 10rem;
   }
 }
+
+.voice-mouth-studio, .voice-mouth-card, .voice-mouth-fields {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.voice-mouth-studio p, .voice-mouth-comparison figure {
+  margin: 0;
+}
+.voice-mouth-studio label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.voice-mouth-studio :is(button, select, input) {
+  min-height: 44px;
+  max-width: 100%;
+}
+.voice-mouth-card {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface);
+}
+.voice-mouth-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.voice-mouth-card[open] > * + * {
+  margin-top: 0.7rem;
+}
+.voice-mouth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.voice-mouth-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.voice-mouth-comparison figcaption {
+  margin-bottom: 0.3rem;
+  font-weight: 700;
+}
+.voice-mouth-comparison svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 560px) {
+  .voice-mouth-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
