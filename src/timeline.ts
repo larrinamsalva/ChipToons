@@ -1,3 +1,4 @@
+import { reconcileFocusReferences } from "./focus-model";
 import { reconcileTransformReferences } from "./transform-motion";
 import { interactionReferencesExist } from "./interaction-model";
 import { sampleInteractions } from "./interaction-motion";
@@ -386,9 +387,16 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
     };
   });
   if (copy.learningSteps) copy.learningSteps = copy.learningSteps.map(step => ({
-    ...step, id: uid(), cue: step.cue?.kind === "action"
+    ...step, id: nextCue(step.id), cue: step.cue?.kind === "action"
       ? { ...step.cue, interactionId: cues.get(step.cue.interactionId)! }
       : step.cue ? { ...step.cue, changeId: cues.get(step.cue.changeId)! } : undefined,
+  }));
+  if (copy.focusGraphics) copy.focusGraphics = copy.focusGraphics.map(graphic => ({
+    ...graphic, id: uid(),
+    target: graphic.target.kind === "object" ? { ...graphic.target, id: ids.get(graphic.target.id)! } : graphic.target,
+    cue: graphic.cue?.kind === "action" ? { ...graphic.cue, interactionId: cues.get(graphic.cue.interactionId)! } :
+      graphic.cue ? { ...graphic.cue, id: cues.get(graphic.cue.id)! } : undefined,
+    stepSource: graphic.stepSource?.id ? { ...graphic.stepSource, id: cues.get(graphic.stepSource.id)! } : graphic.stepSource,
   }));
   if (copy.cameraAnimation) {
     copy.cameraAnimation.keyframes.forEach((k) => {
@@ -405,7 +413,7 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
 export function cleanSceneReferences(scene: Scene, previous = scene): Scene {
   if (scene.interactions?.some(action => !interactionReferencesExist(action, scene.elements)))
     scene = { ...scene, interactions: scene.interactions.filter(action => interactionReferencesExist(action, scene.elements)) };
-  scene = reconcileTransformReferences(scene, previous);
+  scene = reconcileFocusReferences(reconcileTransformReferences(scene, previous), previous);
   if (
     !scene.cameraAnimation?.followId ||
     scene.elements.some((e) => e.id === scene.cameraAnimation?.followId)
@@ -432,6 +440,13 @@ export function retimeScene(scene: Scene, duration: number): Scene {
     }
   }
   if (copy.learningSteps) for (const step of copy.learningSteps) step.at = Math.min(duration, step.at * ratio);
+  if (copy.focusGraphics) for (const graphic of copy.focusGraphics) {
+    graphic.at = Math.min(duration - 0.01, graphic.at * ratio);
+    graphic.length = Math.max(0.01, Math.min(duration - graphic.at, graphic.length * ratio));
+    graphic.fadeIn = Math.min(1.5, graphic.fadeIn * ratio);
+    graphic.fadeOut = Math.min(1.5, graphic.fadeOut * ratio);
+    if (graphic.stepSource) graphic.stepSource.at = Math.min(duration, graphic.stepSource.at * ratio);
+  }
   copy.elements.forEach((e) =>
     e.animation?.keyframes.forEach((k) => {
       k.time = Math.min(duration, k.time * ratio);

@@ -43,3 +43,9 @@ export function paintCaptions(
   );
   context.restore();
 }
+
+export function captionBand(texts: string[], style: CaptionStyle) {
+  if (!texts.some(text => text.trim())) return undefined;
+  const { y, height } = captionLayout(texts.join(" ").slice(0, 4096), style);
+  return { x: 28, y, width: 744, height };
+}

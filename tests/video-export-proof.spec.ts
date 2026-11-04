@@ -1,3 +1,5 @@
+import { visualTeachingExample } from "../src/focus-examples";
+import { focusAnchor } from "../src/focus-motion";
 import { transformExample } from "../src/transform-examples";
 import { EXAMPLE_NAMES } from "../src/transform-model";
 import { gardenInteractionDemo } from "../src/garden-demo";
@@ -17,6 +19,7 @@ import { backup } from "./production-helpers";
 import { cameraAt, duplicateAnimatedScene, elementAt, retimeScene, sceneElementAt, sceneFramesAt } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
+import { EXPORT_RECORDING_LEAD_SECONDS } from "../src/segments";
 import { newAudioClip } from "../src/production";
 import { imageLibraryItem, placeLibraryItem } from "../src/library";
 import { starterLocations } from "../src/world-starters";
@@ -840,4 +843,95 @@ test("decodes a single wagon with a loose and fixed wheel, then verifies the joi
   }
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [repair.duration, testRun.duration]);
+});
+
+test("decodes visual teaching graphics following the held wagon with clear spoken captions and verifies the joined lesson", async ({ page }, info) => {
+  test.setTimeout(140_000);
+  const expected = visualTeachingExample(transformExample("wagon"), "wagon");
+  const [repair, rollout] = expected.scenes;
+  await page.goto("./");
+  await page.getByText("Try a Visual Teaching example", { exact: true }).click();
+  await page.getByRole("button", { name: expected.title, exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const limit = repair.duration;
+  const first = await render(page, info, "visual-lesson-repair", repair.duration, { limit, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "visual-lesson-roll", rollout.duration, { limit, segment: 2 });
+
+  function rawFrame(movie: string, at: number) {
+    const raw = execFileSync("ffmpeg", ["-v", "error", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS), "-i", movie,
+      "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
+    expect(raw.length).toBe(800 * 450 * 3);
+    return raw;
+  }
+  function pixels(raw: Buffer, x: number, y: number, width: number, height: number,
+    match: (r: number, g: number, b: number) => boolean) {
+    let total = 0;
+    for (let row = Math.max(0, Math.floor(y)); row < Math.min(450, y + height); row++) {
+      for (let col = Math.max(0, Math.floor(x)); col < Math.min(800, x + width); col++) {
+        const index = (row * 800 + col) * 3;
+        if (match(raw[index], raw[index + 1], raw[index + 2])) total++;
+      }
+    }
+    return total;
+  }
+  const yellow = (r: number, g: number, b: number) => r > 235 && g > 219 && b >= 115 && b < 198 && r - g < 38;
+  const early = pixels(rawFrame(first.path, 1.0), 75, 10, 269, 85, yellow);
+  const numbered = pixels(rawFrame(first.path, 2.75), 75, 10, 269, 85, yellow);
+  expect(numbered - early).toBeGreaterThan(400);
+  const wagon = repair.elements.find(item => item.prop === "toy-wagon")!;
+  const arrow = repair.focusGraphics!.find(item => item.kind === "arrow")!;
+  const colors = (r: number, g: number, b: number) => r < 60 && g > 68 && g < 157 && b - g > 22 && b - g < 90;
+  const path = [5.86, 7.77].map(at => {
+    const frames = sceneFramesAt(expected, repair, at);
+    const frame = frames.get(wagon.id)!;
+    expect(frame.heldBy).toBeTruthy();
+    const point = focusAnchor(repair, arrow, frames, cameraAt(repair, at));
+    const count = pixels(rawFrame(first.path, at), point.x - 12, point.y - 12, 24, 24, colors);
+    expect(count, `arrow at the held wheel at ${at}s`).toBeGreaterThan(18);
+    return { at, ...point, count };
+  });
+  const circle = rollout.focusGraphics!.find(item => item.kind === "circle")!;
+  const rolling = [2.32, 2.82].map(at => {
+    const frames = sceneFramesAt(expected, rollout, at);
+    const point = focusAnchor(rollout, circle, frames, cameraAt(rollout, at));
+    const count = pixels(rawFrame(second.path, at), point.x - 25, point.y - 24, 50, 48, colors);
+    expect(count, `highlight follows the rolling wheel at ${at}s`).toBeGreaterThan(45);
+    return { at, ...point, count };
+  });
+  expect(rolling[1].x - rolling[0].x).toBeGreaterThan(22);
+
+  function wheel(raw: Buffer, at: number, x: number, y: number) {
+    const frame = sceneFramesAt(expected, repair, at).get(wagon.id)!;
+    const camera = cameraAt(repair, at);
+    const point = stagePoint(wagon, frame, { x, y });
+    const screenX = 400 + (point.x - camera.x) * camera.zoom, screenY = 225 + (point.y - camera.y) * camera.zoom;
+    return pixels(raw, screenX - 6, screenY - 6, 12, 12,
+      (r, g, b) => r >= 57 && r <= 111 && g - r >= 12 && g - r <= 34 && b - g >= 16 && b - g <= 38);
+  }
+  // Check several frames after the arrow fades and before the repair. The recorder
+  // samples near, rather than exactly at, these times.
+  const looseWheel = [8.9, 9.0, 9.1].map(at => wheel(rawFrame(first.path, at), at, 61, -6));
+  const after = rawFrame(first.path, 9.77);
+  expect(Math.max(...looseWheel)).toBeGreaterThan(30);
+  expect(wheel(after, 9.77, 33, -11)).toBeGreaterThan(30);
+  expect(wheel(after, 9.77, 61, -6)).toBeLessThan(27);
+  const captionInk = pixels(after, 40, 387, 720, 43, (r, g, b) => Math.min(r, g, b) > 210);
+  const captionPlate = pixels(after, 40, 388, 720, 42, (r, g, b) => Math.max(r, g, b) < 56);
+  expect(captionInk).toBeGreaterThan(120);
+  expect(captionPlate).toBeGreaterThan(5000);
+  await info.attach("decoded teaching graphic evidence", {
+    body: JSON.stringify({ early, numbered, path, rolling, looseWheel, captionInk, captionPlate }, null, 2), contentType: "application/json",
+  });
+
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  await downloadAndVerifyMovie(page, info, files, [repair.duration, rollout.duration]);
 });

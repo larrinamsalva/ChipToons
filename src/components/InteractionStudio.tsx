@@ -1,3 +1,4 @@
+import { focusIssue, reconcileFocusReferences } from "../focus-model";
 import { reconcileTransformReferences } from "../transform-motion";
 import { transformIssue } from "../transform-model";
 import { useState } from "react";
@@ -46,9 +47,9 @@ export function InteractionStudio({ project, scene, current, time, selectedId, s
   const actor = actors.find(item => item.id === draft.actorId);
   const receiver = actors.find(item => item.id === draft.transfer?.actorId);
   const actionList = [...(scene.interactions ?? []).filter(action => action.id !== draft.id), draft];
-  const linked = reconcileTransformReferences({ ...scene, interactions: actionList, elements }, scene);
+  const linked = reconcileFocusReferences(reconcileTransformReferences({ ...scene, interactions: actionList, elements }, scene), scene);
   const issue = interactionIssue(actionList, scene.duration, elements) ??
-    transformIssue(linked.objectTracks, linked, new Set(project.assets.map(asset => asset.id)));
+    transformIssue(linked.objectTracks, linked, new Set(project.assets.map(asset => asset.id))) ?? focusIssue(linked.focusGraphics, linked);
   const compatibleWalk = !previewScene && canWalkForAction(actor) && draft.kind !== "point";
   const proposedElements = walk && !issue && compatibleWalk && actor
     ? elements.map(item => item === actor ? walkForAction(project, actor, { ...scene, elements }, draft) : item) : elements;

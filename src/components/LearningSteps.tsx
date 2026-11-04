@@ -8,10 +8,11 @@ import type { LearningStep } from "../transform-model";
 import { MediaNumber } from "./MediaNumber";
 import { ScenePreview } from "./ScenePreview";
 
-export function LearningSteps({ project, scene, onApply, onLine }: {
+export function LearningSteps({ project, scene, onApply, onLine, onFocus }: {
   project: Project; scene: Scene;
   onApply: (steps: LearningStep[]) => boolean | void;
   onLine: (id: string) => void;
+  onFocus: (stepId: string) => void;
 }) {
   const saved = JSON.stringify(scene.learningSteps ?? []);
   const [seen, setSeen] = useState(saved);
@@ -90,6 +91,8 @@ export function LearningSteps({ project, scene, onApply, onLine }: {
       <p className="field-hint">{current.cue ? "Linked scene moment" : "Preview the animation and check this instruction"} · {stepTime(scene, current).toFixed(2)} s</p>
       <div className="director-actions">
         <button className="button secondary small" onClick={() => setPreview(current)}>Check this moment in the scene</button>
+        <button className="button secondary small" disabled={JSON.stringify(draft) !== saved}
+          onClick={() => onFocus(current.id)}>Show This Step on Screen</button>
         {current.lineId && <button className="button text small" onClick={() => onLine(current.lineId!)}>Open linked script line</button>}
         <button className="button text small" onClick={() => {
           const remaining = draft.filter(step => step.id !== current.id);
@@ -99,6 +102,7 @@ export function LearningSteps({ project, scene, onApply, onLine }: {
     </>}
     {preview && <ScenePreview key={preview.id} project={project} scene={scene} initialTime={stepTime(scene, preview)} precision={2} />}
     {issue && <p role="alert">{issue}</p>}
+    {current && JSON.stringify(draft) !== saved && <p className="field-hint">Apply learning steps before turning one into a teaching graphic.</p>}
     <div className="director-actions">
       <button className="button primary small" disabled={!!issue || JSON.stringify(draft) === saved}
         onClick={() => { if (onApply(draft) !== false) setNotice("Learning steps saved."); }}>Apply learning steps</button>

@@ -1,3 +1,5 @@
+import { focusAnchor, focusLayout, focusTiming, sceneCaptionBand } from "../focus-motion";
+import { CaptionGuide, FocusArt } from "./FocusArt";
 import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
 import { PuppetArt } from "./PuppetArt";
@@ -311,6 +313,8 @@ export const Stage = memo(function Stage({
   calmPreview = false,
   anchorMarkers,
   releaseMarker,
+  captionGuide = false,
+  onFocusPosition,
 }: {
   project: Project;
   scene: Scene;
@@ -319,6 +323,8 @@ export const Stage = memo(function Stage({
   calmPreview?: boolean;
   anchorMarkers?: { actorId: string; grip: Grip }[];
   releaseMarker?: Point;
+  captionGuide?: boolean;
+  onFocusPosition?: (point: Point) => void;
   showCaption?: boolean;
   labelled?: boolean;
   selectedId?: string;
@@ -346,6 +352,13 @@ export const Stage = memo(function Stage({
   const t = time ?? progress * scene.duration;
   const frames = sceneFramesAt(project, scene, t, voiceStart, calmPreview);
   const camera = cameraAt(scene, t, calmPreview, frames.get(scene.cameraAnimation?.followId ?? ""));
+  const focus = scene.focusGraphics?.flatMap(graphic => {
+    const timing = focusTiming(scene, graphic, t, calmPreview);
+    if (!timing) return [];
+    const point = focusAnchor(scene, graphic, frames, camera, calmPreview);
+    return point.x < 0 || point.x > 800 || point.y < 0 || point.y > 450 ? [] : [{ graphic, point, ...timing }];
+  }).sort((a, b) => Number(b.graphic.kind === "spotlight") - Number(a.graphic.kind === "spotlight"));
+  const band = captionGuide || focus?.length ? sceneCaptionBand(project, scene) : undefined;
   const paintOrder = scene.interactions?.length ? interactionPaintOrder(scene.elements, frames) : scene.elements;
   const background = backgroundAt(scene, t, calmPreview);
   const night = scene.background === "moonlight";
@@ -393,7 +406,14 @@ export const Stage = memo(function Stage({
   return (
     <svg
       ref={root}
-      style={onSelect ? { touchAction: "none" } : undefined}
+      onPointerDown={onFocusPosition ? event => {
+        const matrix = root.current?.getScreenCTM();
+        if (!matrix) return;
+        const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+        if (point.x >= 0 && point.x <= 800 && point.y >= 0 && point.y <= 450)
+          onFocusPosition({ x: Math.round(point.x), y: Math.round(point.y) });
+      } : undefined}
+      style={onSelect || onFocusPosition ? { touchAction: "none" } : undefined}
       viewBox="0 0 800 450"
       role={onSelect ? "group" : labelled ? "img" : undefined}
       aria-label={labelled ? `${scene.title}: ${scene.action}` : undefined}
@@ -761,6 +781,10 @@ export const Stage = memo(function Stage({
             })}
           </g>
         </g>
+        {focus?.map(({ graphic, point, opacity, progress }) =>
+          <FocusArt key={graphic.id} graphic={graphic} point={point} opacity={opacity} progress={progress}
+            layout={focusLayout(graphic, point, band)} />)}
+        {captionGuide && <CaptionGuide band={band} />}
         {showCaption && (
           <g>
             <rect

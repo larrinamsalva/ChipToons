@@ -1,11 +1,14 @@
+import { sceneCaptionText } from "../production";
+import { CaptionOverlay } from "./CaptionOverlay";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Project, Scene } from "../model";
 import type { Grip, Point } from "../interaction-model";
 import { PlaybackClock } from "../playback";
 import { Stage } from "./Stage";
 
-export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1 }: {
+export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition }: {
   project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point; precision?: 1 | 2 | 3;
+  captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
 }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
@@ -23,14 +26,19 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
   }, [clock, scene.duration]);
   return (
     <section className="assistant-preview" aria-label="Proposed scene preview">
-      <Stage
-        project={project}
-        scene={scene}
-        time={Math.min(frame.seconds, scene.duration)}
-        calmPreview={calm}
-        anchorMarkers={markers}
-        releaseMarker={releaseMarker}
-      />
+      <div className="live-stage">
+        <Stage
+          project={project}
+          scene={scene}
+          time={Math.min(frame.seconds, scene.duration)}
+          calmPreview={calm}
+          anchorMarkers={markers}
+          releaseMarker={releaseMarker}
+          captionGuide={captionGuide}
+          onFocusPosition={onFocusPosition}
+        />
+        {showCaptions && <CaptionOverlay text={sceneCaptionText(project, scene, frame.seconds)} style={project.captionStyle} />}
+      </div>
       <div className="assistant-actions">
         <button
           type="button"

@@ -121,18 +121,17 @@ export function newAudioClip(
     fadeOut: 0,
   };
 }
-export function captionText(project: Project, seconds: number) {
-  const f = frameAt(project, seconds);
+export function sceneCaptionText(project: Project, scene: Scene, time: number) {
   return project.captions
-    .filter(
-      (c) =>
-        c.sceneId === f.scene.id &&
-        f.localTime >= c.start &&
-        f.localTime < c.end,
-    )
-    .map((c) => c.text)
+    .filter(caption => caption.sceneId === scene.id && time >= caption.start && time < caption.end)
+    .map(caption => caption.text)
     .join("\n");
 }
+export function captionText(project: Project, seconds: number) {
+  const frame = frameAt(project, seconds);
+  return sceneCaptionText(project, frame.scene, frame.localTime);
+}
+
 export function captionsFromText(scene: Scene): Caption[] {
   const text = [scene.narration, scene.dialogue].filter(Boolean).join("\n"),
     words = text.trim().split(/\s+/).filter(Boolean),

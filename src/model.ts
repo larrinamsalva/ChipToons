@@ -1,3 +1,5 @@
+import { focusIssue } from "./focus-model";
+import type { FocusGraphic } from "./focus-model";
 import { learningIssue, transformIssue, validAppearance } from "./transform-model";
 import type { LearningStep, ObjectTrack, PropAppearance } from "./transform-model";
 import { interactionIssue } from "./interaction-model";
@@ -136,6 +138,7 @@ export interface Scene {
   interactions?: Interaction[];
   objectTracks?: ObjectTrack[];
   learningSteps?: LearningStep[];
+  focusGraphics?: FocusGraphic[];
 }
 export interface Outline {
   beginning: string;
@@ -440,7 +443,7 @@ export function validateProject(value: unknown): Project {
     if (interactionIssue(s.interactions, s.duration as number, s.elements as SceneElement[])) fail();
     for (const action of (s.interactions ?? []) as Interaction[]) unique(action.id);
     const scene = s as unknown as Scene;
-    if (transformIssue(s.objectTracks, scene, assetIds, unique) || learningIssue(s.learningSteps, scene, unique)) fail();
+    if (transformIssue(s.objectTracks, scene, assetIds, unique) || learningIssue(s.learningSteps, scene, unique) || focusIssue(s.focusGraphics, scene, unique)) fail();
     const elementIds = new Set(
       s.elements.map((e) => (e as Record<string, unknown>).id as string),
     );

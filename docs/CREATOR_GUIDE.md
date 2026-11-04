@@ -2,6 +2,11 @@
 
 ChipToons is a free, local-first studio for original educational cartoons. No login or paid service is needed. The planner uses local templates. You remain the storyteller: it does not interpret photographs, rig bodies, record voices automatically or produce finished footage from a duration goal.
 
+## Point out what children should notice
+
+In **Edit scene**, open **Show What We're Learning**. Choose an arrow, circle, spotlight, step number, label, or instruction card. **Follow Object** follows an animated detail such as a wagon wheel. **Stay on Screen** holds text in one viewer position. Preview with the caption safe area before applying. In **Teach It Step by Step**, choose **Show This Step on Screen** to start from an existing teaching moment. [Visual teaching walkthrough](VISUAL_TEACHING_FOCUS.md)
+
+
 ## Show a repair, build, or other change
 
 Choose **Show How Something Changes** in **Edit scene**. Pick one object, choose its starting and finished appearance, and enter a time or link an existing interaction event. Preview the result and select **Apply**. Open the appearance marker in the animation timeline to adjust it later. In **Write My Episode Script**, use **Teach It Step by Step** to match a lesson or spoken line to the real action. The dashboard examples include **Helping Hands and the Wobbly Wagon**. [Fix, Build & Transform walkthrough](FIX_BUILD_TRANSFORM.md)
