@@ -103,6 +103,8 @@ export default defineConfig({
           },
           {
             name: "media-export",
+            // Real-time encoders share CPU and compositor resources on CI runners.
+            workers: 1,
             testMatch: "**/video-export-proof.spec.ts",
             use: {
               browserName: "chromium",
