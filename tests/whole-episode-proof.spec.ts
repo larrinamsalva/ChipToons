@@ -196,6 +196,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   expect(plan.oversized).toEqual([]);
   expect(plan.segments).toHaveLength(10);
   const measures = [];
+  const deliveryPaths: string[] = [];
   for (const [index, segment] of plan.segments.entries()) {
     const part = index + 1;
     console.info(
@@ -239,6 +240,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
       `part-${String(part).padStart(2, "0")}-scenes-${segment.firstScene + 1}-${segment.lastScene + 1}`,
     );
     await movie.saveAs(path);
+    deliveryPaths.push(path);
     await info.attach(`part-${part}-complete-video`, {
       path,
       contentType: "video/webm",
@@ -363,6 +365,25 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
     body: await page.screenshot(),
     contentType: "image/png",
   });
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  await page.getByLabel("Choose video files", { exact: true }).setInputFiles(deliveryPaths);
+  await expect(page.getByRole("status").filter({ hasText: /10 of 10 parts assigned.*Ready for delivery/ }))
+    .toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("Exact recorded export match", { exact: true })).toHaveCount(10);
+  const delivery = page.waitForEvent("download", { timeout: 60_000 });
+  await page.getByRole("button", { name: "Download Episode Delivery Package", exact: true }).click();
+  const deliveryZip = info.outputPath("complete-episode-delivery.zip");
+  await (await delivery).saveAs(deliveryZip);
+  execFileSync("unzip", ["-tq", deliveryZip]);
+  const manifestText = execFileSync("unzip", ["-p", deliveryZip, "part-order.json"], { encoding: "utf8" });
+  const manifest = JSON.parse(manifestText);
+  expect(manifest.seconds).toBe(1200);
+  expect(manifest.parts.map((part: { start: number }) => part.start)).toEqual(plan.segments.map(segment => segment.start));
+  await page.getByLabel("Choose a delivery package", { exact: true }).setInputFiles(deliveryZip);
+  await expect(page.getByRole("heading", { name: "Package checks passed", exact: true })).toBeVisible({ timeout: 60_000 });
+  await info.attach("twenty-minute-delivery-manifest", { body: manifestText, contentType: "application/json" });
+  await info.attach("twenty-minute-delivery-check", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByRole("button", { name: "Back to exports", exact: true }).click();
   await page
     .getByRole("button", { name: "Back to studio", exact: true })
     .click();
