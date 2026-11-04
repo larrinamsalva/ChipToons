@@ -104,7 +104,8 @@ export function updateScenePuppet(
     throw new Error(
       "The new rig removes an animated joint. Add it as a new character to keep this animation intact.",
     );
-  const project = placeLibraryItem(source, sceneIndex, item);
+  const seriesCastId = source.characters.find(character => character.id === old.characterId)?.seriesCastId;
+  const project = placeLibraryItem(source, sceneIndex, item, seriesCastId);
   const scene = project.scenes[sceneIndex];
   const placed = scene.elements.at(-1)!;
   scene.elements = scene.elements

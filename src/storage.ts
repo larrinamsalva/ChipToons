@@ -4,7 +4,7 @@ import type { AudioMime } from "./media-model";
 
 const DB_NAME = "chiptoons-studio";
 const STORE = "projects";
-export const DATABASE_VERSION = 5;
+export const DATABASE_VERSION = 6;
 export const projectStores = [STORE, "media", "settings", "media-info"];
 export interface OriginalInfo {
   key: string;
@@ -41,6 +41,8 @@ export function db(): Promise<IDBDatabase> {
         req.result.createObjectStore(STORE, { keyPath: "id" });
       if (!req.result.objectStoreNames.contains("library"))
         req.result.createObjectStore("library", { keyPath: "id" });
+      if (!req.result.objectStoreNames.contains("series"))
+        req.result.createObjectStore("series", { keyPath: "id" });
       if (!req.result.objectStoreNames.contains("settings"))
         req.result.createObjectStore("settings");
     };

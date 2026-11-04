@@ -135,6 +135,8 @@ export const PLAYGROUND_BRIEF: StoryBrief = {
 export interface CastChoice {
   name: string;
   library?: LibraryItem;
+  seriesCastId?: string;
+  heart?: Heart;
 }
 export interface Direction {
   sceneId: string;
@@ -684,6 +686,7 @@ export function createAssistantDraft(
   brief: StoryBrief,
   cast: CastChoice[],
   prop?: PropName,
+  closingQuestion?: string,
 ) {
   if (
     !cast.length ||
@@ -692,9 +695,12 @@ export function createAssistantDraft(
   )
     throw new Error("Name one to three characters before planning.");
   const names = cast.map((c) => c.name.trim());
-  if (new Set(names.map((n) => n.toLowerCase())).size !== names.length)
-    throw new Error("Give each character a different name.");
+  const identities = cast.map((choice, i) => choice.seriesCastId
+    ? `cast:${choice.seriesCastId}` : `name:${names[i].toLowerCase()}`);
+  if (new Set(identities).size !== names.length)
+    throw new Error("Choose each recurring character once and give other characters different names.");
   const script = suggestScript(brief, names);
+  if (closingQuestion?.trim()) script[script.length - 1].question = closingQuestion.trim();
   let project = planStory({
     ...DEFAULT_IDEA,
     ...brief,
@@ -713,11 +719,11 @@ export function createAssistantDraft(
     outline,
     scenes: [{ ...makeScene([]), elements: [] }],
   };
-  const templates = cast.map(({ library }, i) => {
+  const templates = cast.map(({ library, seriesCastId }, i) => {
     if (library) {
       if (library.kind !== "character")
         throw new Error("Choose a saved character from the art library.");
-      project = placeLibraryItem(project, 0, { ...library, name: names[i] });
+      project = placeLibraryItem(project, 0, { ...library, name: names[i] }, seriesCastId);
       return project.scenes[0].elements.at(-1)!;
     }
     return { ...makeScene([originals[i]]).elements[0] };
@@ -725,10 +731,11 @@ export function createAssistantDraft(
   const characterIds = new Set(templates.map((e) => e.characterId));
   project.characters = project.characters
     .filter((c) => characterIds.has(c.id))
-    .map((c) => ({
-      ...c,
-      name: names[templates.findIndex((e) => e.characterId === c.id)],
-    }));
+    .map((character) => {
+      const index = templates.findIndex(element => element.characterId === character.id);
+      const seriesCastId = cast[index].seriesCastId;
+      return { ...character, name: names[index], ...(seriesCastId ? { seriesCastId } : {}) };
+    });
   const positioned = templates.map((e, i) => ({
     ...e,
     name: undefined,
@@ -784,13 +791,17 @@ export function createAssistantDraft(
               action: `${scene.action} ${hasWalkCue(brief.idea) ? "Walk over" : ""} ${/\b(reveal\w*|discover\w*)\b/i.test(brief.idea) ? "Reveal" : ""}`,
             }
           : scene;
-    return suggestDirection(
+    const direction = suggestDirection(
       project,
       cues,
       false,
       brief.hearts,
       brief.style === "expressive",
     );
+    const actor = scene.elements.find(e => e.id === direction.actorId);
+    const choice = cast[templates.findIndex(e => e.characterId === actor?.characterId)];
+    return direction.heart !== "off" && choice?.heart && choice.heart !== "off"
+      ? { ...direction, heart: choice.heart } : direction;
   });
   return { project, positioned, directions };
 }

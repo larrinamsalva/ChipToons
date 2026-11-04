@@ -17,6 +17,9 @@ import { ArtworkStart } from "./components/ArtworkStart";
 import type { ArtworkRole } from "./story";
 import { IdeaWizard } from "./components/IdeaWizard";
 import { CartoonAssistant } from "./components/CartoonAssistant";
+import type { AssistantSeed } from "./components/CartoonAssistant";
+import { createSeriesEpisode } from "./series-storage";
+import type { SavedSeries } from "./series-storage";
 import { Modal } from "./components/Modal";
 import { ArtLibrary } from "./components/ArtLibrary";
 import { placeLibraryItem } from "./library";
@@ -34,6 +37,7 @@ import {
   ProjectConflict,
 } from "./storage";
 
+const SeriesStudio = lazy(() => import("./components/SeriesStudio").then(module => ({ default: module.SeriesStudio })));
 const RecoveryCenter = lazy(() => import("./components/RecoveryCenter").then(module => ({ default: module.RecoveryCenter })));
 
 type Dialog =
@@ -55,11 +59,12 @@ type Dialog =
   | { type: "art-draw" }
   | { type: "draw" | "help" | "upload" }
   | { type: "recovery" }
-  | { type: "puppet"; initial?: LibraryItem; sceneIndex?: number; fromLibrary?: boolean }
+  | { type: "series"; id?: string; episodeId?: string; panel?: "Episode Plans" | "Recurring Cast" }
+  | { type: "puppet"; initial?: LibraryItem; sceneIndex?: number; fromLibrary?: boolean; seriesId?: string }
   | { type: "puppet-update"; item: LibraryItem; sceneIndex: number; source: Project }
-  | { type: "assistant"; source?: Project }
+  | { type: "assistant"; source?: Project; episode?: { saved: SavedSeries; id: string; seed: AssistantSeed } }
   | { type: "delete"; project: Project; revision: string | null }
-  | { type: "library"; sceneIndex?: number; draft?: LibraryItem }
+  | { type: "library"; sceneIndex?: number; draft?: LibraryItem; seriesId?: string }
   | null;
 function initialTheme(): "light" | "dark" {
   try {
@@ -673,6 +678,7 @@ export default function App() {
           onDraw={() => setDialog({ type: "draw" })}
           onOpen={(p) => void open(p, true)}
           onRecovery={() => setDialog({ type: "recovery" })}
+          onSeries={() => setDialog({ type: "series" })}
           onDuplicate={(p) => void duplicate(p)}
           onDelete={(project) => void confirmDelete(project)}
           onImport={() => backupInput.current?.click()}
@@ -690,11 +696,28 @@ export default function App() {
           </span>
         </footer>
       )}
+      {dialog?.type === "series" && (
+        <Suspense fallback={<Modal title="My Cartoon Series" onClose={() => setDialog(null)}><p role="status">Opening series…</p></Modal>}>
+          <SeriesStudio initialId={dialog.id} initialEpisodeId={dialog.episodeId} initialPanel={dialog.panel}
+            onClose={() => setDialog(null)} onOpen={project => void open(project, true)}
+            onCreate={(saved, episode, seed) => setDialog({ type: "assistant", episode: { saved, id: episode.id, seed } })}
+            onLibrary={(seriesId, puppet) => setDialog(puppet ? { type: "puppet", seriesId } : { type: "library", seriesId })}
+          />
+        </Suspense>
+      )}
       {dialog?.type === "assistant" && (
         <CartoonAssistant
           source={dialog.source}
-          onClose={() => setDialog(null)}
+          seed={dialog.episode?.seed}
+          onClose={() => setDialog(dialog.episode
+            ? { type: "series", id: dialog.episode.saved.id, episodeId: dialog.episode.id, panel: "Episode Plans" } : null)}
           onApply={async (proposal) => {
+            if (dialog.episode) {
+              const { saved, id } = dialog.episode;
+              const projectId = await createSeriesEpisode(saved.id, id, saved.revision, proposal);
+              await open({ ...proposal, id: projectId }, true);
+              return;
+            }
             if (!dialog.source) {
               await open(proposal);
               return;
@@ -761,7 +784,8 @@ export default function App() {
       {dialog?.type === "puppet" && (
         <PuppetMaker
           initial={dialog.initial}
-          onClose={() => setDialog(dialog.fromLibrary ? { type: "library", sceneIndex: dialog.sceneIndex } : null)}
+          onClose={() => setDialog(dialog.fromLibrary ? { type: "library", sceneIndex: dialog.sceneIndex, seriesId: dialog.seriesId }
+            : dialog.seriesId ? { type: "series", id: dialog.seriesId, panel: "Recurring Cast" } : null)}
           onDemo={current ? undefined : () => void open(sunnyCartoon())}
           onUse={async item => {
             if (!current) {
@@ -798,10 +822,10 @@ export default function App() {
       )}
       {dialog?.type === "library" && (
         <ArtLibrary
-          onClose={() => setDialog(null)}
+          onClose={() => setDialog(dialog.seriesId ? { type: "series", id: dialog.seriesId, panel: "Recurring Cast" } : null)}
           draft={dialog.draft}
           inProject={!!current}
-          onPuppet={initial => setDialog({ type: "puppet", initial, sceneIndex: dialog.sceneIndex, fromLibrary: true })}
+          onPuppet={initial => setDialog({ type: "puppet", initial, sceneIndex: dialog.sceneIndex, fromLibrary: true, seriesId: dialog.seriesId })}
           onPuppetUpdate={current ? item => setDialog({ type: "puppet-update", source: current, item, sceneIndex: dialog.sceneIndex ?? 0 }) : undefined}
           onUse={(item, three) => {
             let p = current ?? starterProject();

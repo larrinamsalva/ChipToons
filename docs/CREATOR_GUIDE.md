@@ -126,3 +126,15 @@ Puppets support up to 20 parts and 24 saved poses. Project and library backups i
 ![Pose Studio with a saved waving pose and expression controls.](puppet-poses.webp)
 ![Selected timeline keyframe showing editable puppet joints.](puppet-timeline.webp)
 ![Puppet Maker joint preview on a phone.](puppet-phone.webp)
+
+## Plan a cartoon series
+
+1. From **My Cartoon Series**, choose **New series**. Name it, enter your audience and themes, then **Save series**. For a ready-to-edit example, choose **Add The Kind Hearts Crew**. The starter adds six reusable puppets and 30 editable plans.
+2. Use **Series Bible** for the details that should carry across episodes, including who lives where, how characters help each other, and what the audience learns.
+3. In **Recurring Cast**, choose **Add cast member**. Select an existing character or puppet under **Artwork or puppet from your library** and give that member a role and strengths. A cast member can share a name with another member. Roles make those members easier to distinguish.
+4. Choose **Episode Plans** to add or edit a plan, assign cast, and set its lesson and learning question. **Move earlier** and **Move later** reorder plans with a keyboard or tap. **Use 30-episode template** in Overview fills an empty board with editable lessons.
+5. Save your plan and choose **Create This Episode**. The Assistant starts from the plan, offers its recurring cast, and lets you review scenes, actions and camera. **Create animated first draft** saves and links a normal cartoon. Return to the plan and choose **Open linked cartoon** to continue.
+6. Check **Continuity review** and production readiness on each linked plan. Mark production status yourself. To link a cartoon you already made, choose it under **Linked cartoon** and save. Choose **No linked cartoon** and save to remove the link while keeping the cartoon.
+7. Choose **Download series plan** for the bible and planning board. Keep each cartoon’s **Project backup** and an **art-library backup** for its source artwork and recordings. **Restore series-plan backup** opens a separate series copy where you can relink your cartoons.
+
+See [Series & Cast Continuity Studio](SERIES_STUDIO.md) for storage and restore behavior.

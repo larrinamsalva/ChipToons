@@ -15,6 +15,7 @@ export function Dashboard({
   onDraw,
   onOpen,
   onRecovery,
+  onSeries,
   onDuplicate,
   onDelete,
   onImport,
@@ -31,6 +32,7 @@ export function Dashboard({
   onDraw: () => void;
   onOpen: (p: Project) => void;
   onRecovery: () => void;
+  onSeries: () => void;
   onDuplicate: (p: Project) => void;
   onDelete: (p: Project) => void;
   onImport: () => void;
@@ -254,6 +256,7 @@ export function Dashboard({
             </h2>
           </div>
           <div className="section-actions">
+            <button className="button secondary small" onClick={onSeries}>My Cartoon Series</button>
             <button className="button secondary small" onClick={onRecovery}>
               Project &amp; Media Recovery
             </button>

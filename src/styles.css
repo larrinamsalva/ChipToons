@@ -5331,3 +5331,112 @@ input[type="color"] {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.series-studio,
+.series-fields {
+  display: grid;
+  min-width: 0;
+  gap: 0.85rem;
+}
+.series-studio p,
+.series-card h3,
+.series-card h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.series-studio label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.series-studio :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+}
+.series-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.series-studio button {
+  min-height: 44px;
+}
+.series-card {
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.series-edit {
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+}
+.series-studio fieldset.series-fields {
+  min-width: 0;
+  border: 1px solid var(--line);
+}
+.series-episode-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.75rem), 1fr));
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+  max-height: 19rem;
+  overflow: auto;
+}
+.series-episode-grid li {
+  min-width: 0;
+}
+.series-episode {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.series-episode[aria-current] {
+  background: var(--mint);
+  border-color: var(--ring);
+}
+.series-cast-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 1rem;
+}
+.series-art {
+  border-radius: 0.8rem;
+  overflow: hidden;
+}
+.series-reference dt {
+  font-weight: 700;
+}
+.series-reference dd {
+  margin: 0 0 0.7rem;
+}
+.series-footer {
+  border-top: 1px solid var(--line);
+  padding-top: 0.75rem;
+}
+@media (max-width: 640px) {
+  .series-cast-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .series-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.series-status:empty {
+  position: absolute;
+}
+.series-studio input[hidden] {
+  display: none;
+}
