@@ -234,7 +234,7 @@ export async function audioBytes(source: AudioAsset) {
     );
   return new Uint8Array(buffer);
 }
-export async function missingAudio(project: Project) {
+export async function missingAudio(project: Pick<Project, "audioAssets">) {
   const database = await db();
   return new Promise<string[]>((resolve, reject) => {
     const missing: string[] = [],

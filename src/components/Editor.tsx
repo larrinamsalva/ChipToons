@@ -2,6 +2,7 @@ import type { AudioFile } from "../audio-vault";
 import { PreviewAudio } from "../audio-engine";
 import type { AudioCategory } from "../media-model";
 import { reconcileProduction, duplicateSceneMedia } from "../production";
+import { duplicateScript, reconcileScriptClips } from "../script";
 import { VoiceStudio } from "./VoiceStudio";
 import { lazy, memo, Suspense, useEffect, useRef, useState } from "react";
 import { StoryOverview } from "./StoryOverview";
@@ -46,6 +47,8 @@ import type { LibraryItem } from "../library";
 import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
+const ScriptDirector = lazy(() => import("./ScriptDirector").then(module => ({ default: module.ScriptDirector })));
+
 const FinishCartoon = lazy(() =>
   import("./FinishCartoon").then((m) => ({ default: m.FinishCartoon })),
 );
@@ -63,6 +66,7 @@ const SceneThumbnail = memo(
 
 export function Editor({
   project,
+  startScript = false,
   onChange,
   onConvert,
   onBack,
@@ -77,6 +81,7 @@ export function Editor({
   onAssistant,
 }: {
   project: Project;
+  startScript?: boolean;
   onChange: (p: Project) => void;
   onConvert: (p: Project, files: AudioFile[]) => Promise<void>;
   onBack: () => void;
@@ -100,8 +105,11 @@ export function Editor({
   const [sound, setSound] = useState(true),
     [audioBusy, setAudioBusy] = useState(false);
   const playTicket = useRef(0);
+  const [scriptOpen, setScriptOpen] = useState(startScript);
+  const [scriptLine, setScriptLine] = useState("");
   const [voiceStudio, setVoiceStudio] = useState<{
       clipId?: string;
+      lineId?: string;
       category?: AudioCategory;
       tab?: "sound" | "captions";
     } | null>(null),
@@ -165,8 +173,9 @@ export function Editor({
   function updateProduction(next: Project) {
     halt();
     try {
-      validateProject(next);
-      onChange(next);
+      const reconciled = reconcileScriptClips(next);
+      validateProject(reconciled);
+      onChange(reconciled);
       setEditError("");
     } catch (e) {
       setEditError(
@@ -405,7 +414,10 @@ export function Editor({
   }
   function duplicateScene() {
     if (project.scenes.length >= 120) return;
-    const copy = duplicateAnimatedScene(scene);
+    const animated = duplicateAnimatedScene(scene);
+    const media = duplicateSceneMedia(project, scene, animated);
+    const copy = duplicateScript(animated, project.audioClips.filter(clip => clip.sceneId === scene.id),
+      media.audioClips.slice(project.audioClips.length));
     copy.title = `${copy.title.slice(0, 150)} (copy)`;
     const scenes = [...project.scenes];
     scenes.splice(index + 1, 0, copy);
@@ -413,7 +425,7 @@ export function Editor({
       validateProject({
         ...project,
         scenes,
-        ...duplicateSceneMedia(project, scene, copy),
+        ...media,
       });
     } catch {
       setEditError(
@@ -424,7 +436,7 @@ export function Editor({
     onChange({
       ...project,
       scenes,
-      ...duplicateSceneMedia(project, scene, copy),
+      ...media,
     });
     setSelected(index + 1);
     halt();
@@ -621,6 +633,9 @@ export function Editor({
             }}
           >
             Story chapters
+          </button>
+          <button className="button secondary small" onClick={() => { halt(); setScriptOpen(true); }}>
+            Write My Episode Script
           </button>
           <button
             className="button text small"
@@ -973,11 +988,13 @@ export function Editor({
                   }
                 />
               </label>
+              {scene.script && <p className="field-hint">This scene uses numbered lines. Open Write My Episode Script to edit the words.</p>}
               <label>
                 Narration
                 <textarea
                   rows={4}
                   maxLength={6000}
+                  readOnly={!!scene.script}
                   value={scene.narration}
                   placeholder="Tell this part of your story…"
                   onChange={(e) => changeScene({ narration: e.target.value })}
@@ -988,6 +1005,7 @@ export function Editor({
                 <textarea
                   rows={3}
                   maxLength={6000}
+                  readOnly={!!scene.script}
                   value={scene.dialogue}
                   placeholder={'Pip: "Let’s try together!"'}
                   onChange={(e) => changeScene({ dialogue: e.target.value })}
@@ -1489,6 +1507,21 @@ export function Editor({
           }}
         />
       )}
+      {scriptOpen && !voiceStudio && (
+        <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
+          <ScriptDirector project={project} index={index} selected={scriptLine}
+            onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
+            onClose={() => setScriptOpen(false)}
+            onRecord={lineId => {
+              halt();
+              setScriptLine(lineId);
+              setVoiceStudio({ lineId });
+            }}
+            onTiming={clipId => openVoice(clipId)} onCaptions={() => openVoice(undefined, undefined, "captions")}
+            onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} saveStatus={saveStatus} saveError={saveError}
+          />
+        </Suspense>
+      )}
       {voiceStudio && (
         <VoiceStudio
           project={project}
@@ -1499,6 +1532,7 @@ export function Editor({
             scene.duration,
           )}
           initialClip={voiceStudio.clipId}
+          lineTarget={voiceStudio.lineId}
           initialCategory={voiceStudio.category}
           initialTab={voiceStudio.tab}
           onChange={updateProduction}
@@ -1506,6 +1540,7 @@ export function Editor({
           onClose={() => setVoiceStudio(null)}
           onPreview={() => {
             setVoiceStudio(null);
+            setScriptOpen(false);
             void play(false, true);
           }}
           saveStatus={saveStatus}

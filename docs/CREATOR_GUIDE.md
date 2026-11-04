@@ -138,3 +138,14 @@ Puppets support up to 20 parts and 24 saved poses. Project and library backups i
 7. Choose **Download series plan** for the bible and planning board. Keep each cartoon’s **Project backup** and an **art-library backup** for its source artwork and recordings. **Restore series-plan backup** opens a separate series copy where you can relink your cartoons.
 
 See [Series & Cast Continuity Studio](SERIES_STUDIO.md) for storage and restore behavior.
+
+## Write the script and record a line
+
+1. Open **Write My Episode Script** from a linked series episode or the episode toolbar. Pick a scene and use **Organize existing words**, **Add dialogue line**, or **Add narration line**. Choose the speaker and write a delivery note. Move lines with **Move line earlier** and **Move line later**. The pacing section shows an estimate beside actual storyboard time.
+2. Open **Local dialogue suggestions** to add or skip individual ideas. Add an acting cue, preview it, and apply it to a supported, unused animation track if you like the result.
+3. Choose **Record This Line**. Read the large prompt and start the microphone or upload a take. Listen, choose **Save take to this line**, and wait for **Saved on this device**.
+4. Return to the script, listen to the available takes, and use **Use this take** to place the preferred recording. Approve it after listening. **Jump to an unfinished line** takes you straight to the right scene. If you change the words later, review the take again.
+5. Use **Edit audio timing** for trims, fades and clip placement. **Add script caption drafts** fills open times. Review them in **Edit timed captions**. Preview the cartoon with sound before exporting.
+6. Choose **Download script** for a printable copy and **Project backup** for your editable script and recordings. Try **Add A Hello Heart sample** in the matching Kind Hearts Crew episode to hear an original example.
+
+See [Script & Voice Director Studio](SCRIPT_VOICE_DIRECTOR.md) for the recording and backup details.

@@ -77,3 +77,7 @@ Versioned puppet rigs and editable joint snapshots extend schema 4 without a dat
 ## PR #10 — Series & Cast Continuity Studio
 
 **My Cartoon Series** connects the existing Assistant, project editor, Character & Art Library, Puppet Maker and production checks. It adds a series bible, recurring cast references, a thirty-episode planning board, continuity review and an optional original Kind Hearts Crew starter. Episode creation atomically links one normal cartoon, including when two tabs apply a draft. Local series plans have their own portable backup. IndexedDB version 6 adds a series store while the project schema and complete episode format stay compatible. See the [foundation audit and technical notes](SERIES_STUDIO.md).
+
+## PR #11 — Script & Voice Director Studio
+
+**Write My Episode Script** organizes numbered spoken lines by scene and chapter, reuses the episode cast, estimates pacing, and integrates the existing audio recorder and mixer. It adds per-line take selection and review, recurring voice notes, additive caption drafts, and a reviewed acting preview. Project schema 4 and IndexedDB 6 stay compatible. The original **A Hello Heart** example includes a genuine embedded narration take. See the [foundation audit and workflow](SCRIPT_VOICE_DIRECTOR.md).

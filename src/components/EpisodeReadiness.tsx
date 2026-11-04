@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Project } from "../model";
 import { missingAudio } from "../audio-vault";
 import { clipStart } from "../production";
+import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
 export function EpisodeReadiness({
   project,
@@ -37,6 +38,7 @@ export function EpisodeReadiness({
       alive = false;
     };
   }, [project, onReady]);
+  const missingSources = new Set(missing);
   const rows = project.scenes.map((scene, index) => {
     const start = sceneStart(project, index),
       voice = project.audioClips.filter(
@@ -52,6 +54,8 @@ export function EpisodeReadiness({
       index,
       voice,
       missing: voice.some((c) => missing.includes(c.assetId)),
+      lineCount: scene.script?.lines.filter(line => line.text.trim()).length ?? 0,
+      approved: scene.script?.lines.filter(line => line.text.trim() && lineStatus(project, line, missingSources) === "Approved").length ?? 0,
       captions: project.captions.filter((c) => c.sceneId === scene.id).length,
     };
   });
@@ -89,6 +93,7 @@ export function EpisodeReadiness({
               {r.scene.duration}s · {r.voice.length} voice clip(s) ·{" "}
               {r.captions} captions
             </span>
+            {r.lineCount > 0 && <span>{checked ? `${r.approved}/${r.lineCount} script lines approved` : "Checking script recordings"}</span>}
             <span>
               {r.missing
                 ? "Missing original — restore its episode package"

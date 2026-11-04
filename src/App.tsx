@@ -19,6 +19,8 @@ import { IdeaWizard } from "./components/IdeaWizard";
 import { CartoonAssistant } from "./components/CartoonAssistant";
 import type { AssistantSeed } from "./components/CartoonAssistant";
 import { createSeriesEpisode } from "./series-storage";
+import { CREW_ID } from "./series-starter";
+import { DEFAULT_SCRIPT } from "./script-model";
 import type { SavedSeries } from "./series-storage";
 import { Modal } from "./components/Modal";
 import { ArtLibrary } from "./components/ArtLibrary";
@@ -90,6 +92,7 @@ export default function App() {
     setCurrent(project);
   }
   useEffect(() => () => session.current?.release(), []);
+  const [startScript, setStartScript] = useState(false);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [loaded, setLoaded] = useState(false);
   const [storageError, setStorageError] = useState("");
@@ -212,7 +215,7 @@ export default function App() {
       "Draft saved on this device. Choose Continue story whenever you are ready.",
     );
   }
-  async function open(project: Project, saved = false, mode: "edit" | "read" | "takeover" = "edit") {
+  async function open(project: Project, saved = false, mode: "edit" | "read" | "takeover" = "edit", script = false) {
     if (opening.current) return;
     opening.current = true;
     let releaseMedia: (() => void) | null = null;
@@ -255,6 +258,7 @@ export default function App() {
       const previous = session.current;
       session.current = active;
       if (previous) void previous.tail.then(previous.release);
+      setStartScript(script);
       showProject(draft);
       setDialog(null);
       setPast([]);
@@ -646,6 +650,7 @@ export default function App() {
         <div inert={working}>
         <Editor
           key={current.id}
+          startScript={startScript}
           project={current}
           onChange={update}
           onConvert={(next, files) => convert(current, next, files)}
@@ -699,7 +704,7 @@ export default function App() {
       {dialog?.type === "series" && (
         <Suspense fallback={<Modal title="My Cartoon Series" onClose={() => setDialog(null)}><p role="status">Opening series…</p></Modal>}>
           <SeriesStudio initialId={dialog.id} initialEpisodeId={dialog.episodeId} initialPanel={dialog.panel}
-            onClose={() => setDialog(null)} onOpen={project => void open(project, true)}
+            onClose={() => setDialog(null)} onOpen={(project, script) => void open(project, true, "edit", script)}
             onCreate={(saved, episode, seed) => setDialog({ type: "assistant", episode: { saved, id: episode.id, seed } })}
             onLibrary={(seriesId, puppet) => setDialog(puppet ? { type: "puppet", seriesId } : { type: "library", seriesId })}
           />
@@ -714,7 +719,12 @@ export default function App() {
           onApply={async (proposal) => {
             if (dialog.episode) {
               const { saved, id } = dialog.episode;
-              const projectId = await createSeriesEpisode(saved.id, id, saved.revision, proposal);
+              const episode = saved.plan.episodes.find(item => item.id === id);
+              const next: Project = { ...proposal, scriptOptions: {
+                ...DEFAULT_SCRIPT, seriesTitle: saved.plan.name,
+                ...(saved.id === CREW_ID && episode?.title === "A Hello Heart" ? { helloHeart: true } : {}),
+              } };
+              const projectId = await createSeriesEpisode(saved.id, id, saved.revision, next);
               await open({ ...proposal, id: projectId }, true);
               return;
             }

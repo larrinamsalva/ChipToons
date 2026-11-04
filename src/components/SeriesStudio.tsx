@@ -20,6 +20,7 @@ import type { CastMember, EpisodePlan, SeriesPlan } from "../series";
 import { ArtThumbnail } from "./ArtLibrary";
 import type { AssistantSeed } from "./CartoonAssistant";
 import { Modal } from "./Modal";
+import { VoiceCastFields } from "./VoiceCastFields";
 
 const panels = ["Overview", "Series Bible", "Recurring Cast", "Episode Plans"] as const;
 
@@ -81,6 +82,7 @@ function CastDetails({ member, library, onChange }: {
       <TextField label="Personality and helpful strengths" value={member.strengths} onChange={value => set("strengths", value)} long />
       <TextField label="Signature expressions" value={member.expressions} onChange={value => set("expressions", value)} />
       <TextField label="Relationships" value={member.relationships} onChange={value => set("relationships", value)} long />
+      <VoiceCastFields notes={member.voice} onChange={value => set("voice", value)} />
       <label>Preferred heart glow
         <select value={member.heart} onChange={e => set("heart", e.target.value as CastMember["heart"])}>
           {HEARTS.map(heart => <option key={heart} value={heart}>{heart === "off" ? "Use story defaults" : heart}</option>)}
@@ -93,7 +95,7 @@ function CastDetails({ member, library, onChange }: {
 function EpisodeDetails({ plan, series, projects, library, number, onChange, onOrder, onCreate, onOpen, busy }: {
   plan: EpisodePlan; series: SeriesPlan; projects: Project[]; library: LibraryItem[];
   number: number; onChange: (next: EpisodePlan) => void; onOrder: (offset: number) => void;
-  onCreate: () => void; onOpen: (project: Project) => void; busy: boolean;
+  onCreate: () => void; onOpen: (project: Project, script?: boolean) => void; busy: boolean;
 }) {
   const project = projects.find(item => item.id === plan.projectId);
   const warnings = continuityWarnings(series, plan, project, library);
@@ -146,7 +148,10 @@ function EpisodeDetails({ plan, series, projects, library, number, onChange, onO
     </label>
     <p>Save series changes before opening or creating a cartoon. Unlinking keeps the original cartoon in My cartoons.</p>
     <div className="series-actions">
-      {project && <Action primary disabled={busy} onClick={() => onOpen(project)}>Open linked cartoon</Action>}
+      {project && <>
+        <Action primary disabled={busy} onClick={() => onOpen(project)}>Open linked cartoon</Action>
+        <Action disabled={busy} onClick={() => onOpen(project, true)}>Write My Episode Script</Action>
+      </>}
       {!plan.projectId && <Action primary disabled={busy || series.archived} onClick={onCreate}>Create This Episode</Action>}
     </div>
     <h4>Continuity review</h4>
@@ -162,7 +167,7 @@ function EpisodeDetails({ plan, series, projects, library, number, onChange, onO
 }
 
 export function SeriesStudio({ initialId, initialEpisodeId, initialPanel = "Overview", onClose, onOpen, onCreate, onLibrary }: {
-  initialId?: string; initialEpisodeId?: string; initialPanel?: (typeof panels)[number]; onClose: () => void; onOpen: (project: Project) => void;
+  initialId?: string; initialEpisodeId?: string; initialPanel?: (typeof panels)[number]; onClose: () => void; onOpen: (project: Project, script?: boolean) => void;
   onCreate: (saved: SavedSeries, episode: EpisodePlan, seed: AssistantSeed) => void;
   onLibrary: (seriesId: string, puppet: boolean) => void;
 }) {

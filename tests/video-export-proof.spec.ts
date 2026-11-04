@@ -1,3 +1,5 @@
+import { kindHeartsCrew } from "../src/series-starter";
+import { episodeBrief } from "../src/series";
 import { sunnyCartoon } from "../src/puppet-project";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
@@ -545,4 +547,33 @@ test("a puppet wave changes the arm region across decoded WebM frames", async ({
     if (Math.abs(still[i] - waving[i]) + Math.abs(still[i + 1] - waving[i + 1]) + Math.abs(still[i + 2] - waving[i + 2]) > 55) pixels++;
   }
   expect(pixels).toBeGreaterThan(100);
+});
+
+test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {
+  test.setTimeout(70_000);
+  const { plan, artwork } = kindHeartsCrew();
+  const episode = plan.episodes[0];
+  const draft = createAssistantDraft(episodeBrief(episode, 1), plan.cast.slice(0, 2).map((member, index) => ({
+    name: member.name, seriesCastId: member.id, library: artwork[index],
+  }))).project;
+  await restore(page, { ...draft, scenes: [draft.scenes[0]],
+    scriptOptions: { pace: 120, pause: 1, seriesTitle: plan.name, helloHeart: true } });
+  await page.getByRole("button", { name: "Write My Episode Script", exact: true }).click();
+  await page.getByRole("button", { name: "Add A Hello Heart sample", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Recording assigned/ })).toBeVisible();
+  const audio = page.getByLabel("Original audio source");
+  await audio.evaluate((element: HTMLAudioElement) => element.play());
+  await expect.poll(() => audio.evaluate((element: HTMLAudioElement) => element.currentTime)).toBeGreaterThan(0.15);
+  await audio.evaluate((element: HTMLAudioElement) => element.pause());
+  await page.getByRole("button", { name: "Preview acting suggestion", exact: true }).click();
+  await page.getByRole("button", { name: "Apply acting suggestion", exact: true }).click();
+  await page.getByRole("button", { name: "Add script caption drafts", exact: true }).click();
+  await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  const project = (await backup(page)).data;
+  const narrator = project.scenes[0].script?.lines[0];
+  expect(narrator?.text).toBe("At the park, one kind hello helps a new friend feel welcome.");
+  expect(project.audioClips).toHaveLength(1);
+  expect(project.audioClips[0]).toMatchObject({ id: narrator?.clipId, sceneId: project.scenes[0].id, category: "narration", start: 0 });
+  expect(project.captions[0]).toMatchObject({ start: 0, text: narrator?.text });
+  await render(page, info, "a-hello-heart-script", project.scenes[0].duration);
 });
