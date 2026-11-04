@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/assistant";
 import { starterProject } from "../src/demo-starter";
 import { segmentedProject } from "./creator-fixtures";
+import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup } from "./production-helpers";
 import { cameraAt, elementAt, retimeScene, sceneElementAt } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
@@ -354,6 +355,23 @@ test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecke
     "pipe:1",
   ]);
   expect(Math.max(...pixels)).toBeGreaterThan(100);
+});
+
+test("joins matching silent 720p VP8 exports and keeps every decoded picture", async ({ page }, info) => {
+  test.setTimeout(100_000);
+  await restore(page, segmentedProject());
+  const settings = { width: 1280, fps: 15, codec: "vp8", audio: false, captions: false, limit: 4 } as const;
+  const first = await render(page, info, "silent-hd-part-01", 4, { ...settings, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "silent-hd-part-02", 4, { ...settings, segment: 2 });
+  await page.getByRole("button", { name: "Close segment preview", exact: true }).click();
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  await page.getByLabel("Choose video files", { exact: true }).setInputFiles([first.path, second.path]);
+  await expect(page.getByRole("status").filter({ hasText: /2 of 2 parts assigned.*Ready for delivery/ })).toBeVisible();
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  const movie = await downloadAndVerifyMovie(page, info, [first.path, second.path], [4, 4], false);
+  expect(movie.width).toBe(1280);
+  expect(movie.height).toBe(720);
 });
 
 test("the complete original friendship demo exports as a playable sixty-second movie with voices, music and effects", async ({

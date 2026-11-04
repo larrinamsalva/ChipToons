@@ -1,5 +1,7 @@
 import type { Project } from "./model";
 import { sceneStart } from "./timeline";
+export const EXPORT_RECORDING_LEAD_SECONDS = 0.15;
+
 export interface SceneRange {
   firstScene: number;
   lastScene: number;

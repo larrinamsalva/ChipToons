@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
+import { MEDIA_ACTIVITY_LOCK } from "../src/edit-locks";
 import { starterProject } from "../src/planner";
 import { builtInSound } from "../src/sounds";
 import { restore, saved, voices } from "./production-helpers";
@@ -113,6 +114,9 @@ test("cleanup dry run is cancellable, respects active tabs and restores the comp
   await expect(other.getByRole("heading", { name, exact: true })).toBeVisible();
   await saved(other);
   await other.close();
+  // Playwright closing a tab can finish before Chromium releases its Web Lock.
+  await expect.poll(() => page.evaluate(async name =>
+    !(await navigator.locks.query()).held?.some(lock => lock.name === name), MEDIA_ACTIVITY_LOCK)).toBe(true);
   await button(page, "Permanently Remove Selected Originals").click();
   await expect(page.getByRole("dialog").getByRole("status")).toHaveText(/Saved project references changed/);
   await button(page, "Cancel Cleanup").click();

@@ -5,7 +5,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createEpisodeFixture, inspectEpisodePackage } from "./episode-fixture";
 import { planSegments } from "../src/segments";
-import { srt } from "../src/production";
+import { formatSrt, srt, subtitleCues } from "../src/production";
+import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { saved } from "./production-helpers";
 
 // Dedicated real-time proof. Run npm run test:episode (about 23 minutes), not a skipped test.
@@ -383,6 +384,21 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   await expect(page.getByRole("heading", { name: "Package checks passed", exact: true })).toBeVisible({ timeout: 60_000 });
   await info.attach("twenty-minute-delivery-manifest", { body: manifestText, contentType: "application/json" });
   await info.attach("twenty-minute-delivery-check", { body: await page.screenshot(), contentType: "image/png" });
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  const movie = await downloadAndVerifyMovie(page, info, deliveryPaths, plan.segments.map(segment => segment.duration));
+  expect(movie.parts).toHaveLength(10);
+  const movieCaption = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download Complete Movie Subtitles", exact: true }).click();
+  const movieSrt = await readFile((await (await movieCaption).path())!, "utf8");
+  expect(movieSrt.match(/ --> /g)).toHaveLength(original.captions.length);
+  const expectedCaptions = plan.segments.flatMap((range, index) => {
+    const output = movie.parts[index];
+    return subtitleCues(original, range).map(cue => ({
+      start: output.start + 0.15 + cue.start, end: output.start + 0.15 + cue.end, text: cue.text,
+    }));
+  });
+  expect(movieSrt).toEqual(formatSrt(expectedCaptions));
+  await info.attach("continuous-movie-subtitles", { body: movieSrt, contentType: "application/x-subrip" });
   await page.getByRole("button", { name: "Back to exports", exact: true }).click();
   await page
     .getByRole("button", { name: "Back to studio", exact: true })
@@ -409,6 +425,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
     completePortableRestore: true,
     unchangedSource: true,
     parts: measures,
+    continuousMovie: movie,
   };
   writeFileSync(
     info.outputPath("twenty-minute-proof.json"),

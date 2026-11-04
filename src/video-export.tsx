@@ -8,7 +8,7 @@ import { captionText } from "./production";
 import { paintCaptions } from "./captions";
 import { mixingGraph, prepareAudio, scheduleAudio } from "./audio-engine";
 import { webmDuration } from "./webm";
-import { exportRange, rangeArtwork } from "./segments";
+import { EXPORT_RECORDING_LEAD_SECONDS, exportRange, rangeArtwork } from "./segments";
 import type { SceneRange } from "./segments";
 import type { AudioDecodeCache } from "./audio-engine";
 
@@ -133,7 +133,7 @@ export async function paintStage(
     URL.revokeObjectURL(url);
   }
 }
-export async function verifyVideo(blob: Blob, signal: AbortSignal) {
+export async function verifyVideo(blob: Blob, signal: AbortSignal, seekPoints: number[] = []) {
   if (blob.size < 1000)
     throw new Error(
       "The encoder produced an empty video. Your project is safe.",
@@ -149,16 +149,11 @@ export async function verifyVideo(blob: Blob, signal: AbortSignal) {
       height: number;
       duration: number;
     }>((resolve, reject) => {
-      const timer = setTimeout(
-          () =>
-            finish(
-              new Error(
-                "This browser could not verify the recorded movie. Try WebM VP8 in a current Chromium browser.",
-              ),
-            ),
-          10000,
-        ),
-        abort = () => finish(aborted());
+      const timeout = () => finish(
+        new Error("This browser could not verify the recorded movie. Try WebM VP8 in a current Chromium browser."),
+      );
+      let timer = setTimeout(timeout, 10000);
+      const abort = () => finish(aborted());
       let done = false;
       function finish(error?: Error) {
         if (done) return;
@@ -167,6 +162,7 @@ export async function verifyVideo(blob: Blob, signal: AbortSignal) {
         signal.removeEventListener("abort", abort);
         video.onloadeddata = null;
         video.onerror = null;
+        video.onseeked = null;
         if (error) reject(error);
         else
           resolve({
@@ -180,14 +176,36 @@ export async function verifyVideo(blob: Blob, signal: AbortSignal) {
         finish(
           new Error("The recorded movie cannot be played by this browser."),
         );
+      const points = seekPoints.values();
+      function seekNext() {
+        if (done) return;
+        const { value, done: exhausted } = points.next();
+        if (exhausted) { finish(); return; }
+        if (value <= 0 || value >= video.duration || !Number.isFinite(video.duration)) {
+          finish(new Error("The movie does not reach one of its expected seek points."));
+          return;
+        }
+        clearTimeout(timer);
+        timer = setTimeout(timeout, 10000);
+        video.onseeked = () => {
+          if (Math.abs(video.currentTime - value) > 0.05 || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA)
+            finish(new Error("The movie did not decode a picture at one of its joins."));
+          else seekNext();
+        };
+        video.currentTime = value;
+      }
       video.onloadeddata = () => {
+        video.onloadeddata = null;
         if (!video.videoWidth || !video.videoHeight) {
           finish(new Error("No video frames were recorded."));
           return;
         }
         void video
           .play()
-          .then(() => finish())
+          .then(() => {
+            if (!seekPoints.length) finish();
+            else { video.pause(); seekNext(); }
+          })
           .catch(() =>
             finish(new Error("The recorded video could not begin playback.")),
           );
@@ -305,7 +323,7 @@ export async function exportVideo(
     try {
       recorder.start(250);
       const recordingStart = audio.currentTime;
-      const anchor = audio.currentTime + 0.15;
+      const anchor = audio.currentTime + EXPORT_RECORDING_LEAD_SECONDS;
       if (settings.audio)
         scheduleAudio(
           audio,

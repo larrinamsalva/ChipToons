@@ -88,4 +88,8 @@ Optional local waveform analysis links compact mouth cues to narration or dialog
 
 ## PR #13 — Complete Episode Delivery Studio
 
-The finish dialog can collect the actual downloaded WebM parts, match recorded export hashes, check timing and tracks, and play the parts in order. A bounded delivery ZIP preserves original video bytes, SRTs, the scene-order manifest and checksums. The verifier checks the package without modifying the cartoon. Continuous WebM joining remains a separate feasibility task. [Complete Episode Delivery Studio](EPISODE_DELIVERY.md)
+The finish dialog can collect the actual downloaded WebM parts, match recorded export hashes, check timing and tracks, and play the parts in order. A bounded delivery ZIP preserves original video bytes, SRTs, the scene-order manifest and checksums. The verifier checks the package without modifying the cartoon. The checked ZIP remains available for the original viewing files. [Complete Episode Delivery Studio](EPISODE_DELIVERY.md)
+
+## PR #14 — Single-Movie Builder and Continuous Episode Verification
+
+The delivery workspace joins matching Chromium VP8 exports into one locally built WebM with seek cues and a separately timed SRT. Genuine two-part and twenty-minute proofs independently decode all original pictures and measure sound through the joins. The numbered exports and ZIP remain available on phones and unsupported browsers. [Single-Movie Builder](SINGLE_MOVIE_BUILDER.md) · [Feasibility and evidence](SINGLE_MOVIE_FEASIBILITY.md)
