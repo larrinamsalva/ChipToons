@@ -4,8 +4,8 @@ import type { Grip, Point } from "../interaction-model";
 import { PlaybackClock } from "../playback";
 import { Stage } from "./Stage";
 
-export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4 }: {
-  project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point;
+export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1 }: {
+  project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point; precision?: 1 | 2 | 3;
 }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
@@ -60,8 +60,8 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
           type="number"
           min={0}
           max={scene.duration}
-          step={0.1}
-          value={Number(frame.seconds.toFixed(1))}
+          step={10 ** -precision}
+          value={Number(frame.seconds.toFixed(precision))}
           onChange={(e) => {
             clock.pause();
             clock.seek(e.target.valueAsNumber || 0);

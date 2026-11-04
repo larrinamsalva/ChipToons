@@ -1,3 +1,4 @@
+import { reconcileTransformReferences } from "./transform-motion";
 import { BACKGROUNDS, clone } from "./model";
 import type { Asset, Project, Scene, SceneElement } from "./model";
 import { SCENERY_DEPTHS, record } from "./art-model";
@@ -58,14 +59,14 @@ export function applyScenery(scene: Scene, layout: LocationLayout, copies: Scene
   const elements = [...copies.filter(element => element.backdrop), ...scene.elements.filter(element => !isScenery(element))];
   for (const depth of SCENERY_DEPTHS)
     insertScenery(elements, copies.filter(element => !element.backdrop && element.sceneryDepth === depth), depth);
-  return {
+  return reconcileTransformReferences({
     ...scene, elements, background: layout.background, gentleDepth: layout.gentleDepth,
     backgroundAnimation: scene.backgroundAnimation?.keyframes.length ? scene.backgroundAnimation :
       layout.atmosphere ? { style: layout.atmosphere, enabled: true, keyframes: [] } : undefined,
     cameraAnimation: scene.cameraAnimation?.followId &&
       !elements.some(element => element.id === scene.cameraAnimation?.followId)
       ? { ...scene.cameraAnimation, followId: undefined } : scene.cameraAnimation,
-  };
+  }, scene);
 }
 
 // Keep editable geometry, artwork and ordering. Exclude episode animation and media.
@@ -73,9 +74,9 @@ export function captureLocation(project: Project, scene: Scene): { location: Loc
   const elements = scene.elements.flatMap((element, index) => {
     if (!isScenery(element)) return [];
     const { id, kind, x, y, scale, rotation, flip, flipY, opacity, width, height, crop,
-      name, assetId, prop, backdrop } = element;
+      name, assetId, prop, propAppearance, backdrop } = element;
     return [{
-      id, kind, x, y, scale, rotation, flip, flipY, opacity, width, height, crop, name, assetId, prop, backdrop,
+      id, kind, x, y, scale, rotation, flip, flipY, opacity, width, height, crop, name, assetId, prop, propAppearance, backdrop,
       characterId: "", emotion: "calm" as const, motion: "still" as const,
       sceneryDepth: backdrop ? "behind" as const : sceneryDepthAt(scene.elements, index),
     }];
@@ -90,7 +91,7 @@ export function captureLocation(project: Project, scene: Scene): { location: Loc
 
 const layoutFields = ["description", "background", "camera", "gentleDepth", "atmosphere", "elements"];
 const elementFields = ["id", "kind", "x", "y", "scale", "rotation", "flip", "flipY", "opacity", "width",
-  "height", "crop", "name", "assetId", "prop", "backdrop", "characterId", "emotion", "motion", "sceneryDepth"];
+  "height", "crop", "name", "assetId", "prop", "propAppearance", "backdrop", "characterId", "emotion", "motion", "sceneryDepth"];
 
 export function validLocation(value: unknown): value is LocationLayout {
   return record(value) && Object.keys(value).every(key => layoutFields.includes(key)) &&

@@ -1,3 +1,4 @@
+import { reconcileLearningSteps } from "./transform-motion";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { uid } from "./model";
@@ -23,7 +24,9 @@ export function scriptFor(scene: Scene): SceneScript {
 }
 
 export function withScript(scene: Scene, script: SceneScript): Scene {
-  return { ...scene, script, ...spokenFields(script.lines) };
+  const next = { ...scene, script, ...spokenFields(script.lines) };
+  if (next.learningSteps) next.learningSteps = reconcileLearningSteps(next, scene);
+  return next;
 }
 
 export function findScriptLine(project: Project, id: string) {
@@ -148,8 +151,11 @@ export function reconcileScriptClips(project: Project): Project {
 export function duplicateScript(copy: Scene, oldClips: AudioClip[], newClips: AudioClip[]) {
   if (!copy.script) return copy;
   const clips = new Map(oldClips.map((clip, index) => [clip.id, newClips[index]?.id]));
-  return withScript(copy, { ...copy.script, lines: copy.script.lines.map(line =>
-    ({ ...line, id: uid(), clipId: line.clipId ? clips.get(line.clipId) : undefined })) });
+  const ids = new Map(copy.script.lines.map(line => [line.id, uid()]));
+  const updated = copy.learningSteps ? { ...copy, learningSteps: copy.learningSteps.map(step =>
+    ({ ...step, lineId: step.lineId ? ids.get(step.lineId) : undefined })) } : copy;
+  return withScript(updated, { ...copy.script, lines: copy.script.lines.map(line =>
+    ({ ...line, id: ids.get(line.id)!, clipId: line.clipId ? clips.get(line.clipId) : undefined })) });
 }
 
 export function scriptCaptions(project: Project, scene: Scene) {

@@ -55,6 +55,7 @@ export function ArtThumbnail({ item }: { item: LibraryItem }) {
             : "art",
         characterId: item.character?.id ?? "",
         prop: item.prop,
+        propAppearance: item.propAppearance,
         backdrop: item.kind === "background",
         assetId: item.assetId,
         x: 400,
@@ -74,6 +75,7 @@ export function ArtLibrary({
   onUse,
   onPuppet,
   onPuppetUpdate,
+  acceptAppearance,
   draft: initial,
   inProject = false,
   initialKind = initial?.kind ?? "character",
@@ -82,6 +84,7 @@ export function ArtLibrary({
   onUse: (item: LibraryItem, three?: boolean) => void;
   onPuppet: (item?: LibraryItem) => void;
   onPuppetUpdate?: (item: LibraryItem) => void;
+  acceptAppearance?: (item: LibraryItem) => boolean;
   draft?: LibraryItem;
   inProject?: boolean;
   initialKind?: LibraryKind;
@@ -161,7 +164,7 @@ export function ArtLibrary({
   const collection = [...items, ...(source === "mine" ? [] : starters)];
   const visible = collection.filter(
     (i) =>
-      i.kind === kind &&
+      i.kind === kind && (!acceptAppearance || acceptAppearance(i)) &&
       (group === "all" || i.group === group) &&
       `${i.name} ${i.tags.join(" ")} ${i.group} ${i.location?.description ?? ""}`
         .toLowerCase()
@@ -225,7 +228,7 @@ export function ArtLibrary({
     try {
       onUse(item, three);
       setNotice(
-        item.location
+        acceptAppearance ? `Selected ${item.name}.` : item.location
           ? `Placed ${item.name}. Close the library to arrange the scene.`
           : three
           ? `Added ${item.name} to up to three scenes. Each copy can be edited independently.`
@@ -586,7 +589,8 @@ export function ArtLibrary({
         </div>
       </details>
       <div className="library-tabs" aria-label="Artwork categories">
-        {(["character", "background", "prop", "drawing", "location"] as LibraryKind[]).map(
+        {(["character", "background", "prop", "drawing", "location"] as LibraryKind[])
+          .filter(k => !acceptAppearance || k === "prop" || k === "drawing").map(
           (k) => (
             <button
               key={k}
@@ -719,10 +723,10 @@ export function ArtLibrary({
                 className="button primary small"
                 onClick={() => inProject && item.location ? setPlacing(item) : use(item)}
               >
-                {inProject ? (item.location ? "Use this location" : "Add to scene") : "Start cartoon with this"}
+                {acceptAppearance ? "Choose this artwork" : inProject ? (item.location ? "Use this location" : "Add to scene") : "Start cartoon with this"}
                 <Icon name="plus" size={16} />
               </button>
-              {inProject && item.kind !== "background" && !item.location && (
+              {!acceptAppearance && inProject && item.kind !== "background" && !item.location && (
                 <button
                   className="button text small"
                   onClick={() => use(item, true)}

@@ -1,3 +1,4 @@
+import { LearningSteps } from "./LearningSteps";
 import { interactionSuggestion } from "../interaction-studio";
 import { INTERACTION_LABELS } from "../interaction-model";
 import { useEffect, useState } from "react";
@@ -36,7 +37,7 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
   onRecord, onAnimateVoice, onInteraction, onTiming, onCaptions, onUndo, onRedo, canUndo, canRedo, saveStatus, saveError }: {
   project: Project; index: number; selected: string; onSelect: (id: string) => void;
   onSelectScene: (index: number) => void;
-  onChange: (project: Project) => void; onScene: (patch: Partial<Scene>) => void; onClose: () => void;
+  onChange: (project: Project) => void; onScene: (patch: Partial<Scene>) => boolean | void; onClose: () => void;
   onRecord: (id: string) => void; onAnimateVoice: (clipId: string) => void; onTiming: (clipId?: string) => void; onCaptions: () => void;
   onInteraction: () => void;
   onUndo: () => void; onRedo: () => void; canUndo: boolean; canRedo: boolean; saveStatus: string; saveError: string;
@@ -276,6 +277,9 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
           <label>Learning question<input maxLength={500} value={scene.question ?? ""} onChange={event => onScene({ question: event.target.value })} /></label>
           <MediaNumber label="Storyboard scene duration (seconds)" min={2} max={120} value={scene.duration} onChange={duration => onScene({ duration })} />
         </details>
+        <LearningSteps key={scene.id}
+          project={project} scene={scene} onApply={learningSteps => onScene({ learningSteps })}
+          onLine={id => { setFilter("All lines"); selectLine(id); }} />
         {timing.total > scene.duration + Math.max(2, scene.duration * 0.15) && <p className="media-notice">
           The words and pauses for this scene may need about {shortTime(timing.total)}. The storyboard allows {shortTime(scene.duration)}. Shorten the lines or give the scene more time.
         </p>}

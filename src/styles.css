@@ -5765,3 +5765,19 @@ fieldset.interaction-fields {
 @media (max-width: 720px) {
   .interaction-layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+.appearance-details > :not(summary) { margin-block: 0.65rem; }
+.appearance-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-block: 0 0.8rem;
+}
+.appearance-comparison figure { min-width: 0; margin: 0; }
+.appearance-comparison svg { display: block; width: 100%; border: 1px solid var(--line); border-radius: 0.65rem; }
+.appearance-comparison figcaption { font-size: 0.82rem; margin-top: 0.35rem; overflow-wrap: anywhere; }
+.learning-steps > :not(summary) { margin-block: 0.65rem; }
+.learning-steps select { max-width: 100%; }
+.transform-examples { margin: 1rem 0; padding: 0.75rem 1rem; border: 1px solid var(--line); border-radius: 0.85rem; }
+.transform-examples summary { cursor: pointer; padding-block: 0.35rem; }
+.transform-examples .series-actions { margin-top: 0.6rem; }

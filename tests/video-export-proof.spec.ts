@@ -1,3 +1,5 @@
+import { transformExample } from "../src/transform-examples";
+import { EXAMPLE_NAMES } from "../src/transform-model";
 import { gardenInteractionDemo } from "../src/garden-demo";
 import { stagePoint } from "../src/interaction-motion";
 import { kindHeartsCrew } from "../src/series-starter";
@@ -758,4 +760,84 @@ test("decodes one watering can at its resting, carried, tilted and released posi
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   // Compare every independently decoded picture in both segments with the complete movie.
   await downloadAndVerifyMovie(page, info, files, [opening.duration, scene.duration], false);
+});
+
+test("decodes a single wagon with a loose and fixed wheel, then verifies the joined voiced cartoon", async ({ page }, info) => {
+  test.setTimeout(140_000);
+  const expected = transformExample("wagon");
+  const [repair, testRun] = expected.scenes;
+  await page.goto("./");
+  await page.getByText("Try a Fix, Build & Transform example", { exact: true }).click();
+  await page.getByRole("button", { name: `Try ${EXAMPLE_NAMES.wagon}`, exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const options = { limit: repair.duration };
+  const first = await render(page, info, "wobbly-wagon-repair", repair.duration, { ...options, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "wobbly-wagon-test", testRun.duration, { ...options, segment: 2 });
+  const windowRms = (start: number) => {
+    const sample = Math.round(start * 8000), length = 3200;
+    let energy = 0;
+    for (let i = 0; i < length; i++) energy += first.pcm.readFloatLE((sample + i) * 4) ** 2;
+    return Math.sqrt(energy / length);
+  };
+  expect(windowRms(8.2)).toBeGreaterThan(3 * windowRms(12.4));
+  const proofs = [];
+  for (const [scene, movie, at, fixed] of [
+    [repair, first.path, 2.25, false],
+    [repair, first.path, 8.85, false],
+    [repair, first.path, 9.6, true],
+    [repair, first.path, 12.7, true],
+    [testRun, second.path, 7.1, true],
+  ] as const) {
+    const raw = execFileSync("ffmpeg", ["-v", "error", "-ss", String(at), "-i", movie,
+      "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
+    expect(raw.length).toBe(800 * 450 * 3);
+    const object = scene.elements.find(item => item.prop === "toy-wagon")!;
+    const frame = sceneFramesAt(expected, scene, at).get(object.id)!;
+    const camera = cameraAt(scene, at);
+    const center = (x: number, y: number) => {
+      const point = stagePoint(object, frame, { x, y });
+      return { x: (point.x - camera.x) * camera.zoom + 400, y: (point.y - camera.y) * camera.zoom + 225 };
+    };
+    const body = center(0, -35);
+    let near = 0, elsewhere = 0, sumX = 0;
+    for (let y = 155; y < 450; y++) for (let x = 0; x < 800; x++) {
+      const i = (y * 800 + x) * 3, r = raw[i], g = raw[i + 1], b = raw[i + 2];
+      if (r < 157 || r > 246 || g < 60 || g > 153 || b - g < 20 || r - b < 28) continue;
+      if (Math.hypot(x - body.x, y - body.y) < 67) { near++; sumX += x; }
+      else elsewhere++;
+    }
+    function wheelPixels(x: number, y: number) {
+      const point = center(x, y);
+      let count = 0;
+      for (let py = Math.max(0, Math.floor(point.y - 9)); py < Math.min(450, point.y + 9); py++)
+        for (let px = Math.max(0, Math.floor(point.x - 9)); px < Math.min(800, point.x + 9); px++) {
+          const i = (py * 800 + px) * 3, r = raw[i], g = raw[i + 1], b = raw[i + 2];
+          // The adult’s nearby trousers are purple. Check the wheel’s blue-grey hue.
+          if (Math.hypot(px - point.x, py - point.y) < 9 && r >= 57 && r <= 111 &&
+              g - r >= 12 && g - r <= 34 && b - g >= 16 && b - g <= 38) count++;
+        }
+      return count;
+    }
+    const loose = wheelPixels(61, -6), attached = wheelPixels(33, -11);
+    expect(near, `one wagon at ${scene.title} ${at}s`).toBeGreaterThan(300);
+    expect(elsewhere, `no second wagon at ${scene.title} ${at}s`).toBeLessThan(near * 0.22);
+    expect(fixed ? attached : loose, `wheel position at ${scene.title} ${at}s`).toBeGreaterThan(38);
+    expect(fixed ? loose : attached, `no duplicate wheel at ${scene.title} ${at}s`).toBeLessThan(38);
+    proofs.push({ scene: scene.title, at, held: !!frame.heldBy, fixed, x: sumX / near, near, elsewhere, loose, attached });
+  }
+  expect(proofs[1].held && proofs[2].held).toBe(true);
+  expect(proofs[4].x - proofs[3].x).toBeGreaterThan(165);
+  await info.attach("decoded wagon proof", { body: JSON.stringify(proofs, null, 2), contentType: "application/json" });
+
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  await downloadAndVerifyMovie(page, info, files, [repair.duration, testRun.duration]);
 });

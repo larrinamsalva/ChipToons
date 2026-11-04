@@ -1,10 +1,11 @@
+import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
 import { PuppetArt } from "./PuppetArt";
 import { cameraAt, backgroundAt, sceneFramesAt, sceneStart } from "../timeline";
 import { handAt, interactionPaintOrder } from "../interaction-motion";
 import type { InteractionFrame } from "../interaction-motion";
 import type { Grip, Point } from "../interaction-model";
-import { memo, useRef, useState } from "react";
+import { memo, useId, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import type {
   Character,
@@ -326,6 +327,8 @@ export const Stage = memo(function Stage({
   onResize?: (id: string, scale: number) => void;
 }) {
   const root = useRef<SVGSVGElement>(null);
+  const clipPrefix = useId();
+  const tracks = scene.objectTracks?.length ? new Map(scene.objectTracks.map(track => [track.objectId, track])) : undefined;
   const dragging = useRef<{
     element: SceneElement;
     pointer: { x: number; y: number };
@@ -553,11 +556,15 @@ export const Stage = memo(function Stage({
             ref={objects}
             transform={scene.cameraAnimation ? undefined : cameraTransform}
           >
-            {paintOrder.map((element) => {
+            {paintOrder.map((element, i) => {
               const character = resolvedCharacter(project, element);
-              const asset = project.assets.find(
-                (a) => a.id === (element.assetId ?? character?.assetId),
-              );
+              const track = tracks?.get(element.id);
+              const change = track && objectAppearanceAt(scene, track, t, calmPreview);
+              const art = change?.state?.art;
+              const assetId = art?.kind === "image" ? art.assetId :
+                art?.kind === "prop" ? undefined : element.assetId ?? character?.assetId;
+              const appearance = art?.kind === "prop" ? art.appearance : element.propAppearance;
+              const asset = project.assets.find(a => a.id === assetId);
               const frame = frames.get(element.id)!;
               const depth = sceneryOffset(scene, element, camera, !!calmPreview);
               const width =
@@ -565,12 +572,39 @@ export const Stage = memo(function Stage({
               const height =
                 element.height ??
                 (asset ? (element.backdrop ? 450 : 245) : 260);
+              const clipWidth = asset ? width : 230;
+              const clipId = `${clipPrefix}-appearance-${i}`;
+              const artwork = character?.puppet ? (
+                    <PuppetArt character={character} assets={project.assets} joints={frame.joints}
+                      emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening} blink={frame.blink}
+                      heartOpacity={frame.heartOpacity} heartScale={frame.heartScale} />
+                  ) : asset ? (
+                    <RasterArt
+                      asset={asset}
+                      width={width}
+                      height={height}
+                      crop={art?.kind === "image" ? art.crop : element.crop}
+                      cover={element.backdrop}
+                    />
+                  ) : element.kind === "prop" && element.prop ? (
+                    <PropArt name={element.prop} openness={frame.openness} appearance={appearance} />
+                  ) : character ? (
+                    <CartoonCharacter
+                      character={character}
+                      emotion={frame.emotion}
+                      blink={frame.blink}
+                      pose={frame.pose}
+                      acting={frame}
+                    />
+                  ) : null;
               return (
                 <g
                   key={element.id}
                   transform={`translate(${frame.x + depth.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + depth.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
                   opacity={frame.opacity}
                   data-element-id={element.id}
+                  data-object-state={change?.state?.name}
+                  data-prop-appearance={appearance}
                   data-held-by={frame.heldBy}
                   data-scenery-depth={element.sceneryDepth}
                   data-voice-opening={frame.voiceOpening}
@@ -661,29 +695,16 @@ export const Stage = memo(function Stage({
                   }
                 >
                   {!frame.heldBy && <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />}
-                  {character?.puppet ? (
-                    <PuppetArt character={character} assets={project.assets} joints={frame.joints}
-                      emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening} blink={frame.blink}
-                      heartOpacity={frame.heartOpacity} heartScale={frame.heartScale} />
-                  ) : asset ? (
-                    <RasterArt
-                      asset={asset}
-                      width={width}
-                      height={height}
-                      crop={element.crop}
-                      cover={element.backdrop}
-                    />
-                  ) : element.kind === "prop" && element.prop ? (
-                    <PropArt name={element.prop} openness={frame.openness} />
-                  ) : character ? (
-                    <CartoonCharacter
-                      character={character}
-                      emotion={frame.emotion}
-                      blink={frame.blink}
-                      pose={frame.pose}
-                      acting={frame}
-                    />
-                  ) : null}
+                  {change ? <g opacity={change.opacity} clipPath={change.reveal < 1 ? `url(#${clipId})` : undefined}>
+                    {change.reveal < 1 && <defs><clipPath id={clipId}><rect
+                      x={-clipWidth / 2} y={-height - 15} width={clipWidth * change.reveal} height={height + 38} />
+                    </clipPath></defs>}
+                    {artwork}
+                  </g> : artwork}
+                  {!!change?.sparkle && <g data-completion="" opacity={change.sparkle} pointerEvents="none"
+                    transform={`translate(${Math.min(width / 2 + 4, 90)} ${asset ? -Math.min(height, 160) : -70})`} aria-hidden="true">
+                    <path d="M0-16 4-5 15 0 4 5 0 16-4 5-15 0-4-5Z" fill="#ffde79" stroke="#765436" strokeWidth="2" />
+                  </g>}
                   {!!frame.pointing && <g pointerEvents="none" opacity={frame.pointing} aria-hidden="true">
                     <path d="M-12 9H12m-6-5 6 5-6 5m-28-5h-8" stroke="#fff7d9" strokeWidth="8" strokeLinecap="round" fill="none" />
                     <path d="M-12 9H12m-6-5 6 5-6 5m-28-5h-8" stroke="#51416d" strokeWidth="4" strokeLinecap="round" fill="none" />

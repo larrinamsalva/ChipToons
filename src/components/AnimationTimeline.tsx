@@ -1,3 +1,4 @@
+import { changeTime } from "../transform-model";
 import { INTERACTION_LABELS, interactionEvents } from "../interaction-model";
 import { neutralJoint } from "../puppet-model";
 import { AudioLanes } from "./AudioLanes";
@@ -320,6 +321,7 @@ export function AnimationTimeline({
   onAudioEdit,
   onAudioMove,
   onInteraction,
+  onTransform,
 }: {
   project: Project;
   scene: Scene;
@@ -332,6 +334,7 @@ export function AnimationTimeline({
   onAudioEdit: (id?: string, category?: AudioCategory) => void;
   onAudioMove: (id: string, start: number) => void;
   onInteraction: (id: string) => void;
+  onTransform: (objectId: string, changeId?: string) => void;
 }) {
   const [choice, setChoice] = useState({
     id: selectedId ?? "camera",
@@ -861,6 +864,30 @@ export function AnimationTimeline({
                     onClick={() => { onSeek(time); onInteraction(action.id); }}>
                     <span aria-hidden="true">{event.slice(0, 1)}</span>
                   </button>)}
+              </div>
+            </div>;
+          })}
+          {scene.objectTracks?.map(track => {
+            const object = scene.elements.find(item => item.id === track.objectId);
+            if (!object) return null;
+            const name = elementName(project, object);
+            return <div key={object.id} className="timeline-row interaction-row">
+              <button className="track-label" onClick={() => onTransform(object.id)} aria-label={`Add appearance change: ${name}`}>
+                <Icon name="sparkles" size={14} /><span>{name} · Appearance</span>
+              </button>
+              <div className="track-lane" style={{ width }}>
+                <Playhead clock={clock} offset={sceneOffset} duration={scene.duration} />
+                {track.changes.map((change, i) => {
+                  const time = changeTime(scene, track, change);
+                  const state = track.states.find(item => item.id === change.to)?.name ?? "Appearance";
+                  return <button className={`interaction-event event-${i % 2}`} key={change.id}
+                    style={{ left: `${time / scene.duration * 100}%` }}
+                    aria-label={`Change ${name} to ${state} at ${time.toFixed(2)} seconds`}
+                    title={`${state} · ${time.toFixed(2)}s`}
+                    onClick={() => { onSeek(time); onTransform(object.id, change.id); }}>
+                    <span aria-hidden="true">✦</span>
+                  </button>;
+                })}
               </div>
             </div>;
           })}

@@ -1,3 +1,5 @@
+import { reconcileTransformReferences } from "../transform-motion";
+import { transformIssue } from "../transform-model";
 import { useState } from "react";
 import { propLabel } from "../art-model";
 import type { PropName } from "../art-model";
@@ -17,8 +19,9 @@ import { ScenePreview } from "./ScenePreview";
 
 export const INTERACTION_TITLE = "Make My Character Do Something";
 
-export function InteractionStudio({ project, scene, current, time, selectedId, suggestion, previewScene, onClose, onApply }: {
+export function InteractionStudio({ project, scene, current, time, selectedId, suggestion, previewScene, onClose, onApply, onShowTransform }: {
   project: Project; scene: Scene; current?: Interaction; time: number; selectedId?: string;
+  onShowTransform?: (objectId: string) => void;
   suggestion?: InteractionSuggestion; previewScene?: (scene: Scene) => Scene; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean | void;
 }) {
   const [elements, setElements] = useState(scene.elements);
@@ -43,7 +46,9 @@ export function InteractionStudio({ project, scene, current, time, selectedId, s
   const actor = actors.find(item => item.id === draft.actorId);
   const receiver = actors.find(item => item.id === draft.transfer?.actorId);
   const actionList = [...(scene.interactions ?? []).filter(action => action.id !== draft.id), draft];
-  const issue = interactionIssue(actionList, scene.duration, elements);
+  const linked = reconcileTransformReferences({ ...scene, interactions: actionList, elements }, scene);
+  const issue = interactionIssue(actionList, scene.duration, elements) ??
+    transformIssue(linked.objectTracks, linked, new Set(project.assets.map(asset => asset.id)));
   const compatibleWalk = !previewScene && canWalkForAction(actor) && draft.kind !== "point";
   const proposedElements = walk && !issue && compatibleWalk && actor
     ? elements.map(item => item === actor ? walkForAction(project, actor, { ...scene, elements }, draft) : item) : elements;
@@ -213,6 +218,9 @@ export function InteractionStudio({ project, scene, current, time, selectedId, s
         }}>Remove interaction</button>
       </div>}
       <div className="modal-actions">
+        {current && draft === current && onShowTransform && <button className="button text" onClick={() => onShowTransform(current.objectId)}>
+          Show how this object changes
+        </button>}
         {current && !remove && <button className="button text" onClick={() => setRemove(true)}>Delete interaction</button>}
         <button className="button secondary" onClick={onClose}>Cancel</button>
         <button className="button primary" disabled={!!issue || !review} onClick={apply}>Apply</button>

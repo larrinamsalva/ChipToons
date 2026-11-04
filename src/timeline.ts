@@ -1,3 +1,4 @@
+import { reconcileTransformReferences } from "./transform-motion";
 import { interactionReferencesExist } from "./interaction-model";
 import { sampleInteractions } from "./interaction-motion";
 import { supportsVoiceMouth, voiceMouthAt } from "./voice-mouth";
@@ -365,9 +366,29 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
     ids.set(e.id, c.id);
     return c;
   });
+  const cues = new Map<string, string>();
+  function nextCue(id: string) {
+    const next = uid();
+    cues.set(id, next);
+    return next;
+  }
   if (copy.interactions) copy.interactions = copy.interactions.map(action => ({
-    ...action, id: uid(), actorId: ids.get(action.actorId)!, objectId: ids.get(action.objectId)!,
+    ...action, id: nextCue(action.id), actorId: ids.get(action.actorId)!, objectId: ids.get(action.objectId)!,
     transfer: action.transfer && { ...action.transfer, actorId: ids.get(action.transfer.actorId)! },
+  }));
+  if (copy.objectTracks) copy.objectTracks = copy.objectTracks.map(track => {
+    const states = new Map(track.states.map(state => [state.id, uid()]));
+    return { ...track, objectId: ids.get(track.objectId)!, initial: states.get(track.initial)!,
+      states: track.states.map(state => ({ ...state, id: states.get(state.id)! })),
+      changes: track.changes.map(change => ({ ...change, id: nextCue(change.id), to: states.get(change.to)!,
+        cue: change.cue && { ...change.cue, interactionId: cues.get(change.cue.interactionId)! },
+      })),
+    };
+  });
+  if (copy.learningSteps) copy.learningSteps = copy.learningSteps.map(step => ({
+    ...step, id: uid(), cue: step.cue?.kind === "action"
+      ? { ...step.cue, interactionId: cues.get(step.cue.interactionId)! }
+      : step.cue ? { ...step.cue, changeId: cues.get(step.cue.changeId)! } : undefined,
   }));
   if (copy.cameraAnimation) {
     copy.cameraAnimation.keyframes.forEach((k) => {
@@ -381,9 +402,10 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
   });
   return copy;
 }
-export function cleanSceneReferences(scene: Scene): Scene {
+export function cleanSceneReferences(scene: Scene, previous = scene): Scene {
   if (scene.interactions?.some(action => !interactionReferencesExist(action, scene.elements)))
     scene = { ...scene, interactions: scene.interactions.filter(action => interactionReferencesExist(action, scene.elements)) };
+  scene = reconcileTransformReferences(scene, previous);
   if (
     !scene.cameraAnimation?.followId ||
     scene.elements.some((e) => e.id === scene.cameraAnimation?.followId)
@@ -403,6 +425,13 @@ export function retimeScene(scene: Scene, duration: number): Scene {
     transfer: action.transfer && { ...action.transfer, time: action.transfer.time * ratio },
     release: action.release && { ...action.release, time: action.release.time * ratio },
   }));
+  if (copy.objectTracks) for (const track of copy.objectTracks) {
+    for (const change of track.changes) {
+      change.at = Math.min(duration, change.at * ratio);
+      change.length = Math.min(1.5, change.length * ratio);
+    }
+  }
+  if (copy.learningSteps) for (const step of copy.learningSteps) step.at = Math.min(duration, step.at * ratio);
   copy.elements.forEach((e) =>
     e.animation?.keyframes.forEach((k) => {
       k.time = Math.min(duration, k.time * ratio);

@@ -1,3 +1,5 @@
+import { EXAMPLE_NAMES } from "../transform-model";
+import type { TransformExample } from "../transform-model";
 import { useMemo, useState } from "react";
 import { durationLabel, totalDuration } from "../model";
 import type { Project } from "../model";
@@ -13,6 +15,7 @@ export function Dashboard({
   onDemo,
   onTalkingDemo,
   onGardenDemo,
+  onTransformDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -32,6 +35,7 @@ export function Dashboard({
   onDemo: () => void;
   onTalkingDemo: () => void;
   onGardenDemo: () => void;
+  onTransformDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
   onOpen: (p: Project) => void;
@@ -182,6 +186,13 @@ export function Dashboard({
           </button>
         ))}
       </section>
+      <details className="transform-examples">
+        <summary>Try a Fix, Build &amp; Transform example</summary>
+        <div className="series-actions">
+          {(Object.entries(EXAMPLE_NAMES) as [TransformExample, string][]).map(([id, name]) =>
+            <button className="button secondary small" key={id} onClick={() => onTransformDemo(id)}>Try {name}</button>)}
+        </div>
+      </details>
       <div className="creative-actions" aria-label="Ways to create">
         {[
           {
