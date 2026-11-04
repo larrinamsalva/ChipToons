@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { segmentedProject } from "./creator-fixtures";
+import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup, restore, saved } from "./production-helpers";
 
@@ -26,7 +26,7 @@ async function exportPart(page: Page, index: number) {
 
 test("checks two genuine parts, resumes the existing exporter, watches in order and checks the downloaded ZIP", async ({ page }, info) => {
   test.setTimeout(120_000);
-  const project = segmentedProject();
+  const project = segmentedProject(movieProofArtwork);
   await page.goto("./");
   if (info.project.name !== "tablet") await button(page, "Switch to dark theme").click();
   await restore(page, project);

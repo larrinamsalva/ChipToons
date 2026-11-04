@@ -10,6 +10,9 @@ import { builtInSound } from "../src/sounds";
 import { newAudioClip } from "../src/production";
 export const pixel =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=";
+// An original, opaque moving marker for decoded media comparisons.
+export const movieProofArtwork =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAIAAADYYG7QAAAAgElEQVR42mN8q7afYTABJoZBBkYdRAiwIHOcX7UOiCP2ilWPRhl5UYY1DGkHsKaQ0SgbdRBtEjUaELrpgEf2nfqB0SgbddCog0YdNOqgAS6pqVsWj0bZqINGHTTqoFEHjTpo1EGjDhp10KiDqN+EHajRz9EoIwIwjs51jDqIQgAACFIQlJPylt0AAAAASUVORK5CYII=";
 export function longProject() {
   const p = { ...starterProject(), ...emptyProduction() };
   p.title = "Twenty minutes of kind little moments";

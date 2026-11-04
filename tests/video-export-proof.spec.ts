@@ -6,7 +6,7 @@ import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/assistant";
 import { starterProject } from "../src/demo-starter";
-import { segmentedProject } from "./creator-fixtures";
+import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup } from "./production-helpers";
 import { cameraAt, elementAt, retimeScene, sceneElementAt } from "../src/timeline";
@@ -359,7 +359,17 @@ test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecke
 
 test("joins matching silent 720p VP8 exports and keeps every decoded picture", async ({ page }, info) => {
   test.setTimeout(100_000);
-  await restore(page, segmentedProject());
+  const project = segmentedProject(movieProofArtwork);
+  for (const [index, scene] of project.scenes.entries()) {
+    const actor = scene.elements[0];
+    actor.width = 120;
+    actor.height = 120;
+    const animation = actor.animation!;
+    const first = { ...animation.keyframes[0], x: index % 2 ? 640 : 150 };
+    const last = { ...animation.keyframes.at(-1)!, x: index % 2 ? 150 : 640 };
+    animation.keyframes = [first, last];
+  }
+  await restore(page, project);
   const settings = { width: 1280, fps: 15, codec: "vp8", audio: false, captions: false, limit: 4 } as const;
   const first = await render(page, info, "silent-hd-part-01", 4, { ...settings, segment: 1 });
   await page.getByRole("button", { name: "Back to studio", exact: true }).click();
