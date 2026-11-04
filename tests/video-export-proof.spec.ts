@@ -795,11 +795,10 @@ test("decodes a single wagon with a loose and fixed wheel, then verifies the joi
     [repair, first.path, 8.85, false],
     [repair, first.path, 9.6, true],
     [repair, first.path, 12.7, true],
-    [testRun, second.path, 7.1, true],
+    // Sample after the final spoken caption has cleared the fixed wheel.
+    [testRun, second.path, 7.55, true],
   ] as const) {
-    const raw = execFileSync("ffmpeg", ["-v", "error", "-ss", String(at), "-i", movie,
-      "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
-    expect(raw.length).toBe(800 * 450 * 3);
+    const raw = rawFrame(movie, at);
     const object = scene.elements.find(item => item.prop === "toy-wagon")!;
     const frame = sceneFramesAt(expected, scene, at).get(object.id)!;
     const camera = cameraAt(scene, at);
@@ -836,6 +835,11 @@ test("decodes a single wagon with a loose and fixed wheel, then verifies the joi
   }
   expect(proofs[1].held && proofs[2].held).toBe(true);
   expect(proofs[4].x - proofs[3].x).toBeGreaterThan(165);
+  const closing = rawFrame(second.path, 5.5);
+  const brightCaptionInk = pixels(closing, 35, 365, 730, 58, (r, g, b) => Math.min(r, g, b) > 210);
+  const darkCaptionPlate = pixels(closing, 35, 365, 730, 58, (r, g, b) => Math.max(r, g, b) < 40);
+  expect(darkCaptionPlate).toBeGreaterThan(20_000);
+  expect(brightCaptionInk).toBeGreaterThan(450);
   await info.attach("decoded wagon proof", { body: JSON.stringify(proofs, null, 2), contentType: "application/json" });
 
   await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
