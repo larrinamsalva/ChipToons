@@ -11,6 +11,7 @@ test.use({ actionTimeout: 12_000 });
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const dialog = (page: Page) => page.getByRole("dialog", { name: SOUND_DIRECTOR_TITLE });
 async function editTab(page: Page) {
+  await expect(page.locator(".editor")).toBeVisible();
   const tab = button(page, "Edit scene");
   if (await tab.isVisible()) await tab.click();
 }
