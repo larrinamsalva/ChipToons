@@ -6,7 +6,7 @@ import type { StreamTargetChunk } from "mediabunny";
 import { isChromiumWebmRecording, WEBM_METADATA_LIMIT } from "./webm";
 import { checkDeliveryAbort, deliveryDigest } from "./delivery-bytes";
 import {
-  MOVIE_BYTES, MOVIE_OPUS_BITRATE, MOVIE_PART_TOLERANCE, OPUS_SAMPLE_RATE, moviePlanProblem,
+  MOVIE_BYTES, MOVIE_OPUS_BITRATE, MOVIE_PACKET_TAIL_LIMIT, MOVIE_TIMELINE_TOLERANCE, OPUS_SAMPLE_RATE, moviePlanProblem,
 } from "./single-movie-plan";
 import type { MoviePart, MovieRange, MovieWorkerMessage, MovieWorkerRequest } from "./single-movie-plan";
 
@@ -44,6 +44,9 @@ async function copyPart(part: MoviePart, startFrames: number, videoSource: Encod
     const packets = new EncodedPacketSink(video).packets(undefined, undefined, { verifyKeyPackets: true });
     const samples = audio ? new AudioSampleSink(audio).samples() : undefined;
     const sourceLength = part.end - part.start;
+    // A recorder can write a slightly optimistic duration even when the
+    // independently decodable final packets extend past it.
+    const latestEnd = Math.min(sourceLength + MOVIE_TIMELINE_TOLERANCE, part.media.duration + MOVIE_PACKET_TAIL_LIMIT);
     const start = startFrames / RATE;
     let audioClock = startFrames;
     let endAudio = 0;
@@ -82,9 +85,10 @@ async function copyPart(part: MoviePart, startFrames: number, videoSource: Encod
         if (packet && (!sample || packet.timestamp <= sample.timestamp)) {
           const { timestamp, duration } = packet;
           if (!Number.isFinite(timestamp) || timestamp <= previous || !Number.isFinite(duration) ||
-              duration < 0 || timestamp + duration > sourceLength + MOVIE_PART_TOLERANCE) throw timingError();
+              duration < 0 || timestamp + duration > latestEnd) throw timingError();
           const next = (await packets.next()).value;
-          const displayed = next ? duration : Math.max(duration, part.media.duration - timestamp);
+          const hold = timestamp >= part.media.duration ? Math.min(0.1, 1 / (part.media.fps ?? 15)) : 0.001;
+          const displayed = next ? duration : Math.max(duration, part.media.duration - timestamp, hold);
           endVideo = timestamp + displayed;
           await videoSource.add(packet.clone({ timestamp: start + timestamp, duration: displayed }), { decoderConfig: config });
           packet = next;
@@ -97,7 +101,7 @@ async function copyPart(part: MoviePart, startFrames: number, videoSource: Encod
         } else if (sample && audioSource) {
           const expected = (audioClock - startFrames) / RATE;
           if (!Number.isFinite(sample.timestamp) || Math.abs(sample.timestamp - expected) > 0.025 ||
-              sample.timestamp > sourceLength + MOVIE_PART_TOLERANCE) throw timingError();
+              sample.timestamp + sample.duration > latestEnd) throw timingError();
           endAudio = sample.timestamp + sample.duration;
           sample.setTimestamp(audioClock / RATE);
           await audioSource.add(sample);
@@ -126,7 +130,7 @@ async function copyPart(part: MoviePart, startFrames: number, videoSource: Encod
     // Keep complete original pictures and audio. Recorder lead/tail time remains
     // with its own part. Integer milliseconds give both tracks the same join.
     const localEnd = Math.max(part.media.duration, endVideo, endAudio, (audioClock - startFrames) / RATE);
-    if (Math.abs(localEnd - sourceLength) > MOVIE_PART_TOLERANCE) throw timingError();
+    if (localEnd > latestEnd) throw timingError();
     const endFrames = startFrames + Math.ceil(localEnd * 1000 - 1e-7) * (RATE / 1000);
     await silence(endFrames);
     return endFrames;

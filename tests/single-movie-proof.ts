@@ -10,10 +10,22 @@ function frameHashes(path: string) {
   return ffmpeg(["-i", path, "-map", "0:v:0", "-fps_mode", "passthrough", "-f", "framemd5", "-"])
     .toString().split("\n").filter(row => row && !row.startsWith("#")).map(row => row.split(",").at(-1)!.trim());
 }
-function sourceVideoTimes(path: string) {
-  return execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "packet=pts_time",
-    "-of", "csv=p=0", path], { encoding: "utf8" }).trim().split("\n").filter(Boolean)
-    .map(line => Number(line.split(",")[0]));
+function sourceTiming(path: string) {
+  const probe: {
+    format: { duration: string };
+    packets: { stream_index: number; pts_time: string; duration_time?: string }[];
+  } = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-show_entries",
+    "packet=stream_index,pts_time,duration_time:format=duration", "-of", "json", path],
+    { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }));
+  const duration = Number(probe.format.duration);
+  const end = probe.packets.reduce((latest, packet) => {
+    // FFprobe can infer a duration for the last picture from nominal frame
+    // rate. Its timestamp is authoritative when the source has no block duration.
+    const audioDuration = packet.stream_index === 0 ? 0 : Number(packet.duration_time ?? 0);
+    return Math.max(latest, Number(packet.pts_time) + audioDuration);
+  }, duration);
+  const times = probe.packets.filter(packet => packet.stream_index === 0).map(packet => Number(packet.pts_time));
+  return { duration, end, times };
 }
 function pcm(path: string) {
   const raw = ffmpeg(["-copyts", "-i", path, "-vn", "-af", `aresample=${RATE}:async=1:first_pts=0`,
@@ -74,7 +86,7 @@ export function verifyJoinedMedia(path: string, sources: string[], plannedLength
   expect(format.streams.map((stream: { codec_name: string }) => stream.codec_name)).toEqual(withAudio ? ["vp8", "opus"] : ["vp8"]);
   const duration = Number(format.format.duration);
   const total = plannedLengths.reduce((n, part) => n + part, 0);
-  expect(Math.abs(duration - total)).toBeLessThanOrEqual(sources.length * 0.3 + 0.06);
+  expect(Math.abs(duration - total)).toBeLessThanOrEqual(sources.length * 0.6 + 0.06);
   const frames = frameHashes(path);
   const audio = withAudio ? pcm(path) : undefined;
   let offset = 0;
@@ -84,11 +96,15 @@ export function verifyJoinedMedia(path: string, sources: string[], plannedLength
     const first = videoPackets[offset];
     expect(first.key).toBe(true);
     const start = first.time;
-    const times = sourceVideoTimes(source);
+    const { duration: reportedDuration, end: sourceEnd, times } = sourceTiming(source);
     expect(times).toHaveLength(picture.length);
     expect(times.every((time, index) => Math.abs(time + start - videoPackets[offset + index].time) <= 0.002)).toBe(true);
     offset += picture.length;
     const length = plannedLengths[index];
+    expect(Math.abs(reportedDuration - length)).toBeLessThanOrEqual(0.3);
+    const outputLength = (videoPackets[offset]?.time ?? duration) - start;
+    expect(outputLength).toBeGreaterThanOrEqual(sourceEnd - 0.02);
+    expect(outputLength).toBeLessThanOrEqual(sourceEnd + 0.12);
     const samples = [];
     if (audio) {
       const sound = pcm(source);
@@ -96,7 +112,7 @@ export function verifyJoinedMedia(path: string, sources: string[], plannedLength
       const times = [0.2, ...scenes, sound.length / RATE - 0.3];
       for (const time of times) samples.push(audioMatch(sound, audio, start, time, 0.26));
     }
-    return { start, frames: picture.length, samples };
+    return { start, outputLength, sourceEnd, reportedDuration, frames: picture.length, samples };
   });
   expect(offset).toBe(frames.length);
   expect(offset).toBe(videoPackets.length);

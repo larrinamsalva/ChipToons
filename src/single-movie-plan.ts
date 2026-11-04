@@ -5,6 +5,8 @@ export const MOVIE_BYTES = 256 * MIB;
 export const MOVIE_STAGING_DIRECTORY = "chiptoons-movie-staging";
 export const MOVIE_MAX_SECONDS = 1200;
 export const MOVIE_PART_TOLERANCE = 0.3;
+export const MOVIE_PACKET_TAIL_LIMIT = 0.4;
+export const MOVIE_TIMELINE_TOLERANCE = 0.6;
 export const OPUS_SAMPLE_RATE = 48_000;
 export const MOVIE_OPUS_BITRATE = 192_000;
 
@@ -69,7 +71,7 @@ export function moviePlanProblem(parts: MoviePart[]) {
 export function movieSpaceNeeded(parts: MoviePart[]) {
   const sourceBytes = parts.reduce((size, part) => size + part.file.size, 0);
   const audioBytes = parts[0]?.media.audio
-    ? (parts.at(-1)!.end + parts.length * MOVIE_PART_TOLERANCE) * (MOVIE_OPUS_BITRATE / 8)
+    ? (parts.at(-1)!.end + parts.length * MOVIE_TIMELINE_TOLERANCE) * (MOVIE_OPUS_BITRATE / 8)
     : 0;
   // A browser can keep both the in-progress write and its finished snapshot.
   return 2 * Math.min(MOVIE_BYTES, sourceBytes + audioBytes) + 32 * MIB;
