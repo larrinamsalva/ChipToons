@@ -49,6 +49,7 @@ export interface EpisodePlan {
   minutes: number;
   status: (typeof EPISODE_STATUSES)[number];
   projectId?: string;
+  locationId?: string;
 }
 export interface SeriesPlan {
   id: string;
@@ -124,20 +125,21 @@ export function validateSeries(value: unknown): SeriesPlan {
   const projects = new Set<string>();
   const episodes = value.episodes.map((entry: unknown): EpisodePlan => {
     if (!record(entry)) return invalid();
-    const { id: key, title, lesson, main, supporting, setting, description, question, minutes, status, projectId } = entry;
+    const { id: key, title, lesson, main, supporting, setting, description, question, minutes, status, projectId, locationId } = entry;
     if (!id(key) || episodeIds.has(key) || !str(title, 160) || !title.trim() ||
         !str(lesson, 500) || !str(setting, 500) || !str(description, 6000) ||
         !str(question, 500) || !number(minutes, 30) ||
         !EPISODE_STATUSES.includes(status as EpisodePlan["status"]) ||
         !Array.isArray(main) || !Array.isArray(supporting) ||
         main.length + supporting.length > MAX_CAST ||
+        (locationId !== undefined && !id(locationId)) ||
         (projectId !== undefined && (!id(projectId) || projects.has(projectId)))) return invalid();
     const assigned = [...main, ...supporting];
     if (new Set(assigned).size !== assigned.length || assigned.some(key => !castIds.has(key))) return invalid();
     episodeIds.add(key);
     if (projectId) projects.add(projectId);
     return { id: key, title, lesson, main, supporting, setting, description, question, minutes,
-      status: status as EpisodePlan["status"], ...(projectId ? { projectId } : {}) };
+      status: status as EpisodePlan["status"], ...(projectId ? { projectId } : {}), ...(locationId ? { locationId } : {}) };
   });
   return { id: value.id, name: value.name, description: value.description, age: value.age,
     themes: value.themes, target: value.target, archived: value.archived, bible, cast, episodes };
@@ -195,13 +197,15 @@ export function continuityWarnings(series: SeriesPlan, episode: EpisodePlan,
   project: Project | undefined, library: LibraryItem[]) {
   const warnings: string[] = [];
   const planned = [...episode.main, ...episode.supporting];
+  if (episode.locationId && !library.some(item => item.kind === "location" && item.id === episode.locationId))
+    warnings.push("The reusable location is unavailable. Choose a location again before creating a new draft.");
   if (!episode.lesson.trim()) warnings.push("Add the lesson you want this episode to teach.");
   if (episode.projectId && !project) warnings.push("The linked cartoon is unavailable. Restore its episode backup and link it again.");
   const elements = project?.scenes.flatMap(scene => scene.elements) ?? [];
   const used = new Set(elements.map(element => element.characterId));
   const characters = project?.characters.filter(character => used.has(character.id)) ?? [];
   for (const member of series.cast.filter(member => planned.includes(member.id))) {
-    const source = library.find(item => item.id === member.libraryId);
+    const source = library.find(item => item.kind === "character" && item.id === member.libraryId);
     if (member.libraryId && !source) warnings.push(`${member.name}: the library source is unavailable.`);
     if (!project) continue;
     const matches = characters.filter(character => character.seriesCastId === member.id);

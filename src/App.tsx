@@ -25,7 +25,8 @@ import type { SavedSeries } from "./series-storage";
 import { Modal } from "./components/Modal";
 import { ArtLibrary } from "./components/ArtLibrary";
 import { placeLibraryItem } from "./library";
-import type { LibraryItem } from "./library";
+import { setSceneryDepth } from "./world-model";
+import type { LibraryItem, LibraryKind } from "./library";
 import { exportProject, readImage } from "./files";
 import { clone, duplicateProject } from "./model";
 import type { Asset, Project } from "./model";
@@ -66,7 +67,7 @@ type Dialog =
   | { type: "puppet-update"; item: LibraryItem; sceneIndex: number; source: Project }
   | { type: "assistant"; source?: Project; episode?: { saved: SavedSeries; id: string; seed: AssistantSeed } }
   | { type: "delete"; project: Project; revision: string | null }
-  | { type: "library"; sceneIndex?: number; draft?: LibraryItem; seriesId?: string }
+  | { type: "library"; sceneIndex?: number; draft?: LibraryItem; seriesId?: string; kind?: LibraryKind }
   | null;
 function initialTheme(): "light" | "dark" {
   try {
@@ -668,8 +669,8 @@ export default function App() {
           saveError={storageError}
           onRetry={() => setRetry((r) => r + 1)}
           onAssistant={() => setDialog({ type: "assistant", source: current })}
-          onLibrary={(sceneIndex, draft) =>
-            setDialog({ type: "library", sceneIndex, draft })
+          onLibrary={(sceneIndex, draft, kind) =>
+            setDialog({ type: "library", sceneIndex, draft, kind })
           }
         />
         </div>
@@ -840,6 +841,7 @@ export default function App() {
         <ArtLibrary
           onClose={() => setDialog(dialog.seriesId ? { type: "series", id: dialog.seriesId, panel: "Recurring Cast" } : null)}
           draft={dialog.draft}
+          initialKind={dialog.kind}
           inProject={!!current}
           onPuppet={initial => setDialog({ type: "puppet", initial, sceneIndex: dialog.sceneIndex, fromLibrary: true, seriesId: dialog.seriesId })}
           onPuppetUpdate={current ? item => setDialog({ type: "puppet-update", source: current, item, sceneIndex: dialog.sceneIndex ?? 0 }) : undefined}
@@ -857,7 +859,13 @@ export default function App() {
                   ]),
                 ]
               : [index];
-            for (const i of targets) p = placeLibraryItem(p, i, item);
+            for (const i of targets) {
+              p = placeLibraryItem(p, i, item);
+              const scene = p.scenes[i];
+              const placed = scene.elements.at(-1);
+              if (dialog.kind === "prop" && item.kind === "prop" && placed)
+                scene.elements = setSceneryDepth(scene.elements, placed.id, "alongside");
+            }
             if (current) update(p);
             else open(p);
           }}

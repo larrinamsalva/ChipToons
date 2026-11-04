@@ -93,3 +93,7 @@ The finish dialog can collect the actual downloaded WebM parts, match recorded e
 ## PR #14 — Single-Movie Builder and Continuous Episode Verification
 
 The delivery workspace joins matching Chromium VP8 exports into one locally built WebM with seek cues and a separately timed SRT. Genuine two-part and twenty-minute proofs independently decode all original pictures and measure sound through the joins. The numbered exports and ZIP remain available on phones and unsupported browsers. [Single-Movie Builder](SINGLE_MOVIE_BUILDER.md) · [Feasibility and evidence](SINGLE_MOVIE_FEASIBILITY.md)
+
+## PR #15 — Scene & World Builder
+
+Editable locations extend the Art Library with original scenery starters, object placement relative to the cast, optional gentle camera depth and reuse in Series Studio. The same Stage draws the preview and the movie. [World Builder audit and walkthrough](SCENE_WORLD_BUILDER.md)

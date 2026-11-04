@@ -15,8 +15,13 @@ export const PROPS = [
   "toy",
   "door",
   "sign",
+  "slide", "swing-set", "bench", "flower-pot", "garden-bed", "watering-can",
+  "toy-wagon", "shelf", "toolbox", "traffic-sign", "picnic-basket", "recycling-bin",
 ] as const;
 export type PropName = (typeof PROPS)[number];
+export const SCENERY_DEPTHS = ["behind", "alongside", "front"] as const;
+export type SceneryDepth = (typeof SCENERY_DEPTHS)[number];
+export const propLabel = (prop: PropName) => prop[0].toUpperCase() + prop.slice(1).replaceAll("-", " ");
 export interface Crop {
   left: number;
   top: number;

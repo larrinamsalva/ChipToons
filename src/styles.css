@@ -5646,3 +5646,40 @@ input[type="color"] {
 .delivery-studio [hidden] {
   display: none;
 }
+
+.world-tools {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.world-fields:not([hidden]) {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.85rem;
+}
+
+.world-fields h3,
+.world-fields p {
+  margin: 0;
+}
+
+.world-fields .series-actions {
+  gap: 0.45rem;
+}
+
+.world-fields .world-check {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  gap: 0.6rem;
+}
+
+.world-fields .world-check input {
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+}

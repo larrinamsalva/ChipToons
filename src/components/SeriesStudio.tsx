@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { downloadBlob, safeFilename } from "../files";
 import { listLibrary } from "../library";
 import type { LibraryItem } from "../library";
+import { starterLocations } from "../world-starters";
 import { durationLabel, totalDuration } from "../model";
 import type { Project } from "../model";
 import { HEARTS } from "../animation-model";
@@ -51,7 +52,7 @@ function Action({ children, onClick, disabled, primary = false }: {
 function CastDetails({ member, library, onChange }: {
   member: CastMember; library: LibraryItem[]; onChange: (next: CastMember) => void;
 }) {
-  const item = library.find(entry => entry.id === member.libraryId);
+  const item = library.find(entry => entry.kind === "character" && entry.id === member.libraryId);
   const options = item && castOptions(item);
   const set = <K extends keyof CastMember>(key: K, value: CastMember[K]) => onChange({ ...member, [key]: value });
   return <div className="series-cast-details">
@@ -68,12 +69,12 @@ function CastDetails({ member, library, onChange }: {
       <TextField label="Role" value={member.role} max={160} onChange={value => set("role", value)} />
       <label>Artwork or puppet from your library
         <select value={member.libraryId} onChange={e => {
-          const source = library.find(item => item.id === e.target.value);
+          const source = library.find(item => item.kind === "character" && item.id === e.target.value);
           onChange({ ...member, libraryId: e.target.value, name: member.name || source?.name || "" });
         }}>
           <option value="">Choose later</option>
           {member.libraryId && !item && <option value={member.libraryId}>Unavailable source</option>}
-          {library.map((entry, index) => <option key={entry.id} value={entry.id}>
+          {library.filter(entry => entry.kind === "character").map((entry, index) => <option key={entry.id} value={entry.id}>
             {entry.name} · {entry.character?.puppet ? "Puppet" : "Art"} {index + 1}
           </option>)}
         </select>
@@ -99,6 +100,8 @@ function EpisodeDetails({ plan, series, projects, library, number, onChange, onO
 }) {
   const project = projects.find(item => item.id === plan.projectId);
   const warnings = continuityWarnings(series, plan, project, library);
+  const locations = library.filter(item => item.kind === "location");
+  const missingLocation = !!plan.locationId && !locations.some(item => item.id === plan.locationId);
   const limit = exportLimit();
   const [supported] = useState(() => !!supportedVideoFormats().length);
   const ready = project ? productionReadiness(project, limit, supported) : [];
@@ -113,6 +116,15 @@ function EpisodeDetails({ plan, series, projects, library, number, onChange, onO
     <TextField label="Episode title" max={160} value={plan.title} onChange={value => set("title", value)} />
     <TextField label="Central lesson" max={500} value={plan.lesson} onChange={value => set("lesson", value)} />
     <TextField label="Setting" max={500} value={plan.setting} onChange={value => set("setting", value)} />
+    <label>Reusable location for the opening scene
+      <select value={plan.locationId ?? ""} onChange={event => set("locationId", event.target.value || undefined)}>
+        <option value="">Use the planned background</option>
+        {missingLocation && <option value={plan.locationId}>Unavailable location</option>}
+        {locations.map(item =>
+          <option key={item.id} value={item.id}>{item.name}</option>)}
+      </select>
+    </label>
+    <p className="field-hint">New drafts get an editable copy of this location in the first scene. Open any episode’s world controls to reuse the location elsewhere.</p>
     <TextField label="Story description" max={6000} value={plan.description} onChange={value => set("description", value)} long />
     <TextField label="Learning question" max={500} value={plan.question} onChange={value => set("question", value)} />
     <NumberField label="Target duration (minutes)" max={30} value={plan.minutes} onChange={value => set("minutes", value)} />
@@ -152,7 +164,7 @@ function EpisodeDetails({ plan, series, projects, library, number, onChange, onO
         <Action primary disabled={busy} onClick={() => onOpen(project)}>Open linked cartoon</Action>
         <Action disabled={busy} onClick={() => onOpen(project, true)}>Write My Episode Script</Action>
       </>}
-      {!plan.projectId && <Action primary disabled={busy || series.archived} onClick={onCreate}>Create This Episode</Action>}
+      {!plan.projectId && <Action primary disabled={busy || series.archived || missingLocation} onClick={onCreate}>Create This Episode</Action>}
     </div>
     <h4>Continuity review</h4>
     {warnings.length ? <ul>{warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>
@@ -212,7 +224,8 @@ export function SeriesStudio({ initialId, initialEpisodeId, initialPanel = "Over
         }
       } else setError("Saved series could not be opened. Check local browser storage.");
       if (cartoons.status === "fulfilled") setProjects(cartoons.value);
-      if (art.status === "fulfilled") setLibrary(art.value.filter(item => item.kind === "character"));
+      setLibrary([...starterLocations(), ...(art.status === "fulfilled" ? art.value.filter(item =>
+        item.kind === "character" || item.kind === "location") : [])]);
       if (cartoons.status === "rejected" || art.status === "rejected")
         setInventoryWarning("Some local projects or library sources could not be read. Review unavailable references before changing them.");
       setBusy(false);
@@ -277,13 +290,14 @@ export function SeriesStudio({ initialId, initialEpisodeId, initialPanel = "Over
     if (!draft || !selected || dirty || item.projectId) return;
     const selectedCast = [...item.main, ...item.supporting];
     const cast = draft.cast.flatMap(entry => {
-      const art = library.find(source => source.id === entry.libraryId);
+      const art = library.find(source => source.kind === "character" && source.id === entry.libraryId);
       return art ? [{ ...entry, library: art }] : [];
     });
     const number = draft.episodes.indexOf(item) + 1;
     onCreate(selected, item, {
       cast, selected: selectedCast.filter(id => cast.some(member => member.id === id)).slice(0, 3),
       brief: episodeBrief(item, number), question: item.question,
+      location: library.find(source => source.kind === "location" && source.id === item.locationId),
     });
   }
 
@@ -424,7 +438,7 @@ export function SeriesStudio({ initialId, initialEpisodeId, initialPanel = "Over
             } catch (e) { setError(e instanceof Error ? e.message : "Could not prepare the plan backup."); }
           }}>Download series plan</Action>
         </div>
-        <p>A series-plan backup contains plans and cast references. Keep complete episode and art library backups separately for artwork and original audio.</p>
+        <p>A series-plan backup contains plans and library references. Keep complete episode and art library backups separately for scenery, character artwork and original audio. Relink personal library entries if you restore them as new copies.</p>
       </>}
     </div>
   </Modal>;

@@ -1,3 +1,4 @@
+import { SceneryArt } from "./SceneryArt";
 import type { Background, Asset } from "../model";
 import type { Crop, PropName } from "../art-model";
 
@@ -157,7 +158,7 @@ export function PropArt({
             <circle cx="24" cy="-52" r="5" fill="#f0d38c" />
           </g>
         </g>
-      ) : (
+      ) : name === "sign" ? (
         <g>
           <path d="M-5 0v-85H5V0" fill="#a27b58" />
           <path
@@ -173,7 +174,7 @@ export function PropArt({
             fill="none"
           />
         </g>
-      )}
+      ) : <SceneryArt name={name} />}
     </g>
   );
 }

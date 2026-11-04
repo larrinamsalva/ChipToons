@@ -15,6 +15,7 @@ import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { newAudioClip } from "../src/production";
 import { imageLibraryItem, placeLibraryItem } from "../src/library";
+import { starterLocations } from "../src/world-starters";
 import { makeScene, uid } from "../src/model";
 import { demo, restore } from "./production-helpers";
 
@@ -384,6 +385,22 @@ test("joins genuine silent 720p VP8 parts even when Chromium understates their d
   expect(movie.parts.every(part => part.frames > 32)).toBe(true);
   expect(movie.parts[1].sourceEnd - movie.parts[1].reportedDuration).toBeGreaterThan(0.25);
   expect(movie.parts[1].outputLength).toBeGreaterThan(movie.parts[1].sourceEnd + 0.02);
+});
+
+test("exports an editable playground location through the shared Stage", async ({ page }, info) => {
+  test.setTimeout(75_000);
+  const base = shortProject();
+  base.scenes[0].elements = base.scenes[0].elements.filter(element => !element.assetId);
+  base.assets = [];
+  const project = placeLibraryItem(base, 0, starterLocations()[0]);
+  project.scenes[0].elements.find(element => !!element.characterId)!.motion = "walk";
+  await restore(page, project);
+  const { path } = await render(page, info, "kind-hearts-playground", 4, { captions: false });
+  const pixels = execFileSync("ffmpeg", ["-v", "error", "-i", path, "-ss", "1.1",
+    "-vf", "crop=8:8:662:310,format=rgb24", "-frames:v", "1", "-f", "rawvideo", "pipe:1"]);
+  const hasBench = Array.from({ length: pixels.length / 3 }, (_, index) => pixels.subarray(index * 3, index * 3 + 3))
+    .some(([r, g, b]) => Math.abs(r - 231) < 30 && Math.abs(g - 177) < 30 && Math.abs(b - 129) < 30);
+  expect(hasBench).toBe(true);
 });
 
 test("the complete original friendship demo exports as a playable sixty-second movie with voices, music and effects", async ({

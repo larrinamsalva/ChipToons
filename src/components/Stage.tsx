@@ -1,3 +1,4 @@
+import { sceneryOffset } from "../world-model";
 import { PuppetArt } from "./PuppetArt";
 import { cameraAt, backgroundAt, sceneElementAt, sceneStart } from "../timeline";
 import type { ElementFrame } from "../timeline";
@@ -549,6 +550,7 @@ export const Stage = memo(function Stage({
                 (a) => a.id === (element.assetId ?? character?.assetId),
               );
               const frame = sceneElementAt(project, scene, element, t, voiceStart, calmPreview);
+              const depth = sceneryOffset(scene, element, camera, !!calmPreview);
               const width =
                 element.width ?? (character?.puppet ? 230 : asset ? (element.backdrop ? 800 : 190) : 120);
               const height =
@@ -557,9 +559,10 @@ export const Stage = memo(function Stage({
               return (
                 <g
                   key={element.id}
-                  transform={`translate(${frame.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
+                  transform={`translate(${frame.x + depth.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + depth.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
                   opacity={frame.opacity}
                   data-element-id={element.id}
+                  data-scenery-depth={element.sceneryDepth}
                   data-voice-opening={frame.voiceOpening}
                   role={onSelect ? "button" : undefined}
                   tabIndex={onSelect ? 0 : undefined}
