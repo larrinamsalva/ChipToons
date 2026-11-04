@@ -1,3 +1,5 @@
+import { TRANSFORM_TITLE, TransformStudio } from "./TransformStudio";
+import { transformIssue } from "../transform-model";
 import { INTERACTION_TITLE, InteractionStudio } from "./InteractionStudio";
 import { interactionSuggestion } from "../interaction-studio";
 import type { InteractionSuggestion } from "../interaction-studio";
@@ -24,7 +26,7 @@ import {
   durationLabel,
   validateProject,
 } from "../model";
-import type { Character, Project, Scene, SceneElement } from "../model";
+import type { Asset, Character, Project, Scene, SceneElement } from "../model";
 import {
   frameAt,
   sceneStart,
@@ -126,6 +128,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
+  const [transformEditor, setTransformEditor] = useState<{ objectId?: string; changeId?: string }>();
   const [interactionEditor, setInteractionEditor] = useState<{ id?: string; suggestion?: InteractionSuggestion }>();
   const [editSeconds, setEditSeconds] = useState(0);
   const [panel, setPanel] = useState("scene");
@@ -278,7 +281,7 @@ export function Editor({
       if (playTicket.current === ticket) setAudioBusy(false);
     }
   }
-  function changeScene(patch: Partial<Scene>) {
+  function changeScene(patch: Partial<Scene>, assets: Asset[] = project.assets) {
     setEditSeconds(clock.getSnapshot().seconds);
     halt();
     setPlaying(false);
@@ -293,19 +296,27 @@ export function Editor({
       return false;
     }
     const actionsBeforeCleanup = next.interactions?.length ?? 0;
-    next = cleanSceneReferences(next);
+    next = cleanSceneReferences(next, scene);
+    const transformationIssue = transformIssue(next.objectTracks, next, new Set(assets.map(asset => asset.id)));
+    if (transformationIssue) {
+      setEditError(transformationIssue);
+      return false;
+    }
     const scenes = project.scenes.map((s, i) => (i === index ? next : s));
     const updated = {
       ...project,
       scenes,
+      assets,
       ...reconcileProduction(project, scenes),
     };
     try {
       validateProject(updated);
       onChange(updated);
       setEditError("");
-      setInteractionNotice(actionsBeforeCleanup > (next.interactions?.length ?? 0)
-        ? "A character or object was removed, so its linked interaction was removed too. Undo to bring both back." : "");
+      const removedTransform = (scene.objectTracks?.length ?? 0) > (next.objectTracks?.length ?? 0);
+      setInteractionNotice(removedTransform ? "An appearance track was removed. Undo to bring back its changes."
+        : actionsBeforeCleanup > (next.interactions?.length ?? 0)
+          ? "A character or object was removed, so its linked interaction was removed too. Undo to bring both back." : "");
     } catch (e) {
       setEditError(
         e instanceof Error ? e.message : "This edit could not be saved.",
@@ -923,6 +934,7 @@ export function Editor({
             onSeek={seekLocal}
             onChange={changeScene}
             onInteraction={(id) => { halt(); setInteractionEditor({ id }); }}
+            onTransform={(objectId, changeId) => { halt(); setTransformEditor({ objectId, changeId }); }}
           />
         </ScenePlayer>
         <aside className="properties-panel" aria-label="Editing controls">
@@ -957,6 +969,9 @@ export function Editor({
                 <button className="button secondary" onClick={() => {
                   halt(); setInteractionEditor({});
                 }}>{INTERACTION_TITLE}</button>
+                <button className="button secondary" onClick={() => {
+                  halt(); setTransformEditor({ objectId: element?.id });
+                }}>{TRANSFORM_TITLE}</button>
               </section>
               <section className="world-tools">
                 <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
@@ -1575,7 +1590,7 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
@@ -1597,7 +1612,13 @@ export function Editor({
           current={scene.interactions?.find(item => item.id === interactionEditor.id)}
           suggestion={interactionEditor.suggestion}
           time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
-          onClose={() => setInteractionEditor(undefined)} onApply={changeScene} />
+          onClose={() => setInteractionEditor(undefined)} onApply={changeScene}
+          onShowTransform={objectId => { setInteractionEditor(undefined); setTransformEditor({ objectId }); }} />
+      )}
+      {transformEditor && (
+        <TransformStudio project={project} scene={scene} objectId={transformEditor.objectId} changeId={transformEditor.changeId}
+          time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
+          onClose={() => setTransformEditor(undefined)} onApply={changeScene} />
       )}
       {mouthStudio && (
         <Suspense fallback={<Modal title="Make My Character Talk" onClose={() => setMouthStudio(undefined)}><p role="status">Opening the talking studio…</p></Modal>}>

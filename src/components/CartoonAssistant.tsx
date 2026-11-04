@@ -196,7 +196,7 @@ export function CartoonAssistant({
     const edited = cleanSceneReferences({
       ...(change.duration !== undefined && change.duration !== scene.duration ? retimeScene(scene, change.duration) : scene),
       ...change,
-    });
+    }, scene);
     const actors = openActors(edited, false);
     const kept = actors.some((e) => e.id === direction.actorId);
     const nextDirection = kept

@@ -1,3 +1,4 @@
+import type { TransformExample } from "./transform-model";
 import { PuppetMaker } from "./components/PuppetMaker";
 import { sunnyCartoon, updateScenePuppet } from "./puppet-project";
 import { browserLocks, holdLock, MEDIA_ACTIVITY_LOCK, projectLock } from "./edit-locks";
@@ -385,20 +386,27 @@ export default function App() {
     }
   }
 
-  async function openDemo(talking: boolean | "garden" = false) {
+  async function openDemo(example: "friendship" | "talking" | "garden" | TransformExample = "friendship") {
     if (working) return;
     setWorking(true);
-    setNotice(talking === "garden" ? "Opening the garden example…" : talking ? "Opening Shine’s talking example…" : "Opening the original friendship example…");
+    setNotice("Opening your cartoon example…");
     try {
-      if (talking === "garden") {
+      if (example === "garden") {
         const { gardenInteractionDemo } = await import("./garden-demo");
         await open(gardenInteractionDemo());
-      } else if (talking) {
+      } else if (example === "talking") {
         const { shineTalkDemo } = await import("./shine-demo");
         await open(await shineTalkDemo());
-      } else {
+      } else if (example === "friendship") {
         const { starterProject: voicedDemo } = await import("./demo-starter");
         await open(voicedDemo());
+      } else {
+        const { transformExample } = await import("./transform-examples");
+        const sample = transformExample(example);
+        if (example === "wagon") {
+          const { withWagonVoices } = await import("./wagon-voices");
+          await open(await withWagonVoices(sample));
+        } else await open(sample);
       }
       setNotice("");
     } catch {
@@ -685,8 +693,9 @@ export default function App() {
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
           onDemo={() => void openDemo()}
-          onTalkingDemo={() => void openDemo(true)}
+          onTalkingDemo={() => void openDemo("talking")}
           onGardenDemo={() => void openDemo("garden")}
+          onTransformDemo={example => void openDemo(example)}
           onUpload={() => {
             setUploadError("");
             setDialog({ type: "upload" });

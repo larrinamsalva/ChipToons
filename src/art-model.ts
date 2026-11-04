@@ -16,7 +16,7 @@ export const PROPS = [
   "door",
   "sign",
   "slide", "swing-set", "bench", "flower-pot", "garden-bed", "watering-can",
-  "toy-wagon", "shelf", "toolbox", "traffic-sign", "picnic-basket", "recycling-bin",
+  "toy-wagon", "shelf", "toolbox", "traffic-sign", "picnic-basket", "recycling-bin", "paper-bridge",
 ] as const;
 export type PropName = (typeof PROPS)[number];
 export const SCENERY_DEPTHS = ["behind", "alongside", "front"] as const;

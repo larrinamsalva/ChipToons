@@ -101,3 +101,7 @@ Editable locations extend the Art Library with original scenery starters, object
 ## PR #16 — Character & Object Interaction Studio
 
 Scene-local interaction events animate original story props through pickup, carry, handoff and release using the existing puppet joints and shared Stage. Creators can review motion, edit timing from the timeline, and explicitly convert small scenery into a story prop for one scene. The Assistant and Script Director offer reviewed suggestions for supported phrases. Schema 4, IndexedDB 6 and episode package version 1 stay compatible. [Interaction Studio audit and walkthrough](CHARACTER_OBJECT_INTERACTIONS.md)
+
+## PR #17 — Fix, Build & Transform Studio
+
+Objects can have four named appearances with editable changes, interaction links, preview approval, and independent artwork copies. The existing Script Director can link teaching steps to animation moments and numbered lines. Four original examples demonstrate a supervised toy repair, tidying, time-lapse growth, and a paper bridge. Project, storage, and package versions stay compatible. [Audit and walkthrough](FIX_BUILD_TRANSFORM.md)

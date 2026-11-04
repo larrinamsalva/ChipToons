@@ -1,3 +1,4 @@
+import type { PropAppearance } from "../transform-model";
 import { SceneryArt } from "./SceneryArt";
 import type { Background, Asset } from "../model";
 import type { Crop, PropName } from "../art-model";
@@ -57,9 +58,11 @@ export function RasterArt({
 export function PropArt({
   name,
   openness = 0,
+  appearance,
 }: {
   name: PropName;
   openness?: number;
+  appearance?: PropAppearance;
 }) {
   return (
     <g strokeLinejoin="round" strokeLinecap="round">
@@ -73,6 +76,12 @@ export function PropArt({
         <g fill="#cb9d67" stroke="#8e6c4e" strokeWidth="5">
           <path d="M-56-68H56v15H-56Z" />
           <path d="M-44-52v49m88-49V-3" />
+          {appearance === "messy" && <g strokeWidth="3">
+            <path d="M-49-69l5-18 26 3-4 16z" fill="#f8e1ab" />
+            <path d="M-3-69l3-22 20 3 4 19z" fill="#aa9ad3" />
+            <path d="M29-69l9-13 11 8-5 7z" fill="#e7a78f" />
+            <path d="M-18-72h8m36 4h5" stroke="#746963" />
+          </g>}
         </g>
       ) : name === "book" ? (
         <g>
@@ -174,7 +183,7 @@ export function PropArt({
             fill="none"
           />
         </g>
-      ) : <SceneryArt name={name} />}
+      ) : <SceneryArt name={name} appearance={appearance} />}
     </g>
   );
 }

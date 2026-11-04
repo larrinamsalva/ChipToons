@@ -1,6 +1,7 @@
 import type { PropName } from "../art-model";
+import type { PropAppearance } from "../transform-model";
 
-export function SceneryArt({ name }: { name: PropName }) {
+export function SceneryArt({ name, appearance }: { name: PropName; appearance?: PropAppearance }) {
   switch (name) {
     case "slide": return <g strokeWidth="6">
       <path d="M-62-4l18-111m-2 76h26m-23-23h27m-24-23h28" fill="none" stroke="#497a89" />
@@ -22,10 +23,15 @@ export function SceneryArt({ name }: { name: PropName }) {
       <rect x="-68" y="-43" width="136" height="15" rx="7" fill="#bd8b6f" />
     </g>;
     case "flower-pot": return <g>
-      <path d="M1-39v-51m0 29q-33 0-37-22 26-1 37 22m0-3q24-24 39-16-5 24-39 22" fill="#8ab887" stroke="#5b8b72" strokeWidth="4" />
+      {appearance === "seed" ? <ellipse cy="-52" rx="6" ry="3.5" fill="#87634d" /> :
+        appearance === "sprout" ? <path d="M0-46v-23m0 8q-18 0-20-12 14-2 20 12m0 0q7-19 20-13-4 12-20 13"
+          stroke="#50865d" fill="#a4c77c" strokeWidth="3" /> :
+          <path d="M1-39v-51m0 29q-33 0-37-22 26-1 37 22m0-3q24-24 39-16-5 24-39 22" fill="#8ab887" stroke="#5b8b72" strokeWidth="4" /> }
       <path d="M-29-44h58L19-3h-38z" fill="#d48d70" stroke="#a26061" strokeWidth="4" />
       <rect x="-34" y="-49" width="68" height="12" rx="5" fill="#f1b392" />
-      <circle cx="1" cy="-91" r="15" fill="#e8a7b5" /><circle cx="1" cy="-91" r="7" fill="#f8de8f" />
+      {appearance !== "seed" && appearance !== "sprout" && <>
+        <circle cx="1" cy="-91" r="15" fill="#e8a7b5" /><circle cx="1" cy="-91" r="7" fill="#f8de8f" />
+      </>}
     </g>;
     case "garden-bed": return <g>
       <path d="M-69-37l20-27h100l18 27v26l-138 2z" fill="#ba8267" stroke="#8a6251" strokeWidth="4" />
@@ -42,17 +48,37 @@ export function SceneryArt({ name }: { name: PropName }) {
     </g>;
     case "toy-wagon": return <g stroke="#895e65" strokeWidth="5">
       <path d="M50-19l31-43 17 9" fill="none" />
-      <rect x="-58" y="-52" width="115" height="36" rx="9" fill="#db8e84" />
+      <rect x="-58" y="-52" width="115" height="36" rx="9" fill={appearance ? "#cc5c86" : "#db8e84"} />
       <path d="M-47-39h95" stroke="#f4c9ab" />
-      <circle cx="-33" cy="-11" r="11" fill="#556581" /><circle cx="33" cy="-11" r="11" fill="#556581" />
+      <circle cx="-33" cy="-11" r="11" fill="#556581" />
+      {appearance === "loose-wheel" ? <>
+        <circle cx="33" cy="-15" r="5" fill="#f4cf83" stroke="none" />
+        <ellipse cx="61" cy="-6" rx="9" ry="12" transform="rotate(-24 61 -6)" fill="#556581" />
+        <path d="M53-26l5-5m9 8 8-3" stroke="#fff3c7" strokeWidth="4" />
+      </> : <circle cx="33" cy="-11" r="11" fill="#556581" />}
+      {appearance === "fixed-wheel" && <circle cx="33" cy="-11" r="3.5" fill="#f4cf83" stroke="none" />}
     </g>;
     case "shelf": return <g stroke="#8c6561" strokeWidth="5">
       <rect x="-53" y="-135" width="106" height="132" rx="9" fill="#d6a780" />
       <path d="M-45-123h90v104h-90z" fill="#aa775f" stroke="none" />
       <path d="M-47-86h94m-94 37h94m-94 34h94" stroke="#f2cb9b" />
-      <path d="M-32-91v-25m12 25v-25m13 25v-18m-24 53v-20m15 20v-21" stroke="#91beb3" />
-      <path d="M24-90v-25M3-56l9-20m20 20v-20" stroke="#efd18d" />
+      {appearance === "messy" ? <>
+        <path d="M-40-105l23 10m1-19 15 15m14 4 27-9M-38-52l26-8m11-12 13 15m4-4 22 4"
+          stroke="#f4d193" strokeWidth="8" />
+        <circle cx="20" cy="-30" r="10" fill="#96c1b2" stroke="none" />
+      </> : <>
+        <path d="M-32-91v-25m12 25v-25m13 25v-18m-24 53v-20m15 20v-21" stroke="#91beb3" />
+        <path d="M24-90v-25M3-56l9-20m20 20v-20" stroke="#efd18d" />
+      </>}
       <rect x="-31" y="-41" width="63" height="19" rx="4" fill="#ca918a" stroke="none" />
+    </g>;
+    case "paper-bridge": return <g stroke="#6f5c8a" strokeWidth="4">
+      <path d="M-75-5l10-31 31 8 10 23zM24-5l10-23 31-8 10 31z" fill="#b9a4da" />
+      {appearance === "unfinished" ? <path d="M-71-34l42-17 13 13-39 12m87 0 39-8"
+        stroke="#b07557" strokeWidth="7" fill="none" /> : <>
+        <path d="M-72-35l17-17H55l17 17-17 12H-55z" fill="#f4c787" />
+        <path d="M-56-34H56M-44-48v8m22-8v8m22-8v8m22-8v8m22-8v8" stroke="#b07557" strokeWidth="2" />
+      </>}
     </g>;
     case "toolbox": return <g stroke="#805d6a" strokeWidth="5">
       <path d="M-17-50v-16h34v16" fill="none" />

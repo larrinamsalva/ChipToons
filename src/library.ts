@@ -1,3 +1,5 @@
+import { validAppearance } from "./transform-model";
+import type { PropAppearance } from "./transform-model";
 import { puppetAssetIds, remapPuppetAssets } from "./puppet-model";
 import { emptyProduction } from "./media-model";
 import { clone, makeScene, uid, validateProject, BACKGROUNDS } from "./model";
@@ -36,6 +38,7 @@ export interface LibraryItem {
   background?: Background;
   location?: LocationLayout;
   prop?: PropName;
+  propAppearance?: PropAppearance;
   transform: ImageSettings;
   pose: Pose;
   emotion: Emotion;
@@ -194,6 +197,8 @@ export function validateLibraryItem(value: unknown): LibraryItem {
     return bad();
   if (item.kind === "prop" && !item.assetId && !PROPS.includes(item.prop!))
     return bad();
+  if (item.propAppearance !== undefined && (item.kind !== "prop" || !!item.assetId ||
+    !validAppearance(item.prop, item.propAppearance))) return bad();
   const character = item.character ?? freshCharacter("Validation character");
   const scene = makeScene([character]);
   scene.elements[0] = {
@@ -230,6 +235,24 @@ export function validateLibraryItem(value: unknown): LibraryItem {
   if (JSON.stringify(item).length > 10 * 1024 * 1024) return bad();
   return clone(item);
 }
+// Copy scene or library sources by content. The source entries stay immutable.
+export function copyArtworkAssets(destination: Asset[], originals: Asset[]) {
+  const assetMap = new Map<string, string>();
+  for (const asset of originals) {
+    let match = destination.find(
+      (a) =>
+        a.dataUrl === asset.dataUrl &&
+        JSON.stringify(a.drawing) === JSON.stringify(asset.drawing),
+    );
+    if (!match) {
+      match = { ...clone(asset), id: uid() };
+      destination.push(match);
+    }
+    assetMap.set(asset.id, match.id);
+  }
+  return assetMap;
+}
+
 export function placeLibraryItem(
   source: Project,
   sceneIndex: number,
@@ -248,19 +271,7 @@ export function placeLibraryItem(
     throw new Error(
       "This scene has 20 objects. Remove an object before adding another.",
     );
-  const assetMap = new Map<string, string>();
-  for (const asset of item.assets) {
-    let match = p.assets.find(
-      (a) =>
-        a.dataUrl === asset.dataUrl &&
-        JSON.stringify(a.drawing) === JSON.stringify(asset.drawing),
-    );
-    if (!match) {
-      match = { ...clone(asset), id: uid() };
-      p.assets.push(match);
-    }
-    assetMap.set(asset.id, match.id);
-  }
+  const assetMap = copyArtworkAssets(p.assets, item.assets);
   if (item.location) {
     p.scenes[sceneIndex] = applyScenery(scene, item.location, item.location.elements.map(element => ({
       ...element, id: uid(), assetId: element.assetId ? assetMap.get(element.assetId) : undefined,
@@ -305,6 +316,7 @@ export function placeLibraryItem(
         ? "prop"
         : "art",
     prop: item.prop,
+    propAppearance: item.propAppearance,
     assetId: item.assetId ? assetMap.get(item.assetId) : undefined,
     sourceLibraryId: item.id,
     name: item.name,
@@ -340,6 +352,7 @@ export function libraryItemFromElement(
   const item = newLibraryItem(elementName(p, e), kind);
   item.character = c ? clone(c) : undefined;
   item.prop = e.prop;
+  item.propAppearance = e.propAppearance;
   const aid = e.assetId ?? c?.assetId;
   const needed = new Set([aid, ...(c?.puppet ? puppetAssetIds(c.puppet) : [])]);
   item.assets = p.assets.filter(a => needed.has(a.id)).map(clone);

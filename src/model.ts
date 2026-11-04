@@ -1,3 +1,5 @@
+import { learningIssue, transformIssue, validAppearance } from "./transform-model";
+import type { LearningStep, ObjectTrack, PropAppearance } from "./transform-model";
 import { interactionIssue } from "./interaction-model";
 import type { Interaction } from "./interaction-model";
 import { MAX_MOUTH_SAMPLE_BYTES, validVoiceMouthTracks } from "./voice-mouth-model";
@@ -95,6 +97,7 @@ export interface SceneElement {
   kind?: "character" | "prop" | "art";
   assetId?: string;
   prop?: PropName;
+  propAppearance?: PropAppearance;
   pose?: Pose;
   opacity?: number;
   flipY?: boolean;
@@ -131,6 +134,8 @@ export interface Scene {
   backgroundAnimation?: BackgroundAnimation;
   gentleDepth?: boolean;
   interactions?: Interaction[];
+  objectTracks?: ObjectTrack[];
+  learningSteps?: LearningStep[];
 }
 export interface Outline {
   beginning: string;
@@ -374,6 +379,7 @@ export function validateProject(value: unknown): Project {
         ((e.kind === undefined || e.kind === "character") &&
           !characterIds.has(e.characterId as string)) ||
         (e.kind === "prop" && !oneOf(e.prop, PROPS)) ||
+        (e.propAppearance !== undefined && (e.kind !== "prop" || !!e.assetId || !validAppearance(e.prop as PropName, e.propAppearance))) ||
         (e.kind === "art" && !assetIds.has(e.assetId as string)) ||
         (e.assetId !== undefined && !assetIds.has(e.assetId as string)) ||
         (e.pose !== undefined && !oneOf(e.pose, POSES)) ||
@@ -433,6 +439,8 @@ export function validateProject(value: unknown): Project {
     }
     if (interactionIssue(s.interactions, s.duration as number, s.elements as SceneElement[])) fail();
     for (const action of (s.interactions ?? []) as Interaction[]) unique(action.id);
+    const scene = s as unknown as Scene;
+    if (transformIssue(s.objectTracks, scene, assetIds, unique) || learningIssue(s.learningSteps, scene, unique)) fail();
     const elementIds = new Set(
       s.elements.map((e) => (e as Record<string, unknown>).id as string),
     );
