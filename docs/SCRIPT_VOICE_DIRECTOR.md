@@ -36,7 +36,7 @@ For recurring performers, enter voice notes in **Recurring Cast**. Future episod
 
 Project schema stays at 4 and IndexedDB stays at 6. Optional scene script, pacing, cast voice notes and validated source references go into standard JSON or complete episode backups. No new stores or media format changes are needed. **Download script** writes a plain-text document. Keep a project backup to restore editable data and recordings.
 
-**A Hello Heart** offers a short sample with two cast dialogue lines, a directing cue and an embedded narrator take. The narration is an original line rendered with the local CMU Flite synthetic voice in FFmpeg. It is a normal audio file used by preview and WebM export. The rest of the starter season remains editable episode plans.
+**A Hello Heart** offers a short sample with two cast dialogue lines, a directing cue and an embedded narrator take. The narration is an original line rendered with the local CMU Flite synthetic voice in FFmpeg. It is a normal audio file used by preview and WebM export. The sample is available from a uniquely linked original episode, including a cartoon linked before this studio was added. The rest of the starter season remains editable episode plans.
 
 The script does not transcribe audio or infer who recorded it. Check the timing against your spoken performance and review the independently editable captions before export.
 

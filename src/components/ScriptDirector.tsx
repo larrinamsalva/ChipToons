@@ -3,6 +3,8 @@ import type { Project, Scene } from "../model";
 import { durationLabel, totalDuration, uid, validateProject } from "../model";
 import { missingAudio } from "../audio-vault";
 import { downloadBlob, safeFilename } from "../files";
+import { listSeries } from "../series-storage";
+import { CREW_ID } from "../series-starter";
 import { chapterOf } from "../story";
 import { CHAPTERS } from "../story-model";
 import { directScene, directionFromScript, scriptSuggestions } from "../assistant";
@@ -37,7 +39,26 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
 }) {
   const scene = project.scenes[index];
   const script = scene.script;
-  const options = project.scriptOptions ?? DEFAULT_SCRIPT;
+  const [seriesLink, setSeriesLink] = useState<{ title: string; helloHeart: boolean }>();
+  const projectId = project.id;
+  useEffect(() => {
+    let active = true;
+    void listSeries().then(entries => {
+      if (!active) return;
+      const matches = entries.flatMap(({ plan }) => plan.episodes
+        .filter(episode => episode.projectId === projectId)
+        .map(episode => ({ title: plan.name,
+          helloHeart: plan.id === CREW_ID && episode.title === "A Hello Heart",
+        })));
+      setSeriesLink(matches.length === 1 ? matches[0] : undefined);
+    }).catch(() => { /* The episode remains editable without its series metadata. */ });
+    return () => { active = false; };
+  }, [projectId]);
+  const options = {
+    ...DEFAULT_SCRIPT, ...project.scriptOptions,
+    seriesTitle: seriesLink?.title ?? project.scriptOptions?.seriesTitle,
+    helloHeart: project.scriptOptions?.helloHeart ?? seriesLink?.helloHeart,
+  };
   const lines = script?.lines ?? [];
   const [filter, setFilter] = useState<Filter>("All lines");
   const [preview, setPreview] = useState<{ original: Scene; proposed: Scene }>();
@@ -179,7 +200,7 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
         <button className="button secondary" disabled={!canUndo || busy} onClick={onUndo}>Undo script edit</button>
         <button className="button secondary" disabled={!canRedo || busy} onClick={onRedo}>Redo script edit</button>
         <button className="button secondary" onClick={() => downloadBlob(
-          new Blob([scriptText(project)], { type: "text/plain;charset=utf-8" }), `${safeFilename(project.title)}.script.txt`)}>Download script</button>
+          new Blob([scriptText({ ...project, scriptOptions: options })], { type: "text/plain;charset=utf-8" }), `${safeFilename(project.title)}.script.txt`)}>Download script</button>
       </div>
       <p className="field-hint">The script download is for reading or printing. Use Project backup to keep editable scenes and recordings.</p>
       <section className="director-card" aria-label="Episode script timing">
@@ -224,7 +245,7 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
           <p>Add a short A Hello Heart example with a real, original synthetic narration file and two editable dialogue lines. It adds to the first scene and keeps the words already there.</p>
           <button className="button secondary" onClick={() => {
             setBusy(true);
-            void import("../hello-heart").then(module => module.addHelloHeartSample(project)).then(next => {
+            void import("../hello-heart").then(module => module.addHelloHeartSample({ ...project, scriptOptions: options })).then(next => {
               if (commit(next)) { onSelectScene(0); onSelect(next.scenes[0].script?.lines[0]?.id ?? ""); setNotice("A Hello Heart sample added. Play the narrator take or preview the cartoon with sound."); }
             }).catch((error: unknown) => setIssue(error instanceof Error ? error.message : "Sample audio could not be opened."))
               .finally(() => setBusy(false));

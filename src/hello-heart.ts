@@ -19,7 +19,7 @@ export async function addHelloHeartSample(project: Project) {
   const source = await readAudio(new File([blob], "A Hello Heart · original sample narrator.mp3", { type: "audio/mpeg" }),
     undefined, project.mediaVersion === 1, project.audioAssets);
   const next: Project = {
-    ...project, scriptOptions: { ...project.scriptOptions, helloHeart: undefined },
+    ...project, scriptOptions: { ...project.scriptOptions, helloHeart: false },
     scenes: [withScript({
       ...scene, question: scene.question || "How does a friendly hello feel?",
     }, { ...script,

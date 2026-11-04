@@ -35,7 +35,7 @@ export interface ScriptOptions {
   pace: number;
   pause: number;
   seriesTitle?: string;
-  helloHeart?: true;
+  helloHeart?: boolean;
 }
 export const DEFAULT_SCRIPT: ScriptOptions = { pace: 120, pause: 1 };
 export const MAX_SCRIPT_LINES = 80;
@@ -52,7 +52,7 @@ export function validVoiceNotes(value: unknown): value is VoiceNotes {
 export function validScriptOptions(value: unknown) {
   return record(value) && numberIn(value.pace, 60, 240) && numberIn(value.pause, 0, 20) &&
     (value.seriesTitle === undefined || text(value.seriesTitle, 160)) &&
-    (value.helloHeart === undefined || value.helloHeart === true);
+    (value.helloHeart === undefined || typeof value.helloHeart === "boolean");
 }
 
 export function spokenFields(lines: ScriptLine[]) {

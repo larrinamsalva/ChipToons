@@ -171,3 +171,38 @@ test("keeps a stale script draft in one tab without overwriting the current epis
   const latest = (await backup(other)).data;
   expect(latest.scenes[0].script?.lines.at(-1)?.text).toBe("Newest saved words.");
 });
+
+test("opens a previously linked series script, includes the series title and adds its sample only once", async ({ page }) => {
+  const project = { ...fixture(), scriptOptions: undefined };
+  await restore(page, project);
+  await saved(page);
+  await button(page, "Save and return to my cartoons").click();
+  async function openSeries() {
+    await button(page, "My Cartoon Series").click();
+    await button(page, "Open The Kind Hearts Crew").click();
+    await button(page, "Episode Plans").click();
+  }
+  await button(page, "My Cartoon Series").click();
+  await button(page, "Add The Kind Hearts Crew").click();
+  await button(page, "Episode Plans").click();
+  await dialog(page).getByRole("combobox", { name: "Linked cartoon" }).selectOption({ label: name });
+  await button(page, "Save series").click();
+  await dialog(page).getByRole("button", { name: "Write My Episode Script", exact: true }).click();
+  await expect(dialog(page).getByRole("heading", { name: "Write My Episode Script" })).toBeVisible();
+  await expect(dialog(page).locator(".director > p").first()).toContainText("The Kind Hearts Crew");
+  await button(page, "Add A Hello Heart sample").click();
+  await expect(dialog(page).getByRole("heading", { name: /Recording assigned/ })).toBeVisible();
+  const pending = page.waitForEvent("download");
+  await button(page, "Download script").click();
+  expect(await readFile((await (await pending).path())!, "utf8")).toContain(`The Kind Hearts Crew\n${name}`);
+  await button(page, "Close dialog").click();
+  await button(page, "Save and return to my cartoons").click();
+  await openSeries();
+  await dialog(page).getByRole("button", { name: "Write My Episode Script", exact: true }).click();
+  await expect(dialog(page).getByRole("button", { name: /At the park, one kind hello/ })).toBeVisible();
+  await expect(button(page, "Add A Hello Heart sample")).toHaveCount(0);
+  await button(page, "Close dialog").click();
+  const reopened = (await backup(page)).data;
+  expect(reopened.scriptOptions?.helloHeart).toBe(false);
+  expect(reopened.audioAssets).toHaveLength(1);
+});
