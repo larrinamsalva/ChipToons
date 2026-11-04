@@ -221,6 +221,7 @@ export function placeLibraryItem(
   source: Project,
   sceneIndex: number,
   sourceItem: LibraryItem,
+  seriesCastId?: string,
 ): Project {
   const item = validateLibraryItem(sourceItem);
   const p = clone(source);
@@ -252,6 +253,7 @@ export function placeLibraryItem(
     const c = {
       ...clone(item.character),
       name: item.name,
+      seriesCastId,
       ...(item.character.puppet ? { puppet: remapPuppetAssets(item.character.puppet, assetMap) } : {}),
       assetId: item.character.assetId
         ? assetMap.get(item.character.assetId)
@@ -260,6 +262,7 @@ export function placeLibraryItem(
     const same = p.characters.find(
       (a) =>
         a.name === c.name &&
+        a.seriesCastId === c.seriesCastId &&
         a.shirt === c.shirt &&
         a.skin === c.skin &&
         a.hair === c.hair &&

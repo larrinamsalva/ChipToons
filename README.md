@@ -45,6 +45,7 @@ See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor 
 
 - Three guided creation paths, existing quick starts and a real project dashboard with thumbnails, dates, draft/ready status, duplicate, delete confirmation and restore.
 - Six complete scenes in the original “A little room for a friend” demo; twelve original editable lesson starters covering kindness, friendship, differences, feelings, helping, responsibility, trusted-adult safety, personal-information safety, nature, problem-solving and teamwork.
+- **My Cartoon Series** connects a series bible, recurring cast, and up to 100 episode plans to the existing Assistant and editor. The optional Kind Hearts Crew starter includes 30 editable plans and six original library puppets. See [Series Studio](docs/SERIES_STUDIO.md).
 - Six story chapters, editable batch scene drafts, duration goals, character consistency controls, and undo/redo for the last 40 edits.
 - Opt-in long-form narration, separate immutable local audio files, scene-level voice readiness, estimated space/protection controls, and complete checksummed episode-package backups with atomic copy restoration.
 - Ordered whole-scene WebM parts with independent retry, part-local SRT and an order manifest; readiness checks and portable reusable art-library backups.

@@ -33,7 +33,14 @@ import { clamp } from "../timeline";
 import { Modal } from "./Modal";
 import { Stage } from "./Stage";
 
-type CastRow = { name: string; source: string };
+type CastRow = { name: string; source: string; recurring?: string };
+
+export interface AssistantSeed {
+  brief: StoryBrief;
+  question: string;
+  cast: { id: string; name: string; role: string; library: LibraryItem; heart: (typeof HEARTS)[number] }[];
+  selected: string[];
+}
 type Plan = {
   project: Project;
   positioned: SceneElement[];
@@ -122,15 +129,23 @@ function ScenePreview({ project, scene }: { project: Project; scene: Scene }) {
 
 export function CartoonAssistant({
   source,
+  seed,
   onClose,
   onApply,
 }: {
   source?: Project;
+  seed?: AssistantSeed;
   onClose: () => void;
   onApply: (project: Project) => void | Promise<void>;
 }) {
-  const [brief, setBrief] = useState(START_BRIEF);
-  const [cast, setCast] = useState<CastRow[]>(starterCast);
+  const [brief, setBrief] = useState(seed?.brief ?? START_BRIEF);
+  const [cast, setCast] = useState<CastRow[]>(() => seed?.selected.length
+    ? starterCast.map((_, index) => {
+        const member = seed.cast.find(item => item.id === seed.selected[index]);
+        return member ? { name: member.name, source: member.library.id, recurring: member.id }
+          : { name: "", source: "" };
+      })
+    : starterCast);
   const [prop, setProp] = useState<PropName | "">("");
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [libraryNote, setLibraryNote] = useState("");
@@ -207,11 +222,17 @@ export function CartoonAssistant({
           brief,
           cast
             .filter((c) => c.name.trim())
-            .map((c) => ({
-              name: c.name,
-              library: library.find((item) => item.id === c.source),
-            })),
+            .map((c) => {
+              const member = seed?.cast.find(item => item.id === c.recurring);
+              return {
+                name: c.name,
+                library: member?.library ?? library.find(item => item.id === c.source),
+                seriesCastId: member?.id,
+                heart: member?.heart,
+              };
+            }),
           prop || undefined,
+          seed?.question,
         ),
       );
       setIndex(0);
@@ -394,6 +415,22 @@ export function CartoonAssistant({
                   ? "Lead character"
                   : `Supporting character ${slot} (optional)`}
               </legend>
+              {!!seed?.cast.length && (
+                <label>
+                  Recurring cast for character {slot + 1}
+                  <select value={row.recurring ?? ""} onChange={event => {
+                    const member = seed.cast.find(item => item.id === event.target.value);
+                    setCast(prev => prev.map((item, index) => index !== slot ? item : member
+                      ? { name: member.name, source: member.library.id, recurring: member.id }
+                      : { name: item.name, source: "" }));
+                  }}>
+                    <option value="">Choose independently</option>
+                    {seed.cast.map(member => <option key={member.id} value={member.id}>
+                      {member.name} · {member.role || `Cast member ${seed.cast.indexOf(member) + 1}`}
+                    </option>)}
+                  </select>
+                </label>
+              )}
               <label>
                 Character name {slot + 1}
                 <input
@@ -413,6 +450,7 @@ export function CartoonAssistant({
                 Artwork for character {slot + 1}
                 <select
                   value={row.source}
+                  disabled={!!row.recurring}
                   onChange={(e) => {
                     const source = e.target.value;
                     const item = library.find((l) => l.id === source);
@@ -426,6 +464,8 @@ export function CartoonAssistant({
                   }}
                 >
                   <option value="">Original ChipToons character</option>
+                  {row.recurring && !library.some(item => item.id === row.source) &&
+                    <option value={row.source}>{seed?.cast.find(item => item.id === row.recurring)?.library.name}</option>}
                   {library.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}

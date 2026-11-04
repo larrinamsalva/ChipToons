@@ -61,6 +61,7 @@ export interface Character {
   hair: string;
   accessory: "none" | "bow" | "cap";
   puppet?: PuppetRig;
+  seriesCastId?: string;
   assetId?: string;
 }
 export interface Asset {
@@ -318,6 +319,7 @@ export function validateProject(value: unknown): Project {
       ![c.shirt, c.hair, c.skin].every(validColor) ||
       !oneOf(c.accessory, ["none", "bow", "cap"]) ||
       (c.assetId !== undefined && !assetIds.has(c.assetId as string)) ||
+      (c.seriesCastId !== undefined && (!validString(c.seriesCastId, 100) || !c.seriesCastId.trim())) ||
       (c.puppet !== undefined && !validPuppet(c.puppet, assetIds))
     )
       return fail();
