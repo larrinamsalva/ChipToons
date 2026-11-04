@@ -1,3 +1,5 @@
+import { interactionReferencesExist } from "./interaction-model";
+import { sampleInteractions } from "./interaction-motion";
 import { supportsVoiceMouth, voiceMouthAt } from "./voice-mouth";
 import { interpolateJoints } from "./puppet-model";
 import { totalDuration } from "./model";
@@ -227,6 +229,9 @@ export function sceneElementAt(project: Project, scene: Scene, element: SceneEle
   return voice ? { ...frame, mouth: voice.opening ? "open" : "closed", voiceOpening: voice.opening,
     emotion: voice.expression === "keep" ? frame.emotion : voice.expression } : frame;
 }
+export function sceneFramesAt(project: Project, scene: Scene, time: number, start = 0, calm = false) {
+  return sampleInteractions(project, scene, time, (item, t) => sceneElementAt(project, scene, item, t, start, calm));
+}
 export function keyAt(
   element: SceneElement,
   seconds: number,
@@ -284,14 +289,14 @@ export function cameraValuesAt(scene: Scene, seconds: number): CameraValues {
     ["x", "y", "zoom"],
   ).values;
 }
-export function cameraAt(scene: Scene, seconds: number, calm = false) {
+export function cameraAt(scene: Scene, seconds: number, calm = false, followed?: ElementFrame) {
   const t = clamp(seconds, 0, scene.duration);
   const values = cameraValuesAt(scene, t);
   const target = scene.elements.find(
     (e) => e.id === scene.cameraAnimation?.followId,
   );
   if (target) {
-    const frame = elementAt(target, t, scene.duration, calm);
+    const frame = followed ?? elementAt(target, t, scene.duration, calm);
     values.x += frame.x - 400;
     values.y += frame.y - 120 - 225;
   }
@@ -360,6 +365,10 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
     ids.set(e.id, c.id);
     return c;
   });
+  if (copy.interactions) copy.interactions = copy.interactions.map(action => ({
+    ...action, id: uid(), actorId: ids.get(action.actorId)!, objectId: ids.get(action.objectId)!,
+    transfer: action.transfer && { ...action.transfer, actorId: ids.get(action.transfer.actorId)! },
+  }));
   if (copy.cameraAnimation) {
     copy.cameraAnimation.keyframes.forEach((k) => {
       k.id = uid();
@@ -373,6 +382,8 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
   return copy;
 }
 export function cleanSceneReferences(scene: Scene): Scene {
+  if (scene.interactions?.some(action => !interactionReferencesExist(action, scene.elements)))
+    scene = { ...scene, interactions: scene.interactions.filter(action => interactionReferencesExist(action, scene.elements)) };
   if (
     !scene.cameraAnimation?.followId ||
     scene.elements.some((e) => e.id === scene.cameraAnimation?.followId)
@@ -387,6 +398,11 @@ export function retimeScene(scene: Scene, duration: number): Scene {
   const copy = clone(scene),
     ratio = duration / scene.duration;
   copy.duration = duration;
+  if (copy.interactions) copy.interactions = copy.interactions.map(action => ({
+    ...action, start: action.start * ratio, attach: action.attach * ratio, finish: action.finish * ratio,
+    transfer: action.transfer && { ...action.transfer, time: action.transfer.time * ratio },
+    release: action.release && { ...action.release, time: action.release.time * ratio },
+  }));
   copy.elements.forEach((e) =>
     e.animation?.keyframes.forEach((k) => {
       k.time = Math.min(duration, k.time * ratio);

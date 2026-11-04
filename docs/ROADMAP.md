@@ -97,3 +97,7 @@ The delivery workspace joins matching Chromium VP8 exports into one locally buil
 ## PR #15 — Scene & World Builder
 
 Editable locations extend the Art Library with original scenery starters, object placement relative to the cast, optional gentle camera depth and reuse in Series Studio. The same Stage draws the preview and the movie. [World Builder audit and walkthrough](SCENE_WORLD_BUILDER.md)
+
+## PR #16 — Character & Object Interaction Studio
+
+Scene-local interaction events animate original story props through pickup, carry, handoff and release using the existing puppet joints and shared Stage. Creators can review motion, edit timing from the timeline, and explicitly convert small scenery into a story prop for one scene. The Assistant and Script Director offer reviewed suggestions for supported phrases. Schema 4, IndexedDB 6 and episode package version 1 stay compatible. [Interaction Studio audit and walkthrough](CHARACTER_OBJECT_INTERACTIONS.md)

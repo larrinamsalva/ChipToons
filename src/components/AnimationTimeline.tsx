@@ -1,3 +1,4 @@
+import { INTERACTION_LABELS, interactionEvents } from "../interaction-model";
 import { neutralJoint } from "../puppet-model";
 import { AudioLanes } from "./AudioLanes";
 import type { AudioCategory } from "../media-model";
@@ -318,6 +319,7 @@ export function AnimationTimeline({
   onChange,
   onAudioEdit,
   onAudioMove,
+  onInteraction,
 }: {
   project: Project;
   scene: Scene;
@@ -329,6 +331,7 @@ export function AnimationTimeline({
   onChange: (patch: Partial<Scene>) => void;
   onAudioEdit: (id?: string, category?: AudioCategory) => void;
   onAudioMove: (id: string, start: number) => void;
+  onInteraction: (id: string) => void;
 }) {
   const [choice, setChoice] = useState({
     id: selectedId ?? "camera",
@@ -840,6 +843,27 @@ export function AnimationTimeline({
             "Background",
             scene.backgroundAnimation?.keyframes ?? [],
           )}
+          {scene.interactions?.map(action => {
+            const prop = scene.elements.find(item => item.id === action.objectId);
+            const title = INTERACTION_LABELS[action.kind];
+            const name = prop ? elementName(project, prop) : "Story object";
+            return <div key={action.id} className="timeline-row interaction-row">
+              <button className="track-label" onClick={() => onInteraction(action.id)}
+                title={`${title} · ${name}`} aria-label={`Edit interaction: ${title}, ${name}`}>
+                <Icon name="sparkles" size={14} /><span>{name} · {title}</span>
+              </button>
+              <div className="track-lane" style={{ width }}>
+                <Playhead clock={clock} offset={sceneOffset} duration={scene.duration} />
+                {interactionEvents(action).map(({ name: event, time }, index) =>
+                  <button className={`interaction-event event-${index % 2}`} key={event}
+                    style={{ left: `${(time / scene.duration) * 100}%` }}
+                    aria-label={`${title} ${event} at ${time.toFixed(2)} seconds`} title={`${event} · ${time.toFixed(2)}s`}
+                    onClick={() => { onSeek(time); onInteraction(action.id); }}>
+                    <span aria-hidden="true">{event.slice(0, 1)}</span>
+                  </button>)}
+              </div>
+            </div>;
+          })}
           <AudioLanes
             project={project}
             scene={scene}

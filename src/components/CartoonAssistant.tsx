@@ -1,9 +1,11 @@
+import { InteractionStudio } from "./InteractionStudio";
+import { interactionSuggestion } from "../interaction-studio";
+import { INTERACTION_LABELS } from "../interaction-model";
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import { EMOTIONS, HEARTS } from "../animation-model";
 import { POSES, PROPS } from "../art-model";
@@ -28,10 +30,9 @@ import { listLibrary, placeLibraryItem } from "../library";
 import type { LibraryItem } from "../library";
 import { BACKGROUNDS, durationLabel, totalDuration, uid } from "../model";
 import type { Project, Scene, SceneElement } from "../model";
-import { PlaybackClock } from "../playback";
-import { clamp } from "../timeline";
+import { clamp, cleanSceneReferences, retimeScene } from "../timeline";
 import { Modal } from "./Modal";
-import { Stage } from "./Stage";
+import { ScenePreview } from "./ScenePreview";
 
 import type { VoiceNotes } from "../script-model";
 
@@ -65,70 +66,6 @@ const hearts = {
 };
 const backgroundName = (value: string) =>
   ({ town: "Town street", magical: "Magical world" })[value] ?? word(value);
-
-export function ScenePreview({ project, scene }: { project: Project; scene: Scene }) {
-  const [clock] = useState(() => {
-    const playback = new PlaybackClock();
-    playback.configure(0, scene.duration, false);
-    playback.seek(0.4);
-    return playback;
-  });
-  const [calm, setCalm] = useState(
-    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
-  const frame = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
-  useEffect(() => {
-    clock.configure(0, scene.duration, false);
-    return () => clock.pause();
-  }, [clock, scene.duration]);
-  return (
-    <section className="assistant-preview" aria-label="Proposed scene preview">
-      <Stage
-        project={project}
-        scene={scene}
-        time={Math.min(frame.seconds, scene.duration)}
-        calmPreview={calm}
-      />
-      <div className="assistant-actions">
-        <button
-          type="button"
-          className="button secondary"
-          onClick={() => {
-            if (frame.playing) clock.pause();
-            else {
-              clock.seek(0);
-              clock.play();
-            }
-          }}
-        >
-          {frame.playing ? "Pause preview" : "Preview this scene"}
-        </button>
-        <label className="assistant-check">
-          <input
-            type="checkbox"
-            checked={calm}
-            onChange={(e) => setCalm(e.target.checked)}
-          />{" "}
-          Calmer preview
-        </label>
-      </div>
-      <label>
-        Preview time (seconds)
-        <input
-          type="number"
-          min={0}
-          max={scene.duration}
-          step={0.1}
-          value={Number(frame.seconds.toFixed(1))}
-          onChange={(e) => {
-            clock.pause();
-            clock.seek(e.target.valueAsNumber || 0);
-          }}
-        />
-      </label>
-    </section>
-  );
-}
 
 export function CartoonAssistant({
   source,
@@ -172,6 +109,7 @@ export function CartoonAssistant({
   const [index, setIndex] = useState(0);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [interactionOpen, setInteractionOpen] = useState(false);
   const field = <K extends keyof StoryBrief>(key: K, value: StoryBrief[K]) =>
     setBrief((prev) => ({ ...prev, [key]: value }));
   const existing = !!source;
@@ -255,7 +193,10 @@ export function CartoonAssistant({
   }
   function editScene(change: Partial<Scene>) {
     if (!scene || !plan || !direction || existing) return;
-    const edited = { ...scene, ...change };
+    const edited = cleanSceneReferences({
+      ...(change.duration !== undefined && change.duration !== scene.duration ? retimeScene(scene, change.duration) : scene),
+      ...change,
+    });
     const actors = openActors(edited, false);
     const kept = actors.some((e) => e.id === direction.actorId);
     const nextDirection = kept
@@ -315,17 +256,26 @@ export function CartoonAssistant({
   const actors = scene ? openActors(scene, existing) : [];
   const actor = actors.find((e) => e.id === direction?.actorId);
   const shape = !!plan && !!actor && shapeActor(plan.project, actor);
-  const applied =
-    plan?.directions.filter(
-      (d) =>
-        d.enabled &&
-        (d.shot !== "none" ||
-          d.action !== "none" ||
-          d.emotion !== "keep" ||
-          d.pose !== "keep" ||
-          d.heart !== "off"),
-    ).length ?? 0;
+  const applied = plan?.project.scenes.filter((item, i) => {
+    const direction = plan.directions[i];
+    const stagedInteraction = item.interactions !== source?.scenes[i]?.interactions;
+    return stagedInteraction || (direction?.enabled &&
+      (direction.shot !== "none" || direction.action !== "none" ||
+        direction.emotion !== "keep" || direction.pose !== "keep" || direction.heart !== "off"));
+  }).length ?? 0;
   const reviewing = existing || step >= 3;
+  const suggestion = reviewing && plan && scene ? interactionSuggestion(plan.project, scene) : undefined;
+  if (interactionOpen && plan && scene && direction) return (
+    <InteractionStudio project={plan.project} scene={scene} time={direction.start} suggestion={suggestion}
+      previewScene={candidate => {
+        try { return directScene(plan.project, candidate, direction, existing); }
+        catch { return candidate; }
+      }}
+      onClose={() => setInteractionOpen(false)} onApply={patch => {
+        setPlan({ ...plan, project: { ...plan.project,
+          scenes: plan.project.scenes.map(item => item === scene ? { ...item, ...patch } : item) } });
+      }} />
+  );
 
   return (
     <Modal
@@ -676,6 +626,9 @@ export function CartoonAssistant({
                 ))}
               </select>
             </label>
+            {suggestion && <button className="button secondary small" onClick={() => setInteractionOpen(true)}>
+              Review interaction suggestion: {INTERACTION_LABELS[suggestion.kind]}
+            </button>}
             <ScenePreview
               key={scene.id}
               project={plan.project}

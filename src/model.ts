@@ -1,3 +1,5 @@
+import { interactionIssue } from "./interaction-model";
+import type { Interaction } from "./interaction-model";
 import { MAX_MOUTH_SAMPLE_BYTES, validVoiceMouthTracks } from "./voice-mouth-model";
 import type { VoiceMouthTrack } from "./voice-mouth-model";
 import { validPuppet } from "./puppet-model";
@@ -128,6 +130,7 @@ export interface Scene {
   cameraAnimation?: CameraAnimation;
   backgroundAnimation?: BackgroundAnimation;
   gentleDepth?: boolean;
+  interactions?: Interaction[];
 }
 export interface Outline {
   beginning: string;
@@ -428,6 +431,8 @@ export function validateProject(value: unknown): Project {
       )
         fail();
     }
+    if (interactionIssue(s.interactions, s.duration as number, s.elements as SceneElement[])) fail();
+    for (const action of (s.interactions ?? []) as Interaction[]) unique(action.id);
     const elementIds = new Set(
       s.elements.map((e) => (e as Record<string, unknown>).id as string),
     );
