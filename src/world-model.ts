@@ -1,3 +1,4 @@
+import { reconcileParticipation } from "./participation-model";
 import { reconcileFocusReferences } from "./focus-model";
 import { reconcileTransformReferences } from "./transform-motion";
 import { BACKGROUNDS, clone } from "./model";
@@ -60,14 +61,14 @@ export function applyScenery(scene: Scene, layout: LocationLayout, copies: Scene
   const elements = [...copies.filter(element => element.backdrop), ...scene.elements.filter(element => !isScenery(element))];
   for (const depth of SCENERY_DEPTHS)
     insertScenery(elements, copies.filter(element => !element.backdrop && element.sceneryDepth === depth), depth);
-  return reconcileFocusReferences(reconcileTransformReferences({
+  return reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences({
     ...scene, elements, background: layout.background, gentleDepth: layout.gentleDepth,
     backgroundAnimation: scene.backgroundAnimation?.keyframes.length ? scene.backgroundAnimation :
       layout.atmosphere ? { style: layout.atmosphere, enabled: true, keyframes: [] } : undefined,
     cameraAnimation: scene.cameraAnimation?.followId &&
       !elements.some(element => element.id === scene.cameraAnimation?.followId)
       ? { ...scene.cameraAnimation, followId: undefined } : scene.cameraAnimation,
-  }, scene), scene);
+  }, scene), scene));
 }
 
 // Keep editable geometry, artwork and ordering. Exclude episode animation and media.

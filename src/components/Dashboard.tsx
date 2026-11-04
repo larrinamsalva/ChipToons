@@ -1,3 +1,4 @@
+import { PARTICIPATION_EXAMPLES } from "../participation-model";
 import { EXAMPLE_NAMES } from "../transform-model";
 import type { TransformExample } from "../transform-model";
 import { useMemo, useState } from "react";
@@ -17,6 +18,7 @@ export function Dashboard({
   onGardenDemo,
   onTransformDemo,
   onFocusDemo,
+  onParticipationDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -38,6 +40,7 @@ export function Dashboard({
   onGardenDemo: () => void;
   onTransformDemo: (example: TransformExample) => void;
   onFocusDemo: (example: TransformExample) => void;
+  onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
   onOpen: (p: Project) => void;
@@ -200,6 +203,13 @@ export function Dashboard({
         <div className="series-actions">
           {(Object.entries(EXAMPLE_NAMES) as [TransformExample, string][]).map(([id, name]) =>
             <button className="button secondary small" key={id} onClick={() => onFocusDemo(id)}>{name} · Visual lesson</button>)}
+        </div>
+      </details>
+      <details className="transform-examples">
+        <summary>Try a Pause, Think &amp; Try example</summary>
+        <div className="series-actions">
+          {(Object.entries(PARTICIPATION_EXAMPLES) as [TransformExample, string][]).map(([id, name]) =>
+            <button className="button secondary small" key={id} onClick={() => onParticipationDemo(id)}>{name}</button>)}
         </div>
       </details>
       <div className="creative-actions" aria-label="Ways to create">

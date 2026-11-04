@@ -8,16 +8,18 @@ import type { LearningStep } from "../transform-model";
 import { MediaNumber } from "./MediaNumber";
 import { ScenePreview } from "./ScenePreview";
 
-export function LearningSteps({ project, scene, onApply, onLine, onFocus }: {
+export function LearningSteps({ project, scene, onApply, onLine, onFocus, initialStepId, onParticipation }: {
   project: Project; scene: Scene;
   onApply: (steps: LearningStep[]) => boolean | void;
   onLine: (id: string) => void;
   onFocus: (stepId: string) => void;
+  initialStepId?: string; onParticipation: (stepId: string) => void;
 }) {
   const saved = JSON.stringify(scene.learningSteps ?? []);
   const [seen, setSeen] = useState(saved);
   const [draft, setDraft] = useState(scene.learningSteps ?? []);
-  const [selected, setSelected] = useState(draft[0]?.id ?? "");
+  const [selected, setSelected] = useState(draft.find(step => step.id === initialStepId)?.id ?? draft[0]?.id ?? "");
+  const [expanded, setExpanded] = useState(!!initialStepId);
   const [preview, setPreview] = useState<LearningStep>();
   const [notice, setNotice] = useState("");
   if (saved !== seen) {
@@ -47,7 +49,7 @@ export function LearningSteps({ project, scene, onApply, onLine, onFocus }: {
   }
   const issue = learningIssue(draft, scene);
   const lines = scene.script?.lines ?? [];
-  return <details className="director-card learning-steps">
+  return <details className="director-card learning-steps" open={expanded} onToggle={event => setExpanded(event.currentTarget.open)}>
     <summary>Teach It Step by Step</summary>
     <p className="field-hint">Link each instruction to a real moment. Check the preview to see if the animation shows what the words describe.</p>
     <div className="director-actions">
@@ -93,6 +95,8 @@ export function LearningSteps({ project, scene, onApply, onLine, onFocus }: {
         <button className="button secondary small" onClick={() => setPreview(current)}>Check this moment in the scene</button>
         <button className="button secondary small" disabled={JSON.stringify(draft) !== saved}
           onClick={() => onFocus(current.id)}>Show This Step on Screen</button>
+        <button className="button secondary small" disabled={JSON.stringify(draft) !== saved}
+          onClick={() => onParticipation(current.id)}>Plan a participation moment</button>
         {current.lineId && <button className="button text small" onClick={() => onLine(current.lineId!)}>Open linked script line</button>}
         <button className="button text small" onClick={() => {
           const remaining = draft.filter(step => step.id !== current.id);

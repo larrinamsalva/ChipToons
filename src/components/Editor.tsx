@@ -1,3 +1,4 @@
+import { PARTICIPATION_TITLE, participationIssue } from "../participation-model";
 import { FOCUS_TITLE, focusIssue } from "../focus-model";
 import type { FocusSeed } from "../focus-studio";
 import { TRANSFORM_TITLE, TransformStudio } from "./TransformStudio";
@@ -57,6 +58,7 @@ import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
 const VoiceMouthStudio = lazy(() => import("./VoiceMouthStudio").then(module => ({ default: module.VoiceMouthStudio })));
+const ParticipationStudio = lazy(() => import("./ParticipationStudio").then(module => ({ default: module.ParticipationStudio })));
 const FocusStudio = lazy(() => import("./FocusStudio").then(module => ({ default: module.FocusStudio })));
 const ScriptDirector = lazy(() => import("./ScriptDirector").then(module => ({ default: module.ScriptDirector })));
 
@@ -119,6 +121,7 @@ export function Editor({
   const [mouthStudio, setMouthStudio] = useState<{ clipId?: string }>();
   const [scriptOpen, setScriptOpen] = useState(startScript);
   const [scriptLine, setScriptLine] = useState("");
+  const [scriptStep, setScriptStep] = useState<string>();
   const [voiceStudio, setVoiceStudio] = useState<{
       clipId?: string;
       lineId?: string;
@@ -131,6 +134,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
+  const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
   const [transformEditor, setTransformEditor] = useState<{ objectId?: string; changeId?: string }>();
   const [interactionEditor, setInteractionEditor] = useState<{ id?: string; suggestion?: InteractionSuggestion }>();
@@ -306,7 +310,7 @@ export function Editor({
       setEditError(transformationIssue);
       return false;
     }
-    const teachingIssue = focusIssue(next.focusGraphics, next);
+    const teachingIssue = participationIssue(next.participation, next) || focusIssue(next.focusGraphics, next);
     if (teachingIssue) {
       setEditError(teachingIssue);
       return false;
@@ -427,10 +431,10 @@ export function Editor({
       appearance: { ...element.appearance, ...appearance },
     });
   }
-  function addScene() {
-    if (project.scenes.length >= 120) return;
+  function addScene(dedicated?: Scene) {
+    if (project.scenes.length >= 120) return false;
     const scenes = [...project.scenes];
-    scenes.splice(index + 1, 0, {
+    scenes.splice(index + 1, 0, dedicated ?? {
       ...makeScene(project.characters, scenes.length),
       chapter: chapterOf(scene, index, project.scenes.length),
     });
@@ -444,7 +448,7 @@ export function Editor({
       setEditError(
         "This scene would exceed the project animation or artwork limits. Your project is unchanged.",
       );
-      return;
+      return false;
     }
     onChange({ ...project, scenes, ...reconcileProduction(project, scenes) });
     setSelected(index + 1);
@@ -456,6 +460,7 @@ export function Editor({
     );
     clock.seek(scenes.slice(0, index + 1).reduce((n, s) => n + s.duration, 0));
     setPlaying(false);
+    return true;
   }
   function duplicateScene() {
     if (project.scenes.length >= 120) return;
@@ -680,7 +685,7 @@ export function Editor({
           >
             Story chapters
           </button>
-          <button className="button secondary small" onClick={() => { halt(); setScriptOpen(true); }}>
+          <button className="button secondary small" onClick={() => { halt(); setScriptStep(undefined); setScriptOpen(true); }}>
             Write My Episode Script
           </button>
           <button className="button secondary small" onClick={() => { halt(); setMouthStudio({}); }}>
@@ -889,7 +894,7 @@ export function Editor({
           <button
             className="button dashed small add-scene"
             disabled={project.scenes.length >= 120}
-            onClick={addScene}
+            onClick={() => addScene()}
           >
             <Icon name="plus" size={18} />
             Add a scene
@@ -949,6 +954,7 @@ export function Editor({
             onInteraction={(id) => { halt(); setInteractionEditor({ id }); }}
             onTransform={(objectId, changeId) => { halt(); setTransformEditor({ objectId, changeId }); }}
             onFocus={graphicId => { halt(); setFocusEditor({ graphicId }); }}
+            onParticipation={id => { halt(); setParticipationEditor({ id }); }}
           />
         </ScenePlayer>
         <aside className="properties-panel" aria-label="Editing controls">
@@ -987,6 +993,7 @@ export function Editor({
                   halt(); setTransformEditor({ objectId: element?.id });
                 }}>{TRANSFORM_TITLE}</button>
                 <button className="button secondary" onClick={() => { halt(); setFocusEditor({}); }}>{FOCUS_TITLE}</button>
+                <button className="button secondary" onClick={() => { halt(); setParticipationEditor({}); }}>{PARTICIPATION_TITLE}</button>
               </section>
               <section className="world-tools">
                 <button className="button secondary" aria-expanded={worldOpen} aria-controls="world-controls"
@@ -1605,11 +1612,11 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
-            onClose={() => setScriptOpen(false)}
+            onClose={() => { setScriptOpen(false); setScriptStep(undefined); }}
             onRecord={lineId => {
               halt();
               setScriptLine(lineId);
@@ -1618,6 +1625,8 @@ export function Editor({
             onAnimateVoice={clipId => { halt(); setMouthStudio({ clipId }); }}
             onInteraction={() => { halt(); setInteractionEditor({ suggestion: interactionSuggestion(project, scene) }); }}
             onFocusStep={stepId => { halt(); setFocusEditor({ seed: { stepId } }); }}
+            learningStepId={scriptStep}
+            onParticipation={stepId => { halt(); setParticipationEditor({ stepId }); }}
             onTiming={clipId => openVoice(clipId)} onCaptions={() => openVoice(undefined, undefined, "captions")}
             onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} saveStatus={saveStatus} saveError={saveError}
           />
@@ -1636,6 +1645,20 @@ export function Editor({
           time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
           onClose={() => setTransformEditor(undefined)} onApply={changeScene}
           onFocus={(objectId, changeId) => { setTransformEditor(undefined); setFocusEditor({ seed: { objectId, changeId } }); }} />
+      )}
+      {participationEditor && (
+        <Suspense fallback={<Modal title={PARTICIPATION_TITLE} onClose={() => setParticipationEditor(undefined)}>
+          <p role="status">Opening participation studio…</p>
+        </Modal>}>
+          <ParticipationStudio key={scene.id} project={project} scene={scene} id={participationEditor.id} stepId={participationEditor.stepId}
+            time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
+            onScene={next => { selectScene(next); setParticipationEditor({}); }}
+            onClose={() => setParticipationEditor(undefined)}
+            onApply={(patch, dedicated) => dedicated ? addScene(dedicated) : changeScene(patch)}
+            onScript={(lineId, stepId) => {
+              setParticipationEditor(undefined); setScriptLine(lineId ?? ""); setScriptStep(stepId); setScriptOpen(true);
+            }} />
+        </Suspense>
       )}
       {focusEditor && (
         <Suspense fallback={<Modal title={FOCUS_TITLE} onClose={() => setFocusEditor(undefined)}><p role="status">Opening teaching graphics…</p></Modal>}>

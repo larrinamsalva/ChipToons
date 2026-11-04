@@ -52,7 +52,7 @@ export function intersects(a: Rectangle, b: Rectangle) {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 }
 
-function textLines(value: string, limit: number) {
+export function focusTextLines(value: string, limit: number) {
   const words = value.trim().split(/\s+/u).filter(Boolean).flatMap(word => {
     const characters = [...word];
     return Array.from({ length: Math.ceil(characters.length / limit) },
@@ -76,7 +76,7 @@ export function focusLayout(graphic: FocusGraphic, point: Point, band?: Band) {
   const hasText = !!graphic.text.trim();
   const maxWidth = graphic.kind === "card" ? clampFocus(graphic.size * 3.6, 170, 320) : clampFocus(graphic.size * 3.3, 155, 266);
   const font = graphic.textSize;
-  const lines = hasText ? textLines(graphic.text, Math.floor((maxWidth - 26) / (font * 0.66))) : [];
+  const lines = hasText ? focusTextLines(graphic.text, Math.floor((maxWidth - 26) / (font * 0.66))) : [];
   const textWidth = Math.min(maxWidth, Math.max(58, ...lines.map(line => [...line].length * font * 0.68 + 26)));
   const textHeight = lines.length * (font + 4) + 18;
   const hasBox = lines.length > 0;

@@ -1,3 +1,5 @@
+import { participationExample } from "../src/participation-examples";
+import { participationWindow } from "../src/participation-model";
 import { visualTeachingExample } from "../src/focus-examples";
 import { focusAnchor } from "../src/focus-motion";
 import { transformExample } from "../src/transform-examples";
@@ -845,6 +847,24 @@ test("decodes a single wagon with a loose and fixed wheel, then verifies the joi
   await downloadAndVerifyMovie(page, info, files, [repair.duration, testRun.duration]);
 });
 
+function rawFrame(movie: string, at: number) {
+  const raw = execFileSync("ffmpeg", ["-v", "error", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS), "-i", movie,
+    "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
+  expect(raw.length).toBe(800 * 450 * 3);
+  return raw;
+}
+function pixels(raw: Buffer, x: number, y: number, width: number, height: number,
+  match: (r: number, g: number, b: number) => boolean) {
+  let total = 0;
+  for (let row = Math.max(0, Math.floor(y)); row < Math.min(450, y + height); row++) {
+    for (let col = Math.max(0, Math.floor(x)); col < Math.min(800, x + width); col++) {
+      const index = (row * 800 + col) * 3;
+      if (match(raw[index], raw[index + 1], raw[index + 2])) total++;
+    }
+  }
+  return total;
+}
+
 test("decodes visual teaching graphics following the held wagon with clear spoken captions and verifies the joined lesson", async ({ page }, info) => {
   test.setTimeout(140_000);
   const expected = visualTeachingExample(transformExample("wagon"), "wagon");
@@ -858,23 +878,6 @@ test("decodes visual teaching graphics following the held wagon with clear spoke
   await page.getByRole("button", { name: "Back to studio", exact: true }).click();
   const second = await render(page, info, "visual-lesson-roll", rollout.duration, { limit, segment: 2 });
 
-  function rawFrame(movie: string, at: number) {
-    const raw = execFileSync("ffmpeg", ["-v", "error", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS), "-i", movie,
-      "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
-    expect(raw.length).toBe(800 * 450 * 3);
-    return raw;
-  }
-  function pixels(raw: Buffer, x: number, y: number, width: number, height: number,
-    match: (r: number, g: number, b: number) => boolean) {
-    let total = 0;
-    for (let row = Math.max(0, Math.floor(y)); row < Math.min(450, y + height); row++) {
-      for (let col = Math.max(0, Math.floor(x)); col < Math.min(800, x + width); col++) {
-        const index = (row * 800 + col) * 3;
-        if (match(raw[index], raw[index + 1], raw[index + 2])) total++;
-      }
-    }
-    return total;
-  }
   const yellow = (r: number, g: number, b: number) => r > 235 && g > 219 && b >= 115 && b < 198 && r - g < 38;
   const early = pixels(rawFrame(first.path, 1.0), 75, 10, 269, 85, yellow);
   const numbered = pixels(rawFrame(first.path, 2.75), 75, 10, 269, 85, yellow);
@@ -934,4 +937,83 @@ test("decodes visual teaching graphics following the held wagon with clear spoke
   }
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [repair.duration, rollout.duration]);
+});
+
+test("decodes a voiced wagon question, both choices, quiet thinking time and its timed reveal in the joined lesson", async ({ page }, info) => {
+  test.setTimeout(140_000);
+  const expected = participationExample("wagon");
+  const [repair, roll] = expected.scenes;
+  const [moment] = repair.participation!;
+  const { start, think, reveal, end } = participationWindow(moment);
+  await page.goto("./");
+  await page.getByText("Try a Pause, Think & Try example", { exact: true }).click();
+  await page.getByRole("button", { name: expected.title, exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const limit = repair.duration;
+  const first = await render(page, info, "participation-wagon-question", repair.duration, { limit, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "participation-wagon-test", roll.duration, { limit, segment: 2 });
+
+  const cream = (r: number, g: number, b: number) => r > 235 && g > 221 && b >= 160 && b < 218 && r - b > 29;
+  const green = (r: number, g: number, b: number) => r >= 200 && r <= 249 && g >= 233 && g - r >= 8 && g - b >= 9 && Math.abs(r - b) <= 8;
+  const pink = (r: number, g: number, b: number) => r >= 243 && g >= 220 && b >= 225 && r - g >= 3 && r - b >= 3 && Math.abs(g - b) <= 12;
+  const blue = (r: number, g: number, b: number) => r >= 212 && r <= 253 && g >= 231 && b >= 247 && g - r >= 3 && b >= g - 2;
+  const panel = (frame: Buffer, match: (r: number, g: number, b: number) => boolean) => pixels(frame, 98, 19, 604, 47, match);
+  const before = rawFrame(first.path, start - 0.45), question = rawFrame(first.path, start + 0.52);
+  const endOfThinking = rawFrame(first.path, reveal - 0.3);
+  const thinkFrames = [think + 0.36, (think + reveal) / 2, reveal - 0.3].map(at => rawFrame(first.path, at));
+  const completed = rawFrame(first.path, reveal + 0.65);
+  const after = rawFrame(first.path, end + 0.48);
+  expect(panel(before, cream)).toBeLessThan(1700);
+  expect(panel(question, cream)).toBeGreaterThan(17_000);
+  for (const frame of thinkFrames) {
+    expect(panel(frame, cream)).toBeGreaterThan(17_000);
+    expect(pixels(frame, 99, 73, 291, 51, blue)).toBeGreaterThan(4300);
+    expect(pixels(frame, 411, 73, 290, 51, pink)).toBeGreaterThan(4300);
+  }
+  expect(panel(completed, cream)).toBeLessThan(1700);
+  expect(panel(completed, green)).toBeGreaterThan(15_000);
+  expect(panel(after, green)).toBeLessThan(1700);
+  const captionInk = pixels(completed, 40, 385, 720, 45, (r, g, b) => Math.min(r, g, b) > 210);
+  const captionPlate = pixels(completed, 40, 385, 720, 45, (r, g, b) => Math.max(r, g, b) < 58);
+  expect(captionInk).toBeGreaterThan(115);
+  expect(captionPlate).toBeGreaterThan(5000);
+
+  const circle = repair.focusGraphics![0], wagon = repair.elements.find(item => item.prop === "toy-wagon")!;
+  const marker = (r: number, g: number, b: number) => r < 60 && g > 68 && g < 157 && b - g > 22 && b - g < 90;
+  const markerPixels = (frame: Buffer, at: number) => {
+    const sampled = sceneFramesAt(expected, repair, at);
+    const point = focusAnchor(repair, circle, sampled, cameraAt(repair, at));
+    const count = pixels(frame, point.x - 26, point.y - 26, 52, 52, marker);
+    return { at, ...point, count, held: Boolean(sampled.get(wagon.id)?.heldBy) };
+  };
+  expect(markerPixels(endOfThinking, reveal - 0.3).count).toBeLessThan(30);
+  const moving = [reveal + 0.65, reveal + 2.48].map(at => markerPixels(rawFrame(first.path, at), at));
+  expect(moving.every(frame => frame.held && frame.count > 65)).toBe(true);
+  expect(Math.hypot(moving[1].x - moving[0].x, moving[1].y - moving[0].y)).toBeGreaterThan(3);
+
+  const windowRms = (at: number) => {
+    const firstSample = Math.round(at * 8000), length = 3200;
+    let power = 0;
+    for (let i = 0; i < length; i++) power += first.pcm.readFloatLE((firstSample + i) * 4) ** 2;
+    return Math.sqrt(power / length);
+  };
+  const voice = { question: windowRms(start + 0.6), think: windowRms(think + 0.9), explanation: windowRms(reveal + 0.65) };
+  expect(voice.question).toBeGreaterThan(voice.think * 3);
+  expect(voice.explanation).toBeGreaterThan(voice.think * 3);
+  await info.attach("decoded participation evidence", {
+    body: JSON.stringify({ start, think, reveal, end, moving, captionInk, captionPlate, voice }, null, 2),
+    contentType: "application/json",
+  });
+
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  await downloadAndVerifyMovie(page, info, files, [repair.duration, roll.duration]);
 });

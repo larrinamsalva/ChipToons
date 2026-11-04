@@ -1,4 +1,5 @@
-import { colorValid, numberIn, record } from "./art-model";
+import { participationWindow } from "./participation-model";
+import { colorValid, numberIn, record, validDisplayText } from "./art-model";
 import type { Scene } from "./model";
 import { actionTime, changeTime, stepTime } from "./transform-model";
 import type { ActionCue } from "./transform-model";
@@ -35,11 +36,6 @@ export type FocusGraphic = {
 export const canDrawFocus = (kind: FocusKind) => kind === "arrow" || kind === "circle";
 const keys = (value: object, fields: readonly string[]) => Object.keys(value).every(key => fields.includes(key));
 const id = (value: unknown): value is string => typeof value === "string" && !!value && value.length <= 100;
-const validText = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max &&
-  [...value].every(character => {
-    const code = character.charCodeAt(0);
-    return (code >= 32 && code !== 127) || code === 9 || code === 10 || code === 13;
-  });
 
 export function focusCueTime(scene: Scene, cue: FocusCue): number | undefined {
   if (cue.kind === "action") return actionTime(scene.interactions, cue);
@@ -53,7 +49,12 @@ export function focusCueTime(scene: Scene, cue: FocusCue): number | undefined {
   }
 }
 
-export function focusWindow(scene: Scene, graphic: FocusGraphic) {
+export function focusWindow(scene: Scene, graphic: FocusGraphic, authored = false) {
+  const moment = !authored && scene.participation?.find(item => item.focusId === graphic.id);
+  if (moment) {
+    const { reveal, end } = participationWindow(moment);
+    return { start: reveal, end };
+  }
   const start = (graphic.cue && focusCueTime(scene, graphic.cue)) ?? graphic.at;
   return { start, end: Math.min(scene.duration, start + graphic.length) };
 }
@@ -76,12 +77,16 @@ export function focusIssue(value: unknown, scene: Scene, unique: (id: string) =>
   if (value === undefined) return;
   if (!Array.isArray(value) || value.length > MAX_FOCUS_GRAPHICS) return "Use up to 24 teaching graphics in one scene.";
   const ids = new Set<string>();
-  const events: { time: number; delta: number; spotlight: boolean }[] = [];
+  type Event = { time: number; delta: number; spotlight: boolean };
+  const authored: Event[] = [], displayed: Event[] = [];
+  function addWindow(events: Event[], { start, end }: { start: number; end: number }, spotlight = false) {
+    if (end > start) events.push({ time: start, delta: 1, spotlight }, { time: end, delta: -1, spotlight });
+  }
   for (const item of value) {
     if (!record(item) || !keys(item, ["id", "kind", "style", "target", "text", "number", "size", "textSize",
       "ink", "paper", "at", "length", "fadeIn", "fadeOut", "reveal", "cue", "stepSource"]) ||
       !id(item.id) || ids.has(item.id) || typeof item.kind !== "string" || !Object.hasOwn(FOCUS_TYPES, item.kind) ||
-      typeof item.style !== "string" || !Object.hasOwn(FOCUS_STYLES, item.style) || !validText(item.text, 88) || ((item.kind === "label" || item.kind === "card") && !item.text.trim()) ||
+      typeof item.style !== "string" || !Object.hasOwn(FOCUS_STYLES, item.style) || !validDisplayText(item.text, 88) || ((item.kind === "label" || item.kind === "card") && !item.text.trim()) ||
       !numberIn(item.number, 1, 99) || !Number.isInteger(item.number) || !numberIn(item.size, 22, 160) ||
       !numberIn(item.textSize, 16, 34) || !colorValid(item.ink) || !colorValid(item.paper) ||
       !numberIn(item.at, 0, scene.duration) || !numberIn(item.length, 0.01, scene.duration) ||
@@ -101,25 +106,37 @@ export function focusIssue(value: unknown, scene: Scene, unique: (id: string) =>
     const source = item.stepSource;
     if (source !== undefined && (!record(source) || !keys(source, ["id", "text", "at", "review"]) ||
       !(source.id === undefined ? source.review === true :
-        id(source.id) && scene.learningSteps?.some(step => step.id === source.id)) || !validText(source.text, 250) ||
+        id(source.id) && scene.learningSteps?.some(step => step.id === source.id)) || !validDisplayText(source.text, 250) ||
       !numberIn(source.at, 0, scene.duration) || (source.review !== undefined && typeof source.review !== "boolean")))
       return "Choose an available learning step for this graphic.";
-    const { start, end } = focusWindow(scene, item as unknown as FocusGraphic);
+    const graphic = item as unknown as FocusGraphic;
     if (!item.cue && item.at + item.length > scene.duration + 1e-7)
       return "Choose an end time within the scene.";
-    if (end > start) {
-      const spotlight = item.kind === "spotlight";
-      events.push({ time: start, delta: 1, spotlight }, { time: end, delta: -1, spotlight });
+    const original = focusWindow(scene, graphic, true), spotlight = graphic.kind === "spotlight";
+    addWindow(authored, original, spotlight);
+    if (scene.participation?.length) {
+      const effective = focusWindow(scene, graphic);
+      // Keep enough room for the original timing to return when a moment is removed.
+      if (original.start <= effective.end && effective.start <= original.end) addWindow(displayed, {
+        start: Math.min(original.start, effective.start), end: Math.max(original.end, effective.end),
+      }, spotlight);
+      else {
+        addWindow(displayed, original, spotlight);
+        addWindow(displayed, effective, spotlight);
+      }
     }
     ids.add(item.id);
     unique(item.id);
   }
-  let visible = 0, spotlights = 0;
-  for (const event of events.sort((a, b) => a.time - b.time || a.delta - b.delta)) {
-    visible += event.delta;
-    if (event.spotlight) spotlights += event.delta;
-    if (visible > MAX_VISIBLE_FOCUS || spotlights > 1)
-      return "Show up to three graphics at a time and one spotlight. Adjust their timing to make room.";
+  for (const moment of scene.participation ?? []) addWindow(displayed, participationWindow(moment));
+  for (const events of [authored, displayed]) {
+    let visible = 0, spotlights = 0;
+    for (const event of events.sort((a, b) => a.time - b.time || a.delta - b.delta)) {
+      visible += event.delta;
+      if (event.spotlight) spotlights += event.delta;
+      if (visible > MAX_VISIBLE_FOCUS || spotlights > 1)
+        return "Show up to three teaching graphics or participation cards at a time and one spotlight. Adjust their timing to make room.";
+    }
   }
 }
 
@@ -136,7 +153,7 @@ export function reconcileFocusReferences(scene: Scene, previous = scene): Scene 
     if (!lostCue && target === graphic.target && source === graphic.stepSource) return graphic;
     if (!lostCue) return { ...graphic, target, stepSource: source };
     const old = previous.focusGraphics?.find(item => item.id === graphic.id) ?? graphic;
-    const { start } = focusWindow(previous, old);
+    const { start } = focusWindow(previous, old, true);
     const at = Math.min(scene.duration - 0.01, start);
     const length = Math.min(graphic.length, scene.duration - at);
     const ratio = Math.min(1, length / (graphic.fadeIn + graphic.fadeOut || 1));

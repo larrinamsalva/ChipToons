@@ -1,3 +1,4 @@
+import { reconcileParticipation } from "./participation-model";
 import { reconcileFocusReferences } from "./focus-model";
 import { reconcileTransformReferences } from "./transform-motion";
 import { interactionReferencesExist } from "./interaction-model";
@@ -392,11 +393,15 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
       : step.cue ? { ...step.cue, changeId: cues.get(step.cue.changeId)! } : undefined,
   }));
   if (copy.focusGraphics) copy.focusGraphics = copy.focusGraphics.map(graphic => ({
-    ...graphic, id: uid(),
+    ...graphic, id: nextCue(graphic.id),
     target: graphic.target.kind === "object" ? { ...graphic.target, id: ids.get(graphic.target.id)! } : graphic.target,
     cue: graphic.cue?.kind === "action" ? { ...graphic.cue, interactionId: cues.get(graphic.cue.interactionId)! } :
       graphic.cue ? { ...graphic.cue, id: cues.get(graphic.cue.id)! } : undefined,
     stepSource: graphic.stepSource?.id ? { ...graphic.stepSource, id: cues.get(graphic.stepSource.id)! } : graphic.stepSource,
+  }));
+  if (copy.participation) copy.participation = copy.participation.map(moment => ({
+    ...moment, id: uid(), stepId: moment.stepId ? cues.get(moment.stepId) : undefined,
+    focusId: moment.focusId ? cues.get(moment.focusId) : undefined,
   }));
   if (copy.cameraAnimation) {
     copy.cameraAnimation.keyframes.forEach((k) => {
@@ -413,7 +418,7 @@ export function duplicateAnimatedScene(scene: Scene): Scene {
 export function cleanSceneReferences(scene: Scene, previous = scene): Scene {
   if (scene.interactions?.some(action => !interactionReferencesExist(action, scene.elements)))
     scene = { ...scene, interactions: scene.interactions.filter(action => interactionReferencesExist(action, scene.elements)) };
-  scene = reconcileFocusReferences(reconcileTransformReferences(scene, previous), previous);
+  scene = reconcileParticipation(reconcileFocusReferences(reconcileTransformReferences(scene, previous), previous));
   if (
     !scene.cameraAnimation?.followId ||
     scene.elements.some((e) => e.id === scene.cameraAnimation?.followId)

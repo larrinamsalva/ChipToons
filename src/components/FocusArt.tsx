@@ -25,13 +25,22 @@ export function FocusArt({ graphic, point, layout, opacity, progress }: {
       <text x={marker.x} y={marker.y} dy=".35em" textAnchor="middle" fill={ink}
         fontFamily="Arial, sans-serif" fontWeight="700" fontSize={Math.min(textSize, radius * 1.2)}>{graphic.number}</text>
     </>}
-    {box && <>
-      <rect {...box} rx={kind === "card" ? 13 : 9} fill={paper} stroke={ink} strokeWidth="2" />
-      {lines.map((line, index) => <text key={index} x={box.x + box.width / 2} y={box.y + textSize + 7 + index * (textSize + 4)}
-        textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize={textSize} fill={ink}
-        textLength={Math.min(box.width - 20, [...line].length * textSize * 0.61)} lengthAdjust="spacingAndGlyphs">{line}</text>)}
-    </>}
+    {box && <FocusCard box={box} ink={ink} paper={paper} radius={kind === "card" ? 13 : 9}
+      lines={lines.map((text, index) => ({ text, size: textSize, y: textSize + 7 + index * (textSize + 4) }))} />}
   </g>;
+}
+
+export type FocusCardProps = {
+  box: Rectangle; ink: string; paper: string; radius?: number; lines: { text: string; size: number; y: number }[];
+};
+
+export function FocusCard({ box, ink, paper, radius = 13, lines }: FocusCardProps) {
+  return <>
+    <rect {...box} rx={radius} fill={paper} stroke={ink} strokeWidth="2" />
+    {lines.map(({ text, size, y }, index) => <text key={index} x={box.x + box.width / 2} y={box.y + y}
+      textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize={size} fill={ink}
+      textLength={Math.min(box.width - 20, [...text].length * size * 0.61)} lengthAdjust="spacingAndGlyphs">{text}</text>)}
+  </>;
 }
 
 export function CaptionGuide({ band }: { band?: Rectangle }) {

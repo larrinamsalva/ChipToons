@@ -386,7 +386,7 @@ export default function App() {
     }
   }
 
-  async function openDemo(example: "friendship" | "talking" | "garden" | TransformExample = "friendship", withFocus = false) {
+  async function openDemo(example: "friendship" | "talking" | "garden" | TransformExample = "friendship", variant?: "focus" | "participation") {
     if (working) return;
     setWorking(true);
     setNotice("Opening your cartoon example…");
@@ -402,14 +402,15 @@ export default function App() {
         await open(voicedDemo());
       } else {
         const { transformExample } = await import("./transform-examples");
-        let sample = transformExample(example);
-        if (withFocus) {
+        const participation = variant === "participation" ? await import("./participation-examples") : undefined;
+        let sample = participation ? participation.participationExample(example) : transformExample(example);
+        if (variant === "focus") {
           const { visualTeachingExample } = await import("./focus-examples");
           sample = visualTeachingExample(sample, example);
         }
         if (example === "wagon") {
           const { withWagonVoices } = await import("./wagon-voices");
-          await open(await withWagonVoices(sample));
+          await open(await withWagonVoices(sample, participation?.WAGON_ANSWER_DELAY));
         } else await open(sample);
       }
       setNotice("");
@@ -700,7 +701,8 @@ export default function App() {
           onTalkingDemo={() => void openDemo("talking")}
           onGardenDemo={() => void openDemo("garden")}
           onTransformDemo={example => void openDemo(example)}
-          onFocusDemo={example => void openDemo(example, true)}
+          onFocusDemo={example => void openDemo(example, "focus")}
+          onParticipationDemo={example => void openDemo(example, "participation")}
           onUpload={() => {
             setUploadError("");
             setDialog({ type: "upload" });
