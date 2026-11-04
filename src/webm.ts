@@ -189,3 +189,23 @@ export function readWebmTracks(bytes: Uint8Array, fileSize: number): WebmTracks 
   if (!video) throw new Error("No readable WebM video track was found.");
   return { ...video, ...(audio ? { audio } : {}) };
 }
+
+export function isChromiumWebmRecording(bytes: Uint8Array, fileSize: number) {
+  const header = element(bytes, 0);
+  const segment = element(bytes, header.end, fileSize);
+  if (header.id !== 0x1a45dfa3 || segment.id !== 0x18538067 || segment.end > fileSize) return false;
+  for (let at = segment.data; at < Math.min(segment.end, bytes.length);) {
+    const field = element(bytes, at);
+    if (field.unknown || field.end > bytes.length || field.end > segment.end) return false;
+    if (field.id === 0x1549a966) {
+      const metadata = webmChildren(bytes, field);
+      return [0x4d80, 0x5741].every(id => {
+        const app = metadata.find(item => item.id === id);
+        return app && new TextDecoder().decode(bytes.subarray(app.data, app.end)) === "Chrome";
+      });
+    }
+    if (field.id === 0x1f43b675) return false;
+    at = field.end;
+  }
+  return false;
+}

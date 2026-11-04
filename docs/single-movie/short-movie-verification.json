@@ -1,0 +1,82 @@
+{
+  "media": {
+    "duration": 8.38,
+    "frames": 122,
+    "parts": [
+      {
+        "start": 0,
+        "frames": 61,
+        "samples": [
+          {
+            "position": 0.2,
+            "correlation": 0.9998795987048377,
+            "delay": 0,
+            "rmsRatio": 0.9981970006793914
+          },
+          {
+            "position": 2.05,
+            "correlation": 0.9999128248111353,
+            "delay": 0,
+            "rmsRatio": 0.9988223433114646
+          },
+          {
+            "position": 3.8790000000000004,
+            "correlation": 0.9997936847582991,
+            "delay": 0,
+            "rmsRatio": 1.0080148816531767
+          }
+        ]
+      },
+      {
+        "start": 4.179,
+        "frames": 61,
+        "samples": [
+          {
+            "position": 0.2,
+            "correlation": 0.9996217633113911,
+            "delay": 0,
+            "rmsRatio": 1.0087963717418502
+          },
+          {
+            "position": 2.05,
+            "correlation": 0.9998584521769746,
+            "delay": 0,
+            "rmsRatio": 0.99938773618499
+          },
+          {
+            "position": 3.873,
+            "correlation": 0.9999032763185028,
+            "delay": 0,
+            "rmsRatio": 1.0021220434037421
+          }
+        ]
+      }
+    ],
+    "width": 800,
+    "height": 450
+  },
+  "playback": {
+    "duration": 8.38,
+    "decoded": [
+      {
+        "time": 0.1,
+        "picture": 4066832832
+      },
+      {
+        "time": 4.128999,
+        "picture": 1366585933
+      },
+      {
+        "time": 4.429,
+        "picture": 393831738
+      },
+      {
+        "time": 8.13,
+        "picture": 349116934
+      }
+    ],
+    "played": 4.571097,
+    "width": 800,
+    "height": 450
+  }
+}

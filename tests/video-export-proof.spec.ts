@@ -4,9 +4,11 @@ import { sunnyCartoon } from "../src/puppet-project";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/assistant";
 import { starterProject } from "../src/demo-starter";
-import { segmentedProject } from "./creator-fixtures";
+import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
+import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup } from "./production-helpers";
 import { cameraAt, elementAt, retimeScene, sceneElementAt } from "../src/timeline";
 import { emptyProduction } from "../src/media-model";
@@ -354,6 +356,34 @@ test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecke
     "pipe:1",
   ]);
   expect(Math.max(...pixels)).toBeGreaterThan(100);
+});
+
+test("joins genuine silent 720p VP8 parts even when Chromium understates their duration", async ({ page }, info) => {
+  test.setTimeout(60_000);
+  const parts = ["part-01-scenes-1-2", "part-02-scenes-3-4"].map(name =>
+    fileURLToPath(new URL(`./fixtures/single-movie/${name}.webm`, import.meta.url)));
+  await restore(page, segmentedProject(movieProofArtwork));
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+  const limit = page.getByRole("spinbutton", { name: "Maximum seconds per segment", exact: true });
+  await limit.fill("4");
+  await limit.press("Enter");
+  await page.getByRole("checkbox", { name: "Include mixed audio", exact: true }).uncheck();
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  for (const [index, path] of parts.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(path);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await expect(page.getByRole("status").filter({ hasText: /2 of 2 parts assigned.*Ready for delivery/ })).toBeVisible();
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  const movie = await downloadAndVerifyMovie(page, info, parts, [4, 4], false);
+  expect(movie.width).toBe(1280);
+  expect(movie.height).toBe(720);
+  expect(movie.parts.map(part => part.frames)).toEqual([61, 59]);
+  expect(movie.parts.every(part => part.frames > 32)).toBe(true);
+  expect(movie.parts[1].sourceEnd - movie.parts[1].reportedDuration).toBeGreaterThan(0.25);
+  expect(movie.parts[1].outputLength).toBeGreaterThan(movie.parts[1].sourceEnd + 0.02);
 });
 
 test("the complete original friendship demo exports as a playable sixty-second movie with voices, music and effects", async ({

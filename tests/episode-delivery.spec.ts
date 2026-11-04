@@ -4,7 +4,8 @@ import { readFile } from "node:fs/promises";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { segmentedProject } from "./creator-fixtures";
+import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
+import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup, restore, saved } from "./production-helpers";
 
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
@@ -24,8 +25,8 @@ async function exportPart(page: Page, index: number) {
 }
 
 test("checks two genuine parts, resumes the existing exporter, watches in order and checks the downloaded ZIP", async ({ page }, info) => {
-  test.setTimeout(95_000);
-  const project = segmentedProject();
+  test.setTimeout(120_000);
+  const project = segmentedProject(movieProofArtwork);
   await page.goto("./");
   if (info.project.name !== "tablet") await button(page, "Switch to dark theme").click();
   await restore(page, project);
@@ -116,6 +117,58 @@ test("checks two genuine parts, resumes the existing exporter, watches in order 
   await button(page, "Watch Checked Package").click();
   await expect(dialog(page).getByRole("status").filter({ hasText: /Part 1 · Scenes 1–2/ })).toBeVisible();
   await button(page, "Back to delivery list").click();
+  const makeMovie = button(page, "Make One Complete Movie");
+  if (info.project.name === "phone") {
+    await expect(makeMovie).toBeDisabled();
+    await expect(dialog(page).getByText(/Make one movie on a larger screen/)).toBeVisible();
+    await info.attach("movie-phone-fallback", { body: await dialog(page).getByRole("region", { name: "Single-movie builder" }).screenshot(), contentType: "image/png" });
+  } else {
+    await expect(makeMovie).toBeEnabled();
+    await page.evaluate(() => {
+      const storage = navigator.storage;
+      Object.defineProperty(storage, "estimate", { configurable: true, value: async () => ({ usage: 5000, quota: 5010 }) });
+    });
+    await makeMovie.press("Enter");
+    await expect(dialog(page).getByRole("alert")).toContainText("There isn’t enough estimated local storage");
+    await expect(button(page, "Download Episode Delivery Package")).toBeEnabled();
+    await page.evaluate(() => {
+      const storage = navigator.storage;
+      Reflect.deleteProperty(storage, "estimate");
+      const estimate = storage.estimate.bind(storage);
+      Object.defineProperty(storage, "estimate", { configurable: true, value: () => new Promise(resolve => {
+        document.addEventListener("release-test-estimate", () => { void estimate().then(resolve); }, { once: true });
+        document.documentElement.dataset.testEstimate = "waiting";
+      }) });
+    });
+    await makeMovie.click();
+    await expect(page.locator("html")).toHaveAttribute("data-test-estimate", "waiting");
+    await button(page, "Cancel delivery operation").click();
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event("release-test-estimate"));
+      Reflect.deleteProperty(navigator.storage, "estimate");
+    });
+    await expect(dialog(page).getByRole("status").filter({ hasText: /Cancelled/ })).toBeVisible();
+    await makeMovie.press("Enter");
+    const media = await downloadAndVerifyMovie(page, info, [first.path, second.path], [4, 4]);
+    expect(media.parts[1].start).toBeGreaterThan(4);
+    const subtitlePending = page.waitForEvent("download");
+    await button(page, "Download Complete Movie Subtitles").click();
+    const subtitle = await subtitlePending;
+    expect(subtitle.suggestedFilename()).toMatch(/-complete\.srt$/);
+    const text = await readFile((await subtitle.path())!, "utf8");
+    expect(text).toContain("00:00:00,400 --> 00:00:01,750");
+    const timestamp = (time: number) => `00:00:${(time.toFixed(3)).padStart(6, "0").replace(".", ",")}`;
+    expect(text).toContain(`3\n${timestamp(media.parts[1].start + 0.4)} --> ${timestamp(media.parts[1].start + 1.75)}\nScene 3`);
+    await button(page, "Preview Complete Movie").press("Enter");
+    const movie = dialog(page).getByLabel("Complete episode video");
+    await expect(movie).toBeVisible();
+    await dialog(page).getByRole("checkbox", { name: "Show separate subtitles", exact: true }).check();
+    await expect.poll(() => movie.evaluate((el: HTMLVideoElement) => el.textTracks[0]?.cues?.length ?? 0)).toBe(4);
+    expect((await new AxeBuilder({ page }).include("dialog")
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+    await info.attach("movie-desktop-preview", { body: await dialog(page).screenshot(), contentType: "image/png" });
+    await button(page, "Back to delivery list").click();
+  }
   await dialog(page).getByRole("button", { name: "Close dialog", exact: true }).click();
   expect((await backup(page)).data).toEqual(before);
   await info.attach("delivery-package", { path: archivePath, contentType: "application/zip" });

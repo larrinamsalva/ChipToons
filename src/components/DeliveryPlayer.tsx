@@ -3,8 +3,8 @@ import { durationLabel } from "../model";
 import { srtToVtt } from "../episode-delivery";
 import type { DeliveryPlayerPart } from "../episode-delivery";
 
-export function DeliveryPlayer({ parts, title, onClose }: {
-  parts: DeliveryPlayerPart[]; title: string; onClose: () => void;
+export function DeliveryPlayer({ parts, title, onClose, continuous = false }: {
+  parts: DeliveryPlayerPart[]; title: string; onClose: () => void; continuous?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const [position, setPosition] = useState(0);
@@ -50,10 +50,10 @@ export function DeliveryPlayer({ parts, title, onClose }: {
   }
   return <section className="delivery-card" aria-label="Episode watch-through">
     <h3>{title}</h3>
-    <p role="status">{part.label} of {parts.length}</p>
+    <p role="status">{part.label}{!continuous && ` of ${parts.length}`}</p>
     <p>Story position {durationLabel(Math.min(part.end, part.start + position))} / {durationLabel(parts.at(-1)!.end)}</p>
-    <p>Each file plays separately. There may be a brief pause between parts.</p>
-    <video key={index} ref={video} controls playsInline preload="metadata" aria-label="Episode part video"
+    {!continuous && <p>Each file plays separately. There may be a brief pause between parts.</p>}
+    <video key={index} ref={video} controls playsInline preload="metadata" aria-label={continuous ? "Complete episode video" : "Episode part video"}
       onTimeUpdate={event => setPosition(event.currentTarget.currentTime)}
       onCanPlay={event => {
         if (!autoPlay.current) return;
@@ -70,14 +70,14 @@ export function DeliveryPlayer({ parts, title, onClose }: {
     </video>
     {message && <p role="status">{message}</p>}
     <div className="delivery-actions">
-      <button className="button secondary" disabled={index === 0} onClick={() => go(index - 1)}>Previous part</button>
+      {!continuous && <button className="button secondary" disabled={index === 0} onClick={() => go(index - 1)}>Previous part</button>}
       <button className="button secondary" onClick={() => {
         if (video.current) {
           video.current.currentTime = 0;
           void video.current.play().catch(() => setMessage("Press Play to replay this part."));
         }
-      }}>Replay part</button>
-      <button className="button secondary" disabled={index + 1 === parts.length} onClick={() => go(index + 1)}>Next part</button>
+      }}>{continuous ? "Replay movie" : "Replay part"}</button>
+      {!continuous && <button className="button secondary" disabled={index + 1 === parts.length} onClick={() => go(index + 1)}>Next part</button>}
       {typeof HTMLVideoElement.prototype.requestFullscreen === "function" && document.fullscreenEnabled &&
         <button className="button secondary" onClick={() => {
           void video.current?.requestFullscreen().catch(() => setMessage("Fullscreen is unavailable on this device."));
@@ -90,11 +90,11 @@ export function DeliveryPlayer({ parts, title, onClose }: {
       </label>}
     </div>
     {part.baked && <p className="field-hint">This export already has captions drawn into the picture.</p>}
-    <label>Part order
+    {!continuous && <label>Part order
       <select value={index} onChange={event => go(Number(event.target.value))}>
         {parts.map((item, order) => <option key={item.label} value={order}>{item.label}</option>)}
       </select>
-    </label>
+    </label>}
     <button className="button secondary" onClick={onClose}>Back to delivery list</button>
   </section>;
 }

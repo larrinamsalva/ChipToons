@@ -59,7 +59,7 @@ This never edits a saved library character. **Open library characters** opens th
 
 ## Export longer stories in safe parts
 
-The existing real-time WebM encoder remains limited to **60 seconds per file on phones** and **120 seconds per file on wider screens**. It defaults to 800×450, 15 fps. It does not create a single uninterrupted 20-minute movie or an MP4.
+The existing real-time WebM encoder remains limited to **60 seconds per file on phones** and **120 seconds per file on wider screens**. It defaults to 800×450, 15 fps. To make one WebM from compatible numbered exports, use the [Single-Movie Builder](SINGLE_MOVIE_BUILDER.md).
 
 In Finish My Cartoon:
 
@@ -72,7 +72,7 @@ In Finish My Cartoon:
 
 If the tab closes mid-export, reopen the saved project and retry the missing part. A status label means a download was initiated, not that ChipToons can inspect or guarantee your download folder. After a project edit, statuses reset so an old movie is not presented as current. The same-revision review also remembers your part limit and selected range, within this device’s current maximum.
 
-Files are independently playable, with the encoder’s short startup lead (about 0.15 seconds); this is not a gapless concatenation workflow. Content is retained across boundaries. Use an external video editor if a single joined movie is required. Export never slices or modifies the saved project.
+Each numbered file is independently playable and includes the encoder’s short startup lead (about 0.15 seconds). The [Single-Movie Builder](SINGLE_MOVIE_BUILDER.md) can combine supported VP8 exports into one WebM. Export preserves the saved project.
 
 ## Readiness, saving and recovery
 
@@ -159,3 +159,5 @@ See [Voice-to-Mouth Animation Studio](VOICE_MOUTH_ANIMATION.md) for supported ch
 ## Deliver a complete episode
 
 In **Finish My Cartoon**, download every numbered segment, then open **Prepare My Complete Episode**. Choose those WebM files, confirm any suggested assignments, and check the list for missing parts. **Watch My Episode** plays the checked files in order and can show separate subtitles. Download the delivery ZIP and verify it with **Check an Episode Package**. Keep your editable project backup separately. [Complete Episode Delivery guide](EPISODE_DELIVERY.md)
+
+On a supported larger Chromium screen, choose **Make One Complete Movie** after all matching VP8 exports pass delivery checks. Preview and seek through the result, then download the complete WebM and its separate SRT. Keep the original numbered parts and project backup. [Single-Movie Builder guide](SINGLE_MOVIE_BUILDER.md)

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "../model";
 import { durationLabel } from "../model";
 import { planSegments } from "../segments";
@@ -12,6 +12,8 @@ import {
   partProblem, partTag, prepareDelivery, reviewDelivery, suggestPart,
 } from "../episode-delivery";
 import type { DeliveryFile, DeliveryPlayerPart } from "../episode-delivery";
+import { movieDeviceProblem, moviePlanProblem } from "../single-movie-plan";
+import type { VerifiedMovie } from "../single-movie";
 import { DeliveryPlayer } from "./DeliveryPlayer";
 import { MediaNumber } from "./MediaNumber";
 
@@ -51,6 +53,7 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
   project: Project; initialLimit: number; initialAudio: boolean; active: boolean;
   onBack: () => void; onReExport: (segment: ExportSegment, index: number) => void;
 }) {
+  const [narrow, setNarrow] = useState(() => matchMedia("(max-width:740px)").matches);
   const [limit, setLimit] = useState(initialLimit);
   const [expectAudio, setExpectAudio] = useState(initialAudio);
   const [files, setFiles] = useState<DeliveryFile[]>([]);
@@ -60,7 +63,8 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [packageResult, setPackageResult] = useState<Awaited<ReturnType<typeof checkEpisodePackage>>>();
-  const [watch, setWatch] = useState<"current" | "package">();
+  const [watch, setWatch] = useState<"current" | "package" | "movie">();
+  const [movie, setMovie] = useState<{ result: VerifiedMovie; subtitle?: Blob; burned: boolean }>();
   const [preview, setPreview] = useState<DeliveryFile>();
   const batch = useRef<HTMLInputElement>(null);
   const chooseButton = useRef<HTMLButtonElement>(null);
@@ -75,16 +79,30 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
     return () => { alive.current = false; controller.current?.abort(); };
   }, []);
   useEffect(() => {
+    const screen = matchMedia("(max-width:740px)");
+    const update = () => setNarrow(screen.matches);
+    screen.addEventListener("change", update);
+    return () => screen.removeEventListener("change", update);
+  }, []);
+  useEffect(() => () => movie?.result.release(), [movie]);
+  useEffect(() => {
     if (active) chooseButton.current?.focus();
   }, [active]);
-  const { segments, oversized } = planSegments(project, limit);
-  const review = reviewDelivery(segments, files, assignments, expectAudio);
-  const subtitles = segments.map(segment => srt(project, segment));
+  const { segments, oversized } = useMemo(() => planSegments(project, limit), [project, limit]);
+  const review = useMemo(() => reviewDelivery(segments, files, assignments, expectAudio),
+    [segments, files, assignments, expectAudio]);
+  const subtitles = useMemo(() => segments.map(segment => srt(project, segment)), [project, segments]);
   const ready = review.ready && !rejected.length;
   const total = project.scenes.reduce((length, scene) => length + scene.duration, 0);
-  const maxZip = (matchMedia("(max-width:740px)").matches ? 256 : 512) * MIB;
+  const maxZip = (narrow ? 256 : 512) * MIB;
   const assignedCount = review.rows.filter(row => row.file).length;
   const bytes = review.rows.reduce((size, row) => size + (row.file?.file.size ?? 0), 0);
+  const movieParts = review.rows.flatMap(({ segment, file }) => file ? [{
+    file: file.file, sha256: file.sha256, media: file.media, start: segment.start, end: segment.end,
+  }] : []);
+  const movieProblem = movieDeviceProblem(narrow,
+    (navigator as Navigator & { deviceMemory?: number }).deviceMemory) ||
+    (ready ? moviePlanProblem(movieParts) : "Check and assign all of your video parts first.");
   const currentParts: DeliveryPlayerPart[] = review.rows.flatMap(({ segment, file, index }) => file ? [{
     label: `Part ${index + 1} · scenes ${segment.firstScene + 1}–${segment.lastScene + 1}`,
     start: segment.start, end: segment.end, video: file.file,
@@ -147,6 +165,7 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
       }
       checkDeliveryAbort(signal);
       if (!alive.current) return;
+      setMovie(undefined);
       setFiles(next);
       setAssignments(placement);
       setRejected(invalid);
@@ -182,6 +201,7 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
   }
 
   function removeFile(sha: string) {
+    setMovie(undefined);
     setFiles(previous => previous.filter(file => file.sha256 !== sha));
     setAssignments(previous => Object.fromEntries(Object.entries(previous).filter(([, digest]) => digest !== sha)));
     setError("");
@@ -226,6 +246,25 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
       }
     });
   }
+
+  function buildMovie() {
+    if (!ready || movieProblem) return;
+    void work("Preparing local movie assembly", 1, async signal => {
+      const { makeSingleMovie, singleMovieSrt } = await import("../single-movie");
+      const result = await makeSingleMovie(movieParts, signal, ({ label, fraction }) => {
+        if (alive.current) setProgress({ label, done: fraction, total: 1 });
+      });
+      if (!alive.current || signal.aborted) { result.release(); return; }
+      const captions = singleMovieSrt(project, segments, result.ranges);
+      setMovie({ result, subtitle: captions ? new Blob([captions], { type: "application/x-subrip;charset=utf-8" }) : undefined,
+        burned: review.rows.some(row => row.file?.receipt?.captions) });
+      setNotice("The movie passed local playback and seeking checks.");
+    });
+  }
+
+  if (active && watch === "movie" && movie) return <DeliveryPlayer continuous
+    parts={[{ label: "Complete movie", start: 0, end: movie.result.duration, video: movie.result.video,
+      subtitle: movie.subtitle, baked: movie.burned }]} title={project.title} onClose={() => setWatch(undefined)} />;
 
   const selectedParts = watch === "package" ? packageResult?.parts : currentParts;
   if (active && watch && selectedParts?.length) return <DeliveryPlayer
@@ -273,12 +312,13 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
         <summary>Review Part Order and export settings</summary>
         <p>Use the same part limit you used for the original exports. Changing it keeps your files and asks you to assign them again.</p>
         <MediaNumber label="Original seconds per segment" min={2} max={120} step={1} value={limit} onChange={value => {
+          setMovie(undefined);
           setLimit(value);
           setAssignments({});
           setNotice("The part plan changed. Review and assign the loaded files again.");
         }} />
         <label className="inline-check"><input type="checkbox" checked={expectAudio}
-          onChange={event => setExpectAudio(event.target.checked)} /> Require audio on files without an exact export match</label>
+          onChange={event => { setMovie(undefined); setExpectAudio(event.target.checked); }} /> Require audio on files without an exact export match</label>
       </details>
       {!!oversized.length && <p className="media-notice" role="alert">Some whole scenes exceed this limit. Restore the original part limit or review those scenes in the exporter.</p>}
       {packageResult && <div className="delivery-card">
@@ -302,7 +342,7 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
             onRemove={() => removeFile(file.sha256)} onAssign={index => {
               const problem = partProblem(file, segments[index], expectAudio);
               if (problem) setError(problem);
-              else { setAssignments(previous => ({ ...previous, [index]: file.sha256 })); setError(""); }
+              else { setMovie(undefined); setAssignments(previous => ({ ...previous, [index]: file.sha256 })); setError(""); }
             }} />
           <button className="button secondary" onClick={() => setPreview(file)}>Preview {file.file.name}</button>
         </div>)}
@@ -348,6 +388,25 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
         bytes >= maxZip ? "Keep the separate WebM and SRT files with the complete manifest, or use a larger screen." :
           "If ZIP preparation runs out of space, keep the individual downloads with the complete manifest."
       }</p>
+      <section className="delivery-card" aria-label="Single-movie builder">
+        <h3>One complete movie</h3>
+        <p>Join matching VP8 exports on this device. The picture stays unchanged. Sound is encoded again as Opus and may change slightly. The movie keeps the short lead-ins from your numbered recordings.</p>
+        {movieProblem && <p className="field-hint">{movieProblem}</p>}
+        {!movie && <button className="button primary" disabled={!!movieProblem} onClick={buildMovie}>Make One Complete Movie</button>}
+        {movie && <>
+          <p role="status">Movie ready · {movie.result.duration.toFixed(2)} seconds · {movie.result.width} × {movie.result.height} · {mb(movie.result.video.size)}</p>
+          <div className="delivery-actions">
+            <button className="button primary" onClick={() => setWatch("movie")}>Preview Complete Movie</button>
+            <button className="button primary" onClick={() => {
+              movie.result.keepForDownload();
+              downloadBlob(movie.result.video, `${safeFilename(project.title)}-complete.webm`);
+            }}>Download Complete Movie</button>
+            {movie.subtitle && <button className="button secondary" onClick={() =>
+              downloadBlob(movie.subtitle!, `${safeFilename(project.title)}-complete.srt`)}>Download Complete Movie Subtitles</button>}
+            <button className="button secondary" onClick={() => setMovie(undefined)}>Clear Movie Preview</button>
+          </div>
+        </>}
+      </section>
       <p className="field-hint">This package is for viewing finished movies. Keep a separate editable project backup for scenes, artwork and recordings.</p>
     </fieldset>
   </div>;

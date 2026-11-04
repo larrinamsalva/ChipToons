@@ -154,14 +154,17 @@ export function captionsFromText(scene: Scene): Caption[] {
     text: text.slice(0, 280),
   }));
 }
-export function srt(
-  project: Project,
-  range = { start: 0, end: totalDuration(project) },
-) {
+type SubtitleCue = { start: number; end: number; text: string };
+
+export function formatSrt(cues: SubtitleCue[]) {
   const timestamp = (t: number) => {
     const ms = Math.round(t * 1000);
     return `${String(Math.floor(ms / 3600000)).padStart(2, "0")}:${String(Math.floor(ms / 60000) % 60).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
   };
+  return cues.map((cue, i) => `${i + 1}\n${timestamp(cue.start)} --> ${timestamp(cue.end)}\n${cue.text}\n`).join("\n");
+}
+
+export function subtitleCues(project: Project, range: { start: number; end: number }): SubtitleCue[] {
   return project.captions
     .map((c) => ({
       ...c,
@@ -171,14 +174,16 @@ export function srt(
       ),
     }))
     .sort((a, b) => a.offset + a.start - b.offset - b.start)
-    .filter(
-      (c) => c.offset + c.end > range.start && c.offset + c.start < range.end,
-    )
-    .map(
-      (c, i) =>
-        `${i + 1}\n${timestamp(Math.max(0, c.offset + c.start - range.start))} --> ${timestamp(Math.min(range.end, c.offset + c.end) - range.start)}\n${c.text}\n`,
-    )
-    .join("\n");
+    .filter((c) => c.offset + c.end > range.start && c.offset + c.start < range.end)
+    .map((c) => ({
+      start: Math.max(0, c.offset + c.start - range.start),
+      end: Math.min(range.end, c.offset + c.end) - range.start,
+      text: c.text,
+    }));
+}
+
+export function srt(project: Project, range = { start: 0, end: totalDuration(project) }) {
+  return formatSrt(subtitleCues(project, range));
 }
 // Scene-bound media follows scene edits. Sources are retained even after all uses are removed.
 export function reconcileProduction(

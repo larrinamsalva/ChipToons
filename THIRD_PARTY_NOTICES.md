@@ -23,3 +23,7 @@ Flite is by the Language Technologies Institute, Carnegie Mellon University, Ala
 ## @noble/hashes
 
 The SHA-256 integrity fallback uses `@noble/hashes` by Paul Miller under the MIT license. Its license is retained in `public/licenses/noble-hashes-MIT.txt`. Web Crypto is preferred where available; both implementations produce the same standard SHA-256 digest. Checksums detect corruption and are not digital signatures or proof of authorship.
+
+## Mediabunny
+
+The on-demand movie worker bundles unmodified Mediabunny 1.65.1 files by Vanilagy under the Mozilla Public License 2.0. The rest of ChipToons retains its MIT license. [MPL 2.0 text](public/licenses/mediabunny-MPL-2.0.txt) · [Corresponding dependency source](https://registry.npmjs.org/mediabunny/-/mediabunny-1.65.1.tgz)

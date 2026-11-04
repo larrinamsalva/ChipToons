@@ -1,6 +1,6 @@
 # Make and keep a narrated episode
 
-ChipToons can keep at least twenty minutes of distinct narration in one editable project when the browser has sufficient storage and memory. Movie delivery is still **numbered WebM parts**, not a single joined movie. Everything stays local: no account, server upload, paid speech service or automatic recording.
+ChipToons can keep at least twenty minutes of distinct narration in one editable project when the browser has sufficient storage and memory. Export creates **numbered WebM parts**. Matching VP8 parts can be combined with the [Single-Movie Builder](SINGLE_MOVIE_BUILDER.md). Everything stays local: no account, server upload, paid speech service or automatic recording.
 
 ## A practical twenty-minute workflow
 
@@ -51,4 +51,4 @@ Opening a file-backed project does not fetch or decode its audio. Preview prepar
 
 Exports retain one completed preview. Closing/replacing it revokes its URL. Source previews revoke their URLs on change/close, metadata probes clean up immediately, pending preview scheduling is cancelled on edits/seek, and the finishing cache clears on close. The voiced demo now loads only when explicitly opened; dashboard planning does not preload its embedded speech.
 
-See [package format and migration](EPISODE_PACKAGE.md), [audio controls](AUDIO_PRODUCTION.md), [creator walkthrough](CREATOR_GUIDE.md) and [PR #6 verification](PR6_VERIFICATION.md). There is no MP4, automatic joining, gapless guarantee, accelerated/offline renderer, automatic lip-sync, transcription or photo rigging. Physical-device microphone, memory, thermal and Safari export testing remain necessary.
+See [package format and migration](EPISODE_PACKAGE.md), [audio controls](AUDIO_PRODUCTION.md), [creator walkthrough](CREATOR_GUIDE.md) and [PR #6 verification](PR6_VERIFICATION.md). The movie builder preserves short recording lead-ins from the original parts. Physical-device microphone, memory, thermal and Safari export testing remain necessary.
