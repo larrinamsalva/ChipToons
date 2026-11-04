@@ -15,10 +15,11 @@ import { MediaNumber } from "./MediaNumber";
 import { Modal } from "./Modal";
 import { ScenePreview } from "./ScenePreview";
 
-export function ParticipationStudio({ project, scene, time, id, stepId, onScene, onClose, onApply, onScript }: {
+export function ParticipationStudio({ project, scene, time, id, stepId, onScene, onClose, onApply, onScript, onSound }: {
   project: Project; scene: Scene; time: number; id?: string; stepId?: string;
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>, dedicated?: Scene) => boolean;
   onScript: (lineId?: string, stepId?: string) => void;
+  onSound: (id: string) => void;
 }) {
   const [dedicated, setDedicated] = useState<Scene>();
   const active = dedicated ?? scene;
@@ -246,6 +247,7 @@ export function ParticipationStudio({ project, scene, time, id, stepId, onScene,
     </div>}
     <div className="modal-actions">
       {editing && !remove && <>
+        <button className="button secondary small" disabled={dirty} onClick={() => onSound(draft.id)}>Add sound to the reveal</button>
         <button className="button text" disabled={moments.length >= MAX_PARTICIPATION_MOMENTS} onClick={() => {
           patch({ id: uid(), at: Math.min(active.duration, window.end), focusId: undefined });
         }}>Duplicate moment</button>

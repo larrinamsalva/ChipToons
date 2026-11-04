@@ -8,9 +8,9 @@ import { sceneStart } from "../timeline";
 import { PlaybackClock } from "../playback";
 import { Stage } from "./Stage";
 
-export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition, soundPreview = false, playFrom = 0 }: {
+export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition, soundPreview = false, initialSound = false, playFrom = 0 }: {
   project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point; precision?: 1 | 2 | 3;
-  soundPreview?: boolean; playFrom?: number; captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
+  soundPreview?: boolean; initialSound?: boolean; playFrom?: number; captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
 }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
@@ -22,7 +22,7 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
     () => matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   const [audio] = useState(() => soundPreview ? new PreviewAudio() : undefined);
-  const [sound, setSound] = useState(false);
+  const [sound, setSound] = useState(initialSound);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const ticket = useRef(0);

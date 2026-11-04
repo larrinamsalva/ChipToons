@@ -116,3 +116,10 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Adds five timed participation activities with choices, supportive reveals, optional script and lesson links, and normal scene editing and history.
 - Renders through Visual Teaching and the existing Stage. The voiced wagon example and decoded-video checks demonstrate a real thinking interval, moving highlights, and caption readability.
 - See [Pause, Think & Try](PAUSE_THINK_TRY.md) for the foundation audit, privacy boundaries, and creator walkthrough.
+
+
+## PR #20 — Sound Effects & Atmosphere Director
+
+- Links existing audio clips to saved animation events, transformations, learning steps, and participation moments, with local offsets and review when a link changes.
+- Adds reviewed location atmosphere presets, episode-wide loops, original effects, and nonblocking mix reminders.
+- The voiced garden demo uses the regular playback and WebM export path. See [Sound Effects & Atmosphere Director](SOUND_EFFECTS_ATMOSPHERE.md) for timing, storage, licensing, and creator instructions.

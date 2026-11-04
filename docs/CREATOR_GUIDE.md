@@ -2,6 +2,10 @@
 
 ChipToons is a free, local-first studio for original educational cartoons. No login or paid service is needed. The planner uses local templates. You remain the storyteller: it does not interpret photographs, rig bodies, record voices automatically or produce finished footage from a duration goal.
 
+## Add sound to actions and locations
+
+Open **Edit scene → Add Sounds to My Cartoon**. Choose a real action or a scene time, pick an original or saved sound, and preview it with animation. In **Build My Cartoon World**, review an optional location atmosphere and choose which consecutive scenes should share its loop. Keep effects quiet around voices. [Sound Director walkthrough](SOUND_EFFECTS_ATMOSPHERE.md)
+
 ## Invite viewers to participate
 
 Open **Edit scene → Let the Kids Join In** to write a question, leave 3–10 seconds for thinking, and show a positive explanation. Link existing script lines and a teaching graphic when they help. Preview with sound and captions, then Apply. The exported video gives viewers time to think or speak aloud. [Pause, Think & Try walkthrough](PAUSE_THINK_TRY.md)

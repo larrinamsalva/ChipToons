@@ -1,3 +1,4 @@
+import { isAtmosphere } from "./sound-cues";
 import type { LibraryItem } from "./library";
 import type { SceneElement } from "./model";
 import type { LocationLayout } from "./world-model";
@@ -46,6 +47,7 @@ export function starterLocations(): LibraryItem[] {
     }));
     return { version: 1, id: `starter-location-${id}`, kind: "location", name, group: "Original locations",
       tags: [id], assets: [], pose: "standing", emotion: "calm", transform: {}, updatedAt: "2026-01-01T00:00:00.000Z",
-      location: { description, background, camera: "wide", gentleDepth: false, elements } };
+      location: { description, background, camera: "wide", gentleDepth: false,
+        suggestedAtmosphere: isAtmosphere(id) ? id : undefined, elements } };
   });
 }

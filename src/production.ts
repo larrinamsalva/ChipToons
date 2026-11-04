@@ -1,3 +1,4 @@
+import { reconcileSoundClip, reconcileSoundClips } from "./sound-cues";
 import { clone, totalDuration, uid } from "./model";
 import type { Project, Scene } from "./model";
 import type {
@@ -196,6 +197,7 @@ export function reconcileProduction(
       ? scenes.find((s) => s.id === c.sceneId)
       : undefined;
     if (c.sceneId && !scene) return [];
+    if (c.soundCue || c.ambience) return [reconcileSoundClip(c, scenes)];
     const ratio = scene ? scene.duration / old.get(scene.id)!.duration : 1,
       limit = scene?.duration ?? total,
       start = clamp(c.start * ratio, 0, limit - 0.02),
@@ -228,13 +230,20 @@ export function duplicateSceneMedia(
   project: Project,
   scene: Scene,
   copy: Scene,
+  cues = new Map<string, string>(),
 ) {
   return {
     audioClips: [
-      ...project.audioClips,
+      ...reconcileSoundClips(project.audioClips, project.scenes.flatMap(item => item.id === scene.id ? [item, copy] : [item])),
       ...project.audioClips
         .filter((c) => c.sceneId === scene.id)
-        .map((c) => ({ ...clone(c), id: uid(), sceneId: copy.id })),
+        .map((clip) => {
+          const next = { ...clone(clip), id: uid(), sceneId: copy.id };
+          if (!next.soundCue) return next;
+          const id = cues.get(next.soundCue.anchor.id);
+          return id ? reconcileSoundClip({ ...next, soundCue: { ...next.soundCue, anchor: { ...next.soundCue.anchor, id } } }, [copy]) :
+            { ...next, soundCue: undefined, soundReview: "event-removed" as const };
+        }),
     ],
     captions: [
       ...project.captions,

@@ -56,6 +56,18 @@ const point = (value: unknown): value is Point => record(value) && own(value, ["
 const grip = (value: unknown): value is Grip => record(value) && own(value, ["hand", "x", "y"]) &&
   HANDS.some(hand => hand === value.hand) && numberIn(value.x, -120, 120) && numberIn(value.y, -120, 120);
 
+// The audio cue and visible stream share the same normalized carry phase.
+export const WATER_TILT = { lean: 0.45, upright: 0.59, return: 0.72, rest: 0.87, threshold: 0.75 };
+export function wateringWindow(action: Interaction) {
+  const end = action.release?.time ?? action.finish;
+  const span = Math.max(0.01, end - action.attach);
+  const eased = 0.5 - Math.sin(Math.asin(1 - 2 * WATER_TILT.threshold) / 3);
+  return {
+    start: action.attach + span * (WATER_TILT.lean + (WATER_TILT.upright - WATER_TILT.lean) * eased),
+    end: action.attach + span * (WATER_TILT.return + (WATER_TILT.rest - WATER_TILT.return) * (1 - eased)),
+  };
+}
+
 export function interactionEvents(action: Interaction): { name: string; time: number }[] {
   return [
     { name: "Start", time: action.start },

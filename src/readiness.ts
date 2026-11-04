@@ -1,3 +1,4 @@
+import { soundNotes } from "./sound-director";
 import type { Project } from "./model";
 import { clipStart, categoryBus } from "./production";
 import { totalDuration } from "./model";
@@ -154,5 +155,5 @@ export function productionReadiness(
       blocking: false,
       action: "voices",
     });
-  return issues;
+  return [...issues, ...soundNotes(project).map(note => ({ ...note, blocking: false, action: "voices" as const }))];
 }

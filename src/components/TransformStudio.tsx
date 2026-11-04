@@ -39,10 +39,11 @@ function AppearancePreview({ project, scene, object, state, label }: {
     <figcaption><strong>{label}</strong> · {state.name}</figcaption></figure>;
 }
 
-export function TransformStudio({ project, scene, objectId, changeId, time, onClose, onApply, onFocus }: {
+export function TransformStudio({ project, scene, objectId, changeId, time, onClose, onApply, onFocus, onSound }: {
   project: Project; scene: Scene; objectId?: string; changeId?: string; time: number;
   onClose: () => void; onApply: (patch: Partial<Scene>, assets?: Asset[]) => boolean;
   onFocus?: (objectId: string, changeId: string) => void;
+  onSound?: (changeId: string) => void;
 }) {
   const objects = scene.elements.filter(transformable);
   const [selected, setSelected] = useState(() => objects.find(item => item.id === objectId)?.id ?? objects[0]?.id ?? "");
@@ -56,7 +57,7 @@ export function TransformStudio({ project, scene, objectId, changeId, time, onCl
   const original = scene.objectTracks?.find(track => track.objectId === object.id);
   return <TransformForm key={object.id} project={project} scene={scene} object={object} original={original}
     changeId={object.id === objectId ? changeId : undefined} time={time} onClose={onClose} onApply={onApply}
-    onDirty={() => setDirty(true)} onFocus={onFocus}
+    onDirty={() => setDirty(true)} onFocus={onFocus} onSound={onSound}
     objectChoice={<>
       <label>Choose an Object<select aria-label="Choose an Object" value={selected} onChange={event => {
         if (event.target.value === selected) return;
@@ -73,11 +74,12 @@ export function TransformStudio({ project, scene, objectId, changeId, time, onCl
     </>} />;
 }
 
-function TransformForm({ project, scene, object, original, changeId, time, objectChoice, onDirty, onClose, onApply, onFocus }: {
+function TransformForm({ project, scene, object, original, changeId, time, objectChoice, onDirty, onClose, onApply, onFocus, onSound }: {
   project: Project; scene: Scene; object: SceneElement; original?: ObjectTrack; changeId?: string; time: number;
   objectChoice: ReactNode; onDirty: () => void; onClose: () => void;
   onApply: (patch: Partial<Scene>, assets?: Asset[]) => boolean;
   onFocus?: (objectId: string, changeId: string) => void;
+  onSound?: (changeId: string) => void;
 }) {
   const [track, setTrack] = useState(() => original ?? newObjectTrack(object));
   const [change, setChange] = useState(() => original?.changes.find(item => item.id === changeId) ?? freshChange(track, time, scene.duration));
@@ -269,6 +271,8 @@ function TransformForm({ project, scene, object, original, changeId, time, objec
     <div className="modal-actions">
       {onFocus && original === track && original?.changes.some(item => item === change) && !remove &&
         <button className="button secondary" onClick={() => onFocus(object.id, change.id)}>Show this change on screen</button>}
+      {onSound && original === track && original?.changes.some(item => item === change) && !remove &&
+        <button className="button secondary" onClick={() => onSound(change.id)}>Add sound to this change</button>}
       {original && !remove && <button className="button text" onClick={() => setRemove("track")}>Restore the original object</button>}
       {changeId && !remove && <button className="button text" onClick={() => setRemove("change")}>Delete timed change</button>}
       <button className="button secondary" onClick={onClose}>Cancel</button>

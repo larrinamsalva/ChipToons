@@ -45,6 +45,7 @@ See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor 
 
 - Three guided creation paths, existing quick starts and a real project dashboard with thumbnails, dates, draft/ready status, duplicate, delete confirmation and restore.
 - Six complete scenes in the original “A little room for a friend” demo; twelve original editable lesson starters covering kindness, friendship, differences, feelings, helping, responsibility, trusted-adult safety, personal-information safety, nature, problem-solving and teamwork.
+- **Add Sounds to My Cartoon** attaches effects to saved actions and carries quiet ambience across scenes using the existing mixer. [Sound Effects & Atmosphere Director](docs/SOUND_EFFECTS_ATMOSPHERE.md).
 - **Let the Kids Join In** adds timed questions, choices, thinking time, and supportive reveals to the actual cartoon. [Pause, Think & Try Studio](docs/PAUSE_THINK_TRY.md).
 - **Show What We're Learning** adds editable arrows, highlights, step numbers, and cards that follow objects or stay fixed in the video. [Visual Teaching & Focus Studio](docs/VISUAL_TEACHING_FOCUS.md).
 - **Show How Something Changes** animates before-and-after appearances, reuses scene props and puppet attachments, and connects practical skills to Script Director. [Fix, Build & Transform Studio](docs/FIX_BUILD_TRANSFORM.md).
