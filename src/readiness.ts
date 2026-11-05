@@ -1,3 +1,4 @@
+import { storyCardLayout } from "./story-card-layout";
 import { soundNotes } from "./sound-director";
 import type { Project } from "./model";
 import { clipStart, categoryBus } from "./production";
@@ -42,6 +43,7 @@ export function productionReadiness(
         sceneIndex: i, blocking: false, action: "scene",
       });
     if (
+      !scene.storyCard &&
       !scene.elements.length &&
       !scene.narration.trim() &&
       !scene.dialogue.trim()
@@ -55,6 +57,15 @@ export function productionReadiness(
         blocking: false,
         action: "scene",
       });
+    if (scene.storyCard) {
+      const layout = storyCardLayout(project, scene, scene.storyCard);
+      if (layout.clipped || layout.contrast < 4.5) issues.push({
+        id: `story-card:${scene.id}`,
+        title: `Scene ${i + 1} has a story card to review`,
+        detail: "Open Finish My Cartoon’s Story. Shorten text or use scrolling credits if the caption area crowds the card, and choose colors with enough contrast.",
+        sceneIndex: i, blocking: false, action: "scene",
+      });
+    }
     if (
       scene.elements.some((e) => {
         const id =

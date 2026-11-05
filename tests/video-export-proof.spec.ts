@@ -1,3 +1,4 @@
+import { storyCardDemo } from "../src/story-card-demo";
 import { cameraShotDemo } from "../src/camera-shot-demo";
 import { GARDEN_NARRATION_START, gardenSoundDemo } from "../src/sound-garden-demo";
 import { wateringWindow } from "../src/interaction-model";
@@ -854,9 +855,9 @@ test("decodes a single wagon with a loose and fixed wheel, then verifies the joi
   await downloadAndVerifyMovie(page, info, files, [repair.duration, testRun.duration]);
 });
 
-function rawFrame(movie: string, at: number) {
+function rawFrame(movie: string, at: number, filter?: string) {
   const raw = execFileSync("ffmpeg", ["-v", "error", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS), "-i", movie,
-    "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
+    ...(filter ? ["-vf", filter] : []), "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"], { maxBuffer: 2 * 1024 * 1024 });
   expect(raw.length).toBe(800 * 450 * 3);
   return raw;
 }
@@ -1191,4 +1192,86 @@ test("decodes exact wagon camera cuts, a moving follow shot, teaching overlays a
   }
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [repair.duration, roll.duration]);
+});
+
+test("decodes the Kind Hearts opening, title, chapter, recap and readable credits in genuine numbered and joined movies", async ({ page }, info) => {
+  test.setTimeout(185_000);
+  const expected = storyCardDemo();
+  await page.goto("./");
+  await page.getByText("Try a complete episode with opening and credits", { exact: true }).click();
+  await page.getByRole("button", { name: expected.title, exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const limit = 38;
+  const first = await render(page, info, "kind-hearts-opening-and-story", 32, { limit, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "kind-hearts-recap-and-credits", 37, { limit, segment: 2 });
+  // Use the recording’s BT.709 full-range conversion to compare against SVG colors.
+  const colorFilter = "scale=in_color_matrix=bt709:in_range=full:out_range=full";
+  const cardFrame = (file: string, at: number) => rawFrame(file, at, colorFilter);
+  const proof = [];
+  const ink = (r: number, g: number, b: number) => r >= 30 && r < 90 && g >= 15 && g < 70 && b >= 25 && b < 100;
+  for (const [name, movie, at, color] of [
+    ["animated-opening", first.path, 2.35, [255, 230, 175]], ["episode-one-title", first.path, 6.8, [231, 230, 250]],
+    ["chapter-time-to-help", first.path, 19.35, [212, 239, 223]], ["three-lesson-points", second.path, 9.5, [252, 228, 237]],
+    ["kind-goodbye", second.path, 17.2, [226, 241, 247]], ["original-credits", second.path, 29, [246, 233, 214]],
+  ] as const) {
+    const raw = cardFrame(movie, at);
+    const paper = pixels(raw, 74, 40, 652, 366, (r, g, b) =>
+      Math.abs(r - color[0]) <= 10 && Math.abs(g - color[1]) <= 10 && Math.abs(b - color[2]) <= 10);
+    const letters = pixels(raw, 95, 55, 610, 300, ink);
+    expect(paper, `visible card at ${name}`).toBeGreaterThan(20_000);
+    expect(letters, `legible dark text at ${name}`).toBeGreaterThan(1250);
+    proof.push({ name, at, paper, letters });
+    const path = info.outputPath(`${name}.png`);
+    execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS),
+      "-i", movie, "-vf", colorFilter, "-frames:v", "1", "-threads", "1", path]);
+    await info.attach(name, { path, contentType: "image/png" });
+  }
+
+  const a = rawFrame(first.path, 0.75), b = rawFrame(first.path, 3.3);
+  let moving = 0;
+  for (let y = 225; y < 418; y++) for (let x = 110; x < 675; x++) {
+    const i = (y * 800 + x) * 3;
+    if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 60) moving++;
+  }
+  expect(moving).toBeGreaterThan(3500);
+  const recap = rawFrame(second.path, 9.5);
+  expect(pixels(recap, 32, 367, 736, 60, (r, g, b) => Math.max(r, g, b) < 52)).toBeGreaterThan(15_000);
+  expect(pixels(recap, 32, 367, 736, 60, (r, g, b) => Math.min(r, g, b) > 222)).toBeGreaterThan(600);
+  const averageInkY = (at: number) => {
+    const raw = rawFrame(second.path, at);
+    let count = 0, total = 0;
+    for (let y = 70; y < 357; y++) {
+      const row = pixels(raw, 185, y, 430, 1, ink);
+      total += y * row; count += row;
+    }
+    expect(count).toBeGreaterThan(1400);
+    return total / count;
+  };
+  expect(averageInkY(21) - averageInkY(33)).toBeGreaterThan(25);
+
+  const rms = (pcm: Buffer, at: number) => {
+    const from = Math.round((at + EXPORT_RECORDING_LEAD_SECONDS) * 8000), length = 4000;
+    let energy = 0;
+    for (let i = 0; i < length; i++) energy += pcm.readFloatLE((from + i) * 4) ** 2;
+    return Math.sqrt(energy / length);
+  };
+  const audio = { opening: rms(first.pcm, 2.1), narrator: rms(first.pcm, 10.35), recap: rms(second.pcm, 8.05),
+    underCredits: rms(second.pcm, 28) };
+  expect(audio.opening).toBeGreaterThan(0.003);
+  expect(audio.narrator).toBeGreaterThan(audio.underCredits * 2);
+  expect(audio.recap).toBeGreaterThan(audio.underCredits * 2);
+  await info.attach("independent title and audio measurements", { body: JSON.stringify({ proof, moving, audio }, null, 2),
+    contentType: "application/json" });
+
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, file] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(file);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  await downloadAndVerifyMovie(page, info, files, [32, 37]);
 });

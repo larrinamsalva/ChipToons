@@ -128,3 +128,8 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 
 - Adds editable camera shots within a scene, with precise cuts, gentle moves, stable subjects, and an explicit review when shots overlay a camera track.
 - Connects the shot timeline with existing script and teaching events. The voiced wagon example uses the existing Stage, audio clock, and WebM exporter. See [Camera & Shot Director Studio](CAMERA_SHOT_DIRECTOR.md).
+
+## PR #22 — Episode Titles, Lesson Recaps & Credits Studio
+
+- Adds reviewed, optional opening and ending scenes, chapter cards, lesson recaps, and still or scrolling credits to the normal storyboard.
+- Reuses Series Studio for optional presentation defaults, Script Director for recordings, and the shared Stage for real WebM output. See [Episode Titles, Recaps & Credits](EPISODE_TITLES_RECAPS_CREDITS.md).

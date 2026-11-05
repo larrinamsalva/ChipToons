@@ -2,6 +2,10 @@
 
 ChipToons is a free, local-first studio for original educational cartoons. No login or paid service is needed. The planner uses local templates. You remain the storyteller: it does not interpret photographs, rig bodies, record voices automatically or produce finished footage from a duration goal.
 
+## Add an opening or ending
+
+Open **Finish My Cartoon’s Story** to preview an opening, title, chapter, recap, goodbye, or credits card. Review where it goes and how many seconds it adds before applying. A saved card works with the normal storyboard, Script Director, and movie export. [Titles and credits walkthrough](EPISODE_TITLES_RECAPS_CREDITS.md)
+
 ## Direct the camera
 
 Open **Edit scene → Direct My Cartoon Camera**. Choose a shot style and subject, set the start and length, then preview it before applying. Use the **Camera shots** lane to edit it again. A shot keeps the scene’s animation and voices running. Try **The Wobbly Wagon — A Closer Look** to see a close-up, a wheel detail, and a moving follow shot. [Camera walkthrough](CAMERA_SHOT_DIRECTOR.md)
