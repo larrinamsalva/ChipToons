@@ -5848,3 +5848,30 @@ fieldset.interaction-fields {
 .picture-parts { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-inline-start: 0; list-style: none; }
 .picture-parts li { display: flex; align-items: center; gap: 0.5rem; }
 .picture-parts img { width: 36px; height: 36px; object-fit: contain; }
+
+.youtube-kit .form-grid > label {
+  min-width: 0;
+}
+.youtube-kit :is(input:not([type="checkbox"]), textarea) {
+  width: 100%;
+  min-width: 0;
+}
+.youtube-kit .inline-check {
+  align-items: flex-start;
+}
+.youtube-kit .inline-check input {
+  flex: 0 0 auto;
+}
+.youtube-thumbnail {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  border-radius: 0.5rem;
+}
+.youtube-copy {
+  padding: 0.75rem;
+  background: var(--field);
+  border-radius: 0.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

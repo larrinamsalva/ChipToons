@@ -14,6 +14,7 @@ import {
 import type { DeliveryFile, DeliveryPlayerPart } from "../episode-delivery";
 import { movieDeviceProblem, moviePlanProblem } from "../single-movie-plan";
 import type { VerifiedMovie } from "../single-movie";
+import type { PublishingMovie } from "../youtube-kit";
 import { DeliveryPlayer } from "./DeliveryPlayer";
 import { MediaNumber } from "./MediaNumber";
 
@@ -49,9 +50,10 @@ function AssignFile({ file, plan, assignments, onAssign, onRemove }: {
   </div>;
 }
 
-export function EpisodeDelivery({ project, initialLimit, initialAudio, active, onBack, onReExport }: {
+export function EpisodeDelivery({ project, initialLimit, initialAudio, active, onBack, onReExport, onYouTube }: {
   project: Project; initialLimit: number; initialAudio: boolean; active: boolean;
   onBack: () => void; onReExport: (segment: ExportSegment, index: number) => void;
+  onYouTube: (movie: PublishingMovie) => void;
 }) {
   const [narrow, setNarrow] = useState(() => matchMedia("(max-width:740px)").matches);
   const [limit, setLimit] = useState(initialLimit);
@@ -397,6 +399,10 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
           <p role="status">Movie ready · {movie.result.duration.toFixed(2)} seconds · {movie.result.width} × {movie.result.height} · {mb(movie.result.video.size)}</p>
           <div className="delivery-actions">
             <button className="button primary" onClick={() => setWatch("movie")}>Preview Complete Movie</button>
+            <button id="prepare-joined-youtube" className="button secondary" onClick={() => onYouTube({
+              ...movie.result, plan: segments, burned: movie.burned,
+              expectAudio: review.rows.some(row => row.file?.receipt?.audio ?? expectAudio),
+            })}>Prepare for YouTube</button>
             <button className="button primary" onClick={() => {
               movie.result.keepForDownload();
               downloadBlob(movie.result.video, `${safeFilename(project.title)}-complete.webm`);

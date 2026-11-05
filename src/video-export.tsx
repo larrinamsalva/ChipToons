@@ -97,6 +97,7 @@ export async function paintStage(
   time: number,
   settings: Pick<ExportSettings, "width" | "captions">,
   signal: AbortSignal,
+  artworkOffset?: { id: string; x: number; y: number },
 ) {
   check(signal);
   const frame = frameAt(project, time),
@@ -106,6 +107,7 @@ export async function paintStage(
         scene: frame.scene,
         time: frame.localTime,
         labelled: false,
+        artworkOffset,
       }),
     ),
     url = URL.createObjectURL(
@@ -451,6 +453,7 @@ export async function exportVideo(
         blob,
         mime: settings.mime,
         duration,
+        recordedDuration: verified.duration,
         frames,
         width: settings.width,
         height,

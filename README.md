@@ -43,6 +43,8 @@ See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor 
 
 **Turn My Picture Into a Cartoon** turns a poster into editable scene panels and hand-traced puppet parts. Try the voiced Little Fixers Club example or follow the [Picture-to-Cartoon guide](docs/PICTURE_TO_CARTOON_ANIMATION.md).
 
+**Prepare for YouTube** uses the verified movie to assemble local publishing files, including a thumbnail, timed SRT, editable episode details, and a checklist. See the [YouTube Publishing Kit guide](docs/YOUTUBE_PUBLISHING_KIT.md).
+
 ## What the studio includes
 
 - Three guided creation paths, existing quick starts and a real project dashboard with thumbnails, dates, draft/ready status, duplicate, delete confirmation and restore.

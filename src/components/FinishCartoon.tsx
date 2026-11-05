@@ -9,7 +9,7 @@ import {
 } from "../video-export";
 import type { ExportSettings, ExportProgress } from "../video-export";
 import { exportProject, downloadBlob, safeFilename } from "../files";
-import { captionText, srt, audioPlan } from "../production";
+import { captionText, srt, audioPlan, categoryBus } from "../production";
 import { Modal } from "./Modal";
 import { Stage } from "./Stage";
 import { CaptionOverlay } from "./CaptionOverlay";
@@ -19,6 +19,8 @@ import { SegmentExports } from "./SegmentExports";
 import { ReadinessChecklist } from "./ReadinessChecklist";
 import { EpisodeReadiness } from "./EpisodeReadiness";
 import { productionReadiness } from "../readiness";
+import type { PublishingMovie } from "../youtube-kit";
+const YouTubeKit = lazy(() => import("./YouTubeKit").then(module => ({ default: module.YouTubeKit })));
 const EpisodeDelivery = lazy(() => import("./EpisodeDelivery").then(module => ({ default: module.EpisodeDelivery })));
 
 export function FinishCartoon({
@@ -43,6 +45,9 @@ export function FinishCartoon({
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
   const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [publishing, setPublishing] = useState<{ open: boolean; joined?: PublishingMovie }>();
+  const publishingOpen = !!publishing?.open;
+  const publishingButton = useRef<HTMLButtonElement>(null);
   const [delivery, setDelivery] = useState<{ limit: number; focus: (segment: ExportSegment, index: number) => void }>();
   const [audioCache] = useState(() => new AudioDecodeCache());
   const [partPreview, setPartPreview] = useState(false);
@@ -63,17 +68,14 @@ export function FinishCartoon({
     [running, setRunning] = useState(false),
     [progress, setProgress] = useState<ExportProgress | null>(null),
     [error, setError] = useState("");
-  const [result, setResult] = useState<{
-      blob: Blob;
-      url: string;
-      frames: number;
-      width: number;
-      height: number;
-    } | null>(null),
+  const [result, setResult] = useState<(PublishingMovie & { url: string; frames: number }) | null>(null),
     controller = useRef<AbortController | null>(null),
     alive = useRef(true),
     total = totalDuration(project),
     active = audioPlan(project, 0, total);
+  const expectedAudio = !project.mixer.muted && project.mixer.master > 0 &&
+    active.some(({ clip }) => clip.volume > 0 && project.mixer[categoryBus(clip.category)] > 0);
+  const canRender = !partPreview && !blocking && !!formats.length && total <= exportLimit();
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -88,7 +90,7 @@ export function FinishCartoon({
     },
     [result],
   );
-  async function makeVideo() {
+  async function makeVideo(renderSettings = settings) {
     if (running || partPreview) return;
     setRunning(true);
     setResult(null);
@@ -98,7 +100,7 @@ export function FinishCartoon({
     try {
       const movie = await exportVideo(
         project,
-        settings,
+        renderSettings,
         abort.signal,
         (p) => {
           if (alive.current) setProgress(p);
@@ -107,11 +109,16 @@ export function FinishCartoon({
       );
       if (alive.current)
         setResult({
-          blob: movie.blob,
+          video: movie.blob,
           url: URL.createObjectURL(movie.blob),
           frames: movie.frames,
           width: movie.width,
           height: movie.height,
+          duration: movie.recordedDuration,
+          plan: [{ start: 0, end: movie.duration }],
+          ranges: [{ start: 0, end: movie.recordedDuration }],
+          burned: renderSettings.captions,
+          expectAudio: renderSettings.audio && expectedAudio,
         });
     } catch (e) {
       if (alive.current)
@@ -125,21 +132,33 @@ export function FinishCartoon({
       controller.current = null;
     }
   }
+  function closePublishing() {
+    setPublishing({ open: false });
+    requestAnimationFrame(() => {
+      if (deliveryOpen) document.getElementById("prepare-joined-youtube")?.focus();
+      else publishingButton.current?.focus();
+    });
+  }
+
   return (
     <Modal
-      title={deliveryOpen ? "Prepare My Complete Episode" : "Finish My Cartoon"}
+      title={publishingOpen ? "Prepare for YouTube" : deliveryOpen ? "Prepare My Complete Episode" : "Finish My Cartoon"}
       onClose={() => {
         controller.current?.abort();
         onClose();
       }}
       wide
     >
-      <div hidden={deliveryOpen}>
+      <div hidden={deliveryOpen || publishingOpen}>
       <p className="section-description">
         Review your story, listen once, then make a real WebM movie. Export runs
         on this device and does not record the editor or your screen.
       </p>
-      <button className="button secondary small" disabled={running} onClick={onStoryCards}>{STORY_CARD_STUDIO}</button>
+      <div className="animation-actions">
+        <button ref={publishingButton} className="button primary" disabled={running}
+          onClick={() => setPublishing({ open: true })}>Prepare for YouTube</button>
+        <button className="button secondary small" disabled={running} onClick={onStoryCards}>{STORY_CARD_STUDIO}</button>
+      </div>
       <div className="finish-review">
         <div>
           <span>Cartoon</span>
@@ -402,13 +421,13 @@ export function FinishCartoon({
             />
             <p className="field-hint">
               Playable WebM · {result.width}×{result.height} ·{" "}
-              {(result.blob.size / 1024 / 1024).toFixed(2)} MB · {result.frames}{" "}
+              {(result.video.size / 1024 / 1024).toFixed(2)} MB · {result.frames}{" "}
               scene renders
             </p>
             <button
               className="button primary"
               onClick={() =>
-                downloadBlob(result.blob, `${safeFilename(project.title)}.webm`)
+                downloadBlob(result.video, `${safeFilename(project.title)}.webm`)
               }
             >
               Download completed video
@@ -476,9 +495,10 @@ export function FinishCartoon({
         </button>
       </div>
       </div>
-      {delivery && <div hidden={!deliveryOpen}>
+      {delivery && <div hidden={!deliveryOpen || publishingOpen}>
         <Suspense fallback={<p role="status">Opening episode delivery…</p>}>
-          <EpisodeDelivery project={project} initialLimit={delivery.limit} initialAudio={settings.audio} active={deliveryOpen}
+          <EpisodeDelivery project={project} initialLimit={delivery.limit} initialAudio={settings.audio} active={deliveryOpen && !publishingOpen}
+            onYouTube={joined => setPublishing({ open: true, joined })}
             onBack={() => {
               setDeliveryOpen(false);
               requestAnimationFrame(() => document.getElementById("prepare-episode-delivery")?.focus());
@@ -486,6 +506,20 @@ export function FinishCartoon({
             onReExport={(segment, index) => {
               setDeliveryOpen(false);
               delivery.focus(segment, index);
+            }} />
+        </Suspense>
+      </div>}
+      {publishing && <div hidden={!publishingOpen}>
+        <Suspense fallback={<p role="status">Opening publishing tools…</p>}>
+          <YouTubeKit project={project} movie={publishing.joined ?? result ?? undefined} active={publishingOpen}
+            expectedAudio={expectedAudio} canRender={canRender} longer={total > exportLimit()} busy={running}
+            preferredWidth={mobile ? 800 : 1280}
+            progress={progress} exportError={error}
+            onMake={width => void makeVideo({ ...settings, width, audio: expectedAudio, captions: false })}
+            onCancel={() => controller.current?.abort()} onBack={closePublishing}
+            onParts={() => {
+              closePublishing();
+              if (!deliveryOpen) requestAnimationFrame(() => document.getElementById("prepare-episode-delivery")?.click());
             }} />
         </Suspense>
       </div>}
