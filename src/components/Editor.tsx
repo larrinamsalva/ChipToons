@@ -99,6 +99,7 @@ export function Editor({
   saveError,
   onRetry,
   onLibrary,
+  onPicture,
   onAssistant,
 }: {
   project: Project;
@@ -113,6 +114,7 @@ export function Editor({
   saveStatus: string;
   saveError: string;
   onRetry: () => void;
+  onPicture?: (sceneIndex: number) => void;
   onLibrary: (sceneIndex: number, draft?: LibraryItem, kind?: LibraryKind) => void;
   onAssistant: () => void;
 }) {
@@ -758,6 +760,11 @@ export function Editor({
             <Icon name="folder" size={17} />
             Art library
           </button>
+          {onPicture && <button className="button secondary small" onClick={() => {
+            halt();
+            setPlaying(false);
+            onPicture(index);
+          }}>Picture &amp; cutouts</button>}
           <button
             className="icon-button"
             aria-label="Undo edit"

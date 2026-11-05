@@ -11,7 +11,7 @@ export function supportsVoiceMouth(character: Character | undefined, element: Sc
   const rig = character.puppet;
   if (!rig) return !(element.assetId ?? character.assetId);
   const mouths = rig.parts.filter(part => part.role === "mouth");
-  return mouths.length ? mouths.some(part => !part.assetId) :
+  return mouths.length ? mouths.some(part => !part.assetId || !!part.alternateAssetId) :
     rig.face && rig.parts.some(part => part.role === "head");
 }
 

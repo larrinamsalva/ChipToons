@@ -1275,3 +1275,66 @@ test("decodes the Kind Hearts opening, title, chapter, recap and readable credit
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [32, 37]);
 });
+
+test("exports the voiced Little Fixers cutout puppet, chair and detail shot as genuine animation", async ({ page }, info) => {
+  test.setTimeout(110_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await dialog.getByRole("button", { name: "Use the Little Fixers Club poster", exact: true }).click();
+  await dialog.getByRole("button", { name: "Open the animated workshop demo", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".editor")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Little Fixers Club — The Wobbly Chair", exact: true })).toBeVisible();
+  const { data } = await backup(page);
+  const hosts = data.scenes.map(scene => scene.elements.find(element => element.characterId)!);
+  expect(new Set(hosts.map(host => host.characterId)).size).toBe(1);
+  for (const scene of data.scenes) {
+    const cues = data.captions.filter(caption => caption.sceneId === scene.id);
+    expect(cues.map(caption => caption.text).join(" ")).toBe(scene.script!.lines[0].text);
+    expect(Math.max(...cues.map(caption => caption.text.length))).toBeLessThan(75);
+  }
+
+  const { path } = await render(page, info, "little-fixers-workshop", 34);
+  const resting = rawFrame(path, 0.45);
+  const pointing = rawFrame(path, 2.9);
+  const beforeWobble = rawFrame(path, 3.03);
+  const wobbling = rawFrame(path, 3.42);
+  function changedPixels(before: Buffer, after: Buffer, x: number, y: number, width: number, height: number) {
+    let changed = 0;
+    for (let row = y; row < y + height; row++) {
+      for (let col = x; col < x + width; col++) {
+        const i = (row * 800 + col) * 3;
+        const difference = Math.abs(before[i] - after[i]) + Math.abs(before[i + 1] - after[i + 1]) +
+          Math.abs(before[i + 2] - after[i + 2]);
+        if (difference > 75) changed++;
+      }
+    }
+    return changed;
+  }
+  const measurements = {
+    head: changedPixels(resting, pointing, 203, 44, 120, 86),
+    arm: changedPixels(resting, pointing, 318, 88, 84, 117),
+    torso: changedPixels(resting, pointing, 241, 166, 34, 30),
+    background: changedPixels(resting, pointing, 635, 60, 110, 100),
+    chair: changedPixels(beforeWobble, wobbling, 475, 214, 126, 129),
+  };
+  expect(measurements.head).toBeGreaterThan(350);
+  expect(measurements.arm).toBeGreaterThan(350);
+  expect(measurements.torso).toBeLessThan(measurements.arm / 3);
+  expect(measurements.background).toBeLessThan(35);
+  expect(measurements.chair).toBeGreaterThan(350);
+  await info.attach("independently decoded motion regions", {
+    body: JSON.stringify(measurements, null, 2), contentType: "application/json",
+  });
+  for (const [name, at] of [
+    ["host-at-rest", 0.45], ["host-pointing", 2.9], ["chair-still", 3.03],
+    ["chair-wobbling", 3.42], ["wide-before-cut", 14.15], ["chair-detail", 15.45],
+    ["chair-set-aside", 29.0],
+  ] as const) {
+    const frame = info.outputPath(`${name}.png`);
+    execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS),
+      "-i", path, "-frames:v", "1", "-threads", "1", frame]);
+    await info.attach(name, { path: frame, contentType: "image/png" });
+  }
+});
