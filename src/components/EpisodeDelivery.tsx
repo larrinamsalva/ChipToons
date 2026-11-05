@@ -14,7 +14,7 @@ import {
 import type { DeliveryFile, DeliveryPlayerPart } from "../episode-delivery";
 import { movieDeviceProblem, moviePlanProblem } from "../single-movie-plan";
 import type { VerifiedMovie } from "../single-movie";
-import type { PublishingMovie } from "../youtube-kit";
+import type { PublishingMovie, PublishingParts } from "../youtube-kit";
 import { DeliveryPlayer } from "./DeliveryPlayer";
 import { MediaNumber } from "./MediaNumber";
 
@@ -53,7 +53,7 @@ function AssignFile({ file, plan, assignments, onAssign, onRemove }: {
 export function EpisodeDelivery({ project, initialLimit, initialAudio, active, onBack, onReExport, onYouTube }: {
   project: Project; initialLimit: number; initialAudio: boolean; active: boolean;
   onBack: () => void; onReExport: (segment: ExportSegment, index: number) => void;
-  onYouTube: (movie: PublishingMovie) => void;
+  onYouTube: (movie?: PublishingMovie, parts?: PublishingParts) => void;
 }) {
   const [narrow, setNarrow] = useState(() => matchMedia("(max-width:740px)").matches);
   const [limit, setLimit] = useState(initialLimit);
@@ -394,13 +394,19 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
         <h3>One complete movie</h3>
         <p>Join matching VP8 exports on this device. The picture stays unchanged. Sound is encoded again as Opus and may change slightly. The movie keeps the short lead-ins from your numbered recordings.</p>
         {movieProblem && <p className="field-hint">{movieProblem}</p>}
-        {!movie && <button className="button primary" disabled={!!movieProblem} onClick={buildMovie}>Make One Complete Movie</button>}
+        {!movie && <div className="delivery-actions">
+          <button className="button primary" disabled={!!movieProblem} onClick={buildMovie}>Make One Complete Movie</button>
+          <button id="prepare-joined-youtube" className="button secondary" onClick={() => onYouTube(undefined, {
+            total: segments.length, missing: segments.length - assignedCount,
+            problem: oversized.length ? "Some scenes exceed the current part limit." : movieProblem,
+          })}>Prepare for YouTube</button>
+        </div>}
         {movie && <>
           <p role="status">Movie ready · {movie.result.duration.toFixed(2)} seconds · {movie.result.width} × {movie.result.height} · {mb(movie.result.video.size)}</p>
           <div className="delivery-actions">
             <button className="button primary" onClick={() => setWatch("movie")}>Preview Complete Movie</button>
             <button id="prepare-joined-youtube" className="button secondary" onClick={() => onYouTube({
-              ...movie.result, plan: segments, burned: movie.burned,
+              ...movie.result, plan: segments, burned: movie.burned && !!movie.subtitle,
               expectAudio: review.rows.some(row => row.file?.receipt?.audio ?? expectAudio),
             })}>Prepare for YouTube</button>
             <button className="button primary" onClick={() => {

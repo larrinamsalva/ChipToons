@@ -11,7 +11,7 @@ import {
   chapterTimestamp, draftEpisodeDetails, episodeDescription, publishingChapters, publishingChecks,
   publishingSubtitles, publishingTracks, YOUTUBE_HELP,
 } from "../youtube-kit";
-import type { EpisodeDetails, PublishingMovie } from "../youtube-kit";
+import type { EpisodeDetails, PublishingMovie, PublishingParts } from "../youtube-kit";
 
 const palettes = {
   navy: { label: "Navy and white", paper: "#142035", ink: "#ffffff" },
@@ -45,10 +45,11 @@ function MoviePreview({ video }: { video: Blob }) {
   return <video ref={player} controls playsInline aria-label="Verified YouTube movie preview" />;
 }
 
-export function YouTubeKit({ project, movie, active, expectedAudio, canRender, longer, preferredWidth, busy, progress, exportError,
+export function YouTubeKit({ project, movie, parts, active, expectedAudio, canRender, longer, preferredWidth, busy, progress, exportError,
   onMake, onCancel, onBack, onParts }: {
   project: Project;
   movie?: PublishingMovie;
+  parts?: PublishingParts;
   active: boolean;
   expectedAudio: boolean;
   canRender: boolean;
@@ -173,6 +174,7 @@ export function YouTubeKit({ project, movie, active, expectedAudio, canRender, l
       {!movie && <p><strong>Required.</strong> {longer
         ? "A continuous movie is missing. Open Complete Episode Delivery to see which numbered parts are missing and join the verified parts."
         : "Render a complete WebM to verify playback, size, duration and tracks."}</p>}
+      {parts && <p>{parts.total > 0 && `${parts.missing} of ${parts.total} numbered parts missing. `}{parts.problem}</p>}
       {!movie && !longer && !canRender && !busy && <p>Return to finishing to check any missing audio sources or unsupported browser settings.</p>}
       {movie && <p><strong>Playback verified.</strong> {movie.duration.toFixed(2)} seconds · {movie.width} × {movie.height} · WebM</p>}
       {movie && !current && <p role="status">Checking WebM video and audio tracks…</p>}

@@ -19,6 +19,12 @@ export interface PublishingMovie {
   keepForDownload?: () => void;
 }
 
+export interface PublishingParts {
+  total: number;
+  missing: number;
+  problem: string;
+}
+
 export const YOUTUBE_HELP = {
   audience: "https://support.google.com/youtube/answer/9527654",
   chapters: "https://support.google.com/youtube/answer/9884579",

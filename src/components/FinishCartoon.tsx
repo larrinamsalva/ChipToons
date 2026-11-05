@@ -19,7 +19,7 @@ import { SegmentExports } from "./SegmentExports";
 import { ReadinessChecklist } from "./ReadinessChecklist";
 import { EpisodeReadiness } from "./EpisodeReadiness";
 import { productionReadiness } from "../readiness";
-import type { PublishingMovie } from "../youtube-kit";
+import type { PublishingMovie, PublishingParts } from "../youtube-kit";
 const YouTubeKit = lazy(() => import("./YouTubeKit").then(module => ({ default: module.YouTubeKit })));
 const EpisodeDelivery = lazy(() => import("./EpisodeDelivery").then(module => ({ default: module.EpisodeDelivery })));
 
@@ -45,7 +45,7 @@ export function FinishCartoon({
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
   const [deliveryOpen, setDeliveryOpen] = useState(false);
-  const [publishing, setPublishing] = useState<{ open: boolean; joined?: PublishingMovie }>();
+  const [publishing, setPublishing] = useState<{ open: boolean; joined?: PublishingMovie; parts?: PublishingParts }>();
   const publishingOpen = !!publishing?.open;
   const publishingButton = useRef<HTMLButtonElement>(null);
   const [delivery, setDelivery] = useState<{ limit: number; focus: (segment: ExportSegment, index: number) => void }>();
@@ -117,7 +117,7 @@ export function FinishCartoon({
           duration: movie.recordedDuration,
           plan: [{ start: 0, end: movie.duration }],
           ranges: [{ start: 0, end: movie.recordedDuration }],
-          burned: renderSettings.captions,
+          burned: renderSettings.captions && project.captions.length > 0,
           expectAudio: renderSettings.audio && expectedAudio,
         });
     } catch (e) {
@@ -413,12 +413,12 @@ export function FinishCartoon({
         {result && (
           <div className="finished-movie">
             <h3>Your movie is ready</h3>
-            <video
+            {!publishingOpen && !deliveryOpen && <video
               controls
               playsInline
               src={result.url}
               aria-label="Completed cartoon video"
-            />
+            />}
             <p className="field-hint">
               Playable WebM · {result.width}×{result.height} ·{" "}
               {(result.video.size / 1024 / 1024).toFixed(2)} MB · {result.frames}{" "}
@@ -498,7 +498,7 @@ export function FinishCartoon({
       {delivery && <div hidden={!deliveryOpen || publishingOpen}>
         <Suspense fallback={<p role="status">Opening episode delivery…</p>}>
           <EpisodeDelivery project={project} initialLimit={delivery.limit} initialAudio={settings.audio} active={deliveryOpen && !publishingOpen}
-            onYouTube={joined => setPublishing({ open: true, joined })}
+            onYouTube={(joined, parts) => setPublishing({ open: true, joined, parts })}
             onBack={() => {
               setDeliveryOpen(false);
               requestAnimationFrame(() => document.getElementById("prepare-episode-delivery")?.focus());
@@ -511,8 +511,9 @@ export function FinishCartoon({
       </div>}
       {publishing && <div hidden={!publishingOpen}>
         <Suspense fallback={<p role="status">Opening publishing tools…</p>}>
-          <YouTubeKit project={project} movie={publishing.joined ?? result ?? undefined} active={publishingOpen}
-            expectedAudio={expectedAudio} canRender={canRender} longer={total > exportLimit()} busy={running}
+          <YouTubeKit project={project} movie={deliveryOpen ? publishing.joined : result ?? undefined}
+            parts={publishing.parts} active={publishingOpen}
+            expectedAudio={expectedAudio} canRender={canRender} longer={deliveryOpen || total > exportLimit()} busy={running}
             preferredWidth={mobile ? 800 : 1280}
             progress={progress} exportError={error}
             onMake={width => void makeVideo({ ...settings, width, audio: expectedAudio, captions: false })}

@@ -387,6 +387,11 @@ test("joins genuine silent 720p VP8 parts even when Chromium understates their d
   await limit.press("Enter");
   await page.getByRole("checkbox", { name: "Include mixed audio", exact: true }).uncheck();
   await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const prep = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(prep.getByText(/2 of 2 numbered parts missing/)).toBeVisible();
+  await prep.getByLabel("Video title").fill("Two scenes, one movie");
+  await prep.getByRole("button", { name: "Review numbered movie parts" }).click();
   for (const [index, path] of parts.entries()) {
     const chooser = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
@@ -406,6 +411,7 @@ test("joins genuine silent 720p VP8 parts even when Chromium understates their d
   await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
   const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
   await expect(kit.getByText(/1280 × 720 · WebM/)).toBeVisible();
+  await expect(kit.getByLabel("Video title")).toHaveValue("Two scenes, one movie");
   const subtitles = page.waitForEvent("download");
   await kit.getByRole("button", { name: "Download YouTube SRT", exact: true }).click();
   const text = await readFile((await (await subtitles).path())!, "utf8");
