@@ -389,12 +389,15 @@ export default function App() {
     }
   }
 
-  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | "camera-wagon" | "story-cards" | TransformExample = "friendship", variant?: "focus" | "participation") {
+  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | "camera-wagon" | "story-cards" | "full-body" | TransformExample = "friendship", variant?: "focus" | "participation") {
     if (working) return;
     setWorking(true);
     setNotice("Opening your cartoon example…");
     try {
-      if (example === "sound-garden") {
+      if (example === "full-body") {
+        const { littleFixersFullBodyPilot } = await import("./little-fixers-full-body-pilot");
+        await open(littleFixersFullBodyPilot());
+      } else if (example === "sound-garden") {
         const { voicedGardenSoundDemo } = await import("./sound-garden-demo");
         await open(await voicedGardenSoundDemo());
       } else if (example === "story-cards") {
@@ -717,6 +720,7 @@ export default function App() {
           onSoundGardenDemo={() => void openDemo("sound-garden")}
           onCameraDemo={() => void openDemo("camera-wagon")}
           onStoryCardDemo={() => void openDemo("story-cards")}
+          onFullBodyDemo={() => void openDemo("full-body")}
           onTransformDemo={example => void openDemo(example)}
           onFocusDemo={example => void openDemo(example, "focus")}
           onParticipationDemo={example => void openDemo(example, "participation")}

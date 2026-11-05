@@ -69,6 +69,8 @@ export interface PuppetPose {
 export interface PuppetRig {
   version: 1;
   description: string;
+  /** Optional illustrated costume; older cartoon rigs keep their original look. */
+  costume?: "workshop";
   parts: PuppetPart[];
   poses: PuppetPose[];
   face: boolean;
@@ -106,6 +108,7 @@ export function validPuppet(
   if (
     !record(value) ||
     value.version !== 1 ||
+    (value.costume !== undefined && value.costume !== "workshop") ||
     typeof value.face !== "boolean" ||
     typeof value.description !== "string" ||
     value.description.length > 500 ||

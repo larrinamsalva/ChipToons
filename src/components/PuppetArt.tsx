@@ -87,6 +87,47 @@ function Shape({
   character: Character;
 }) {
   const { role, width: w, height: h } = part;
+  // Opt-in, scalable vector workwear for a full-body cartoon performer.
+  // The ordinary and photo-cutout puppet looks are unaffected.
+  if (character.puppet?.costume === "workshop") {
+    if (role === "torso") return (
+      <g>
+        <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="15" fill="#277b8b" />
+        <rect x={-w / 2 + 7} y={-h / 2 + 5} width={w - 14} height={h - 11}
+          rx="10" fill="#3298a2" opacity=".42" />
+        <path d={`M0 ${-h / 2 + 8}V${h / 2 - 6}`} stroke="#154c64" strokeWidth="3" />
+        <path d={`M${-w / 2 + 8} 0h14m${w - 44} 0h14`}
+          stroke="#def3e0" strokeWidth="2.5" strokeLinecap="round" opacity=".8" />
+      </g>
+    );
+    if (role === "leftLeg" || role === "rightLeg" || role === "leftShin" || role === "rightShin" || role === "lowerBody") return (
+      <g>
+        <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="9" fill="#64764d" />
+        <rect x={-w / 2 + 3} y={-h / 2 + 4} width="7" height={h - 8} rx="3" fill="#91a36d" opacity=".45" />
+        <rect x={-w / 2 + 2} y={-h * 0.12} width={Math.max(10, w - 4)}
+          height={Math.min(18, h * 0.35)} rx="4" fill="#546442" stroke="#354631" strokeWidth="1" />
+        <path d={`M${-w / 2 + 4} ${h * 0.18}h${w - 8}`} stroke="#9daa82" strokeWidth="1.5" />
+      </g>
+    );
+    if (role === "leftFoot" || role === "rightFoot") return (
+      <g>
+        <rect x={-w / 2} y={-h / 2 - 4} width={w} height={h + 4} rx="7" fill="#25313c" />
+        <rect x={-w / 2 - 2} y={h / 2 - 6} width={w + 5} height="8" rx="3" fill="#151c23" />
+        <path d={`M${-w / 2 + 5} ${-h / 2 + 3}h${w - 13}`} stroke="#667784" strokeWidth="2" opacity=".75" />
+      </g>
+    );
+    if (role === "accessory") return (
+      <g>
+        <rect x={-w / 2} y={-h / 2} width={w} height={h * 0.55} rx="5" fill="#5a3829" />
+        <rect x="-10" y={-h / 2 - 2} width="20" height={h * 0.52} rx="3"
+          fill="#d4bd86" stroke="#553b2b" strokeWidth="2" />
+        <rect x={-w / 2 + 4} y={-h / 2 + 3} width="13" height={h - 2}
+          rx="3" fill="#9b663f" stroke="#503324" strokeWidth="1.5" />
+        <rect x={w / 2 - 17} y={-h / 2 + 3} width="13" height={h - 2}
+          rx="3" fill="#9b663f" stroke="#503324" strokeWidth="1.5" />
+      </g>
+    );
+  }
   if (role === "head")
     return <ellipse rx={w / 2} ry={h / 2} fill={character.skin} />;
   if (role === "hair")
