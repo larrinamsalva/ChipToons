@@ -1526,3 +1526,33 @@ test("decodes real animated Meet the Tools video with checklist movement and aud
     contentType: "application/json",
   });
 });
+
+
+test("exports genuine Look for Clues close-up with visible motion and audible effects", async ({ page }, info) => {
+  test.setTimeout(150_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const picture = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await picture.getByRole("button", { name: "Use the Little Fixers Club poster", exact: true }).click();
+  await picture.getByRole("button", {
+    name: "Open animated Look for Clues (5:00; voices to record)", exact: true,
+  }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  expect(data.scenes.slice(-2).map(s => s.duration)).toEqual([30, 30]);
+  expect(data.scenes.slice(-2).flatMap(s => s.script?.lines ?? [])
+    .every(line => line.takes.length === 0)).toBe(true);
+
+  // A 60s segment limit creates parts 60, 59, 31, 60, 60, 30 seconds;
+  // the last is this original 30-second close-up scene.
+  const { path } = await render(page, info, "little-fixers-clues-joint", 30,
+    { segment: 6, limit: 60 });
+  const wide = rawFrame(path, 3);
+  const close = rawFrame(path, 12);
+  const changed = changedPixels(wide, close, 240, 70, 510, 320);
+  expect(changed).toBeGreaterThan(650);
+  await info.attach("Look for Clues: independently decoded before and during close-up", {
+    body: JSON.stringify({ changedPixels: changed, times: [3, 12] }, null, 2),
+    contentType: "application/json",
+  });
+});
