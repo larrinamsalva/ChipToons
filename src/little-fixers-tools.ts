@@ -20,7 +20,7 @@ function teaching(scene: Scene, at: number, length: number, text: string, x = 57
   return { ...newFocusGraphic(scene, at), kind: "label" as const, text, length,
     target: { kind: "screen" as const, x, y } };
 }
-function onShelf(scene: Scene, at: number, duration: number) {
+function onShelf(at: number, duration: number) {
   return { id: uid(), style: "medium" as const, start: at, end: at + duration,
     frame: { x: 610, y: 300, zoom: 1.4 }, move: 0.8,
     targets: [], follow: false, offset: { x: 0, y: 0 },
@@ -73,7 +73,7 @@ export async function littleFixersToolsPreview(source: Asset): Promise<Project> 
       "We can help by making a picture list. Look, our checklist is ready! First, let's find the safe supplies.",
     ].map(text => ({ ...blankLine("dialogue", text), speakerId: host1.characterId })),
   });
-  scene1.cameraShots = [onShelf(scene1, 7, 13)];
+  scene1.cameraShots = [onShelf(7, 13)];
   scene1.focusGraphics = [
     teaching(scene1, 2, 9, "Tools help grown-ups"),
     teaching(scene1, 12, 11, "Tools are not toys"),
@@ -108,7 +108,7 @@ export async function littleFixersToolsPreview(source: Asset): Promise<Project> 
     ].map(text => ({ ...blankLine("dialogue", text), speakerId: host2.characterId })),
   });
   scene2.cameraShots = [
-    { ...onShelf(scene2, 5, 12),
+    { ...onShelf(5, 12),
       frame: { x: 565, y: 300, zoom: 1.37 },
       note: "Follow the illustrated list as the host counts safe items." },
     { id: uid(), style: "medium", start: 21, end: 28,
