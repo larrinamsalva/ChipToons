@@ -19,6 +19,8 @@ import type { PuppetRig } from "./puppet-model";
 import { emptyProduction, validProduction } from "./media-model";
 import { validateScripts, validVoiceNotes } from "./script-model";
 import type { SceneScript, ScriptOptions, VoiceNotes } from "./script-model";
+import { picturePanelValid } from "./picture-model";
+import type { PicturePanel } from "./picture-model";
 import { CHAPTERS } from "./story-model";
 import type { ChapterId, CreationSource } from "./story-model";
 import type { AudioClip, Production } from "./media-model";
@@ -125,6 +127,7 @@ export interface SceneElement {
   voiceMouth?: VoiceMouthTrack[];
 }
 export interface Scene {
+  picturePanel?: PicturePanel;
   storyCard?: StoryCard;
   script?: SceneScript;
   chapter?: ChapterId;
@@ -161,6 +164,7 @@ export interface Outline {
 export interface Project extends Production {
   scriptOptions?: ScriptOptions;
   creationSource?: CreationSource;
+  pictureSourceId?: string;
   templateId?: string;
   mediaVersion?: 1;
   schemaVersion: typeof SCHEMA_VERSION;
@@ -343,6 +347,7 @@ export function validateProject(value: unknown): Project {
     unique(asset.id);
     assetIds.add(asset.id as string);
   }
+  if (p.pictureSourceId !== undefined && (typeof p.pictureSourceId !== "string" || !assetIds.has(p.pictureSourceId))) return fail();
   const characterIds = new Set<string>();
   const puppetParts = new Map<string, Set<string>>();
   for (const c of p.characters) {
@@ -370,6 +375,7 @@ export function validateProject(value: unknown): Project {
       !s.title.trim() ||
       !validString(s.narration) ||
       !validString(s.dialogue) ||
+      (s.picturePanel !== undefined && (!p.pictureSourceId || !picturePanelValid(s.picturePanel))) ||
       (s.chapter !== undefined && !CHAPTERS.some((c) => c.id === s.chapter)) ||
       (s.question !== undefined && !validString(s.question, 500)) ||
       !bounded(s.duration, 2, 120) ||

@@ -374,7 +374,7 @@ export function PuppetMaker({
     setMessage("Original artwork assigned to this part.");
     setError("");
   }
-  async function upload(file?: File) {
+  async function upload(file?: File, alternate = false) {
     if (!file || !part || busy) return;
     if (!["image/png", "image/webp"].includes(file.type)) {
       setError("Choose a PNG or WebP part image.");
@@ -383,7 +383,13 @@ export function PuppetMaker({
     const target = part.id;
     setBusy(true);
     try {
-      attach(await readImage(file), target);
+      const asset = await readImage(file);
+      if (alternate) {
+        setAssets(previous => [...previous, asset]);
+        editPart({ alternateAssetId: asset.id }, target);
+        setMessage("Alternate face artwork assigned to this part.");
+        setError("");
+      } else attach(asset, target);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "This part image could not be read.",
@@ -818,6 +824,21 @@ export function PuppetMaker({
                       <option value="upload">Uploaded part artwork</option>
                     </select>
                   </label>
+                  {part.assetId && (part.role === "eyes" || part.role === "mouth") && (
+                    <>
+                      <label>
+                        {part.role === "eyes" ? "Upload closed-eye artwork" : "Upload open-mouth artwork"}
+                        <input type="file" accept="image/png,image/webp" disabled={busy}
+                          onChange={event => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            void upload(file, true);
+                          }} />
+                      </label>
+                      {part.alternateAssetId && <button className="button secondary small"
+                        onClick={() => editPart({ alternateAssetId: undefined })}>Remove alternate face artwork</button>}
+                    </>
+                  )}
                   {mode === "upload" && (
                     <>
                       <label>
@@ -841,6 +862,7 @@ export function PuppetMaker({
                           const single = {
                             ...part,
                             role: "artwork" as const,
+                            alternateAssetId: undefined,
                             parentId: undefined,
                             x: 0,
                             y: -115,

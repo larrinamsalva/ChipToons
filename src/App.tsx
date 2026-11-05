@@ -29,9 +29,10 @@ import { placeLibraryItem } from "./library";
 import { setSceneryDepth } from "./world-model";
 import type { LibraryItem, LibraryKind } from "./library";
 import { exportProject, readImage } from "./files";
-import { clone, duplicateProject } from "./model";
+import { clone, duplicateProject, validateProject } from "./model";
 import type { Asset, Project } from "./model";
 import { starterProject } from "./planner";
+import { applyPanel } from "./picture-studio";
 import {
   deleteProject,
   friendlyStorageError,
@@ -41,6 +42,7 @@ import {
   ProjectConflict,
 } from "./storage";
 
+const PictureStudio = lazy(() => import("./components/PictureStudio").then(module => ({ default: module.PictureStudio })));
 const SeriesStudio = lazy(() => import("./components/SeriesStudio").then(module => ({ default: module.SeriesStudio })));
 const RecoveryCenter = lazy(() => import("./components/RecoveryCenter").then(module => ({ default: module.RecoveryCenter })));
 
@@ -61,6 +63,7 @@ type Dialog =
       initial?: { asset: Asset; name: string };
     }
   | { type: "art-draw" }
+  | { type: "picture"; sceneIndex?: number }
   | { type: "draw" | "help" | "upload" }
   | { type: "recovery" }
   | { type: "series"; id?: string; episodeId?: string; panel?: "Episode Plans" | "Recurring Cast" }
@@ -694,6 +697,7 @@ export default function App() {
           saveError={storageError}
           onRetry={() => setRetry((r) => r + 1)}
           onAssistant={() => setDialog({ type: "assistant", source: current })}
+          onPicture={current.pictureSourceId && editMode === "edit" ? sceneIndex => setDialog({ type: "picture", sceneIndex }) : undefined}
           onLibrary={(sceneIndex, draft, kind) =>
             setDialog({ type: "library", sceneIndex, draft, kind })
           }
@@ -706,6 +710,7 @@ export default function App() {
           onPuppet={() => setDialog({ type: "puppet" })}
           onIdea={(starterId) => setDialog({ type: "idea", starterId })}
           onGuidedArt={(source) => setDialog({ type: "art-start", source })}
+          onPicture={() => setDialog({ type: "picture" })}
           onDemo={() => void openDemo()}
           onTalkingDemo={() => void openDemo("talking")}
           onGardenDemo={() => void openDemo("garden")}
@@ -803,6 +808,31 @@ export default function App() {
               : undefined
           }
         />
+      )}
+      {dialog?.type === "picture" && (
+        <Suspense fallback={<p role="status">Opening picture tools…</p>}>
+          <PictureStudio project={current ?? undefined} sceneIndex={dialog.sceneIndex}
+            onClose={() => setDialog(null)} onCreate={project => open(project)}
+            onDemo={async asset => {
+              const { littleFixersDemo } = await import("./picture-demo");
+              await open(await littleFixersDemo(asset));
+            }}
+            onPanel={(index, source, panel) => {
+              if (!current || currentRef.current !== current || editMode !== "edit" || session.current?.blocked)
+                throw new Error("The cartoon changed. Reopen the picture tools to continue.");
+              update(validateProject({ ...current, scenes: current.scenes.map((scene, i) =>
+                i === index ? applyPanel(scene, source, panel) : scene) }));
+              setDialog(null);
+            }}
+            onPuppet={(sceneIndex, initial) => setDialog({ type: "puppet", sceneIndex, initial })}
+            onProp={(index, item) => {
+              if (!current || currentRef.current !== current || editMode !== "edit" || session.current?.blocked)
+                throw new Error("The cartoon changed. Reopen the picture tools to continue.");
+              update(placeLibraryItem(current, index, item));
+              setDialog(null);
+            }}
+          />
+        </Suspense>
       )}
       {dialog?.type === "art-start" && (
         <ArtworkStart

@@ -5832,3 +5832,19 @@ fieldset.interaction-fields {
 .story-card-entries legend { padding-inline: .4rem; font-weight: 700; }
 .story-card-entry { min-width: 0; display: grid; gap: .5rem; padding: .6rem; background: var(--field); border: 1px solid var(--line); border-radius: .55rem; }
 .story-card-defaults { display: grid; gap: .65rem; }
+
+.picture-fields { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+.picture-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+.picture-scroll { overflow: auto; max-height: min(55vh, 460px); border: 1px solid var(--line); border-radius: 12px; margin-block: 0.75rem; }
+.picture-canvas { display: block; height: auto; max-width: none; cursor: crosshair; user-select: none; }
+.picture-canvas.fit { touch-action: none; }
+.picture-outline { fill: #38d9b230; stroke: #fff; stroke-width: 3; paint-order: stroke; filter: drop-shadow(0 0 2px #111); pointer-events: none; }
+.picture-outline.subtract { fill: #e75b6240; stroke: #ffc1c4; }
+.picture-point { fill: #f5fffa; stroke: #193c38; stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.picture-point.active { fill: #ffdf78; }
+.picture-check { display: flex; align-items: center; gap: 0.5rem; }
+.picture-cutout { display: grid; place-items: center; margin-block: 0.75rem; background: repeating-conic-gradient(#d0d0d0 0% 25%, #fff 0% 50%) 0 / 20px 20px; border: 1px solid var(--line); border-radius: 12px; }
+.picture-cutout img { max-width: 100%; max-height: 220px; object-fit: contain; }
+.picture-parts { display: flex; flex-wrap: wrap; gap: 0.5rem; padding-inline-start: 0; list-style: none; }
+.picture-parts li { display: flex; align-items: center; gap: 0.5rem; }
+.picture-parts img { width: 36px; height: 36px; object-fit: contain; }

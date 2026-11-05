@@ -152,7 +152,10 @@ export function PuppetArt({
     <g data-puppet={character.id}>
       {rig.parts.map((part, i) => {
         const joint = transforms[i];
-        const asset = assets.find((a) => a.id === part.assetId);
+        const useAlternate = part.role === "eyes" ? blink : part.role === "mouth" &&
+          (mouth === "open" || mouth === "talking" || (mouth === "auto" && emotion === "surprised"));
+        const assetId = useAlternate && part.alternateAssetId ? part.alternateAssetId : part.assetId;
+        const asset = assets.find(a => a.id === assetId);
         return (
           <g
             key={part.id}

@@ -34,6 +34,7 @@ export function Dashboard({
   onHelp,
   onLibrary,
   onGuidedArt,
+  onPicture,
 }: {
   projects: Project[];
   onIdea: (starterId?: string) => void;
@@ -58,6 +59,7 @@ export function Dashboard({
   onImport: () => void;
   onHelp: () => void;
   onLibrary: () => void;
+  onPicture: () => void;
   onGuidedArt: (source: "sketch" | "image") => void;
 }) {
   const demo = useMemo(() => starterProject(), []);
@@ -111,6 +113,7 @@ export function Dashboard({
             <Icon name="arrow" size={18} />
           </button>
           <button className="button text assistant-quick-start" onClick={() => onIdea()}>Start with an idea</button>
+          <button className="button secondary small" onClick={onPicture}>Turn My Picture Into a Cartoon</button>
           <button className="button secondary small" onClick={onPuppet}>Create a Puppet Character</button>
           <button className="button secondary small" onClick={onTalkingDemo}>Try Shine Says Hello</button>
           <button className="button secondary small" onClick={onGardenDemo}>Try Helping Hands Waters a Little Garden</button>

@@ -57,6 +57,7 @@ export interface PuppetPart {
   width: number;
   height: number;
   assetId?: string;
+  alternateAssetId?: string;
 }
 export interface PuppetPose {
   id: string;
@@ -130,6 +131,8 @@ export function validPuppet(
       !numberIn(p.width, 8, 320) ||
       !numberIn(p.height, 8, 320) ||
       (p.role === "artwork" && !p.assetId) ||
+      (p.alternateAssetId !== undefined && (!["eyes", "mouth"].includes(String(p.role)) || !p.assetId ||
+        typeof p.alternateAssetId !== "string" || !assets.has(p.alternateAssetId))) ||
       (p.assetId !== undefined &&
         (typeof p.assetId !== "string" || !assets.has(p.assetId)))
     )
@@ -166,7 +169,7 @@ export function validPuppet(
 }
 
 export function puppetAssetIds(rig: PuppetRig): string[] {
-  return [...new Set(rig.parts.flatMap((p) => (p.assetId ? [p.assetId] : [])))];
+  return [...new Set(rig.parts.flatMap(part => [part.assetId, part.alternateAssetId].filter((id): id is string => !!id)))];
 }
 export function remapPuppetAssets(
   rig: PuppetRig,
@@ -175,7 +178,8 @@ export function remapPuppetAssets(
   return {
     ...rig,
     parts: rig.parts.map((p) =>
-      p.assetId ? { ...p, assetId: assets.get(p.assetId) } : p,
+      p.assetId ? { ...p, assetId: assets.get(p.assetId),
+        alternateAssetId: p.alternateAssetId ? assets.get(p.alternateAssetId) : undefined } : p,
     ),
   };
 }

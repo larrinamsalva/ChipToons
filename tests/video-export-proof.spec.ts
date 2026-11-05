@@ -1275,3 +1275,25 @@ test("decodes the Kind Hearts opening, title, chapter, recap and readable credit
   await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
   await downloadAndVerifyMovie(page, info, files, [32, 37]);
 });
+
+test("exports the voiced Little Fixers cutout puppet, chair and detail shot as genuine animation", async ({ page }, info) => {
+  test.setTimeout(110_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await dialog.getByRole("button", { name: "Use the Little Fixers Club poster", exact: true }).click();
+  await dialog.getByRole("button", { name: "Open the animated workshop demo", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".editor")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Little Fixers Club — The Wobbly Chair", exact: true })).toBeVisible();
+  const { path } = await render(page, info, "little-fixers-workshop", 34);
+  for (const [name, at] of [
+    ["host-at-rest", 0.45], ["host-pointing", 2.9], ["chair-still", 3.03],
+    ["chair-wobbling", 3.42], ["wide-before-cut", 14.15], ["chair-detail", 15.45],
+  ] as const) {
+    const frame = info.outputPath(`${name}.png`);
+    execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS),
+      "-i", path, "-frames:v", "1", "-threads", "1", frame]);
+    await info.attach(name, { path: frame, contentType: "image/png" });
+  }
+});
