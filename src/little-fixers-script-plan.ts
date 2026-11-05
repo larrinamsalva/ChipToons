@@ -23,8 +23,12 @@ export async function littleFixersEpisodeScriptPlan(source: Asset): Promise<Proj
     // Reuse the existing art, but deliberately omit a finished animation track.
     const actor: SceneElement = {
       ...preparedHost, id: uid(), x: 300, y: 417,
-      motion: "still", emotion: "calm", animation: undefined,
+      motion: "still", emotion: "calm",
     };
+    // The original host's voice-mouth cues belong to the voiced opening.
+    // Do not carry those clip IDs into new, deliberately unvoiced scenes.
+    delete actor.animation;
+    delete actor.voiceMouth;
     const draft = withScript({
       ...makeScene([], opening.scenes.length + index),
       title: "Script draft · " + beat.title,
