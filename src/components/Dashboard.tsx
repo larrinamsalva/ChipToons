@@ -1,3 +1,4 @@
+import { STORY_CARD_DEMO } from "../story-card-model";
 import { PARTICIPATION_EXAMPLES } from "../participation-model";
 import { EXAMPLE_NAMES } from "../transform-model";
 import type { TransformExample } from "../transform-model";
@@ -21,6 +22,7 @@ export function Dashboard({
   onFocusDemo,
   onParticipationDemo,
   onCameraDemo,
+  onStoryCardDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -44,6 +46,7 @@ export function Dashboard({
   onTransformDemo: (example: TransformExample) => void;
   onFocusDemo: (example: TransformExample) => void;
   onCameraDemo: () => void;
+  onStoryCardDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
@@ -227,6 +230,10 @@ export function Dashboard({
         <div className="series-actions">
           <button className="button secondary small" onClick={onCameraDemo}>The Wobbly Wagon — A Closer Look</button>
         </div>
+      </details>
+      <details className="transform-examples">
+        <summary>Try a complete episode with opening and credits</summary>
+        <div className="series-actions"><button className="button secondary small" onClick={onStoryCardDemo}>{STORY_CARD_DEMO}</button></div>
       </details>
       <div className="creative-actions" aria-label="Ways to create">
         {[

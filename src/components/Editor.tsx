@@ -1,3 +1,4 @@
+import { STORY_CARD_STUDIO } from "../story-card-model";
 import { SOUND_DIRECTOR_TITLE } from "../sound-director";
 import { SHOT_TITLE, shotIssue } from "../camera-shots";
 import type { SoundDirectorSeed } from "./SoundDirector";
@@ -61,6 +62,7 @@ import type { LibraryItem, LibraryKind } from "../library";
 import { POSES } from "../art-model";
 import type { Pose } from "../art-model";
 
+const StoryCardStudio = lazy(() => import("./StoryCardStudio").then(module => ({ default: module.StoryCardStudio })));
 const VoiceMouthStudio = lazy(() => import("./VoiceMouthStudio").then(module => ({ default: module.VoiceMouthStudio })));
 const ShotDirector = lazy(() => import("./ShotDirector").then(module => ({ default: module.ShotDirector })));
 const SoundDirector = lazy(() => import("./SoundDirector").then(module => ({ default: module.SoundDirector })));
@@ -125,6 +127,7 @@ export function Editor({
     [audioBusy, setAudioBusy] = useState(false);
   const playTicket = useRef(0);
   const [mouthStudio, setMouthStudio] = useState<{ clipId?: string }>();
+  const [storyCardsOpen, setStoryCardsOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(startScript);
   const [scriptLine, setScriptLine] = useState("");
   const [scriptStep, setScriptStep] = useState<string>();
@@ -233,6 +236,18 @@ export function Editor({
     halt();
     setPlaying(false);
   }
+  function applyStoryCard(next: Project, nextIndex: number, script = false) {
+    if (!updateProduction(next)) return;
+    const start = sceneStart(next, nextIndex);
+    clock.configure(0, totalDuration(next), false);
+    clock.seek(start);
+    setEditSeconds(start);
+    setSelected(nextIndex);
+    setElementIndex(0);
+    setStoryCardsOpen(false);
+    if (script) { setScriptLine(""); setScriptStep(undefined); setScriptOpen(true); }
+  }
+
   function selectScene(next: number) {
     const i = clamp(next, 0, project.scenes.length - 1);
     seek(sceneStart(project, i));
@@ -698,6 +713,9 @@ export function Editor({
           </button>
           <button className="button secondary small" onClick={() => { halt(); setScriptStep(undefined); setScriptOpen(true); }}>
             Write My Episode Script
+          </button>
+          <button className="button secondary small" onClick={() => { halt(); setStoryCardsOpen(true); }}>
+            {STORY_CARD_STUDIO}
           </button>
           <button className="button secondary small" onClick={() => { halt(); setMouthStudio({}); }}>
             Make My Character Talk
@@ -1642,7 +1660,7 @@ export function Editor({
           }}
         />
       )}
-      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && !soundDirector && !shotEditor && (
+      {scriptOpen && !voiceStudio && !mouthStudio && !interactionEditor && !transformEditor && !focusEditor && !participationEditor && !soundDirector && !shotEditor && !storyCardsOpen && (
         <Suspense fallback={<Modal title="Write My Episode Script" onClose={() => setScriptOpen(false)}><p role="status">Opening the script…</p></Modal>}>
           <ScriptDirector project={project} index={index} selected={scriptLine}
             onSelect={setScriptLine} onSelectScene={selectScene} onChange={updateProduction} onScene={changeScene}
@@ -1692,6 +1710,14 @@ export function Editor({
               return applied;
             }}
             onVoices={clipId => { setSoundDirector(undefined); openVoice(clipId); }} />
+        </Suspense>
+      )}
+      {storyCardsOpen && (
+        <Suspense fallback={<Modal title={STORY_CARD_STUDIO} onClose={() => setStoryCardsOpen(false)}>
+          <p role="status">Opening story cards…</p>
+        </Modal>}>
+          <StoryCardStudio project={project} selected={index} onClose={() => setStoryCardsOpen(false)}
+            onApply={applyStoryCard} onScript={(next, i) => applyStoryCard(next, i, true)} />
         </Suspense>
       )}
       {shotEditor && (
@@ -1785,6 +1811,7 @@ export function Editor({
         >
           <FinishCartoon
             project={project}
+            onStoryCards={() => { setFinish(false); setStoryCardsOpen(true); }}
             saveStatus={saveStatus}
             onScene={(i, reviewPanel) => {
               setFinish(false);

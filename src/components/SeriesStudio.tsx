@@ -1,3 +1,4 @@
+import { SeriesPresentationFields } from "./SeriesPresentationFields";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { downloadBlob, safeFilename } from "../files";
@@ -364,6 +365,9 @@ export function SeriesStudio({ initialId, initialEpisodeId, initialPanel = "Over
               {!draft.episodes.length && <Action onClick={() => setDraft({ ...draft, target: 30, episodes: seasonTemplate(draft.cast) })}>Use 30-episode template</Action>}
             </div>
             <p>Archiving changes the series label. Your cartoons and media stay available.</p>
+            <details className="focus-appearance"><summary>Opening and ending defaults</summary>
+              <SeriesPresentationFields value={draft.presentation} library={library} onChange={value => update("presentation", value)} />
+            </details>
           </div>}
           {panel === "Series Bible" && <div className="series-fields">
             {(Object.entries(BIBLE_FIELDS) as [keyof SeriesPlan["bible"], string][]).map(([key, label]) =>

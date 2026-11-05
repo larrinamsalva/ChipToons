@@ -1,3 +1,5 @@
+import { validPresentation } from "./story-card-model";
+import type { SeriesPresentation } from "./story-card-model";
 import { BACKGROUNDS, uid } from "./model";
 import { validVoiceNotes } from "./script-model";
 import type { VoiceNotes } from "./script-model";
@@ -59,6 +61,7 @@ export interface SeriesPlan {
   themes: string;
   target: number;
   archived: boolean;
+  presentation?: SeriesPresentation;
   bible: Record<keyof typeof BIBLE_FIELDS, string>;
   cast: CastMember[];
   episodes: EpisodePlan[];
@@ -100,6 +103,7 @@ export function validateSeries(value: unknown): SeriesPlan {
   if (!record(value) || !id(value.id) || !str(value.name, 160) || !value.name.trim() ||
       !str(value.description) || !str(value.age, 60) || !str(value.themes, 1000) ||
       !number(value.target, MAX_EPISODES) || typeof value.archived !== "boolean" ||
+      (value.presentation !== undefined && !validPresentation(value.presentation)) ||
       !record(value.bible) || !Array.isArray(value.cast) || value.cast.length > MAX_CAST ||
       !Array.isArray(value.episodes) || value.episodes.length > MAX_EPISODES) return invalid();
   const rawBible = value.bible;
@@ -142,7 +146,8 @@ export function validateSeries(value: unknown): SeriesPlan {
       status: status as EpisodePlan["status"], ...(projectId ? { projectId } : {}), ...(locationId ? { locationId } : {}) };
   });
   return { id: value.id, name: value.name, description: value.description, age: value.age,
-    themes: value.themes, target: value.target, archived: value.archived, bible, cast, episodes };
+    themes: value.themes, target: value.target, archived: value.archived, bible, cast, episodes,
+    ...(value.presentation ? { presentation: structuredClone(value.presentation) } : {}) };
 }
 
 export function seriesBackup(series: SeriesPlan) {

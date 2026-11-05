@@ -1,3 +1,4 @@
+import { StoryCardArt } from "./StoryCardArt";
 import { projectFocusPoint, focusAnchor, focusLayout, focusTiming, sceneCaptionBand } from "../focus-motion";
 import { participationAt } from "../participation-model";
 import { participationCards } from "../participation-art";
@@ -423,7 +424,7 @@ export const Stage = memo(function Stage({
       style={onSelect || onFocusPosition ? { touchAction: "none" } : undefined}
       viewBox="0 0 800 450"
       role={onSelect ? "group" : labelled ? "img" : undefined}
-      aria-label={labelled ? `${scene.title}: ${scene.action}${cards ? ` ${cards.flatMap(card => card.lines.map(line => line.text)).join(" ")}` : ""}` : undefined}
+      aria-label={labelled ? `${scene.title}: ${scene.storyCard ? [scene.storyCard.eyebrow, scene.storyCard.subtitle, ...scene.storyCard.points.map(point => point.text), ...scene.storyCard.credits.map(credit => [credit.role, credit.name, credit.license, credit.url].filter(Boolean).join(" "))].filter(Boolean).join(". ") : scene.action}${cards ? ` ${cards.flatMap(card => card.lines.map(line => line.text)).join(" ")}` : ""}` : undefined}
       aria-hidden={!labelled || undefined}
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -796,6 +797,7 @@ export const Stage = memo(function Stage({
         {participation && cards && <g pointerEvents="none" aria-hidden="true" data-participation-phase={participation.phase}>
           {cards.map((card, index) => <FocusCard key={index} {...card} />)}
         </g>}
+        {scene.storyCard && <StoryCardArt project={project} scene={scene} card={scene.storyCard} time={t} calm={calmPreview} />}
         {shotGuides && <g data-shot-guides="" pointerEvents="none" aria-hidden="true">
           <path d="M266 24V426M534 24V426M24 150H776M24 300H776M390 225H410M400 215V235"
             fill="none" stroke="#15263a" strokeWidth="3" strokeDasharray="7 6" />

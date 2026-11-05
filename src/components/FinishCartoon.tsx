@@ -1,3 +1,4 @@
+import { STORY_CARD_STUDIO } from "../story-card-model";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Project } from "../model";
 import { totalDuration, durationLabel } from "../model";
@@ -24,6 +25,7 @@ export function FinishCartoon({
   project,
   onClose,
   onVoices,
+  onStoryCards,
   onCaptions,
   onPreview,
   saveStatus,
@@ -32,6 +34,7 @@ export function FinishCartoon({
   project: Project;
   onClose: () => void;
   onVoices: () => void;
+  onStoryCards: () => void;
   onCaptions: () => void;
   onPreview: (sound: boolean) => void;
   saveStatus: string;
@@ -136,6 +139,7 @@ export function FinishCartoon({
         Review your story, listen once, then make a real WebM movie. Export runs
         on this device and does not record the editor or your screen.
       </p>
+      <button className="button secondary small" disabled={running} onClick={onStoryCards}>{STORY_CARD_STUDIO}</button>
       <div className="finish-review">
         <div>
           <span>Cartoon</span>

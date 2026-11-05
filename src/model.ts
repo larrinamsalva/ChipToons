@@ -1,3 +1,5 @@
+import { storyCardIssue } from "./story-card-model";
+import type { StoryCard } from "./story-card-model";
 import { shotIssue } from "./camera-shots";
 import type { CameraShot } from "./camera-shots";
 import { isAtmosphere, validSoundLinks } from "./sound-cues";
@@ -123,6 +125,7 @@ export interface SceneElement {
   voiceMouth?: VoiceMouthTrack[];
 }
 export interface Scene {
+  storyCard?: StoryCard;
   script?: SceneScript;
   chapter?: ChapterId;
   question?: string;
@@ -477,7 +480,7 @@ export function validateProject(value: unknown): Project {
       )
     )
       fail();
-    if (shotIssue(s.cameraShots, scene, unique)) fail();
+    if (shotIssue(s.cameraShots, scene, unique) || storyCardIssue(s.storyCard, scene.duration)) fail();
   }
   const sceneMap = new Map<string, { duration: number; start: number }>();
   let offset = 0;
