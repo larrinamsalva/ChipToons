@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { PointerEvent } from "react";
+import { LITTLE_FIXERS_OPENING_ACTION } from "../little-fixers-opening-script";
 import type { Crop } from "../art-model";
 import { downloadBlob, readImage } from "../files";
 import { imageLibraryItem, saveLibraryItem } from "../library";
@@ -24,7 +25,7 @@ const percent = (value: number) => Math.round(value * 1000) / 10;
 type Selection = { panel: Panel; masks: Mask[]; points: Point[] };
 interface History { past: Selection[]; present: Selection; future: Selection[] }
 
-export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel, onPuppet, onProp, onDemo }: {
+export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel, onPuppet, onProp, onDemo, onOpening }: {
   project?: Project;
   sceneIndex?: number;
   onClose: () => void;
@@ -33,6 +34,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   onPuppet: (index: number, item: LibraryItem) => void;
   onProp: (index: number, item: LibraryItem) => void;
   onDemo: (asset: Asset) => Promise<void>;
+  onOpening: (asset: Asset) => Promise<void>;
 }) {
   const [index, setIndex] = useState(sceneIndex ?? 0);
   const [source, setSource] = useState(() => project?.assets.find(asset => asset.id === project.pictureSourceId));
@@ -234,6 +236,9 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
               {fixers && <>
                 <button className="button secondary" onClick={() => void run(() => onCreate(newPictureProject(source, panel, true)))}>Open the editable 20-minute plan</button>
                 <button className="button secondary" onClick={() => void run(() => onDemo(source))}>Open the animated workshop demo</button>
+                <button className="button secondary" onClick={() => void run(() => onOpening(source))}>
+                  {LITTLE_FIXERS_OPENING_ACTION}
+                </button>
               </>}
             </>}
           </div>

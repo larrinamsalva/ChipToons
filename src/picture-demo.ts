@@ -3,13 +3,15 @@ import type { CameraShot } from "./camera-shots";
 import { newFocusGraphic } from "./focus-studio";
 import { imageLibraryItem, placeLibraryItem } from "./library";
 import { makeScene, uid, validateProject } from "./model";
-import type { Asset, Project, SceneElement } from "./model";
+import type { Asset, Emotion, Project, SceneElement } from "./model";
+import type { AudioAsset } from "./media-model";
 import { newPictureProject, defaultPanel, pictureCutout, pictureImage, picturePuppet } from "./picture-studio";
 import type { Cutout, Mask } from "./picture-studio";
 import { neutralJoint } from "./puppet-model";
 import type { JointSnapshot } from "./puppet-model";
 import { newAudioClip } from "./production";
-import { blankLine, chooseScriptTake, setLineApproval, withScript } from "./script";
+import { blankLine, chooseScriptTake, selectedTake, setLineApproval, withScript } from "./script";
+import type { ScriptLine } from "./script-model";
 import { builtInSound } from "./sounds";
 import { elementBase } from "./timeline";
 import { analyzeVoiceEnvelope, applyTalkingPreset, withVoiceTrack } from "./voice-mouth";
@@ -72,12 +74,35 @@ async function alternateFace(cutout: Cutout, eyes: boolean): Promise<Asset> {
     dataUrl: canvas.toDataURL("image/png") };
 }
 
-function actorKeys(element: SceneElement, beats: Array<[number, number, number]>) {
-  return { idle: "breathe" as const, blink: true, keyframes: beats.map(([time, head, arm]) => ({
-    ...elementBase(element), id: uid(), time, easing: "ease-in-out" as const, joints: {
+export function workshopHostKeys(element: SceneElement, beats: ReadonlyArray<readonly [number, number, number, Emotion?]>) {
+  return { idle: "breathe" as const, blink: true, keyframes: beats.map(([time, head, arm, emotion]) => ({
+    ...elementBase(element), id: uid(), time, easing: "ease-in-out" as const, emotion: emotion ?? element.emotion, joints: {
       head: { ...neutralJoint, angle: head }, rightArm: { ...neutralJoint, angle: arm },
     } satisfies JointSnapshot,
   })) };
+}
+
+export async function applyWorkshopTake(project: Project, index: number, line: ScriptLine, asset: AudioAsset,
+  context: AudioContext, at?: number, expression: Emotion = "happy") {
+  const recorded = chooseScriptTake(project, line.id, asset, true);
+  const scene = recorded.scenes[index];
+  const take = selectedTake(recorded, scene.script!.lines.find(item => item.id === line.id)!).clip!;
+  if (at !== undefined && at + take.duration > scene.duration)
+    throw new Error("A Little Fixers recording runs beyond its scene.");
+  const clip = at === undefined ? take : { ...take, start: at };
+  const approved = setLineApproval(at === undefined ? recorded : {
+    ...recorded, audioClips: recorded.audioClips.map(item => item.id === clip.id ? clip : item),
+  }, line.id, true);
+  const voicedScene = approved.scenes[index];
+  const host = voicedScene.elements.find(element => element.characterId === line.speakerId)!;
+  const track = applyTalkingPreset({
+    clipId: clip.id, sourceId: asset.id, speakerId: host.characterId,
+    trimStart: clip.trimStart, trimEnd: clip.trimEnd, start: 0, end: clip.duration,
+    levels: analyzeVoiceEnvelope(await decodeAsset(context, asset), clip.trimStart, clip.trimEnd),
+    sensitivity: 1, minimum: 0.13, maximum: 1, delay: 0,
+    preset: "gentle", expression, replaceManual: false, corrections: [],
+  } satisfies VoiceMouthTrack, "gentle");
+  return { project: withVoiceTrack(approved, voicedScene, host, clip.id, track), clip };
 }
 
 async function withWorkshopVoices(project: Project) {
@@ -92,21 +117,12 @@ async function withWorkshopVoices(project: Project) {
   try {
     for (const [index, asset] of files.entries()) {
       const scene = project.scenes[index], line = scene.script!.lines[0];
-      project = setLineApproval(chooseScriptTake(project, line.id, asset, true), line.id, true);
-      const voicedScene = project.scenes[index];
-      const clip = project.audioClips.find(item => item.id === voicedScene.script!.lines[0].clipId)!;
-      const host = voicedScene.elements.find(element => element.characterId === line.speakerId)!;
-      const track = applyTalkingPreset({
-        clipId: clip.id, sourceId: asset.id, speakerId: host.characterId,
-        trimStart: clip.trimStart, trimEnd: clip.trimEnd, start: 0, end: clip.duration,
-        levels: analyzeVoiceEnvelope(await decodeAsset(context, asset), clip.trimStart, clip.trimEnd),
-        sensitivity: 1, minimum: 0.13, maximum: 1, delay: 0,
-        preset: "gentle", expression: "happy", replaceManual: false, corrections: [],
-      } satisfies VoiceMouthTrack, "gentle");
-      project = withVoiceTrack(project, voicedScene, host, clip.id, track);
+      const take = await applyWorkshopTake(project, index, line, asset, context);
+      project = take.project;
+      const { clip } = take;
       const phrases = workshopCaptions[index];
       project.captions.push(...phrases.map(([until, text], phrase) => ({
-        id: uid(), sceneId: voicedScene.id, text,
+        id: uid(), sceneId: scene.id, text,
         start: clip.start + (phrases[phrase - 1]?.[0] ?? 0),
         end: clip.start + Math.min(until, clip.duration),
       })));
@@ -115,7 +131,7 @@ async function withWorkshopVoices(project: Project) {
   return project;
 }
 
-export async function littleFixersDemo(source: Asset): Promise<Project> {
+export async function littleFixersWorkshopArt(source: Asset) {
   const image = await pictureImage(source);
   const [body, head, arm, eyes, mouth, chair] = await Promise.all([
     pictureCutout(image, [trace([[153,183],[195,170],[226,182],[266,174],[299,183],[317,206],[300,250],[285,279],[287,314],[321,290],[368,269],[397,270],[418,286],[418,338],[396,360],[373,395],[371,433],[414,456],[423,489],[403,497],[301,499],[298,472],[297,429],[320,375],[278,394],[238,445],[240,480],[228,495],[137,488],[129,461],[141,409],[146,363],[158,337],[151,315],[123,303],[119,281],[117,254],[131,218]])], "Workshop host body"),
@@ -146,6 +162,13 @@ export async function littleFixersDemo(source: Asset): Promise<Project> {
     part.alternateAssetId = part.role === "eyes" ? blink.id : openMouth.id;
   }
 
+  const prop = imageLibraryItem(chair.asset, "Wobbly chair", "prop");
+  prop.transform = { width: 175, height: 155 };
+  return { puppet, chair: prop };
+}
+
+export async function littleFixersDemo(source: Asset): Promise<Project> {
+  const { puppet, chair: prop } = await littleFixersWorkshopArt(source);
   const original = newPictureProject(source, defaultPanel, false);
   const titles = ["Welcome to the workshop", "Look at the loose joint", "Repair, reuse, and rebuild"];
   let project: Project = {
@@ -164,15 +187,13 @@ export async function littleFixersDemo(source: Asset): Promise<Project> {
       narration: "", dialogue: "",
     })),
   };
-  const prop = imageLibraryItem(chair.asset, "Wobbly chair", "prop");
-  prop.transform = { width: 175, height: 155 };
   for (let i = 0; i < project.scenes.length; i++) {
     project = placeLibraryItem(placeLibraryItem(project, i, puppet), i, prop);
     const scene = project.scenes[i];
     const [host, chairElement] = scene.elements;
     Object.assign(host, { x: 290, y: 421, scale: 1.78 });
     Object.assign(chairElement, { x: i === 2 ? 675 : 525, y: 376 });
-    host.animation = actorKeys(host, i === 0
+    host.animation = workshopHostKeys(host, i === 0
       ? [[0, 0, -9], [1.3, -7, -12], [2.9, 8, 25], [3.55, -12, 13], [4.6, 2, 14], [7.1, -7, -9], [10.1, 2, -4]]
       : [[0, 0, 5], [2.8, -8, 15], [5.2, 8, 22], [8.8, -2, 0]]);
     if (i === 0) {

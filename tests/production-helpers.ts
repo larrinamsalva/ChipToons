@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import type { Project } from "../src/model";
+import { LITTLE_FIXERS_EPISODE_TITLE, LITTLE_FIXERS_OPENING_ACTION } from "../src/little-fixers-opening-script";
 
 export async function demo(page: Page) {
   await page.goto("./");
@@ -47,4 +48,13 @@ export async function saved(page: Page) {
   await expect(
     page.getByRole("status").filter({ hasText: "Saved on this device" }),
   ).toBeVisible();
+}
+
+export async function openLittleFixersOpening(page: Page) {
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const picture = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await picture.getByRole("button", { name: "Use the Little Fixers Club poster", exact: true }).click();
+  await picture.getByRole("button", { name: LITTLE_FIXERS_OPENING_ACTION, exact: true }).click();
+  await expect(page.getByRole("heading", { name: LITTLE_FIXERS_EPISODE_TITLE, exact: true })).toBeVisible({ timeout: 30_000 });
 }
