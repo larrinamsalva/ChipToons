@@ -25,7 +25,7 @@ const percent = (value: number) => Math.round(value * 1000) / 10;
 type Selection = { panel: Panel; masks: Mask[]; points: Point[] };
 interface History { past: Selection[]; present: Selection; future: Selection[] }
 
-export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel, onPuppet, onProp, onDemo, onOpening, onFullScript, onSafetyPreview }: {
+export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel, onPuppet, onProp, onDemo, onOpening, onFullScript, onSafetyPreview, onToolsPreview }: {
   project?: Project;
   sceneIndex?: number;
   onClose: () => void;
@@ -37,6 +37,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   onOpening: (asset: Asset) => Promise<void>;
   onFullScript: (asset: Asset) => Promise<void>;
   onSafetyPreview: (asset: Asset) => Promise<void>;
+  onToolsPreview: (asset: Asset) => Promise<void>;
 }) {
   const [index, setIndex] = useState(sceneIndex ?? 0);
   const [source, setSource] = useState(() => project?.assets.find(asset => asset.id === project.pictureSourceId));
@@ -243,6 +244,9 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
                 </button>
                 <button className="button secondary" onClick={() => void run(() => onSafetyPreview(source))}>
                   Open animated Safety First (3:00; new voice to record)
+                </button>
+                <button className="button secondary" onClick={() => void run(() => onToolsPreview(source))}>
+                  Open animated Meet the Tools (4:00; new voices to record)
                 </button>
                 <button className="button secondary" onClick={() => void run(() => onFullScript(source))}>
                   Open full 20-minute script draft (unfinished animation)
