@@ -123,14 +123,22 @@ export async function littleFixersToolsPreview(source: Asset): Promise<Project> 
     teaching(scene2, 23, 6, "Ask a grown-up!"),
   ];
 
-  const room = builtInSound("workshop");
+  // Reuse already imported effect sources rather than duplicating them.
+  // The original opening has 21 audio assets; Safety First adds only sweep,
+  // and Meet the Tools adds only the new paper sound.
+  const existing = (name: string) => {
+    const asset = before.audioAssets.find(source => source.name === name);
+    if (!asset) throw new Error(`Missing original Little Fixers sound: ${name}`);
+    return asset;
+  };
+  const room = existing("Subtle workshop activity");
   const paper = builtInSound("paper");
-  const place = builtInSound("place");
-  const success = builtInSound("success");
+  const place = existing("Wooden object set down");
+  const success = existing("Friendly success cue");
   const project: Project = {
     ...before, title: TOOLS_PREVIEW_TITLE, plannedMinutes: 4,
     scenes: [...before.scenes, scene1, scene2],
-    audioAssets: [...before.audioAssets, room, paper, place, success],
+    audioAssets: [...before.audioAssets, paper],
     lesson: "Use a picture checklist and count safe supplies; adult-only tools are not toys.",
   };
   const sounds = [
