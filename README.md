@@ -41,6 +41,8 @@ On phones, use the **Scenes**, **Preview** and **Edit scene** tabs. All editors 
 
 See the [complete creator walkthrough](docs/CREATOR_GUIDE.md) and the in-editor **Guided tutorial** for all eight production steps, longer story planning, segmented exports and recovery.
 
+**Turn My Picture Into a Cartoon** turns a poster into editable scene panels and hand-traced puppet parts. Try the voiced Little Fixers Club example or follow the [Picture-to-Cartoon guide](docs/PICTURE_TO_CARTOON_ANIMATION.md).
+
 ## What the studio includes
 
 - Three guided creation paths, existing quick starts and a real project dashboard with thumbnails, dates, draft/ready status, duplicate, delete confirmation and restore.

@@ -104,7 +104,7 @@ test("corrects transparent masks with a keyboard and hands the parts to the exis
   await button(dialog, "Preview transparent cutout").click();
   const preview = dialog.getByRole("img", { name: "Transparent cutout preview" });
   await expect(preview).toBeVisible();
-  const alpha = await preview.evaluate(async (image: HTMLImageElement) => {
+  const alpha = () => preview.evaluate(async (image: HTMLImageElement) => {
     await image.decode();
     const canvas = document.createElement("canvas");
     canvas.width = image.naturalWidth;
@@ -113,7 +113,13 @@ test("corrects transparent masks with a keyboard and hands the parts to the exis
     context.drawImage(image, 0, 0);
     return [context.getImageData(20, 20, 1, 1).data[3], context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data[3]];
   });
-  expect(alpha).toEqual([255, 0]);
+  expect(await alpha()).toEqual([255, 0]);
+  await dialog.getByRole("combobox", { name: "Outline operation" }).selectOption("add");
+  await outline(dialog, [[18, 41], [22, 41], [22, 45], [18, 45]]);
+  await button(dialog, "Preview transparent cutout").click();
+  expect(await alpha()).toEqual([255, 255]);
+  await button(dialog, "Save cutout as a prop").click();
+  await expect(dialog.getByRole("status").filter({ hasText: "Saved Workshop puppet to the Art Library." })).toBeVisible();
   await button(dialog, "Keep this body part").click();
   await expect(button(dialog, "Remove Body")).toBeVisible();
   await dialog.getByRole("combobox", { name: "Outline operation" }).selectOption("add");
@@ -128,4 +134,30 @@ test("corrects transparent masks with a keyboard and hands the parts to the exis
   await expect(maker.getByRole("textbox", { name: "Character name", exact: true })).toHaveValue("Workshop puppet");
   await expect(maker.locator("[data-puppet-part=torso]").first()).toBeVisible();
   await expect(maker.locator("[data-puppet-part=head]").first()).toBeVisible();
+  await button(maker, "Next").click();
+  await button(maker, "Preview").click();
+  await button(maker, "Add to Cartoon").click();
+  await expect(maker).toBeHidden();
+  await saved(page);
+  const first = (await backup(page)).data;
+  const puppet = first.characters.find(character => character.name === "Workshop puppet")!;
+  expect(puppet.puppet?.parts.map(part => part.role)).toEqual(["torso", "head"]);
+  expect(first.scenes[0].elements.some(element => element.characterId === puppet.id)).toBe(true);
+
+  const panels = page.getByRole("navigation", { name: "Editor panels" });
+  if (await panels.isVisible()) await button(panels, "Scenes").click();
+  await button(page, "Add a scene").click();
+  await page.locator(".editor-toolbar").getByRole("button", { name: "Art library", exact: true }).click();
+  const card = page.locator(".library-card").filter({ has: page.getByRole("heading", { name: "Workshop puppet", exact: true }) });
+  await button(card, "Add to scene").click();
+  await button(page, "Back to my story").click();
+  await saved(page);
+  await button(page, "Save and return to my cartoons").click();
+  await page.reload();
+  await button(page, "Continue My Picture Cartoon").click();
+  await saved(page);
+  const reused = (await backup(page)).data;
+  const added = reused.scenes[1].elements.find(element => element.name === "Workshop puppet" && element.sourceLibraryId);
+  expect(added?.characterId).toBe(puppet.id);
+  expect(reused.assets).toEqual(first.assets);
 });

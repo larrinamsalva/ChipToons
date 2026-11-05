@@ -1,5 +1,6 @@
 import { decodeAsset, readAudio } from "./audio-files";
 import type { CameraShot } from "./camera-shots";
+import { newFocusGraphic } from "./focus-studio";
 import { imageLibraryItem, placeLibraryItem } from "./library";
 import { makeScene, uid, validateProject } from "./model";
 import type { Asset, Project, SceneElement } from "./model";
@@ -8,18 +9,31 @@ import type { Cutout, Mask } from "./picture-studio";
 import { neutralJoint } from "./puppet-model";
 import type { JointSnapshot } from "./puppet-model";
 import { newAudioClip } from "./production";
-import { blankLine, chooseScriptTake, scriptCaptions, setLineApproval, withScript } from "./script";
+import { blankLine, chooseScriptTake, setLineApproval, withScript } from "./script";
 import { builtInSound } from "./sounds";
 import { elementBase } from "./timeline";
 import { analyzeVoiceEnvelope, applyTalkingPreset, withVoiceTrack } from "./voice-mouth";
 import type { VoiceMouthTrack } from "./voice-mouth-model";
 
 export const FIXERS_DEMO_TITLE = "Little Fixers Club — The Wobbly Chair";
-const narration = [
-  "Welcome, Little Fixers. Can you see this chair wobble? Let us set it aside and ask a grown-up to check the loose joint.",
-  "Look right here, where the wooden pieces meet. We can watch the grown-up check the chair. We will wait until it is safe to use.",
-  "Before you toss something, ask if it can be repaired or reused safely. Good looking out, Little Fixers!",
-];
+// Phrase boundaries follow the pauses in the bundled recordings.
+const workshopCaptions = [
+  [
+    [1.9, "Welcome, Little Fixers."],
+    [3.68, "Can you see this chair wobble?"],
+    [5.94, "Let us set it aside and ask a grown-up"],
+    [8, "to check the loose joint."],
+  ],
+  [
+    [2.66, "Look right here, where the wooden pieces meet."],
+    [5.05, "We can watch the grown-up check the chair."],
+    [8, "We will wait until it is safe to use."],
+  ],
+  [
+    [4.65, "Before you toss something, ask if it can be repaired or reused safely."],
+    [8, "Good looking out, Little Fixers!"],
+  ],
+] as const;
 
 function trace(coordinates: [number, number][]): Mask {
   return { subtract: false, points: coordinates.map(([x, y]) => ({ x: x / 1100, y: y / 619 })) };
@@ -90,7 +104,12 @@ async function withWorkshopVoices(project: Project) {
         preset: "gentle", expression: "happy", replaceManual: false, corrections: [],
       } satisfies VoiceMouthTrack, "gentle");
       project = withVoiceTrack(project, voicedScene, host, clip.id, track);
-      project.captions = scriptCaptions(project, project.scenes[index]);
+      const phrases = workshopCaptions[index];
+      project.captions.push(...phrases.map(([until, text], phrase) => ({
+        id: uid(), sceneId: voicedScene.id, text,
+        start: clip.start + (phrases[phrase - 1]?.[0] ?? 0),
+        end: clip.start + Math.min(until, clip.duration),
+      })));
     }
   } finally { await context.close(); }
   return project;
@@ -133,7 +152,11 @@ export async function littleFixersDemo(source: Asset): Promise<Project> {
     ...original, title: FIXERS_DEMO_TITLE, setting: "Little Fixers workshop",
     scenes: titles.map((title, index) => ({
       ...makeScene([]), title, background: "classroom", duration: [12, 12, 10][index], transition: "cut",
-      action: ["The host points toward the chair.", "The chair wobbles in a close-up.", "The host reminds the team to ask an adult."][index],
+      action: [
+        "The host points out the wobble and tilts her head in reaction.",
+        "The host keeps the chair still and points out the loose joint in a close-up.",
+        "The chair is set aside while the host reminds the team to wait for an adult.",
+      ][index],
       narration: "", dialogue: "",
     })),
   };
@@ -143,21 +166,32 @@ export async function littleFixersDemo(source: Asset): Promise<Project> {
     project = placeLibraryItem(placeLibraryItem(project, i, puppet), i, prop);
     const scene = project.scenes[i];
     const [host, chairElement] = scene.elements;
-    Object.assign(host, { x: 290, y: 415, scale: 2 });
-    Object.assign(chairElement, { x: 525, y: 376 });
+    Object.assign(host, { x: 290, y: 421, scale: 1.78 });
+    Object.assign(chairElement, { x: i === 2 ? 675 : 525, y: 376 });
     host.animation = actorKeys(host, i === 0
-      ? [[0, 0, -9], [1.3, -7, -12], [2.9, 8, 21], [4.6, 2, 14], [7.1, -7, -9], [10.1, 2, -4]]
+      ? [[0, 0, -9], [1.3, -7, -12], [2.9, 8, 25], [3.55, -12, 13], [4.6, 2, 14], [7.1, -7, -9], [10.1, 2, -4]]
       : [[0, 0, 5], [2.8, -8, 15], [5.2, 8, 22], [8.8, -2, 0]]);
-    const wobble = i === 2 ? [[0, 0]] : [[0, 0], [3.1, 0], [3.4, -11], [3.72, 9], [4.04, -7], [4.4, 4], [4.85, 0]];
-    chairElement.animation = { idle: "none", blink: false, keyframes: wobble.map(([time, rotation]) => ({
-      ...elementBase(chairElement), id: uid(), time, rotation, easing: "linear",
-    })) };
-    if (i === 1) scene.cameraShots = [{
-      id: uid(), style: "detail", start: 2.4, end: 6.2, frame: { x: 520, y: 310, zoom: 2.2 },
-      move: 0, targets: [], follow: false, offset: { x: 0, y: 0 }, placement: "center",
-      note: "Look closely where the chair back meets the seat.",
-    } satisfies CameraShot];
-    const line = { ...blankLine("dialogue", narration[i]), speakerId: host.characterId };
+    if (i === 0) {
+      const wobble = [[0, 0], [3.1, 0], [3.4, -11], [3.72, 9], [4.04, -7], [4.4, 4], [4.85, 0]];
+      chairElement.animation = { idle: "none", blink: false, keyframes: wobble.map(([time, rotation]) => ({
+        ...elementBase(chairElement), id: uid(), time, rotation, easing: "linear",
+      })) };
+    }
+    if (i === 1) {
+      scene.cameraShots = [{
+        id: uid(), style: "detail", start: 2.4, end: 6.2, frame: { x: 520, y: 330, zoom: 2 },
+        move: 0, targets: [], follow: false, offset: { x: 0, y: 0 }, placement: "center",
+        note: "Look closely where the chair back meets the seat.",
+      } satisfies CameraShot];
+      const joint = newFocusGraphic(scene, 2.65, { objectId: chairElement.id });
+      scene.focusGraphics = [{ ...joint, kind: "circle", size: 58,
+        target: { kind: "object", id: chairElement.id, x: 525, y: 376, dx: 26, dy: -35 } }];
+    }
+    if (i === 2) scene.focusGraphics = [{
+      ...newFocusGraphic(scene, 1), kind: "label", text: "Wait for a grown-up",
+      target: { kind: "screen", x: 602, y: 120 }, length: 6,
+    }];
+    const line = { ...blankLine("dialogue", workshopCaptions[i].map(([, text]) => text).join(" ")), speakerId: host.characterId };
     project.scenes[i] = withScript(scene, { acting: "Friendly workshop host. Leave room to look at the chair.", emotion: "Curious and kind", lines: [line] });
   }
   const workshop = builtInSound("workshop"), creak = builtInSound("place");
