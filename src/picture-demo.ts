@@ -150,6 +150,10 @@ export async function littleFixersDemo(source: Asset): Promise<Project> {
   const titles = ["Welcome to the workshop", "Look at the loose joint", "Repair, reuse, and rebuild"];
   let project: Project = {
     ...original, title: FIXERS_DEMO_TITLE, setting: "Little Fixers workshop",
+    idea: "The Little Fixers host spots a wobbling chair, shows the loose joint and explains why it stays set aside until a grown-up checks it.",
+    lesson: "Notice a loose chair joint and ask a grown-up before a repair.",
+    scriptOptions: { pace: 120, pause: 1, seriesTitle: "Little Fixers Club" },
+    targetAge: "4–7",
     scenes: titles.map((title, index) => ({
       ...makeScene([]), title, background: "classroom", duration: [12, 12, 10][index], transition: "cut",
       action: [

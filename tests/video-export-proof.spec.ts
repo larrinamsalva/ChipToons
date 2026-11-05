@@ -16,6 +16,8 @@ import { sunnyCartoon } from "../src/puppet-project";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/assistant";
 import { starterProject } from "../src/demo-starter";
@@ -376,13 +378,20 @@ test("joins genuine silent 720p VP8 parts even when Chromium understates their d
   test.setTimeout(60_000);
   const parts = ["part-01-scenes-1-2", "part-02-scenes-3-4"].map(name =>
     fileURLToPath(new URL(`./fixtures/single-movie/${name}.webm`, import.meta.url)));
-  await restore(page, segmentedProject(movieProofArtwork));
+  const project = segmentedProject(movieProofArtwork);
+  project.captions = [{ id: uid(), sceneId: project.scenes[2].id, start: 0.3, end: 1.2, text: "The second part starts here." }];
+  await restore(page, project);
   await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
   const limit = page.getByRole("spinbutton", { name: "Maximum seconds per segment", exact: true });
   await limit.fill("4");
   await limit.press("Enter");
   await page.getByRole("checkbox", { name: "Include mixed audio", exact: true }).uncheck();
   await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const prep = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(prep.getByText(/2 of 2 numbered parts missing/)).toBeVisible();
+  await prep.getByLabel("Video title").fill("Two scenes, one movie");
+  await prep.getByRole("button", { name: "Review numbered movie parts" }).click();
   for (const [index, path] of parts.entries()) {
     const chooser = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
@@ -398,6 +407,25 @@ test("joins genuine silent 720p VP8 parts even when Chromium understates their d
   expect(movie.parts.every(part => part.frames > 32)).toBe(true);
   expect(movie.parts[1].sourceEnd - movie.parts[1].reportedDuration).toBeGreaterThan(0.25);
   expect(movie.parts[1].outputLength).toBeGreaterThan(movie.parts[1].sourceEnd + 0.02);
+
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(kit.getByText(/1280 × 720 · WebM/)).toBeVisible();
+  await expect(kit.getByLabel("Video title")).toHaveValue("Two scenes, one movie");
+  const subtitles = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube SRT", exact: true }).click();
+  const text = await readFile((await (await subtitles).path())!, "utf8");
+  const start = text.match(/00:00:(\d{2}),(\d{3}) -->/)!;
+  expect(Number(start[1]) + Number(start[2]) / 1000).toBeCloseTo(
+    movie.parts[1].start + EXPORT_RECORDING_LEAD_SECONDS + 0.3, 3,
+  );
+  expect(text).toContain("The second part starts here.");
+  const video = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube WebM", exact: true }).click();
+  const file = await video;
+  expect(file.suggestedFilename()).toMatch(/-youtube\.webm$/);
+  const sha = async (name: string) => createHash("sha256").update(await readFile(name)).digest("hex");
+  expect(await sha((await file.path())!)).toBe(await sha(info.outputPath("Kindness-in-two-little-parts-complete.webm")));
 });
 
 test("exports an editable playground location through the shared Stage", async ({ page }, info) => {
@@ -1277,7 +1305,7 @@ test("decodes the Kind Hearts opening, title, chapter, recap and readable credit
 });
 
 test("exports the voiced Little Fixers cutout puppet, chair and detail shot as genuine animation", async ({ page }, info) => {
-  test.setTimeout(110_000);
+  test.setTimeout(135_000);
   await page.goto("./");
   await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
@@ -1337,4 +1365,46 @@ test("exports the voiced Little Fixers cutout puppet, chair and detail shot as g
       "-i", path, "-frames:v", "1", "-threads", "1", frame]);
     await info.attach(name, { path: frame, contentType: "image/png" });
   }
+
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(kit.getByText(/800 × 450 · WebM/)).toBeVisible();
+  await expect(kit.getByText(/Opus audio track present/)).toBeVisible();
+  await expect(kit.getByLabel("Series name")).toHaveValue("Little Fixers Club");
+  await kit.getByRole("checkbox", { name: "Include chapters in the description" }).check();
+  await kit.getByLabel("Chapter at 00:12").fill("Inspect the loose joint");
+  const chapterDownload = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download chapter timestamps" }).click();
+  expect(await readFile((await (await chapterDownload).path())!, "utf8"))
+    .toBe("00:00 Welcome to the workshop\n00:12 Inspect the loose joint\n00:24 Repair, reuse, and rebuild\n");
+
+  const srtDownload = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube SRT" }).click();
+  const srtText = await readFile((await (await srtDownload).path())!, "utf8");
+  expect(srtText).toContain("1\n00:00:00,150 --> 00:00:02,050\nWelcome, Little Fixers.");
+  expect(srtText).toContain("Good looking out, Little Fixers!");
+  const movieDownload = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube WebM" }).click();
+  const exported = await movieDownload;
+  expect(exported.suggestedFilename()).toMatch(/-youtube\.webm$/);
+  const hash = async (file: string) => createHash("sha256").update(await readFile(file)).digest("hex");
+  expect(await hash((await exported.path())!)).toBe(await hash(path));
+
+  await kit.getByLabel("Frame time in seconds").fill("2.9");
+  await kit.getByLabel("Thumbnail title").fill("Fix it, don't toss it!");
+  await kit.getByLabel("Thumbnail colors").selectOption("green");
+  await kit.getByLabel("Reposition original artwork").selectOption({ label: "Workshop host" });
+  await kit.getByRole("slider", { name: "Horizontal offset" }).press("ArrowRight");
+  await kit.getByRole("button", { name: "Preview thumbnail at small size" }).click();
+  await expect(kit.getByAltText("Small preview of the chosen cartoon thumbnail")).toBeVisible();
+  const imageDownload = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download thumbnail PNG" }).click();
+  const thumbnail = await imageDownload;
+  expect(thumbnail.suggestedFilename()).toMatch(/-thumbnail\.png$/);
+  const imagePath = info.outputPath("little-fixers-youtube-thumbnail.png");
+  await thumbnail.saveAs(imagePath);
+  const imageProbe = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-show_entries",
+    "stream=codec_name,width,height", "-of", "json", imagePath], { encoding: "utf8" }));
+  expect(imageProbe.streams).toEqual([{ codec_name: "png", width: 1280, height: 720 }]);
+  await info.attach("Little Fixers YouTube thumbnail", { path: imagePath, contentType: "image/png" });
 });

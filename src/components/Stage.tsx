@@ -319,6 +319,7 @@ export const Stage = memo(function Stage({
   captionGuide = false,
   shotGuides,
   onFocusPosition,
+  artworkOffset,
 }: {
   project: Project;
   scene: Scene;
@@ -330,6 +331,7 @@ export const Stage = memo(function Stage({
   captionGuide?: boolean;
   shotGuides?: { ids: string[]; offset: Point };
   onFocusPosition?: (point: Point) => void;
+  artworkOffset?: { id: string; x: number; y: number };
   showCaption?: boolean;
   labelled?: boolean;
   selectedId?: string;
@@ -596,6 +598,7 @@ export const Stage = memo(function Stage({
               const appearance = art?.kind === "prop" ? art.appearance : element.propAppearance;
               const asset = project.assets.find(a => a.id === assetId);
               const frame = frames.get(element.id)!;
+              const offset = drag ?? artworkOffset;
               const depth = sceneryOffset(scene, element, camera, !!calmPreview);
               const width =
                 element.width ?? (character?.puppet ? 230 : asset ? (element.backdrop ? 800 : 190) : 120);
@@ -630,7 +633,7 @@ export const Stage = memo(function Stage({
               return (
                 <g
                   key={element.id}
-                  transform={`translate(${frame.x + depth.x + (drag?.id === element.id ? drag.x : 0)} ${frame.y + depth.y + (drag?.id === element.id ? drag.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
+                  transform={`translate(${frame.x + depth.x + (offset?.id === element.id ? offset.x : 0)} ${frame.y + depth.y + (offset?.id === element.id ? offset.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
                   opacity={frame.opacity}
                   data-element-id={element.id}
                   data-object-state={change?.state?.name}
