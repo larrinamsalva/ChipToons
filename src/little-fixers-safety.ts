@@ -119,14 +119,22 @@ export async function littleFixersSafetyPreview(source: Asset): Promise<Project>
       placement: "center", note: "Return to the host for the final safety choice." },
   ];
 
-  const workshop = builtInSound("workshop");
+  // The voiced opening already owns workshop, placement and success sources.
+  // Reuse those originals instead of making duplicates: projects are limited
+  // to 24 distinct audio assets, and the opening uses 21 already.
+  const existing = (name: string) => {
+    const asset = opening.audioAssets.find(source => source.name === name);
+    if (!asset) throw new Error(`Missing original Little Fixers sound: ${name}`);
+    return asset;
+  };
+  const workshop = existing("Subtle workshop activity");
   const sweep = builtInSound("sweep");
-  const placed = builtInSound("place");
-  const success = builtInSound("success");
+  const placed = existing("Wooden object set down");
+  const success = existing("Friendly success cue");
   const project: Project = {
     ...opening, title: SAFETY_PREVIEW_TITLE, plannedMinutes: 3,
     scenes: [...opening.scenes, scene1, scene2],
-    audioAssets: [...opening.audioAssets, workshop, sweep, placed, success],
+    audioAssets: [...opening.audioAssets, sweep],
     lesson: "Clear the walkway, keep tools for grown-ups, and stop and ask.",
     // These remaining scenes have unique motion and effects but no approved
     // dialogue takes or synced voice-to-mouth animation yet.
