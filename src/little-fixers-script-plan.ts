@@ -1,0 +1,59 @@
+import type { Asset, Project, SceneElement } from "./model";
+import { makeScene, uid, validateProject } from "./model";
+import { littleFixersOpening } from "./little-fixers-opening";
+import { LITTLE_FIXERS_REMAINDER } from "./little-fixers-remainder-script";
+import { applyPanel, fixersPanels } from "./picture-studio";
+import { blankLine, withScript } from "./script";
+
+/**
+ * Create a separate, editable 20-minute SCRIPT DRAFT.
+ *
+ * Preserve the independently animated and voiced 1:59 opening, then add
+ * creator-reviewable, UNVOICED and UNANIMATED scenes. Never represent the
+ * remaining minutes as finished animation or successful media export.
+ */
+export async function littleFixersEpisodeScriptPlan(source: Asset): Promise<Project> {
+  const opening = await littleFixersOpening(source);
+  const hostId = opening.characters[0]?.id;
+  const preparedHost = opening.scenes.flatMap(scene => scene.elements)
+    .find(element => element.characterId === hostId);
+  if (!hostId || !preparedHost) throw new Error("The Little Fixers workshop host was not prepared.");
+
+  const planned = LITTLE_FIXERS_REMAINDER.map((beat, index) => {
+    // Reuse the existing art, but deliberately omit a finished animation track.
+    const actor: SceneElement = {
+      ...preparedHost, id: uid(), x: 300, y: 417,
+      motion: "still", emotion: "calm", animation: undefined,
+    };
+    const draft = withScript({
+      ...makeScene([], opening.scenes.length + index),
+      title: "Script draft · " + beat.title,
+      duration: beat.seconds,
+      background: "classroom",
+      transition: "cut",
+      action: "SCRIPT ONLY — needs original character motion, recorded dialogue and sound. " + beat.direction,
+      elements: [actor],
+    }, {
+      acting: beat.direction + " " + beat.participation,
+      emotion: "Friendly, curious and reassuring",
+      lines: [{
+        ...blankLine("dialogue", beat.dialogue),
+        speakerId: hostId,
+      }],
+    });
+    return applyPanel(draft, source, { ...fixersPanels[beat.panelIndex], visible: false });
+  });
+
+  return validateProject({
+    ...opening,
+    title: "Little Fixers Club — Episode 1 (complete script, unfinished animation)",
+    plannedMinutes: 20,
+    scenes: [...opening.scenes, ...planned],
+    outline: {
+      beginning: "The host spots a wobbling chair and introduces look, stop and ask.",
+      conflict: "A safe repair requires planning and adult inspection; a fan may need expert help.",
+      response: "The team supervises a safe chair demonstration and reuses prepared wood for a birdhouse.",
+      ending: "Celebrate thoughtful choices, kindness, teamwork, and knowing when to stop.",
+    },
+  });
+}
