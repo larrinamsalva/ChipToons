@@ -61,7 +61,7 @@ export async function littleFixersCluesPreview(source: Asset): Promise<Project> 
   ]);
   const scene1 = withScript({
     ...makeScene([], 12), title: "Look for Clues · 1 — Observe the Chair (motion; voice pending)",
-    duration: 30, background: "classroom", chapter: "middle", transition: "cut",
+    duration: 30, background: "classroom", chapter: "exploration", transition: "cut",
     action: "From a safe distance the host notices a small chair wobble and gestures toward its legs. The chair remains out of use for adult inspection. No child handles it.",
     elements: [...firstProps, host1],
   }, { acting: "Curious and careful; model observing before touching.",
@@ -90,7 +90,7 @@ export async function littleFixersCluesPreview(source: Asset): Promise<Project> 
   ]);
   const scene2 = withScript({
     ...makeScene([], 13), title: "Look for Clues · 2 — Find the Gap (motion; voice pending)",
-    duration: 30, background: "classroom", chapter: "middle", transition: "cut",
+    duration: 30, background: "classroom", chapter: "exploration", transition: "cut",
     action: "The camera closes in on the joint behind the seat, and a circle shows a possible gap. The host asks the audience what they notice, then points to the safe grown-up inspection choice.",
     elements: [...secondProps, host2],
   }, { acting: "Speak slowly for the close-up and allow a thinking pause.",
