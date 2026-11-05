@@ -1,6 +1,6 @@
 import type { Asset, Project, SceneElement } from "./model";
 import { makeScene, uid, validateProject } from "./model";
-import { littleFixersSafetyPreview } from "./little-fixers-safety";
+import { littleFixersToolsPreview } from "./little-fixers-tools";
 import { LITTLE_FIXERS_REMAINDER } from "./little-fixers-remainder-script";
 import { applyPanel, fixersPanels } from "./picture-studio";
 import { blankLine, withScript } from "./script";
@@ -9,18 +9,18 @@ import { blankLine, withScript } from "./script";
  * Create a separate, editable 20-minute SCRIPT DRAFT.
  *
  * Preserve the independently animated and voiced 1:59 opening, then the
- * moving Safety First section with deliberately unrecorded dialogue.
- * Only the remaining 17 scenes are SCRIPT DRAFTS: do not represent them
+ * moving Safety First and Meet the Tools sections with unrecorded dialogue.
+ * Only the remaining 16 scenes are SCRIPT DRAFTS: do not represent them
  * as finished animation or verified media.
  */
 export async function littleFixersEpisodeScriptPlan(source: Asset): Promise<Project> {
-  const opening = await littleFixersSafetyPreview(source);
+  const opening = await littleFixersToolsPreview(source);
   const hostId = opening.characters[0]?.id;
   const preparedHost = opening.scenes.flatMap(scene => scene.elements)
     .find(element => element.characterId === hostId);
   if (!hostId || !preparedHost) throw new Error("The Little Fixers workshop host was not prepared.");
 
-  const planned = LITTLE_FIXERS_REMAINDER.slice(1).map((beat, index) => {
+  const planned = LITTLE_FIXERS_REMAINDER.slice(2).map((beat, index) => {
     // Reuse the existing art, but deliberately omit a finished animation track.
     const actor: SceneElement = {
       ...preparedHost, id: uid(), x: 300, y: 417,
@@ -51,7 +51,7 @@ export async function littleFixersEpisodeScriptPlan(source: Asset): Promise<Proj
 
   return validateProject({
     ...opening,
-    title: "Little Fixers Club — Episode 1 (20-minute script; motion through Safety First, new voice pending)",
+    title: "Little Fixers Club — Episode 1 (20-minute script; motion through Meet the Tools, new voice pending)",
     plannedMinutes: 20,
     scenes: [...opening.scenes, ...planned],
     outline: {
