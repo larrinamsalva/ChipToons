@@ -1526,3 +1526,31 @@ test("decodes real animated Meet the Tools video with checklist movement and aud
     contentType: "application/json",
   });
 });
+
+
+test("exports an original full-body vector cartoon walking in a layered workshop", async ({ page }, info) => {
+  test.setTimeout(140_000);
+  await page.goto("./");
+  await page.getByRole("button", {
+    name: "Try the full-body cartoon workshop", exact: true,
+  }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  expect(data.pictureSourceId).toBeUndefined();
+  expect(data.assets).toHaveLength(0);
+  expect(data.characters[0].puppet?.costume).toBe("workshop");
+  // Actual browser-recorded WebM with an Opus sound track: not a storyboard
+  // slideshow, static sketch, screenshot, or unverified export button.
+  const { path } = await render(page, info, "little-fixers-full-body-cartoon", 34);
+  const first = rawFrame(path, 1.5);
+  const walking = rawFrame(path, 7.4);
+  const noticing = rawFrame(path, 20.8);
+  const walkMotion = changedPixels(first, walking, 115, 75, 570, 365);
+  const performance = changedPixels(walking, noticing, 115, 75, 570, 365);
+  expect(walkMotion).toBeGreaterThan(1000);
+  expect(performance).toBeGreaterThan(1000);
+  await info.attach("Independent full-body walk and camera motion measurements", {
+    body: JSON.stringify({ walkMotion, performance }, null, 2),
+    contentType: "application/json",
+  });
+});
