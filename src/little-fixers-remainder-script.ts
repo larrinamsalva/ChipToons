@@ -1,4 +1,8 @@
-/** Original, creator-reviewable script for the remaining Episode 1 story.\n * DRAFT ONLY: a timed script is not verified audio or completed animation.\n * Source/editing guide: docs/LITTLE_FIXERS_EPISODE_1_FULL_SCRIPT.md\n */\nexport const LITTLE_FIXERS_REMAINDER = [
+/** Original, creator-reviewable script for the remaining Episode 1 story.
+ * DRAFT ONLY: a timed script is not verified audio or completed animation.
+ * Source/editing guide: docs/LITTLE_FIXERS_EPISODE_1_FULL_SCRIPT.md
+ */
+export const LITTLE_FIXERS_REMAINDER = [
   {
     "time": "01:59–03:00",
     "title": "Safety first: our work zone",
@@ -161,4 +165,4 @@
     "direction": "Warm closing wave, room for a credits card after main episode only if runtime adjusted. No false CTA encouraging children to share personal data.",
     "participation": "Audience: What would you like to learn next time?"
   }
-] as const;\n
+] as const;
