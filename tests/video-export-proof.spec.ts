@@ -1497,3 +1497,32 @@ test("exports genuine Safety First motion and non-silent sound without claiming 
   await info.attach("Safety First blocked walkway", { path: begin, contentType: "image/png" });
   await info.attach("Safety First clear walkway", { path: end, contentType: "image/png" });
 });
+
+
+test("decodes real animated Meet the Tools video with checklist movement and audible effects", async ({ page }, info) => {
+  test.setTimeout(150_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await dialog.getByRole("button", { name: "Use the Little Fixers Club poster", exact: true }).click();
+  await dialog.getByRole("button", {
+    name: "Open animated Meet the Tools (4:00; new voices to record)", exact: true,
+  }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  expect(data.scenes.map(s => s.duration).slice(-2)).toEqual([30, 30]);
+  expect(data.scenes.slice(-2).flatMap(s => s.script?.lines ?? [])
+    .every(line => line.takes.length === 0)).toBe(true);
+  // Desktop segments are 119 seconds of the original opening, 91 seconds of
+  // Safety First + Tools part one, and 30 seconds of Tools part two.
+  const { path } = await render(page, info, "little-fixers-tools-counting", 30,
+    { segment: 3, limit: 120 });
+  const early = rawFrame(path, 4.0);
+  const later = rawFrame(path, 15.5);
+  const changed = changedPixels(early, later, 210, 65, 545, 340);
+  expect(changed).toBeGreaterThan(700);
+  await info.attach("Independent Tools animated frame difference", {
+    body: JSON.stringify({ changedPixels: changed, frameTimes: [4.0, 15.5] }, null, 2),
+    contentType: "application/json",
+  });
+});
