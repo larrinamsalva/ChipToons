@@ -1,5 +1,4 @@
 import { newFocusGraphic } from "./focus-studio";
-import { LITTLE_FIXERS_REMAINDER } from "./little-fixers-remainder-script";
 import { littleFixersOpening } from "./little-fixers-opening";
 import { makeScene, uid, validateProject } from "./model";
 import type { Asset, Project, Scene, SceneElement } from "./model";
