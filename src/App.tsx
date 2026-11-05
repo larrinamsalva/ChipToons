@@ -821,6 +821,10 @@ export default function App() {
               const { littleFixersOpening } = await import("./little-fixers-opening");
               await open(await littleFixersOpening(asset));
             }}
+            onFullScript={async asset => {
+              const { littleFixersEpisodeScriptPlan } = await import("./little-fixers-script-plan");
+              await open(await littleFixersEpisodeScriptPlan(asset));
+            }}
             onPanel={(index, source, panel) => {
               if (!current || currentRef.current !== current || editMode !== "edit" || session.current?.blocked)
                 throw new Error("The cartoon changed. Reopen the picture tools to continue.");
