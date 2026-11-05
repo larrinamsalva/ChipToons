@@ -25,6 +25,9 @@ test("Tools lesson carries original voiced opening, safety animation and real ne
   await expect(page.getByRole("heading", { name: TITLE, exact: true })).toBeVisible({ timeout: 50_000 });
   await saved(page);
   const { data } = await backup(page);
+  // Add only the paper cue after Safety First; keep the media graph valid.
+  expect(data.audioAssets).toHaveLength(23);
+  expect(new Set(data.audioAssets.map(asset => asset.name)).size).toBe(data.audioAssets.length);
   expect(data.scenes.map(scene => scene.duration)).toEqual([15, 15, 15, 15, 8, 17, 18, 16, 31, 30, 30, 30]);
   expect(data.scenes.reduce((sum, scene) => sum + scene.duration, 0)).toBe(240);
   expect(planSegments(data, 60).oversized).toEqual([]);
