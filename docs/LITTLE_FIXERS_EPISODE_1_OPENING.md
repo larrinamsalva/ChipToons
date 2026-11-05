@@ -26,3 +26,10 @@ To reproduce a sample recording, put one line from the [opening script](../src/l
 ffmpeg -f lavfi -i flite=textfile=line.txt:voice=slt \
   -af atempo=0.91,volume=1.12 -ar 24000 -ac 1 -c:a libmp3lame -b:a 40k line.mp3
 ```
+
+
+## Continue from the opening: full Episode 1 script draft
+
+Choose **Turn My Picture Into a Cartoon → Use the Little Fixers Club poster → Open full 20-minute script draft (unfinished animation)**. This creates a **separate project**, preserving the already-voiced and independently animated first 1:59. It adds 18 additional, original, time-planned script scenes with editable words, poster references and production direction. The target running time adds up to 20:00, but that is **not verified finished footage**.
+
+The new scenes are deliberately named **Script draft**. They have **no approved voice recordings, no completed character performances or rendered movie proof** yet. Use [the full script and shot plan](LITTLE_FIXERS_EPISODE_1_FULL_SCRIPT.md) to direct the remaining work. Record or upload dialogue, build missing character art, animate each scene, approve caption timing, export actual video, and independently verify the joined result before YouTube publishing. The original 34-second demo, the 1:59 opening, and the old 20-minute outline remain separate and unchanged.

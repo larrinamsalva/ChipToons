@@ -25,7 +25,7 @@ const percent = (value: number) => Math.round(value * 1000) / 10;
 type Selection = { panel: Panel; masks: Mask[]; points: Point[] };
 interface History { past: Selection[]; present: Selection; future: Selection[] }
 
-export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel, onPuppet, onProp, onDemo, onOpening }: {
+export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel, onPuppet, onProp, onDemo, onOpening, onFullScript }: {
   project?: Project;
   sceneIndex?: number;
   onClose: () => void;
@@ -35,6 +35,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   onProp: (index: number, item: LibraryItem) => void;
   onDemo: (asset: Asset) => Promise<void>;
   onOpening: (asset: Asset) => Promise<void>;
+  onFullScript: (asset: Asset) => Promise<void>;
 }) {
   const [index, setIndex] = useState(sceneIndex ?? 0);
   const [source, setSource] = useState(() => project?.assets.find(asset => asset.id === project.pictureSourceId));
@@ -238,6 +239,9 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
                 <button className="button secondary" onClick={() => void run(() => onDemo(source))}>Open the animated workshop demo</button>
                 <button className="button secondary" onClick={() => void run(() => onOpening(source))}>
                   {LITTLE_FIXERS_OPENING_ACTION}
+                </button>
+                <button className="button secondary" onClick={() => void run(() => onFullScript(source))}>
+                  Open full 20-minute script draft (unfinished animation)
                 </button>
               </>}
             </>}

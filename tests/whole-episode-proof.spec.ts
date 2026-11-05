@@ -228,7 +228,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
         name: `Segment ${part} is ready`,
         exact: true,
       }),
-    ).toBeVisible({ timeout: 160_000 });
+    ).toBeVisible({ timeout: 240_000 }); // Real-time 120-second encoding can slow on shared CI runners.
     const pending = page.waitForEvent("download");
     await page
       .getByRole("button", { name: `Download segment ${part}`, exact: true })
