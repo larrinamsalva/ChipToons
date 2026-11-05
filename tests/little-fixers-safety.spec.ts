@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { SAFETY_PREVIEW_TITLE } from "../src/little-fixers-safety";
+const SAFETY_PREVIEW_TITLE = "Little Fixers Club — Episode 1: Safety First (3-minute motion preview; voice to record)";
 import { lineStatus } from "../src/script";
 import { planSegments } from "../src/segments";
 import { sceneFramesAt } from "../src/timeline";
