@@ -27,7 +27,7 @@ Two new scenes (31 and 30 seconds) make the continuation compatible with 60-seco
 
 The four new dialogue lines are intentionally marked as **Not recorded**. They have **no approved takes, no lip synchronization and no timed speech captions**. Record or upload takes in **Script & Voice Director**, review/approve them and verify new voice-to-mouth animation before describing this as a fully voiced three-minute episode.
 
-The separate 20:00 full-script option now keeps the original 1:59 animated opening **and** these two new Safety First motion scenes, with the other 17 scripted scenes still unanimated. Safety First's four new lines still need approved recordings and captions; all remaining scenes need unique animation, voice, captions and independently decoded WebM proof before release.
+The separate 20:00 full-script option now keeps the original 1:59 animated opening **and** these two new Safety First motion scenes, followed by the animated Meet the Tools minute and **16 still-unanimated script beats**. Safety First and Meet the Tools have eight unrecorded lines. All remaining beats still need distinctive animation, approved recordings, captions and independently decoded WebM proof before release.
 
 ## Tests and review
 

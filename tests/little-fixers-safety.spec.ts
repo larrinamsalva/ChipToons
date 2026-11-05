@@ -19,6 +19,9 @@ test("Little Fixers Safety First adds real, editable and phone-exportable motion
     .toBeVisible({ timeout: 40_000 });
   await saved(page);
   const { data } = await backup(page);
+  // 21 opening assets + 1 new sweeping sound; never duplicate originals.
+  expect(data.audioAssets).toHaveLength(22);
+  expect(new Set(data.audioAssets.map(asset => asset.name)).size).toBe(data.audioAssets.length);
 
   expect(data.scenes.map(scene => scene.duration))
     .toEqual([15, 15, 15, 15, 8, 17, 18, 16, 31, 30]);
