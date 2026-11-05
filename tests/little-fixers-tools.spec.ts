@@ -66,10 +66,18 @@ test("20-minute draft advances its animated portion through Meet the Tools witho
   await saved(page);
   const { data } = await backup(page);
   expect(data.scenes.reduce((sum, scene) => sum + scene.duration, 0)).toBe(1200);
-  expect(data.scenes).toHaveLength(28);
+  // Each animated minute is now two distinct 30-second scenes. The Clues
+  // continuation replaces one 60-second script placeholder with two scenes.
+  // This increases the scene count without changing the 20:00 runtime.
+  expect(data.scenes).toHaveLength(29);
   expect(data.scenes[10].title).toContain("Meet the Tools");
   expect(data.scenes[11].title).toContain("Meet the Tools");
   expect(data.scenes[10].elements.some(element => !!element.animation?.keyframes.length)).toBe(true);
-  expect(data.scenes[12].title).toMatch(/^Script draft/);
-  expect(data.scenes[12].script?.lines[0].takes).toHaveLength(0);
+  expect(data.scenes[12].title).toContain("Look for Clues");
+  expect(data.scenes[13].title).toContain("Look for Clues");
+  expect(data.scenes[12].elements.some(element => !!element.animation?.keyframes.length)).toBe(true);
+  expect(data.scenes[14].title).toMatch(/^Script draft/);
+  expect(data.scenes[14].script?.lines[0].takes).toHaveLength(0);
+  expect(data.scenes.slice(14)).toHaveLength(15);
+  expect(data.scenes.slice(14).every(scene => scene.title.startsWith("Script draft"))).toBe(true);
 });
