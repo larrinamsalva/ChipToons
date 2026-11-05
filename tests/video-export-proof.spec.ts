@@ -1600,3 +1600,45 @@ test("exports real talking Scout with approved voice, expressive mouth movement 
   expect(srt).toContain("Welcome to the Little Fixers Club!");
   expect(srt).toContain("Fixing starts with a plan");
 });
+
+
+test("exports real one-minute Scout cartoon with spoken opening and hand-carried checklist", async ({ page }, info) => {
+  test.setTimeout(170_000);
+  await page.goto("./");
+  await page.getByRole("button", {
+    name: "Watch Scout pick up a checklist (1:00)", exact: true,
+  }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  expect(data.scenes.map(scene => scene.duration)).toEqual([34, 26]);
+  expect(data.pictureSourceId).toBeUndefined();
+  const scene = data.scenes[1];
+  const carried = sceneFramesAt(data, scene, 9);
+  const book = scene.elements.find(element => element.prop === "book")!;
+  expect(carried.get(book.id)?.heldBy).toBe(scene.elements.find(element => element.characterId)?.id);
+  expect(scene.script?.lines.every(line => line.takes.length === 0)).toBe(true);
+
+  // Independent decoded VP8 frames and real Opus audio, not a slide show.
+  // At 60 seconds this remains a single phone-safe movie.
+  const { path, pcm } = await render(page, info, "scout-lifts-checklist", 60, { limit: 60 });
+  const approach = rawFrame(path, 37.5);
+  const pickup = rawFrame(path, 44.2);
+  const placed = rawFrame(path, 51.2);
+  const liftedPixels = changedPixels(approach, pickup, 185, 80, 555, 370);
+  const placedPixels = changedPixels(pickup, placed, 185, 80, 555, 370);
+  expect(liftedPixels).toBeGreaterThan(650);
+  expect(placedPixels).toBeGreaterThan(650);
+  function rms(a: number, b: number) {
+    const begin = Math.floor((a + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+    const end = Math.floor((b + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+    let power = 0;
+    for (let i = begin; i < end; i++) power += pcm.readFloatLE(i * 4) ** 2;
+    return Math.sqrt(power / (end - begin));
+  }
+  const greetingSpeech = rms(1.3, 2.4);
+  expect(greetingSpeech).toBeGreaterThan(0.012);
+  await info.attach("Scout real-video performance and checklist action", {
+    body: JSON.stringify({ liftedPixels, placedPixels, greetingSpeech }, null, 2),
+    contentType: "application/json",
+  });
+});
