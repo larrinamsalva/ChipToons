@@ -1554,3 +1554,49 @@ test("exports an original full-body vector cartoon walking in a layered workshop
     contentType: "application/json",
   });
 });
+
+
+test("exports real talking Scout with approved voice, expressive mouth movement and timed captions", async ({ page }, info) => {
+  test.setTimeout(160_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout walk and talk", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  expect(data.pictureSourceId).toBeUndefined();
+  expect(data.assets).toHaveLength(0);
+  expect(data.scenes[0].duration).toBe(34);
+  const actor = data.scenes[0].elements.find(item => item.characterId);
+  expect(actor?.voiceMouth).toHaveLength(3);
+  expect(data.scenes[0].script?.lines).toHaveLength(3);
+  expect(data.captions.length).toBeGreaterThanOrEqual(3);
+
+  // Browser produces independently decodable VP8 video + Opus audio,
+  // with no poster and a full-body walk cycle, not still screenshots.
+  const { path, pcm } = await render(page, info, "scout-walks-and-talks", 34);
+  const arrival = rawFrame(path, 2.3);
+  const walking = rawFrame(path, 9.1);
+  const speaking = rawFrame(path, 21.6);
+  expect(changedPixels(arrival, walking, 100, 72, 570, 380)).toBeGreaterThan(900);
+  expect(changedPixels(walking, speaking, 100, 72, 570, 380)).toBeGreaterThan(900);
+  function rms(start: number, end: number) {
+    const first = Math.floor((start + EXPORT_RECORDING_LEAD_SECONDS) * 8000),
+      last = Math.floor((end + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+    let energy = 0;
+    for (let i = first; i < last; i++) energy += pcm.readFloatLE(i * 4) ** 2;
+    return Math.sqrt(energy / (last - first));
+  }
+  const voiced = { greeting: rms(1.3, 2.4), secondLesson: rms(21.4, 22.5) };
+  expect(voiced.greeting).toBeGreaterThan(0.012);
+  expect(voiced.secondLesson).toBeGreaterThan(0.012);
+  await info.attach("Scout original voiced performance measurements", {
+    body: JSON.stringify(voiced, null, 2), contentType: "application/json",
+  });
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(kit.getByText(/Opus audio track present/)).toBeVisible();
+  const download = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube SRT", exact: true }).click();
+  const srt = await readFile((await (await download).path())!, "utf8");
+  expect(srt).toContain("Welcome to the Little Fixers Club!");
+  expect(srt).toContain("Fixing starts with a plan");
+});
