@@ -24,6 +24,7 @@ export function Dashboard({
   onCameraDemo,
   onStoryCardDemo,
   onFullBodyDemo,
+  onScoutVoicedDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -50,6 +51,7 @@ export function Dashboard({
   onCameraDemo: () => void;
   onStoryCardDemo: () => void;
   onFullBodyDemo: () => void;
+  onScoutVoicedDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
@@ -118,6 +120,7 @@ export function Dashboard({
           <button className="button secondary small" onClick={onPicture}>Turn My Picture Into a Cartoon</button>
           <button className="button secondary small" onClick={onPuppet}>Create a Puppet Character</button>
           <button className="button secondary small" onClick={onFullBodyDemo}>Try the full-body cartoon workshop</button>
+          <button className="button secondary small" onClick={onScoutVoicedDemo}>Watch Scout walk and talk</button>
           <button className="button secondary small" onClick={onTalkingDemo}>Try Shine Says Hello</button>
           <button className="button secondary small" onClick={onGardenDemo}>Try Helping Hands Waters a Little Garden</button>
           <span className="hero-note">
