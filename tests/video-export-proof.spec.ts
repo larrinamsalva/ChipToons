@@ -1464,3 +1464,36 @@ test("decodes the complete Little Fixers episode opening with speaking, wobble, 
   expect(srt).toContain("00:01:35,450 -->");
   expect(srt).toContain("Ask a grown-up. Leave the chair alone until it's checked.");
 });
+
+
+test("exports genuine Safety First motion and non-silent sound without claiming voice takes", async ({ page }, info) => {
+  test.setTimeout(210_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const picture = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await picture.getByRole("button", { name: "Use the Little Fixers Club poster", exact: true }).click();
+  await picture.getByRole("button", {
+    name: "Open animated Safety First (3:00; new voice to record)", exact: true,
+  }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  const cuts = data.scenes.slice(8);
+  expect(cuts.map(scene => scene.duration)).toEqual([31, 30]);
+  expect(cuts.flatMap(scene => scene.script?.lines ?? []).every(line => line.takes.length === 0)).toBe(true);
+
+  // Desktop exports the independently authored 61s animation as one real segment.
+  // Keep the approved 119s opening unmodified and verify actual encoded output.
+  const { path } = await render(page, info, "little-fixers-safety-first", 61, { limit: 120, segment: 2 });
+  const blocked = rawFrame(path, 16);
+  const cleared = rawFrame(path, 27);
+  const activity = changedPixels(blocked, cleared, 245, 150, 500, 275);
+  expect(activity).toBeGreaterThan(800);
+  const begin = info.outputPath("safety-before.png");
+  const end = info.outputPath("safety-after.png");
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(16 + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", "-threads", "1", begin]);
+  execFileSync("ffmpeg", ["-v", "error", "-y", "-ss", String(27 + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", "-threads", "1", end]);
+  await info.attach("Safety First blocked walkway", { path: begin, contentType: "image/png" });
+  await info.attach("Safety First clear walkway", { path: end, contentType: "image/png" });
+});

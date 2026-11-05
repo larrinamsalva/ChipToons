@@ -821,6 +821,10 @@ export default function App() {
               const { littleFixersOpening } = await import("./little-fixers-opening");
               await open(await littleFixersOpening(asset));
             }}
+            onSafetyPreview={async asset => {
+              const { littleFixersSafetyPreview } = await import("./little-fixers-safety");
+              await open(await littleFixersSafetyPreview(asset));
+            }}
             onFullScript={async asset => {
               const { littleFixersEpisodeScriptPlan } = await import("./little-fixers-script-plan");
               await open(await littleFixersEpisodeScriptPlan(asset));
