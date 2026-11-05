@@ -15,6 +15,8 @@
 
 The separate **Open the editable 20-minute plan** option creates a storyboard with suggested panels and lesson beats. It is a starting plan for a longer episode.
 
+**Open Episode 1 animated opening** creates a separate 1:59 cartoon from the same poster, with a cold open, welcome, and safe-choice activity. [Episode 1 guide](LITTLE_FIXERS_EPISODE_1_OPENING.md)
+
 ## Artwork limits
 
 Trace the visible parts and supply missing pieces manually. Artwork behind other objects, alternate views, and moving facial parts need separate drawings or uploads. Text and characters printed in a scene background stay still. The poster is preserved once per project, while transparent cutouts and character parts are separate, editable artwork.

@@ -32,7 +32,7 @@ import { newAudioClip } from "../src/production";
 import { imageLibraryItem, placeLibraryItem } from "../src/library";
 import { starterLocations } from "../src/world-starters";
 import { makeScene, uid } from "../src/model";
-import { demo, restore } from "./production-helpers";
+import { demo, openLittleFixersOpening, restore } from "./production-helpers";
 
 async function render(
   page: Page,
@@ -901,6 +901,19 @@ function pixels(raw: Buffer, x: number, y: number, width: number, height: number
   return total;
 }
 
+function changedPixels(before: Buffer, after: Buffer, x: number, y: number, width: number, height: number) {
+  let changed = 0;
+  for (let row = y; row < y + height; row++) {
+    for (let col = x; col < x + width; col++) {
+      const i = (row * 800 + col) * 3;
+      const difference = Math.abs(before[i] - after[i]) + Math.abs(before[i + 1] - after[i + 1]) +
+        Math.abs(before[i + 2] - after[i + 2]);
+      if (difference > 75) changed++;
+    }
+  }
+  return changed;
+}
+
 test("decodes visual teaching graphics following the held wagon with clear spoken captions and verifies the joined lesson", async ({ page }, info) => {
   test.setTimeout(140_000);
   const expected = visualTeachingExample(transformExample("wagon"), "wagon");
@@ -1328,18 +1341,6 @@ test("exports the voiced Little Fixers cutout puppet, chair and detail shot as g
   const pointing = rawFrame(path, 2.9);
   const beforeWobble = rawFrame(path, 3.03);
   const wobbling = rawFrame(path, 3.42);
-  function changedPixels(before: Buffer, after: Buffer, x: number, y: number, width: number, height: number) {
-    let changed = 0;
-    for (let row = y; row < y + height; row++) {
-      for (let col = x; col < x + width; col++) {
-        const i = (row * 800 + col) * 3;
-        const difference = Math.abs(before[i] - after[i]) + Math.abs(before[i + 1] - after[i + 1]) +
-          Math.abs(before[i + 2] - after[i + 2]);
-        if (difference > 75) changed++;
-      }
-    }
-    return changed;
-  }
   const measurements = {
     head: changedPixels(resting, pointing, 203, 44, 120, 86),
     arm: changedPixels(resting, pointing, 318, 88, 84, 117),
@@ -1407,4 +1408,59 @@ test("exports the voiced Little Fixers cutout puppet, chair and detail shot as g
     "stream=codec_name,width,height", "-of", "json", imagePath], { encoding: "utf8" }));
   expect(imageProbe.streams).toEqual([{ codec_name: "png", width: 1280, height: 720 }]);
   await info.attach("Little Fixers YouTube thumbnail", { path: imagePath, contentType: "image/png" });
+});
+
+test("decodes the complete Little Fixers episode opening with speaking, wobble, and a thinking pause", async ({ page }, info) => {
+  test.setTimeout(205_000);
+  await openLittleFixersOpening(page);
+  const { path, pcm } = await render(page, info, "little-fixers-episode-1-opening", 119);
+  const rest = rawFrame(path, 0.45), gesture = rawFrame(path, 2.22);
+  const still = rawFrame(path, 2.98), wobble = rawFrame(path, 3.43);
+  const wide = rawFrame(path, 31.5), detail = rawFrame(path, 36.05);
+  const chairColor = (r: number, g: number, b: number) => r >= 144 && r - g >= 38 && g - b >= 20;
+  const motion = {
+    head: changedPixels(rest, gesture, 185, 38, 130, 103),
+    arm: changedPixels(rest, gesture, 304, 91, 95, 118),
+    backdrop: changedPixels(rest, gesture, 703, 49, 75, 100),
+    chair: changedPixels(still, wobble, 473, 214, 126, 128),
+    wideJoint: pixels(wide, 295, 110, 213, 168, chairColor),
+    closeJoint: pixels(detail, 295, 110, 213, 168, chairColor),
+  };
+  expect(motion.head).toBeGreaterThan(350);
+  expect(motion.arm).toBeGreaterThan(350);
+  expect(motion.backdrop).toBeLessThan(45);
+  expect(motion.chair).toBeGreaterThan(350);
+  expect(motion.closeJoint - motion.wideJoint).toBeGreaterThan(1800);
+  function rms(start: number, end: number) {
+    const first = Math.round((start + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+    const last = Math.round((end + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+    let energy = 0;
+    for (let sample = first; sample < last; sample++) energy += pcm.readFloatLE(sample * 4) ** 2;
+    return Math.sqrt(energy / (last - first));
+  }
+  const audio = { question: rms(86, 88), thinking: rms(91.1, 94.6), answer: rms(95.65, 98) };
+  expect(audio.question).toBeGreaterThan(0.015);
+  expect(audio.answer).toBeGreaterThan(0.015);
+  expect(audio.thinking).toBeLessThan(0.005);
+  await info.attach("decoded opening measurements", {
+    body: JSON.stringify({ motion, audio }, null, 2), contentType: "application/json",
+  });
+  for (const [name, at] of [["wobble", 3.43], ["joint-detail", 36.05], ["episode-title", 64],
+    ["thinking-pause", 92], ["safe-answer", 97], ["workbench", 113]] as const) {
+    const frame = info.outputPath(`${name}.png`);
+    execFileSync("ffmpeg", ["-v", "error", "-ss", String(at + EXPORT_RECORDING_LEAD_SECONDS), "-i", path,
+      "-frames:v", "1", "-threads", "1", frame]);
+    await info.attach(name, { path: frame, contentType: "image/png" });
+  }
+
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(kit.getByText(/Opus audio track present/)).toBeVisible();
+  await expect(kit.getByRole("button", { name: "Download YouTube WebM", exact: true })).toBeEnabled();
+  const srtDownload = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube SRT", exact: true }).click();
+  const srt = await readFile((await (await srtDownload).path())!, "utf8");
+  expect(srt).toContain("00:00:00,750 -->");
+  expect(srt).toContain("00:01:35,450 -->");
+  expect(srt).toContain("Ask a grown-up. Leave the chair alone until it's checked.");
 });
