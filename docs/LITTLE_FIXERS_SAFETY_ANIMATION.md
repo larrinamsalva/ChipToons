@@ -27,7 +27,7 @@ Two new scenes (31 and 30 seconds) make the continuation compatible with 60-seco
 
 The four new dialogue lines are intentionally marked as **Not recorded**. They have **no approved takes, no lip synchronization and no timed speech captions**. Record or upload takes in **Script & Voice Director**, review/approve them and verify new voice-to-mouth animation before describing this as a fully voiced three-minute episode.
 
-The separate 20:00 full-script draft (PR #26) is still a production plan after its preserved opening. The remaining scenes after Safety First need unique animation, approved recordings, correctly timed captions and independent WebM proof before release.
+The separate 20:00 full-script option now keeps the original 1:59 animated opening **and** these two new Safety First motion scenes, with the other 17 scripted scenes still unanimated. Safety First's four new lines still need approved recordings and captions; all remaining scenes need unique animation, voice, captions and independently decoded WebM proof before release.
 
 ## Tests and review
 
