@@ -29,6 +29,7 @@ export function Dashboard({
   onScoutWobblyChairDemo,
   onScoutHelperJoDemo,
   onScoutMarkItSafeDemo,
+  onScoutWagonWheelDemo,
   onUpload,
   onDraw,
   onOpen,
@@ -60,6 +61,7 @@ export function Dashboard({
   onScoutWobblyChairDemo: () => void;
   onScoutHelperJoDemo: () => void;
   onScoutMarkItSafeDemo: () => void;
+  onScoutWagonWheelDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onDraw: () => void;
@@ -133,6 +135,7 @@ export function Dashboard({
           <button className="button secondary small" onClick={onScoutWobblyChairDemo}>Watch Scout and the wobbly chair (1:30)</button>
           <button className="button secondary small" onClick={onScoutHelperJoDemo}>Watch Scout meet Helper Jo (2:00)</button>
           <button className="button secondary small" onClick={onScoutMarkItSafeDemo}>Watch Scout mark it safe (2:30)</button>
+          <button className="button secondary small" onClick={onScoutWagonWheelDemo}>Watch Scout fix a toy wagon wheel (3:30)</button>
           <button className="button secondary small" onClick={onTalkingDemo}>Try Shine Says Hello</button>
           <button className="button secondary small" onClick={onGardenDemo}>Try Helping Hands Waters a Little Garden</button>
           <span className="hero-note">
