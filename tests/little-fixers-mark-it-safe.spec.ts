@@ -52,7 +52,7 @@ test("original Scout and Jo safely mark the chair out of use with a real puppet-
   const released = sceneFramesAt(data, newScene, 24);
   expect(attached.get(sign.id)?.heldBy).toBe(jo.id);
   expect(released.get(sign.id)?.heldBy).toBeUndefined();
-  expect(released.get(sign.id)?.x).toBeGreaterThan(attached.get(sign.id)!.x);
+  expect(Math.abs(released.get(sign.id)!.x - attached.get(sign.id)!.x)).toBeGreaterThan(12);
   expect(released.get(sign.id)?.x).toBeGreaterThan(620);
   expect(reach.get(jo.id)!.x).toBeGreaterThan(before.get(jo.id)!.x);
   expect(released.get(chair.id)?.x).toBe(before.get(chair.id)?.x);
