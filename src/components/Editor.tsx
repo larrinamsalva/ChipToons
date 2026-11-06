@@ -615,6 +615,15 @@ export function Editor({
           </div>
         </div>
         <div className="editor-top-actions">
+          <label className="cinematic-look-toggle" title="Optional illustrated lighting and expressive puppet details; changes the preview and video export, not the script or movement.">
+            <input type="checkbox" aria-label="Cinematic Storybook look"
+              checked={project.visualStyle === "storybook-cinematic"}
+              onChange={event => onChange({
+                ...project,
+                visualStyle: event.target.checked ? "storybook-cinematic" : undefined,
+              })} />
+            Cinematic Storybook look
+          </label>
           <span
             className={`save-status ${saveStatus === "Save failed" ? "failed" : ""}`}
             role="status"
