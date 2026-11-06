@@ -1771,3 +1771,65 @@ test("genuine 30-second Mark It Safe segment shows Jo carry and release a warnin
     contentType: "application/json",
   });
 });
+
+
+test("real WebM shows Jo changing a loose toy wagon wheel to fixed in an editable cartoon", async ({ page }, info) => {
+  test.setTimeout(205_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout fix a toy wagon wheel (3:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  const { data } = await backup(page);
+  expect(data.scenes.map(s => s.duration)).toEqual([34, 26, 30, 30, 30, 30, 30]);
+  const repair = data.scenes[5];
+  const wagon = repair.elements.find(e => e.prop === "toy-wagon")!;
+  expect(repair.objectTracks?.[0].objectId).toBe(wagon.id);
+  // Third phone segment covers 2:00–3:00, including the repair at 2:45.5.
+  const { path } = await render(page, info, "little-fixers-jo-repairs-toy-wheel", 60, { segment: 3, limit: 60 });
+  const loose = rawFrame(path, 37);
+  const reaching = rawFrame(path, 44);
+  const fixed = rawFrame(path, 49);
+  const ready = rawFrame(path, 57);
+  const reach = changedPixels(loose, reaching, 170, 64, 730, 420);
+  const change = changedPixels(reaching, fixed, 170, 64, 730, 420);
+  const settle = changedPixels(fixed, ready, 170, 64, 730, 420);
+  expect(reach).toBeGreaterThan(450);
+  expect(change).toBeGreaterThan(450);
+  expect(settle).toBeGreaterThan(350);
+  await info.attach("toy-wheel-changing-in-original-video", {
+    body: JSON.stringify({ reach, change, settle, segmentSeconds: 60 }, null, 2),
+    contentType: "application/json",
+  });
+});
+
+test("real WebM shows repaired original toy wagon rolling while Scout and Jo celebrate", async ({ page }, info) => {
+  test.setTimeout(135_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout fix a toy wagon wheel (3:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  const { data } = await backup(page);
+  const scene = data.scenes[6];
+  const wagon = scene.elements.find(e => e.prop === "toy-wagon")!;
+  expect(wagon.propAppearance).toBe("fixed-wheel");
+  expect(sceneFramesAt(data, scene, 19).get(wagon.id)!.x)
+    .toBeGreaterThan(sceneFramesAt(data, scene, 0).get(wagon.id)!.x + 150);
+  // Fourth phone segment is exactly the new 30s rolling scene.
+  const { path, pcm } = await render(page, info, "little-fixers-repaired-wagon-rolls", 30, { segment: 4, limit: 60 });
+  const before = rawFrame(path, 3);
+  const moving = rawFrame(path, 11);
+  const end = rawFrame(path, 22);
+  const motion = changedPixels(before, moving, 110, 68, 740, 420);
+  const finish = changedPixels(moving, end, 110, 68, 740, 420);
+  expect(motion).toBeGreaterThan(550);
+  expect(finish).toBeGreaterThan(550);
+  // Verify actual wheel-rolling effects are present, without inventing spoken lines.
+  const from = Math.floor((7.8 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  const to = Math.floor((8.7 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  let energy = 0;
+  for (let i = from; i < to; i++) energy += pcm.readFloatLE(i * 4) ** 2;
+  const rms = Math.sqrt(energy / (to - from));
+  expect(rms).toBeGreaterThan(0.001);
+  await info.attach("original-repaired-wagon-rolling-proof", {
+    body: JSON.stringify({ motion, finish, wheelEffectsRms: rms }, null, 2),
+    contentType: "application/json",
+  });
+});
