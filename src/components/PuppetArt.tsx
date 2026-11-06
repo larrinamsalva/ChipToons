@@ -65,7 +65,7 @@ function Face({
             ),
           )}
           {premium && !blink && [-15, 15].map(x => (
-            <circle key={`catchlight-${x}`} cx={x + 1.8} cy="-4.6" r="1.7"
+            <circle key={`catchlight-${x}`} data-eye-highlight="premium" cx={x + 1.8} cy="-4.6" r="1.7"
               fill="#ffffff" stroke="none" />
           ))}
           {premium && <>
