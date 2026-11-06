@@ -7,7 +7,8 @@ export const LITTLE_FIXERS_VOICE_BOARD_TITLE = "Little Fixers · Finish the Voic
 // The board is for the editable Scout story only; never mutate older demo
 // templates or incorrectly label a generic 20-minute test fixture as finished.
 export function isLittleFixersVoiceProject(project: Project) {
-  return project.templateId === "little-fixers-scout-wobbly-chair-story";
+  return project.templateId === "little-fixers-scout-wobbly-chair-story" ||
+    project.templateId === "little-fixers-scout-helper-jo-handoff";
 }
 
 export function littleFixersVoiceReadiness(project: Project) {
