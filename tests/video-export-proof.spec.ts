@@ -1642,3 +1642,45 @@ test("exports real one-minute Scout cartoon with spoken opening and hand-carried
     contentType: "application/json",
   });
 });
+
+
+test("encodes a real 90-second Scout story with visibly wobbling chair and audible original speech", async ({ page }, info) => {
+  test.setTimeout(200_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout and the wobbly chair (1:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible();
+  const { data } = await backup(page);
+  expect(data.scenes.map(scene => scene.duration)).toEqual([34, 26, 30]);
+  expect(data.pictureSourceId).toBeUndefined();
+  expect(data.assets).toHaveLength(0);
+  const chair = data.scenes[2].elements.find(e => e.prop === "chair")!;
+  const scout = data.scenes[2].elements.find(e => e.characterId === data.characters[0].id)!;
+  expect(sceneFramesAt(data, data.scenes[2], 7.25).get(chair.id)?.rotation).toBeLessThan(-1);
+  expect(sceneFramesAt(data, data.scenes[2], 13.8).get(scout.id)?.x)
+    .toBeLessThan(sceneFramesAt(data, data.scenes[2], 6).get(scout.id)!.x);
+  // Exports a real 90-second VP8/Opus WebM including the third scene, not
+  // selected screenshots or a photo slide show. Keeps the original three
+  // approved speech takes; new scene dialogue is intentionally unrecorded.
+  const { path, pcm } = await render(page, info, "scout-notices-wobbly-chair", 90);
+  const approaching = rawFrame(path, 63);
+  const wobbling = rawFrame(path, 68);
+  const reacting = rawFrame(path, 72);
+  const pointing = rawFrame(path, 82);
+  const movement = changedPixels(approaching, wobbling, 130, 74, 650, 400);
+  const reaction = changedPixels(wobbling, reacting, 130, 74, 650, 400);
+  const resolution = changedPixels(reacting, pointing, 130, 74, 650, 400);
+  expect(movement).toBeGreaterThan(650);
+  expect(reaction).toBeGreaterThan(650);
+  expect(resolution).toBeGreaterThan(650);
+
+  const first = Math.floor((1.3 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  const last = Math.floor((2.4 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  let energy = 0;
+  for (let i = first; i < last; i++) energy += pcm.readFloatLE(i * 4) ** 2;
+  const rms = Math.sqrt(energy / (last - first));
+  expect(rms).toBeGreaterThan(0.012);
+  await info.attach("Scout's genuine wobbly-chair animation and original voice proof", {
+    body: JSON.stringify({ movement, reaction, resolution, approvedSpeechRms: rms }, null, 2),
+    contentType: "application/json",
+  });
+});
