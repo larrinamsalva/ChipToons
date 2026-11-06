@@ -18,7 +18,10 @@ jobs:
   verify:
     name: Foundation and browser QA
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # Ubuntu mirror downloads can exceed 40 minutes during Playwright's
+    # WebKit/Firefox system-dependency setup. Retain ALL browser coverage;
+    # allow installation and actual desktop/phone/tablet QA to finish.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7.0.1
         with:
