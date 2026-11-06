@@ -306,10 +306,16 @@ export function PuppetArt({
               {part.role === "head" && rig.face && (
                 <>
                   {!asset && !rig.parts.some((p) => p.role === "hair") && (
-                    <path
-                      d="M-38 -18Q-43 -47 0 -40Q36 -44 42 -15Q20 -20 14 -28Q-10 -10 -38 -18"
-                      fill={character.hair}
-                    />
+                    <g>
+                      <path
+                        d="M-38 -18Q-43 -47 0 -40Q36 -44 42 -15Q20 -20 14 -28Q-10 -10 -38 -18"
+                        fill={character.hair}
+                      />
+                      {premium && <path data-material-depth="hair-sheen"
+                        d="M-30 -21Q-21 -41 -3 -37Q15 -39 27 -30"
+                        stroke="#fff8ec" strokeWidth="3.1" strokeLinecap="round"
+                        opacity=".23" fill="none" pointerEvents="none" />}
+                    </g>
                   )}
                   <Face
                     emotion={emotion}
