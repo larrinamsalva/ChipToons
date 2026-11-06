@@ -63,6 +63,7 @@ test("voice cue sheet and progress derive from actual saved recording status, no
   await page.goto("./");
   await page.getByRole("button", { name: DEMO, exact: true }).click();
   await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  await saved(page);
   const { data } = await backup(page);
   const cue = littleFixersVoiceCueSheet(data);
   expect(cue.match(/Scene \d+, line \d+:/g)).toHaveLength(7);
