@@ -18,7 +18,7 @@ test("Cinematic motion stays coordinated with Jo's actual held safety sign and t
   const jo = scene.elements.find(e => e.characterId === original.characters[1].id)!;
   const sign = scene.elements.find(e => e.prop === "sign")!;
   const interaction = scene.interactions![0];
-  const oldFrame = sceneFramesAt(original, scene, 7.4).get(jo.id)!;
+  const oldFrame = sceneFramesAt(original, scene, 7.9).get(jo.id)!;
   for (const line of original.scenes[0].script!.lines)
     expect(lineStatus(original, line)).toBe("Approved");
 
@@ -34,11 +34,20 @@ test("Cinematic motion stays coordinated with Jo's actual held safety sign and t
   expect(premium.scenes[0].elements.find(e => e.characterId)?.voiceMouth)
     .toEqual(original.scenes[0].elements.find(e => e.characterId)?.voiceMouth);
 
-  const newFrame = sceneFramesAt(premium, scene, 7.4).get(jo.id)!;
+  // Test Jo during a whole walking beat, not just the easing-in instant:
+  // the actor may barely move at an individual keyframe boundary.
+  const times = [6.5, 6.9, 7.65, 7.9, 8.05, 8.25, 9.2];
+  const changes = times.map(time => {
+    const classic = sceneFramesAt(original, scene, time).get(jo.id)!;
+    const polished = sceneFramesAt(premium, scene, time).get(jo.id)!;
+    expect(polished.x).toBeCloseTo(classic.x, 6);
+    return Math.abs(polished.rotation - classic.rotation) +
+      Math.abs(polished.y - classic.y);
+  });
+  expect(Math.max(...changes)).toBeGreaterThan(0.25);
+  const newFrame = sceneFramesAt(premium, scene, 7.9).get(jo.id)!;
   expect(newFrame.x).toBeCloseTo(oldFrame.x, 6);
-  expect(Math.abs(newFrame.rotation - oldFrame.rotation) +
-    Math.abs(newFrame.y - oldFrame.y)).toBeGreaterThan(0.15);
-  expect(sceneFramesAt(premium, scene, 7.4).get(jo.id)).toEqual(newFrame);
+  expect(sceneFramesAt(premium, scene, 7.9).get(jo.id)).toEqual(newFrame);
 
   const holding = sceneFramesAt(premium, scene, 12.1);
   expect(holding.get(sign.id)?.heldBy).toBe(jo.id);
