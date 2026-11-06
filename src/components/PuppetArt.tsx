@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { Asset, Character, Emotion } from "../model";
 import { puppetTransforms } from "../puppet-model";
 import type { JointSnapshot, PuppetPart } from "../puppet-model";
@@ -10,6 +11,7 @@ function Face({
   blink,
   eyes = true,
   lips = true,
+  premium = false,
 }: {
   emotion: Emotion;
   mouth: Mouth;
@@ -17,6 +19,7 @@ function Face({
   blink: boolean;
   eyes?: boolean;
   lips?: boolean;
+  premium?: boolean;
 }) {
   const smile =
     mouth === "smile" ||
@@ -32,6 +35,10 @@ function Face({
     <g stroke="#382c34" strokeWidth="2.8" strokeLinecap="round" fill="none">
       {eyes && (
         <>
+          {premium && !blink && ([-15, 15].map(x => (
+            <ellipse key={`eye-white-${x}`} cx={x} cy="-2" rx="8" ry="10"
+              fill="#fffdf8" stroke="#8e5f56" strokeWidth="1.4" />
+          )))}
           <path
             d={
               worried
@@ -51,12 +58,20 @@ function Face({
                 key={x}
                 cx={x}
                 cy="-2"
-                rx={emotion === "surprised" ? 4.8 : 3.5}
-                ry={5}
+                rx={emotion === "surprised" ? 5.5 : premium ? 4.6 : 3.5}
+                ry={premium ? 6.7 : 5}
                 fill="#382c34"
               />
             ),
           )}
+          {premium && !blink && [-15, 15].map(x => (
+            <circle key={`catchlight-${x}`} cx={x + 1.8} cy="-4.6" r="1.7"
+              fill="#ffffff" stroke="none" />
+          ))}
+          {premium && <>
+            <ellipse cx="-30" cy="13" rx="8" ry="4.2" fill="#f6a0a0" opacity=".34" stroke="none" />
+            <ellipse cx="30" cy="13" rx="8" ry="4.2" fill="#f6a0a0" opacity=".34" stroke="none" />
+          </>}
         </>
       )}
       {lips &&
@@ -82,9 +97,13 @@ function Face({
 function Shape({
   part,
   character,
+  premium = false,
+  gradientPrefix,
 }: {
   part: PuppetPart;
   character: Character;
+  premium?: boolean;
+  gradientPrefix: string;
 }) {
   const { role, width: w, height: h } = part;
   // Opt-in, scalable vector workwear for a full-body cartoon performer.
@@ -92,7 +111,8 @@ function Shape({
   if (character.puppet?.costume === "workshop") {
     if (role === "torso") return (
       <g>
-        <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="15" fill="#277b8b" />
+        <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="15"
+          fill={premium ? `url(#${gradientPrefix}-shirt)` : "#277b8b"} />
         <rect x={-w / 2 + 7} y={-h / 2 + 5} width={w - 14} height={h - 11}
           rx="10" fill="#3298a2" opacity=".42" />
         <path d={`M0 ${-h / 2 + 8}V${h / 2 - 6}`} stroke="#154c64" strokeWidth="3" />
@@ -129,7 +149,12 @@ function Shape({
     );
   }
   if (role === "head")
-    return <ellipse rx={w / 2} ry={h / 2} fill={character.skin} />;
+    return <g>
+      <ellipse rx={w / 2} ry={h / 2}
+        fill={premium ? `url(#${gradientPrefix}-skin)` : character.skin} />
+      {premium && <ellipse cx={-w * 0.16} cy={-h * 0.23} rx={w * 0.18} ry={h * 0.21}
+        fill="#ffffff" opacity=".12" />}
+    </g>;
   if (role === "hair")
     return (
       <path
@@ -173,6 +198,7 @@ export function PuppetArt({
   blink = false,
   heartOpacity = 0,
   heartScale = 1,
+  premium = false,
 }: {
   character: Character;
   assets: Asset[];
@@ -183,14 +209,28 @@ export function PuppetArt({
   blink?: boolean;
   heartOpacity?: number;
   heartScale?: number;
+  premium?: boolean;
 }) {
+  const gradientPrefix = useId();
   const rig = character.puppet;
   if (!rig) return null;
   const transforms = puppetTransforms(rig, joints);
   const separateEyes = rig.parts.some((p) => p.role === "eyes");
   const separateMouth = rig.parts.some((p) => p.role === "mouth");
   return (
-    <g data-puppet={character.id}>
+    <g data-puppet={character.id} data-puppet-finish={premium ? "cinematic" : "classic"}>
+      {premium && <defs>
+        <linearGradient id={`${gradientPrefix}-shirt`} x1="0%" y1="0%" x2="100%" y2="90%">
+          <stop offset="0%" stopColor="#eafcff" />
+          <stop offset="23%" stopColor={character.shirt} />
+          <stop offset="100%" stopColor="#27394c" />
+        </linearGradient>
+        <radialGradient id={`${gradientPrefix}-skin`} cx="32%" cy="23%" r="82%">
+          <stop offset="0%" stopColor="#fff7eb" />
+          <stop offset="33%" stopColor={character.skin} />
+          <stop offset="100%" stopColor={character.skin} stopOpacity=".84" />
+        </radialGradient>
+      </defs>}
       {rig.parts.map((part, i) => {
         const joint = transforms[i];
         const useAlternate = part.role === "eyes" ? blink : part.role === "mouth" &&
@@ -218,6 +258,7 @@ export function PuppetArt({
                   mouth={mouth}
                   voiceOpening={voiceOpening}
                   blink={blink}
+                  premium={premium}
                   lips={false}
                 />
               ) : part.role === "mouth" ? (
@@ -226,10 +267,12 @@ export function PuppetArt({
                   mouth={mouth}
                   voiceOpening={voiceOpening}
                   blink={blink}
+                  premium={premium}
                   eyes={false}
                 />
               ) : (
-                <Shape part={part} character={character} />
+                <Shape part={part} character={character} premium={premium}
+                  gradientPrefix={gradientPrefix} />
               )}
               {part.role === "head" && rig.face && (
                 <>
@@ -244,6 +287,7 @@ export function PuppetArt({
                     mouth={mouth}
                   voiceOpening={voiceOpening}
                     blink={blink}
+                    premium={premium}
                     eyes={!separateEyes}
                     lips={!separateMouth}
                   />
