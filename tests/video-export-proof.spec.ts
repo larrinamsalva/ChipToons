@@ -1657,7 +1657,7 @@ test("encodes a real 90-second Scout story with visibly wobbling chair and audib
   const scout = data.scenes[2].elements.find(e => e.characterId === data.characters[0].id)!;
   expect(sceneFramesAt(data, data.scenes[2], 7.25).get(chair.id)?.rotation).toBeLessThan(-1);
   expect(sceneFramesAt(data, data.scenes[2], 13.8).get(scout.id)?.x)
-    .toBeLessThan(sceneFramesAt(data, data.scenes[2], 6).get(scout.id)?.x);
+    .toBeLessThan(sceneFramesAt(data, data.scenes[2], 6).get(scout.id)!.x);
   // Exports a real 90-second VP8/Opus WebM including the third scene, not
   // selected screenshots or a photo slide show. Keeps the original three
   // approved speech takes; new scene dialogue is intentionally unrecorded.
