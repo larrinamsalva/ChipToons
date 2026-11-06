@@ -1684,3 +1684,45 @@ test("encodes a real 90-second Scout story with visibly wobbling chair and audib
     contentType: "application/json",
   });
 });
+
+
+test("real two-minute Scout and Helper Jo movie shows two-person entrance and checklist transfer", async ({ page }, info) => {
+  test.setTimeout(270_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout meet Helper Jo (2:00)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  const { data } = await backup(page);
+  expect(data.scenes.map(scene => scene.duration)).toEqual([34, 26, 30, 30]);
+  expect(data.assets).toHaveLength(0);
+  const scene = data.scenes[3];
+  const book = scene.elements.find(element => element.prop === "book")!;
+  const scout = scene.elements.find(element => element.characterId === data.characters[0].id)!;
+  const jo = scene.elements.find(element => element.characterId === data.characters[1].id)!;
+  expect(sceneFramesAt(data, scene, 13).get(book.id)?.heldBy).toBe(scout.id);
+  expect(sceneFramesAt(data, scene, 17).get(book.id)?.heldBy).toBe(jo.id);
+  expect(sceneFramesAt(data, scene, 24).get(book.id)?.heldBy).toBeUndefined();
+  expect(scene.script?.lines.every(line => line.takes.length === 0)).toBe(true);
+  // Full 120-second original VP8/Opus is actually recorded and independently
+  // decoded by ffmpeg. Jo and Scout are active puppet rigs, not cutout images.
+  const { path, pcm } = await render(page, info, "scout-helper-jo-two-character-story", 120);
+  const before = rawFrame(path, 92);
+  const approaching = rawFrame(path, 99);
+  const handoff = rawFrame(path, 107);
+  const adultListens = rawFrame(path, 117);
+  const entrance = changedPixels(before, approaching, 180, 65, 720, 425);
+  const transfer = changedPixels(approaching, handoff, 180, 65, 720, 425);
+  const reaction = changedPixels(handoff, adultListens, 180, 65, 720, 425);
+  expect(entrance).toBeGreaterThan(600);
+  expect(transfer).toBeGreaterThan(600);
+  expect(reaction).toBeGreaterThan(600);
+  const from = Math.floor((1.3 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  const to = Math.floor((2.4 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  let sum = 0;
+  for (let i = from; i < to; i++) sum += pcm.readFloatLE(i * 4) ** 2;
+  const voiceRms = Math.sqrt(sum / (to - from));
+  expect(voiceRms).toBeGreaterThan(0.012);
+  await info.attach("real-two-character-movie-proof", {
+    body: JSON.stringify({ entrance, transfer, reaction, originalVoiceRms: voiceRms }, null, 2),
+    contentType: "application/json",
+  });
+});
