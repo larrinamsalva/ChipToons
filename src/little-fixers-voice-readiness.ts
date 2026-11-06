@@ -10,7 +10,8 @@ export function isLittleFixersVoiceProject(project: Project) {
   return project.templateId === "little-fixers-scout-wobbly-chair-story" ||
     project.templateId === "little-fixers-scout-helper-jo-handoff" ||
     project.templateId === "little-fixers-mark-it-safe" ||
-    project.templateId === "little-fixers-scout-wagon-wheel-repair";
+    project.templateId === "little-fixers-scout-wagon-wheel-repair" ||
+    project.templateId === "little-fixers-scout-tidy-and-park";
 }
 
 export function littleFixersVoiceReadiness(project: Project) {

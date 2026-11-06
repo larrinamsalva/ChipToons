@@ -1833,3 +1833,81 @@ test("real WebM shows repaired original toy wagon rolling while Scout and Jo cel
     contentType: "application/json",
   });
 });
+
+
+test("real 60-second WebM segment shows Scout's paper and Jo's toolbox put away separately", async ({ page }, info) => {
+  test.setTimeout(205_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout and Jo tidy up (4:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  const { data } = await backup(page);
+  expect(data.scenes.map(s => s.duration)).toEqual([34, 26, 30, 30, 30, 30, 30, 30, 30]);
+  const tidy = data.scenes[7];
+  const plan = tidy.elements.find(e => e.prop === "book")!;
+  const toolbox = tidy.elements.find(e => e.prop === "toolbox")!;
+  expect(tidy.interactions?.map(i => i.kind)).toEqual(["put", "put"]);
+  expect(sceneFramesAt(data, tidy, 12).get(plan.id)?.heldBy)
+    .toBe(tidy.elements.find(e => e.characterId === data.characters[0].id)!.id);
+  expect(sceneFramesAt(data, tidy, 12).get(toolbox.id)?.heldBy)
+    .toBe(tidy.elements.find(e => e.characterId === data.characters[1].id)!.id);
+  expect(sceneFramesAt(data, tidy, 26).get(plan.id)?.heldBy).toBeUndefined();
+  expect(sceneFramesAt(data, tidy, 26).get(toolbox.id)?.heldBy).toBeUndefined();
+
+  // The fourth 60-second part includes the earlier genuine rolling test
+  // and then this brand-new 30-second, two-actor tidy-up sequence.
+  const { path } = await render(page, info, "scout-and-jo-tidy-the-workshop", 60, { segment: 4, limit: 60 });
+  const approach = rawFrame(path, 33);
+  const carrying = rawFrame(path, 42);
+  const releasing = rawFrame(path, 49);
+  const cleared = rawFrame(path, 56);
+  const move = changedPixels(approach, carrying, 125, 64, 745, 420);
+  const put = changedPixels(carrying, releasing, 125, 64, 745, 420);
+  const finish = changedPixels(releasing, cleared, 125, 64, 745, 420);
+  expect(move).toBeGreaterThan(350);
+  expect(put).toBeGreaterThan(350);
+  expect(finish).toBeGreaterThan(350);
+  await info.attach("real-independent-paper-and-adult-toolbox-tidying", {
+    body: JSON.stringify({ move, put, finish, seconds: 60 }, null, 2),
+    contentType: "application/json",
+  });
+});
+
+test("real 30-second VP8/Opus finale shows the fixed wagon park as BOTH cartoon characters walk", async ({ page }, info) => {
+  test.setTimeout(150_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout and Jo tidy up (4:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  const { data } = await backup(page);
+  const parking = data.scenes[8];
+  const wagon = parking.elements.find(e => e.prop === "toy-wagon")!;
+  const scout = parking.elements.find(e => e.characterId === data.characters[0].id)!;
+  const jo = parking.elements.find(e => e.characterId === data.characters[1].id)!;
+  expect(wagon.propAppearance).toBe("fixed-wheel");
+  for (const item of [wagon, scout, jo])
+    expect(sceneFramesAt(data, parking, 20).get(item.id)!.x)
+      .toBeGreaterThan(sceneFramesAt(data, parking, 2).get(item.id)!.x + 80);
+
+  // Fifth 60-second-limited part is the final original 30-second scene.
+  // Independently decode the completed WebM, rather than trusting previews.
+  const { path, pcm } = await render(page, info, "scout-jo-and-fixed-wagon-park", 30, { segment: 5, limit: 60 });
+  const start = rawFrame(path, 3);
+  const walking = rawFrame(path, 11);
+  const parkingFrame = rawFrame(path, 21);
+  const celebration = rawFrame(path, 27);
+  const depart = changedPixels(start, walking, 110, 64, 740, 420);
+  const roll = changedPixels(walking, parkingFrame, 110, 64, 740, 420);
+  const celebrate = changedPixels(parkingFrame, celebration, 110, 64, 740, 420);
+  expect(depart).toBeGreaterThan(550);
+  expect(roll).toBeGreaterThan(550);
+  expect(celebrate).toBeGreaterThan(350);
+  const from = Math.floor((17.8 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  const to = Math.floor((18.5 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  let sum = 0;
+  for (let i = from; i < to; i++) sum += pcm.readFloatLE(i * 4) ** 2;
+  const rollingRms = Math.sqrt(sum / (to - from));
+  expect(rollingRms).toBeGreaterThan(0.001);
+  await info.attach("real-repaired-wagon-parking-and-rolling-effects", {
+    body: JSON.stringify({ depart, roll, celebrate, rollingRms }, null, 2),
+    contentType: "application/json",
+  });
+});
