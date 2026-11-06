@@ -46,7 +46,9 @@ export function cinematicMotionAt(
     const a = sample(after);
     const vx = (a.x - b.x) / (after - before);
     const vy = (a.y - b.y) / (after - before);
-    travel = clamp((Math.hypot(vx, vy) - 3) / 37, 0, 1);
+    // Small storybook steps are often only 8-15 stage pixels/s. Give those
+    // deliberate walks visible (but restrained) weight transfer too.
+    travel = clamp((Math.hypot(vx, vy) - 1.5) / 16, 0, 1);
     forward = clamp(vx / 65, -1, 1);
   }
 
