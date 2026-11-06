@@ -5,7 +5,6 @@ import type { Emotion, Project, Scene, SceneElement } from "./model";
 import { newAudioClip } from "./production";
 import { neutralJoint } from "./puppet-model";
 import { blankLine, withScript } from "./script";
-import { builtInSound } from "./sounds";
 import { elementBase } from "./timeline";
 
 export const SCOUT_MARK_IT_SAFE_TITLE =
