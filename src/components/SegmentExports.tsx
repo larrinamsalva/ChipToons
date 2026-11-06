@@ -212,6 +212,12 @@ export function SegmentExports({
         setStatus((s) => ({ ...s, [segment.id]: "Retry available" }));
       }
     } finally {
+      // Every segment is encoded as a self-contained movie. Its decoded audio
+      // buffers are no longer needed once the encoder has finished or failed.
+      // Release them before the next part so consecutive two-minute exports
+      // cannot accumulate up to 64 MB of audio cache in a long session.
+      // Original audio files remain untouched in project storage.
+      cache.clear();
       if (alive.current) {
         onBusy(false);
         setSegmentRunning(false);
