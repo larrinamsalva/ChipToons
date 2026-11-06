@@ -7,6 +7,7 @@ import { interactionReferencesExist } from "./interaction-model";
 import { sampleInteractions, stagePoint } from "./interaction-motion";
 import { supportsVoiceMouth, voiceMouthAt } from "./voice-mouth";
 import { interpolateJoints } from "./puppet-model";
+import { cinematicMotionAt } from "./cinematic-motion";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
 
@@ -227,7 +228,11 @@ export function elementAt(
 export type ElementFrame = ReturnType<typeof elementAt> & { voiceOpening?: number };
 export function sceneElementAt(project: Project, scene: Scene, element: SceneElement,
   local: number, start: number, calm = false): ElementFrame {
-  const frame = elementAt(element, local, scene.duration, calm);
+  const authored = elementAt(element, local, scene.duration, calm);
+  // Feed the same deterministic polished frame to the stage, camera and
+  // hand interactions. The project option is opt-in and never writes keys.
+  const frame = cinematicMotionAt(project, element, authored, local,
+    scene.duration, calm, time => elementAt(element, time, scene.duration, true));
   if (!element.voiceMouth?.length || calm ||
       !supportsVoiceMouth(project.characters.find(character => character.id === element.characterId), element)) return frame;
   const voice = voiceMouthAt(project, scene, element, start + local, frame.authoredMouth !== "auto");
