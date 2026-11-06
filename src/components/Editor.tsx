@@ -56,6 +56,8 @@ import {
 } from "../files";
 import { Icon } from "./Icon";
 import { Stage } from "./Stage";
+import { LittleFixersVoiceBoard } from "./LittleFixersVoiceBoard";
+import { isLittleFixersVoiceProject } from "../little-fixers-voice-readiness";
 import { CompositionTools } from "./CompositionTools";
 import { resolvedCharacter, libraryItemFromElement, libraryItemFromLocation } from "../library";
 import type { LibraryItem, LibraryKind } from "../library";
@@ -131,6 +133,7 @@ export function Editor({
   const [mouthStudio, setMouthStudio] = useState<{ clipId?: string }>();
   const [storyCardsOpen, setStoryCardsOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(startScript);
+  const [voiceBoardOpen, setVoiceBoardOpen] = useState(false);
   const [scriptLine, setScriptLine] = useState("");
   const [scriptStep, setScriptStep] = useState<string>();
   const [voiceStudio, setVoiceStudio] = useState<{
@@ -716,6 +719,13 @@ export function Editor({
           <button className="button secondary small" onClick={() => { halt(); setScriptStep(undefined); setScriptOpen(true); }}>
             Write My Episode Script
           </button>
+          {isLittleFixersVoiceProject(project) && (
+            <button className="button secondary small" onClick={() => {
+              halt();
+              setScriptOpen(false);
+              setVoiceBoardOpen(true);
+            }}>Finish the Little Fixers voices</button>
+          )}
           <button className="button secondary small" onClick={() => { halt(); setStoryCardsOpen(true); }}>
             {STORY_CARD_STUDIO}
           </button>
@@ -1664,6 +1674,35 @@ export function Editor({
                   ?.scrollIntoView({ block: "start" }),
               );
             }
+          }}
+        />
+      )}
+      {voiceBoardOpen && !voiceStudio && !mouthStudio && !scriptOpen && !finish && (
+        <LittleFixersVoiceBoard
+          project={project}
+          onClose={() => setVoiceBoardOpen(false)}
+          onRecord={(sceneIndex, lineId) => {
+            setVoiceBoardOpen(false);
+            selectScene(sceneIndex);
+            setScriptLine(lineId);
+            setVoiceStudio({ lineId });
+          }}
+          onReview={(sceneIndex, lineId) => {
+            setVoiceBoardOpen(false);
+            selectScene(sceneIndex);
+            setScriptLine(lineId);
+            setScriptStep(undefined);
+            setScriptOpen(true);
+          }}
+          onAnimate={(sceneIndex, clipId) => {
+            setVoiceBoardOpen(false);
+            selectScene(sceneIndex);
+            setMouthStudio({ clipId });
+          }}
+          onCaptions={sceneIndex => {
+            setVoiceBoardOpen(false);
+            selectScene(sceneIndex);
+            setVoiceStudio({ tab: "captions" });
           }}
         />
       )}
