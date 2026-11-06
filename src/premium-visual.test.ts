@@ -39,7 +39,7 @@ describe("Cinematic Storybook visual finish", () => {
     expect(premium).toContain("premium-wall");
     expect(premium).toContain("premium-floor");
     expect(premium).toContain("premium-sunlight");
-    expect(premium).toContain("catchlight");
+    expect(premium).toContain('data-eye-highlight="premium"');
     // The premium finish remains pure SVG: video export uses this exact Stage.
     expect(premium).not.toContain("<foreignObject");
     expect(premium).not.toContain("https://");
