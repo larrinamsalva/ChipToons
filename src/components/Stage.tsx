@@ -373,6 +373,7 @@ export const Stage = memo(function Stage({
   const background = backgroundAt(scene, t, calmPreview);
   const night = scene.background === "moonlight";
   const classroom = scene.background === "classroom";
+  const premium = project.visualStyle === "storybook-cinematic";
   const cameraTransform = `translate(400 225) scale(${camera.zoom}) translate(${-camera.x} ${-camera.y})`;
   function point(e: PointerEvent<SVGGElement>) {
     const matrix =
@@ -429,11 +430,28 @@ export const Stage = memo(function Stage({
       aria-label={labelled ? `${scene.title}: ${scene.storyCard ? [scene.storyCard.eyebrow, scene.storyCard.subtitle, ...scene.storyCard.points.map(point => point.text), ...scene.storyCard.credits.map(credit => [credit.role, credit.name, credit.license, credit.url].filter(Boolean).join(" "))].filter(Boolean).join(". ") : scene.action}${cards ? ` ${cards.flatMap(card => card.lines.map(line => line.text)).join(" ")}` : ""}` : undefined}
       aria-hidden={!labelled || undefined}
       xmlns="http://www.w3.org/2000/svg"
+      data-visual-style={premium ? "storybook-cinematic" : "classic"}
     >
+      {premium && <defs>
+        <linearGradient id={`${clipPrefix}-premium-wall`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fff8ed" />
+          <stop offset="60%" stopColor="#edd9bb" />
+          <stop offset="100%" stopColor="#c8a17b" />
+        </linearGradient>
+        <linearGradient id={`${clipPrefix}-premium-floor`} x1="0%" y1="0%" x2="15%" y2="100%">
+          <stop offset="0%" stopColor="#ecd3a9" />
+          <stop offset="100%" stopColor="#98735a" />
+        </linearGradient>
+        <radialGradient id={`${clipPrefix}-premium-sunlight`} cx="70%" cy="8%" r="85%">
+          <stop offset="0%" stopColor="#fff8ce" stopOpacity=".72" />
+          <stop offset="70%" stopColor="#fff4cb" stopOpacity=".15" />
+          <stop offset="100%" stopColor="#ffe5c0" stopOpacity="0" />
+        </radialGradient>
+      </defs>}
       <rect
         width="800"
         height="450"
-        fill={classroom ? "#f1e5cf" : night ? "#343e64" : "#d3eae2"}
+        fill={premium && classroom ? `url(#${clipPrefix}-premium-wall)` : classroom ? "#f1e5cf" : night ? "#343e64" : "#d3eae2"}
       />
       <g
         opacity={
@@ -491,7 +509,8 @@ export const Stage = memo(function Stage({
                   stroke="#fff8e9"
                   strokeWidth="9"
                 />
-                <rect y="290" width="800" height="160" fill="#c9ab83" />
+                <rect y="290" width="800" height="160"
+                  fill={premium ? `url(#${clipPrefix}-premium-floor)` : "#c9ab83"} />
                 <ellipse cx="408" cy="366" rx="260" ry="65" fill="#e1ba8e" />
               </g>
             ) : (
@@ -583,6 +602,13 @@ export const Stage = memo(function Stage({
             <g transform={`rotate(${background.sway} 400 450)`}>
               <BackgroundArt background={scene.background} />
             </g>
+            {premium && classroom && <g pointerEvents="none" data-cinematic-workshop-lighting="true">
+              <path d="M520 70L712 70L800 400L405 400Z" fill="#fff7dd" opacity=".12" />
+              <rect width="800" height="450"
+                fill={`url(#${clipPrefix}-premium-sunlight)`} />
+              <ellipse cx="490" cy="408" rx="275" ry="24"
+                fill="#fff1cf" opacity=".19" />
+            </g>}
           </g>
           <g
             ref={objects}
@@ -610,7 +636,8 @@ export const Stage = memo(function Stage({
               const artwork = character?.puppet ? (
                     <PuppetArt character={character} assets={project.assets} joints={frame.joints}
                       emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening} blink={frame.blink}
-                      heartOpacity={frame.heartOpacity} heartScale={frame.heartScale} />
+                      heartOpacity={frame.heartOpacity} heartScale={frame.heartScale}
+                      premium={premium} />
                   ) : asset ? (
                     <RasterArt
                       asset={asset}
@@ -727,7 +754,13 @@ export const Stage = memo(function Stage({
                       : undefined
                   }
                 >
-                  {!frame.heldBy && <ellipse cy="3" rx="48" ry="9" fill="#3b5b45" opacity=".14" />}
+                  {!frame.heldBy && <>
+                    <ellipse cy="3" rx={premium ? "55" : "48"} ry={premium ? "11" : "9"}
+                      fill={premium ? "#3d3140" : "#3b5b45"} opacity={premium ? ".25" : ".14"} />
+                    {premium && character?.puppet && <ellipse cy="2" rx="27" ry="4"
+                      fill="#241e29" opacity=".15" />}
+                  </>}
+
                   {change ? <g opacity={change.opacity} clipPath={change.reveal < 1 ? `url(#${clipId})` : undefined}>
                     {change.reveal < 1 && <defs><clipPath id={clipId}><rect
                       x={-clipWidth / 2} y={-height - 15} width={clipWidth * change.reveal} height={height + 38} />

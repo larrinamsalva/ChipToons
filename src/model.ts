@@ -175,6 +175,8 @@ export interface Project extends Production {
   setting: string;
   mood: Mood;
   artStyle: string;
+  /** Optional, project-wide non-destructive render finish. Legacy projects remain unchanged. */
+  visualStyle?: "storybook-cinematic";
   targetAge: string;
   plannedMinutes: number;
   outline: Outline;
@@ -292,6 +294,7 @@ export function validateProject(value: unknown): Project {
       "educational",
     ]) ||
     !validString(p.artStyle, 100) ||
+    (p.visualStyle !== undefined && p.visualStyle !== "storybook-cinematic") ||
     !validString(p.targetAge, 50) ||
     !bounded(p.plannedMinutes, 1, 30) ||
     !oneOf(p.status, ["draft", "ready"]) ||
