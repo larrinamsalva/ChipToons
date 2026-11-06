@@ -8,7 +8,8 @@ export const LITTLE_FIXERS_VOICE_BOARD_TITLE = "Little Fixers · Finish the Voic
 // templates or incorrectly label a generic 20-minute test fixture as finished.
 export function isLittleFixersVoiceProject(project: Project) {
   return project.templateId === "little-fixers-scout-wobbly-chair-story" ||
-    project.templateId === "little-fixers-scout-helper-jo-handoff";
+    project.templateId === "little-fixers-scout-helper-jo-handoff" ||
+    project.templateId === "little-fixers-mark-it-safe";
 }
 
 export function littleFixersVoiceReadiness(project: Project) {

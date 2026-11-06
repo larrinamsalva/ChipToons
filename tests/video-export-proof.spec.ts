@@ -1726,3 +1726,48 @@ test("real two-minute Scout and Helper Jo movie shows two-person entrance and ch
     contentType: "application/json",
   });
 });
+
+
+test("genuine 30-second Mark It Safe segment shows Jo carry and release a warning sign", async ({ page }, info) => {
+  test.setTimeout(175_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout mark it safe (2:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 55_000 });
+  const { data } = await backup(page);
+  expect(data.scenes.map(scene => scene.duration)).toEqual([34, 26, 30, 30, 30]);
+  expect(data.assets).toHaveLength(0);
+  const scene = data.scenes[4];
+  const sign = scene.elements.find(e => e.prop === "sign")!;
+  const jo = scene.elements.find(e => e.characterId === data.characters[1].id)!;
+  const chair = scene.elements.find(e => e.prop === "chair")!;
+  expect(sceneFramesAt(data, scene, 12).get(sign.id)?.heldBy).toBe(jo.id);
+  expect(sceneFramesAt(data, scene, 24).get(sign.id)?.heldBy).toBeUndefined();
+  expect(scene.interactions?.some(action => action.objectId === chair.id)).toBe(false);
+  expect(scene.script?.lines.every(line => line.takes.length === 0)).toBe(true);
+  // A genuinely recorded and independently decoded final 30s WebM part,
+  // not still pictures. Full-story and segmented-export engines are covered
+  // by the existing 20-minute media benchmark and earlier cartoon proofs.
+  const { path, pcm } = await render(page, info, "scout-jo-mark-it-safe", 30, { segment: 3, limit: 60 });
+  const initial = rawFrame(path, 3);
+  const holding = rawFrame(path, 12);
+  const putting = rawFrame(path, 20);
+  const ready = rawFrame(path, 26);
+  const pickupMotion = changedPixels(initial, holding, 120, 55, 740, 420);
+  const setDownMotion = changedPixels(holding, putting, 120, 55, 740, 420);
+  const finalMotion = changedPixels(putting, ready, 120, 55, 740, 420);
+  expect(pickupMotion).toBeGreaterThan(350);
+  expect(setDownMotion).toBeGreaterThan(350);
+  expect(finalMotion).toBeGreaterThan(350);
+  // The effects must genuinely be in this segment's Opus mix even though
+  // the new dialogue has not yet been recorded or approved.
+  const start = Math.floor((25.8 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  const stop = Math.floor((27.9 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  let energy = 0;
+  for (let i = start; i < stop; i++) energy += pcm.readFloatLE(i * 4) ** 2;
+  const effectsRms = Math.sqrt(energy / (stop - start));
+  expect(effectsRms).toBeGreaterThan(0.001);
+  await info.attach("actual-out-of-use-sign-segment-proof", {
+    body: JSON.stringify({ pickupMotion, setDownMotion, finalMotion, effectsRms }, null, 2),
+    contentType: "application/json",
+  });
+});
