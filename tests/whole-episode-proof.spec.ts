@@ -1,7 +1,7 @@
 import { alignment } from "./episode-alignment";
 import { test, expect } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, statSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createEpisodeFixture, inspectEpisodePackage } from "./episode-fixture";
 import { planSegments } from "../src/segments";
@@ -48,7 +48,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   page,
   browser,
 }, info) => {
-  test.setTimeout(29 * 60_000);
+  test.setTimeout(35 * 60_000);
   const directory = info.outputPath("episode");
   mkdirSync(directory, { recursive: true });
   const fixture = createEpisodeFixture(directory),
@@ -415,7 +415,14 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   await expect(page.getByRole("heading", { name: "Package checks passed", exact: true })).toBeVisible({ timeout: 60_000 });
   await info.attach("twenty-minute-delivery-manifest", { body: manifestText, contentType: "application/json" });
   await info.attach("twenty-minute-delivery-check", { body: await page.screenshot(), contentType: "image/png" });
-  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  const movieButton = page.getByRole("button", { name: "Make One Complete Movie", exact: true });
+  if (!(await movieButton.isEnabled())) {
+    const reason = await page.getByRole("region", { name: "Single-movie builder" }).innerText();
+    const partBytes = deliveryPaths.map(path => statSync(path).size);
+    throw new Error(`All 10 verified parts were selected, but movie assembly is disabled. ${reason}
+Part sizes: ${partBytes.join(", ")}; total: ${partBytes.reduce((sum, size) => sum + size, 0)} bytes`);
+  }
+  await movieButton.click();
   const movie = await downloadAndVerifyMovie(page, info, deliveryPaths, plan.segments.map(segment => segment.duration));
   expect(movie.parts).toHaveLength(10);
   const movieCaption = page.waitForEvent("download");

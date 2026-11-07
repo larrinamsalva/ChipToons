@@ -33,7 +33,21 @@ describe("single movie planning", () => {
     const parts = [part(0, 4), part(4, 8)];
     expect(movieSpaceNeeded(parts)).toBeGreaterThan(2 * 1000 * 2);
     const oversized = { ...parts[0], file: { size: MOVIE_BYTES } as File };
-    expect(moviePlanProblem([oversized, parts[1]])).toMatch(/256 MiB/);
+    expect(moviePlanProblem([oversized, parts[1]])).toBe("");
+    const tooLarge = { ...parts[0], file: { size: MOVIE_BYTES + 1 } as File };
+    expect(moviePlanProblem([tooLarge, parts[1]])).toMatch(/512 MiB/);
+    // Match the actual recorder's target rates: 2 Mbps VP8 + 128 kbps Opus
+    // for twenty minutes exceeds the old 256 MiB cap, but fits the safe
+    // desktop 512 MiB staging budget.
+    const targetSize = Math.ceil(1200 * (2_000_000 + 128_000) / 8);
+    const longParts = Array.from({ length: 10 }, (_, index) => ({
+      ...part(index * 120, (index + 1) * 120),
+      sha256: index.toString(16).padStart(64, "0"),
+      file: { size: Math.ceil(targetSize / 10) } as File,
+    }));
+    expect(targetSize).toBeGreaterThan(256 * 1024 * 1024);
+    expect(moviePlanProblem(longParts)).toBe("");
+    expect(movieSpaceNeeded(longParts)).toBeGreaterThan(targetSize * 2);
     expect(movieDeviceProblem(true, 8)).toMatch(/larger screen/);
     expect(movieDeviceProblem(false, 2)).toMatch(/more memory/);
   });
