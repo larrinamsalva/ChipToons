@@ -32,10 +32,12 @@ describe("single movie planning", () => {
   it("enforces the byte budget and requires more temporary storage than the source files", () => {
     const parts = [part(0, 4), part(4, 8)];
     expect(movieSpaceNeeded(parts)).toBeGreaterThan(2 * 1000 * 2);
-    const oversized = { ...parts[0], file: { size: MOVIE_BYTES } as File };
-    expect(moviePlanProblem([oversized, parts[1]])).toBe("");
-    const tooLarge = { ...parts[0], file: { size: MOVIE_BYTES + 1 } as File };
-    expect(moviePlanProblem([tooLarge, parts[1]])).toMatch(/512 MiB/);
+    // The limit applies to the SUM of all source videos, not each file
+    // individually. Verify the exact boundary and one byte beyond it.
+    const atLimit = { ...parts[0], file: { size: MOVIE_BYTES - parts[1].file.size } as File };
+    expect(moviePlanProblem([atLimit, parts[1]])).toBe("");
+    const overLimit = { ...parts[0], file: { size: MOVIE_BYTES - parts[1].file.size + 1 } as File };
+    expect(moviePlanProblem([overLimit, parts[1]])).toMatch(/512 MiB/);
     // Match the actual recorder's target rates: 2 Mbps VP8 + 128 kbps Opus
     // for twenty minutes exceeds the old 256 MiB cap, but fits the safe
     // desktop 512 MiB staging budget.
