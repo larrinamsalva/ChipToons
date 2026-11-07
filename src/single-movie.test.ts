@@ -30,7 +30,8 @@ describe("single movie planning", () => {
   });
 
   it("accepts only bounded genuine recorder lead/tail time and reports the offending part", () => {
-    const first = part(0, 120), second = part(120, 240);
+    const first = part(0, 120);
+    const second = { ...part(120, 240), sha256: "f".repeat(64) };
     // 150ms intentional audio lead plus bounded MediaRecorder tail is normal
     // for a genuinely decoded VP8/Opus part; the worker still verifies
     // timestamp continuity and every independently decodable packet.
