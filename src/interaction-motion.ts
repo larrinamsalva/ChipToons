@@ -126,8 +126,10 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
       const down = action.kind === "point" ? 0.24 : 0.18;
       const amount = (action.kind === "point" ? 85 : 33) *
         smooth(from, peak, t) * (1 - smooth(Math.max(peak, until - down), until, t));
-      const target = receiving ? elements.get(action.actorId) :
-        receiver && t >= receiver.time - 0.55 ? elements.get(receiver.actorId) : prop;
+      const target = receiving && !calm && project.visualStyle === "storybook-cinematic"
+        ? elements.get(action.actorId)
+        : receiver && !receiving && t >= receiver.time - 0.55
+          ? elements.get(receiver.actorId) : prop;
       const aimTime = receiving || target?.id === receiver?.actorId || target?.id === action.actorId
         ? receiver?.time ?? action.start : action.start;
       const aimed = target ? sample(target, aimTime) : undefined;
