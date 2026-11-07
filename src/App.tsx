@@ -389,12 +389,15 @@ export default function App() {
     }
   }
 
-  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | "camera-wagon" | "story-cards" | "full-body" | "scout-voiced" | "scout-acting" | "scout-wobbly-chair" | "scout-helper-jo" | "scout-mark-it-safe" | "scout-wagon-wheel" | "scout-tidy-workshop" | TransformExample = "friendship", variant?: "focus" | "participation") {
+  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | "camera-wagon" | "story-cards" | "full-body" | "scout-voiced" | "scout-acting" | "scout-wobbly-chair" | "scout-helper-jo" | "scout-mark-it-safe" | "scout-wagon-wheel" | "scout-tidy-workshop" | "scout-articulated-workshop" | TransformExample = "friendship", variant?: "focus" | "participation") {
     if (working) return;
     setWorking(true);
     setNotice("Opening your cartoon example…");
     try {
-      if (example === "scout-tidy-workshop") {
+      if (example === "scout-articulated-workshop") {
+        const { littleFixersArticulatedWorkshop } = await import("./little-fixers-articulated-workshop");
+        await open(littleFixersArticulatedWorkshop());
+      } else if (example === "scout-tidy-workshop") {
         const { littleFixersTidyWorkshop } = await import("./little-fixers-tidy-workshop");
         await open(await littleFixersTidyWorkshop());
       } else if (example === "scout-wagon-wheel") {
@@ -749,6 +752,7 @@ export default function App() {
           onScoutMarkItSafeDemo={() => void openDemo("scout-mark-it-safe")}
           onScoutWagonWheelDemo={() => void openDemo("scout-wagon-wheel")}
           onScoutTidyWorkshopDemo={() => void openDemo("scout-tidy-workshop")}
+          onScoutArticulatedWorkshopDemo={() => void openDemo("scout-articulated-workshop")}
           onTransformDemo={example => void openDemo(example)}
           onFocusDemo={example => void openDemo(example, "focus")}
           onParticipationDemo={example => void openDemo(example, "participation")}
