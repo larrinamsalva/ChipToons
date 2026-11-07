@@ -117,7 +117,11 @@ export function validLocation(value: unknown): value is LocationLayout {
 export function sceneryOffset(scene: Scene, element: SceneElement, camera: { x: number; y: number; shotId?: string }, calm: boolean) {
   if (calm || !scene.gentleDepth || (!scene.cameraAnimation && !camera.shotId) || !element.sceneryDepth || element.backdrop)
     return { x: 0, y: 0 };
-  const factor = element.sceneryDepth === "behind" ? 0.2 : element.sceneryDepth === "front" ? -0.12 : 0;
+  return sceneryParallax(element.sceneryDepth, camera);
+}
+
+export function sceneryParallax(depth: SceneryDepth, camera: { x: number; y: number }) {
+  const factor = depth === "behind" ? 0.2 : depth === "front" ? -0.12 : 0;
   return { x: Math.max(-28, Math.min(28, (camera.x - 400) * factor)),
     y: Math.max(-16, Math.min(16, (camera.y - 225) * factor)) };
 }

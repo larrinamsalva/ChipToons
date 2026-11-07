@@ -28,11 +28,48 @@ import { cameraAt, duplicateAnimatedScene, elementAt, retimeScene, sceneElementA
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { EXPORT_RECORDING_LEAD_SECONDS } from "../src/segments";
-import { newAudioClip } from "../src/production";
+import { newAudioClip, reconcileProduction } from "../src/production";
 import { imageLibraryItem, placeLibraryItem } from "../src/library";
 import { starterLocations } from "../src/world-starters";
 import { makeScene, uid } from "../src/model";
 import { demo, openLittleFixersOpening, restore } from "./production-helpers";
+
+test("Cinematic workshop depth and grounding survive a genuine animated Scout and Jo WebM", async ({ page }, info) => {
+  test.setTimeout(200_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Watch Scout and Jo tidy up (4:30)", exact: true }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 60_000 });
+  const { data } = await backup(page);
+  const scene = data.scenes[4];
+  // Export the unchanged 34s voiced opening and actual 30s interaction scene
+  // in a separate test copy. No new scene, retiming, or substitute renderer.
+  const scenes = [data.scenes[0], scene];
+  const copy = { ...data, ...reconcileProduction(data, scenes),
+    id: uid(), title: "Cinematic workshop export proof", scenes,
+    visualStyle: "storybook-cinematic" as const };
+  await restore(page, copy);
+  const { path, pcm } = await render(page, info, "cinematic-scout-jo-workshop", 64);
+  const before = rawFrame(path, 34 + 3);
+  const carry = rawFrame(path, 34 + 12.1);
+  const after = rawFrame(path, 34 + 26);
+  expect(changedPixels(before, carry, 80, 50, 720, 400)).toBeGreaterThan(600);
+  expect(changedPixels(carry, after, 80, 50, 720, 400)).toBeGreaterThan(600);
+  const start = Math.floor((1.3 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  const end = Math.floor((2.4 + EXPORT_RECORDING_LEAD_SECONDS) * 8000);
+  let energy = 0;
+  for (let i = start; i < end; i++) energy += pcm.readFloatLE(i * 4) ** 2;
+  expect(Math.sqrt(energy / (end - start))).toBeGreaterThan(0.012);
+  const png = info.outputPath("cinematic-workshop-grounded-frame.png");
+  execFileSync("ffmpeg", ["-v", "error", "-i", path, "-ss", String(34 + 24.8 + EXPORT_RECORDING_LEAD_SECONDS), "-frames:v", "1", png]);
+  await info.attach("Actual decoded cinematic workshop with both characters grounded", { path: png, contentType: "image/png" });
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  const pending = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube SRT", exact: true }).click();
+  const captions = await readFile((await (await pending).path())!, "utf8");
+  expect(captions).toContain("Welcome to the Little Fixers Club!");
+  expect(captions).toContain("Fixing starts with a plan");
+});
 
 async function render(
   page: Page,

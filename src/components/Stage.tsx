@@ -5,12 +5,14 @@ import { participationCards } from "../participation-art";
 import { CaptionGuide, FocusArt, FocusCard } from "./FocusArt";
 import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
+import { workshopGroundShadows } from "../cinematic-workshop";
+import { WorkshopDepthDefs, WorkshopDepthLayer, WorkshopGrounding } from "./CinematicWorkshop";
 import { PuppetArt } from "./PuppetArt";
-import { stageCameraAt, backgroundAt, sceneFramesAt, sceneStart } from "../timeline";
+import { stageCameraAt, backgroundAt, elementAt, sceneFramesAt, sceneStart } from "../timeline";
 import { handAt, interactionPaintOrder } from "../interaction-motion";
 import type { InteractionFrame } from "../interaction-motion";
 import type { Grip, Point } from "../interaction-model";
-import { memo, useId, useRef, useState } from "react";
+import { Fragment, memo, useId, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import type {
   Character,
@@ -433,6 +435,7 @@ export const Stage = memo(function Stage({
       data-visual-style={premium ? "storybook-cinematic" : "classic"}
     >
       {premium && <defs>
+        {classroom && <WorkshopDepthDefs prefix={clipPrefix} />}
         <linearGradient id={`${clipPrefix}-premium-wall`} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#fff8ed" />
           <stop offset="60%" stopColor="#edd9bb" />
@@ -477,6 +480,7 @@ export const Stage = memo(function Stage({
           >
             {classroom ? (
               <g>
+                {premium && <WorkshopDepthLayer depth="behind" camera={camera} calm={calmPreview} prefix={clipPrefix} />}
                 <rect
                   x="87"
                   y="55"
@@ -512,6 +516,7 @@ export const Stage = memo(function Stage({
                 <rect y="290" width="800" height="160"
                   fill={premium ? `url(#${clipPrefix}-premium-floor)` : "#c9ab83"} />
                 <ellipse cx="408" cy="366" rx="260" ry="65" fill="#e1ba8e" />
+                {premium && <WorkshopDepthLayer depth="alongside" camera={camera} calm={calmPreview} prefix={clipPrefix} />}
               </g>
             ) : (
               <g>
@@ -626,6 +631,9 @@ export const Stage = memo(function Stage({
               const frame = frames.get(element.id)!;
               const offset = drag ?? artworkOffset;
               const depth = sceneryOffset(scene, element, camera, !!calmPreview);
+              const previewScale = drag?.id === element.id ? drag.scale : undefined;
+              const ground = premium && classroom
+                ? elementAt(element, t, scene.duration, true) : undefined;
               const width =
                 element.width ?? (character?.puppet ? 230 : asset ? (element.backdrop ? 800 : 190) : 120);
               const height =
@@ -658,8 +666,14 @@ export const Stage = memo(function Stage({
                     />
                   ) : null;
               return (
+                <Fragment key={element.id}>
+                {ground && <WorkshopGrounding elementId={element.id} prefix={clipPrefix}
+                  shadows={workshopGroundShadows(element,
+                    previewScale === undefined ? frame : { ...frame, scale: previewScale },
+                    previewScale === undefined ? ground : { ...ground, scale: previewScale }, character)}
+                  offset={{ x: depth.x + (offset?.id === element.id ? offset.x : 0),
+                    y: depth.y + (offset?.id === element.id ? offset.y : 0) }} />}
                 <g
-                  key={element.id}
                   transform={`translate(${frame.x + depth.x + (offset?.id === element.id ? offset.x : 0)} ${frame.y + depth.y + (offset?.id === element.id ? offset.y : 0)}) rotate(${frame.rotation}) scale(${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flip ? -1 : 1)} ${(drag?.id === element.id && drag.scale !== undefined ? drag.scale : frame.scale) * (element.flipY ? -1 : 1)})`}
                   opacity={frame.opacity}
                   data-element-id={element.id}
@@ -754,7 +768,7 @@ export const Stage = memo(function Stage({
                       : undefined
                   }
                 >
-                  {!frame.heldBy && <>
+                  {!(premium && classroom) && !frame.heldBy && <>
                     <ellipse cy="3" rx={premium ? "55" : "48"} ry={premium ? "11" : "9"}
                       fill={premium ? "#3d3140" : "#3b5b45"} opacity={premium ? ".25" : ".14"} />
                     {premium && character?.puppet && <ellipse cy="2" rx="27" ry="4"
@@ -803,6 +817,7 @@ export const Stage = memo(function Stage({
                     </g>
                   )}
                 </g>
+                </Fragment>
               );
             })}
             {[...frames].map(([id, frame]) => frame.watering && (
@@ -818,6 +833,7 @@ export const Stage = memo(function Stage({
               <circle r="11" fill="#fff" stroke="#5933a6" strokeWidth="3" strokeDasharray="4 3" />
               <path d="M-4 0h8m-4-4v8" stroke="#5933a6" strokeWidth="2" />
             </g>}
+            {premium && classroom && <WorkshopDepthLayer depth="front" camera={camera} calm={calmPreview} prefix={clipPrefix} />}
             {anchorMarkers?.map(({ actorId, grip }) => {
               const actor = scene.elements.find(item => item.id === actorId);
               if (!actor) return null;

@@ -210,3 +210,7 @@ Choose **Help Me Make My Cartoon** to review a local story plan, audition real c
 ### Puppet Maker & Character Animation Studio
 
 Choose **Create a Puppet Character** to assemble original parts, assign parts from a drawing or PNG/WebP files, move joints, and save reusable poses. Puppets use the existing timeline and WebM renderer. See [Make a puppet with Sunny](docs/CREATOR_GUIDE.md#make-a-puppet-with-sunny).
+
+### Cinematic workshop depth
+
+Enable **Cinematic Storybook look** for layered workshop scenery, gentle camera parallax and soft animated boot/prop contact shadows. Classic projects keep their existing appearance. See the [same-scene comparison and verification](docs/CINEMATIC_WORKSHOP_DEPTH.md).
