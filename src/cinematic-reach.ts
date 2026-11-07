@@ -59,5 +59,6 @@ export function cinematicReachJoint(
   const originalAngle = shoulder.angle + Math.atan2(tipY, tipX) * DEG;
   const correction = clamp(wrapped(targetAngle - originalAngle), -62, 62);
   const amount = clamp(strength, 0, 1);
-  return { x: 0, y: 0, angle: correction * amount };
+  // Normalize signed zero so no-motion frames compare and serialize consistently.
+  return { x: 0, y: 0, angle: amount === 0 ? 0 : correction * amount };
 }
