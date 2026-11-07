@@ -7,6 +7,7 @@ import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
 import { workshopGroundShadows } from "../cinematic-workshop";
 import { cinematicFaceAt } from "../cinematic-face";
+import { cinematicContactsAt } from "../cinematic-contact";
 import { WorkshopDepthDefs, WorkshopDepthLayer, WorkshopGrounding } from "./CinematicWorkshop";
 import { PuppetArt } from "./PuppetArt";
 import { stageCameraAt, backgroundAt, elementAt, sceneFramesAt, sceneStart } from "../timeline";
@@ -823,6 +824,32 @@ export const Stage = memo(function Stage({
                   )}
                 </g>
                 </Fragment>
+              );
+            })}
+            {premium && cinematicContactsAt(project, scene, frames, t, calmPreview).map(contact => {
+              const prop = scene.elements.find(item => item.id === contact.objectId);
+              if (!prop) return null;
+              const depth = sceneryOffset(scene, prop, camera, !!calmPreview);
+              return (
+                <g key={contact.actionId} data-cinematic-prop-contact="true"
+                  data-contact-owner={contact.ownerId}
+                  data-contact-object={contact.objectId}
+                  pointerEvents="none" aria-hidden="true"
+                  opacity={contact.curl}
+                  transform={`translate(${contact.x + depth.x} ${contact.y + depth.y}) rotate(${contact.rotation}) scale(${contact.scale * (contact.side === "left" ? -1 : 1)} ${contact.scale})`}>
+                  {/* Two small skin-toned fingertips in FRONT of the held prop.
+                      Drawn in stage coordinates, so the object's own animation
+                      and the holder's actual wrist anchor remain untouched. */}
+                  <path d="M-12 -7Q-8 -12 -3 -9L6 -4"
+                    stroke={contact.skin} strokeWidth="4.2" fill="none"
+                    strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M-12 1Q-5 -3 0 0L8 4"
+                    stroke={contact.skin} strokeWidth="3.8" fill="none"
+                    strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M-7 -9Q-3 -8 1 -6M-7 0Q-3 0 2 2"
+                    stroke="#8a5348" strokeWidth="1.1" opacity=".6"
+                    fill="none" strokeLinecap="round" />
+                </g>
               );
             })}
             {[...frames].map(([id, frame]) => frame.watering && (
