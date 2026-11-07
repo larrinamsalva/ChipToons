@@ -135,8 +135,11 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
       const down = action.kind === "point" ? 0.24 : 0.18;
       const amount = (action.kind === "point" ? 85 : 33) *
         smooth(from, peak, t) * (1 - smooth(Math.max(peak, until - down), until, t));
+      // The receiving arm reaches for the *shared story object*, not the
+      // giver's torso. A real articulated hand can then line up with the
+      // checklist while the original attachment/transfer timeline stays intact.
       const target = receiving && !calm && project.visualStyle === "storybook-cinematic"
-        ? elements.get(action.actorId)
+        ? prop
         : receiver && !receiving && t >= receiver.time - 0.55
           ? elements.get(receiver.actorId) : prop;
       const aimTime = receiving || target?.id === receiver?.actorId || target?.id === action.actorId
