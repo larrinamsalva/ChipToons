@@ -10,8 +10,11 @@ describe("Cinematic Storybook full-body material depth", () => {
     const project = littleFixersFullBodyPilot();
     project.visualStyle = premium ? "storybook-cinematic" : undefined;
     const before = JSON.stringify(project);
+    // Verify material detail at an open-eye frame. Cinematic puppets
+    // naturally hide eye catchlights during a blink, so sampling an
+    // arbitrary moment would confuse facial acting with missing materials.
     const svg = renderToStaticMarkup(createElement(Stage, {
-      project, scene: project.scenes[0], time: 6, labelled: false,
+      project, scene: project.scenes[0], time: 0, labelled: false,
     }));
     expect(JSON.stringify(project)).toBe(before);
     return { svg, project };

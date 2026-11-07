@@ -9,6 +9,7 @@ import { supportsVoiceMouth, voiceMouthAt } from "./voice-mouth";
 import { interpolateJoints } from "./puppet-model";
 import { cinematicMotionAt } from "./cinematic-motion";
 import { cinematicGaitAt } from "./cinematic-gait";
+import { cinematicActionHeadAt } from "./cinematic-head-attention";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
 
@@ -243,7 +244,18 @@ export function sceneElementAt(project: Project, scene: Scene, element: SceneEle
     emotion: voice.expression === "keep" ? frame.emotion : voice.expression } : frame;
 }
 export function sceneFramesAt(project: Project, scene: Scene, time: number, start = 0, calm = false) {
-  return sampleInteractions(project, scene, time, (item, t) => sceneElementAt(project, scene, item, t, start, calm), calm);
+  const frames = sampleInteractions(project, scene, time,
+    (item, t) => sceneElementAt(project, scene, item, t, start, calm), calm);
+  // Use already-resolved held-object coordinates for expressive head
+  // reactions. The original character and prop timelines stay untouched.
+  for (const item of scene.elements) {
+    if (!item.characterId) continue;
+    const frame = frames.get(item.id);
+    if (frame) frames.set(item.id, cinematicActionHeadAt(
+      project, scene, item, frame, frames, time, calm,
+    ));
+  }
+  return frames;
 }
 export function keyAt(
   element: SceneElement,
