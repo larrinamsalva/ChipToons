@@ -111,25 +111,31 @@ function plantFoot(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
   const parent = rig.parts.find(part => part.id === foot.parentId);
   if (!parent || !["leftLeg", "rightLeg", "leftShin", "rightShin"].includes(parent.role) ||
       foot.assetId) return frame;
-  const poses = puppetTransforms(rig, frame.joints);
-  const current = footPoint(rig, element, frame, foot);
+  // Correct boot orientation BEFORE finding its sole contact point. Rotating
+  // after planting can drop the shoe slightly through the floor and make the
+  // shadow snap when the actor bobs upward.
+  const footIndex = rig.parts.indexOf(foot);
+  const initial = puppetTransforms(rig, frame.joints)[footIndex];
+  const footJoint = frame.joints?.[foot.id] ?? neutralJoint;
+  const angle = clamp(normAngle(-initial.angle -
+    frame.rotation * (element.flip ? -1 : 1)), -16, 16) * weight;
+  const angledFoot = { ...footJoint, angle: footJoint.angle + angle };
+  const angled: ElementFrame = { ...frame, joints: { ...frame.joints, [foot.id]: angledFoot } };
+
+  const poses = puppetTransforms(rig, angled.joints);
+  const current = footPoint(rig, element, angled, foot);
   const deltaStage = { x: clamp(target.x - current.x, -19 * frame.scale, 19 * frame.scale) * weight,
     y: clamp(target.y - current.y, -13 * frame.scale, 13 * frame.scale) * weight };
-  // Solve the foot-joint offset in its PARENT's coordinate frame. The foot
-  // stays attached to the leg; the saved authored joint is never overwritten.
+  // Convert the remaining contact correction into the parent-leg frame. The
+  // joint's original authored offsets still remain the baseline.
   const stageLocal = rotate(deltaStage, -frame.rotation);
   const local = { x: stageLocal.x / frame.scale * (element.flip ? -1 : 1),
     y: stageLocal.y / frame.scale * (element.flipY ? -1 : 1) };
   const parentAngle = poses[rig.parts.indexOf(parent)].angle;
   const correction = rotate(local, -parentAngle);
-  const footJoint = frame.joints?.[foot.id] ?? neutralJoint;
-  const angle = clamp(normAngle(-poses[rig.parts.indexOf(foot)].angle -
-    frame.rotation * (element.flip ? -1 : 1)), -16, 16) * weight;
-  return { ...frame, joints: { ...frame.joints, [foot.id]: {
-    ...footJoint, x: footJoint.x + correction.x, y: footJoint.y + correction.y,
-    angle: footJoint.angle + angle } } };
+  return { ...angled, joints: { ...angled.joints, [foot.id]: {
+    ...angledFoot, x: footJoint.x + correction.x, y: footJoint.y + correction.y } } };
 }
-
 /**
  * Deterministic opt-in walking polish. No timeline edits or stored gait state.
  * The exact final frame is shared with Stage, grounding, hand anchors and WebM.
