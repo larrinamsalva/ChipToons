@@ -1,5 +1,6 @@
 import { WATER_TILT } from "./interaction-model";
 import { cinematicReachJoint } from "./cinematic-reach";
+import { cinematicArmIK } from "./cinematic-arm-ik";
 import type { Character, Project, Scene, SceneElement } from "./model";
 import { neutralJoint, puppetTransforms } from "./puppet-model";
 import type { PuppetRig } from "./puppet-model";
@@ -77,9 +78,10 @@ export function handAt(character: Character | undefined, element: SceneElement, 
 }
 
 function reach(project: Project, character: Character | undefined, actor: SceneElement, frame: InteractionFrame,
-  hand: Hand, amount: number, direction: number, target?: Point,
+  grip: Grip, amount: number, direction: number, target?: Point,
   peakAmount = 33, calm = false): InteractionFrame {
-  if (!amount || hand === "default") return frame;
+  if (!amount || grip.hand === "default") return frame;
+  const hand = grip.hand;
   const angle = -direction * (actor.flip ? -1 : 1) * amount;
   const rig = character?.puppet;
   if (rig) {
@@ -88,7 +90,14 @@ function reach(project: Project, character: Character | undefined, actor: SceneE
     if (parts.some(part => frame.joints?.[part.id])) return frame;
     const upper = parts.at(-1);
     if (!upper) return frame;
-    const targeted = !calm && project.visualStyle === "storybook-cinematic" && target
+    const cinematic = !calm && project.visualStyle === "storybook-cinematic" && target;
+    // A parented vector forearm can solve shoulder AND elbow together. Preserve
+    // the one-joint cinematic reach for all older or partial puppet rigs.
+    const articulated = cinematic
+      ? cinematicArmIK(rig, actor, frame, upper, grip, target, amount / peakAmount)
+      : undefined;
+    if (articulated) return { ...frame, joints: { ...frame.joints, ...articulated } };
+    const targeted = cinematic
       ? cinematicReachJoint(rig, actor, frame, upper, target, amount / peakAmount)
       : undefined;
     return { ...frame, joints: { ...frame.joints,
@@ -134,7 +143,7 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
         ? receiver?.time ?? action.start : action.start;
       const aimed = target ? sample(target, aimTime) : undefined;
       const direction = aimed && aimed.x < sample(actor, aimTime).x ? -1 : 1;
-      frame = reach(project, character(actor), actor, frame, grip.hand, amount, direction,
+      frame = reach(project, character(actor), actor, frame, grip, amount, direction,
         aimed ? { x: aimed.x, y: aimed.y } : undefined, action.kind === "point" ? 85 : 33, calm);
     }
     return frame;
