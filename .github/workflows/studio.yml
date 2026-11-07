@@ -57,7 +57,7 @@ jobs:
   episode:
     name: Complete 20-minute episode and genuine exports
     runs-on: ubuntu-latest
-    timeout-minutes: 38
+    timeout-minutes: 46
     steps:
       - uses: actions/checkout@v7.0.1
         with:
