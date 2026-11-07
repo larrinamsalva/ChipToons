@@ -1,6 +1,6 @@
 import type { Project, SceneElement } from "./model";
 import { neutralJoint, puppetTransforms } from "./puppet-model";
-import type { PuppetPart, PuppetRig, JointSnapshot } from "./puppet-model";
+import type { PuppetPart, PuppetRig } from "./puppet-model";
 import type { ElementFrame } from "./timeline";
 
 type Point = { x: number; y: number };
@@ -84,7 +84,7 @@ function assistShin(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
   const leg = shin && rig.parts.find(p => p.id === shin.parentId &&
     (p.role === "leftLeg" || p.role === "rightLeg"));
   if (!shin || !leg || !shin.parentId || !foot.parentId || foot.assetId ||
-      (frame.joints?.[shin.id] && Math.abs(frame.joints[shin.id].angle) > 1)) return frame;
+      (Math.abs(frame.joints?.[shin.id]?.angle ?? 0) > 1)) return frame;
   const poses = puppetTransforms(rig, frame.joints);
   const hip = poses[rig.parts.indexOf(leg)];
   // Aim at the center of the sole while retaining existing custom artwork.
