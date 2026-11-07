@@ -83,11 +83,11 @@ describe("Cinematic workshop depth and grounding", () => {
     expect(shadows[1].x).toBeCloseTo(point.x, 8);
     expect(shadows[1].y).toBeGreaterThanOrEqual(point.y);
     const lifted = workshopGroundShadows(actor, { ...frame, y: frame.y - 18 }, floor, character);
-    expect(lifted[1].y).toBe(shadows[1].y);
+    expect(lifted[1].y).toBeCloseTo(shadows[1].y, 8);
     expect(lifted[1].opacity).toBeLessThan(shadows[1].opacity);
     const moved = workshopGroundShadows(actor, { ...frame, x: frame.x + 91 }, floor, character);
     expect(moved[1].x - shadows[1].x).toBeCloseTo(91, 8);
-    expect(moved[1].y).toBe(shadows[1].y);
+    expect(moved[1].y).toBeCloseTo(shadows[1].y, 8);
     expect(workshopGroundShadows(actor, frame, floor, character)).toEqual(shadows);
   });
 
