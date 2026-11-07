@@ -6,6 +6,7 @@ import { CaptionGuide, FocusArt, FocusCard } from "./FocusArt";
 import { objectAppearanceAt } from "../transform-motion";
 import { sceneryOffset } from "../world-model";
 import { workshopGroundShadows } from "../cinematic-workshop";
+import { cinematicFaceAt } from "../cinematic-face";
 import { WorkshopDepthDefs, WorkshopDepthLayer, WorkshopGrounding } from "./CinematicWorkshop";
 import { PuppetArt } from "./PuppetArt";
 import { stageCameraAt, backgroundAt, elementAt, sceneFramesAt, sceneStart } from "../timeline";
@@ -629,6 +630,9 @@ export const Stage = memo(function Stage({
               const appearance = art?.kind === "prop" ? art.appearance : element.propAppearance;
               const asset = project.assets.find(a => a.id === assetId);
               const frame = frames.get(element.id)!;
+              const face = premium && character?.puppet
+                ? cinematicFaceAt(project, scene, element, frame, frames, t, calmPreview)
+                : undefined;
               const offset = drag ?? artworkOffset;
               const depth = sceneryOffset(scene, element, camera, !!calmPreview);
               const previewScale = drag?.id === element.id ? drag.scale : undefined;
@@ -643,7 +647,8 @@ export const Stage = memo(function Stage({
               const clipId = `${clipPrefix}-appearance-${i}`;
               const artwork = character?.puppet ? (
                     <PuppetArt character={character} assets={project.assets} joints={frame.joints}
-                      emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening} blink={frame.blink}
+                      emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening}
+                      blink={face?.blink ?? frame.blink} gaze={face}
                       heartOpacity={frame.heartOpacity} heartScale={frame.heartScale}
                       premium={premium} />
                   ) : asset ? (
