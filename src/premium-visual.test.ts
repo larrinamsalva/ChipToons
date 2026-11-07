@@ -30,8 +30,11 @@ describe("Cinematic Storybook visual finish", () => {
     const project = example();
     project.visualStyle = "storybook-cinematic";
     const scene = project.scenes[0];
+    // Check the lighting and catchlights at a guaranteed open-eye frame.
+    // The cinematic attention pass intentionally hides catchlights while blinking,
+    // so an arbitrary timestamp can intermittently catch a deterministic blink.
     const premium = renderToStaticMarkup(createElement(Stage, {
-      project: validateProject(project), scene, time: 1, labelled: false,
+      project: validateProject(project), scene, time: 0, labelled: false,
     }));
     expect(premium).toContain('data-visual-style="storybook-cinematic"');
     expect(premium).toContain('data-cinematic-workshop-lighting="true"');

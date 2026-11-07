@@ -3,6 +3,7 @@ import type { Asset, Character, Emotion } from "../model";
 import { puppetTransforms } from "../puppet-model";
 import type { JointSnapshot, PuppetPart } from "../puppet-model";
 import type { Mouth } from "../animation-model";
+import type { CinematicFace } from "../cinematic-face";
 
 function Face({
   emotion,
@@ -12,6 +13,7 @@ function Face({
   eyes = true,
   lips = true,
   premium = false,
+  gaze,
 }: {
   emotion: Emotion;
   mouth: Mouth;
@@ -20,6 +22,7 @@ function Face({
   eyes?: boolean;
   lips?: boolean;
   premium?: boolean;
+  gaze?: CinematicFace;
 }) {
   const smile =
     mouth === "smile" ||
@@ -40,6 +43,7 @@ function Face({
               fill="#fffdf8" stroke="#8e5f56" strokeWidth="1.4" />
           )))}
           <path
+            transform={premium && gaze ? `translate(0 ${-gaze.brow})` : undefined}
             d={
               worried
                 ? "M-23 -9l12 -7M11 -11q6 -5 12 -1"
@@ -56,8 +60,9 @@ function Face({
             ) : (
               <ellipse
                 key={x}
-                cx={x}
-                cy="-2"
+                data-cinematic-pupil={premium && gaze ? "true" : undefined}
+                cx={x + (premium ? gaze?.x ?? 0 : 0)}
+                cy={-2 + (premium ? gaze?.y ?? 0 : 0)}
                 rx={emotion === "surprised" ? 5.5 : premium ? 4.6 : 3.5}
                 ry={premium ? 6.7 : 5}
                 fill="#382c34"
@@ -65,7 +70,7 @@ function Face({
             ),
           )}
           {premium && !blink && [-15, 15].map(x => (
-            <circle key={`catchlight-${x}`} data-eye-highlight="premium" cx={x + 1.8} cy="-4.6" r="1.7"
+            <circle key={`catchlight-${x}`} data-eye-highlight="premium" cx={x + 1.8 + (gaze?.x ?? 0)} cy={-4.6 + (gaze?.y ?? 0)} r="1.7"
               fill="#ffffff" stroke="none" />
           ))}
           {premium && <>
@@ -222,6 +227,7 @@ export function PuppetArt({
   heartOpacity = 0,
   heartScale = 1,
   premium = false,
+  gaze,
 }: {
   character: Character;
   assets: Asset[];
@@ -233,6 +239,7 @@ export function PuppetArt({
   heartOpacity?: number;
   heartScale?: number;
   premium?: boolean;
+  gaze?: CinematicFace;
 }) {
   const gradientPrefix = useId();
   const rig = character.puppet;
@@ -288,6 +295,7 @@ export function PuppetArt({
                   voiceOpening={voiceOpening}
                   blink={blink}
                   premium={premium}
+                  gaze={premium ? gaze : undefined}
                   lips={false}
                 />
               ) : part.role === "mouth" ? (
@@ -297,6 +305,7 @@ export function PuppetArt({
                   voiceOpening={voiceOpening}
                   blink={blink}
                   premium={premium}
+                  gaze={premium ? gaze : undefined}
                   eyes={false}
                 />
               ) : (
@@ -323,6 +332,7 @@ export function PuppetArt({
                   voiceOpening={voiceOpening}
                     blink={blink}
                     premium={premium}
+                    gaze={premium ? gaze : undefined}
                     eyes={!separateEyes}
                     lips={!separateMouth}
                   />
