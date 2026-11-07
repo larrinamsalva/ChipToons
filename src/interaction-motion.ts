@@ -1,6 +1,7 @@
 import { WATER_TILT } from "./interaction-model";
 import { cinematicReachJoint } from "./cinematic-reach";
 import { cinematicArmIK } from "./cinematic-arm-ik";
+import { cinematicGripAt } from "./cinematic-hand-grip";
 import type { Character, Project, Scene, SceneElement } from "./model";
 import { neutralJoint, puppetTransforms } from "./puppet-model";
 import type { PuppetRig } from "./puppet-model";
@@ -9,6 +10,8 @@ import type { ElementFrame } from "./timeline";
 
 export type InteractionFrame = ElementFrame & {
   interactionArm?: { left?: number; right?: number };
+  /** Opt-in palm acting for real parented vector hands. */
+  gripCurl?: { left?: number; right?: number };
   heldBy?: string;
   interactionPosition?: boolean;
   watering?: Point;
@@ -96,12 +99,15 @@ function reach(project: Project, character: Character | undefined, actor: SceneE
     const articulated = cinematic
       ? cinematicArmIK(rig, actor, frame, upper, grip, target, amount / peakAmount)
       : undefined;
-    if (articulated) return { ...frame, joints: { ...frame.joints, ...articulated } };
+    if (articulated) return cinematicGripAt(project, rig, actor,
+      { ...frame, joints: { ...frame.joints, ...articulated } }, grip, amount / peakAmount, calm);
     const targeted = cinematic
       ? cinematicReachJoint(rig, actor, frame, upper, target, amount / peakAmount)
       : undefined;
-    return { ...frame, joints: { ...frame.joints,
-      [upper.id]: targeted ?? { ...neutralJoint, angle } } };
+    return cinematicGripAt(project, rig, actor,
+      { ...frame, joints: { ...frame.joints,
+        [upper.id]: targeted ?? { ...neutralJoint, angle } } },
+      grip, amount / peakAmount, calm);
   }
   return actor.assetId || character?.assetId ? frame :
     { ...frame, interactionArm: { ...frame.interactionArm, [hand]: angle } };
