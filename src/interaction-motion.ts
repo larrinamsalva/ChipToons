@@ -135,10 +135,12 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
       const down = action.kind === "point" ? 0.24 : 0.18;
       const amount = (action.kind === "point" ? 85 : 33) *
         smooth(from, peak, t) * (1 - smooth(Math.max(peak, until - down), until, t));
-      // The receiving arm reaches for the *shared story object*, not the
-      // giver's torso. A real articulated hand can then line up with the
-      // checklist while the original attachment/transfer timeline stays intact.
-      const target = receiving && !calm && project.visualStyle === "storybook-cinematic"
+      // In Cinematic handoffs, BOTH performers aim at the shared story
+      // object. Targeting the other person's torso near transfer would
+      // exceed real articulated arm reach and force the elbow to disappear.
+      // Classic mode preserves its original receiver-facing gesture.
+      const cinematicHandoff = !calm && project.visualStyle === "storybook-cinematic" && receiver;
+      const target = cinematicHandoff
         ? prop
         : receiver && !receiving && t >= receiver.time - 0.55
           ? elements.get(receiver.actorId) : prop;
