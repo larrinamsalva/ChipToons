@@ -29,6 +29,21 @@ describe("single movie planning", () => {
     expect(moviePlanProblem([first, { ...second, media: { ...second.media, duration: 5 } }])).toMatch(/unusual timing/);
   });
 
+  it("accepts only bounded genuine recorder lead/tail time and reports the offending part", () => {
+    const first = part(0, 120), second = part(120, 240);
+    // 150ms intentional audio lead plus bounded MediaRecorder tail is normal
+    // for a genuinely decoded VP8/Opus part; the worker still verifies
+    // timestamp continuity and every independently decodable packet.
+    const withTail = { ...second, media: { ...second.media, duration: 120.55 } };
+    expect(moviePlanProblem([first, withTail])).toBe("");
+    const over = { ...withTail, media: { ...withTail.media, duration: 120.61 } };
+    expect(moviePlanProblem([first, over])).toMatch(/Part 2 has unusual timing.*120\\.610s.*120\\.000s/);
+    expect(moviePlanProblem([first, { ...over, media: { ...over.media, duration: NaN } }]))
+      .toMatch(/Part 2 has unusual timing.*invalid duration/);
+    const shortened = { ...withTail, media: { ...withTail.media, duration: 119.39 } };
+    expect(moviePlanProblem([first, shortened])).toMatch(/Part 2 has unusual timing/);
+  });
+
   it("enforces the byte budget and requires more temporary storage than the source files", () => {
     const parts = [part(0, 4), part(4, 8)];
     expect(movieSpaceNeeded(parts)).toBeGreaterThan(2 * 1000 * 2);
