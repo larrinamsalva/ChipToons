@@ -28,7 +28,7 @@ const smooth = (value: number) => {
  */
 export function cinematicFaceAt(
   project: Pick<Project, "visualStyle" | "characters">,
-  scene: Pick<Scene, "elements">,
+  scene: Pick<Scene, "elements" | "interactions">,
   element: SceneElement,
   frame: ElementFrame,
   frames: ReadonlyMap<string, ElementFrame>,
@@ -62,7 +62,7 @@ export function cinematicFaceAt(
     const distance = Math.hypot(dx, dy);
     if (distance < 10 || distance > 370) return undefined;
     const from = action.transfer?.actorId === element.id
-      ? Math.max(action.attach, action.transfer.time - 0.55) : action.start;
+      ? Math.max(action.attach, action.transfer!.time - 0.55) : action.start;
     const until = action.transfer?.actorId === element.id
       ? (action.release?.time ?? action.finish)
       : (action.transfer?.time ?? action.release?.time ?? action.finish);
