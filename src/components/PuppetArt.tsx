@@ -69,6 +69,8 @@ function Face({
               fill="#ffffff" stroke="none" />
           ))}
           {premium && <>
+            <path data-facial-detail="nose" d="M-1 1q-2 4 2 6q2 1 4-1"
+              stroke="#8d625f" strokeWidth="1.4" strokeLinecap="round" opacity=".52" />
             <ellipse cx="-30" cy="13" rx="8" ry="4.2" fill="#f6a0a0" opacity=".34" stroke="none" />
             <ellipse cx="30" cy="13" rx="8" ry="4.2" fill="#f6a0a0" opacity=".34" stroke="none" />
           </>}
@@ -113,6 +115,9 @@ function Shape({
       <g>
         <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="15"
           fill={premium ? `url(#${gradientPrefix}-shirt)` : "#277b8b"} />
+        {premium && <rect data-material-depth="workshop-shirt" x={-w / 2} y={-h / 2}
+          width={w} height={h} rx="15" fill={`url(#${gradientPrefix}-material)`}
+          pointerEvents="none" />}
         <rect x={-w / 2 + 7} y={-h / 2 + 5} width={w - 14} height={h - 11}
           rx="10" fill="#3298a2" opacity=".42" />
         <path d={`M0 ${-h / 2 + 8}V${h / 2 - 6}`} stroke="#154c64" strokeWidth="3" />
@@ -123,6 +128,9 @@ function Shape({
     if (role === "leftLeg" || role === "rightLeg" || role === "leftShin" || role === "rightShin" || role === "lowerBody") return (
       <g>
         <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="9" fill="#64764d" />
+        {premium && <rect data-material-depth="cargo-fabric" x={-w / 2} y={-h / 2}
+          width={w} height={h} rx="9" fill={`url(#${gradientPrefix}-material)`}
+          pointerEvents="none" />}
         <rect x={-w / 2 + 3} y={-h / 2 + 4} width="7" height={h - 8} rx="3" fill="#91a36d" opacity=".45" />
         <rect x={-w / 2 + 2} y={-h * 0.12} width={Math.max(10, w - 4)}
           height={Math.min(18, h * 0.35)} rx="4" fill="#546442" stroke="#354631" strokeWidth="1" />
@@ -132,6 +140,9 @@ function Shape({
     if (role === "leftFoot" || role === "rightFoot") return (
       <g>
         <rect x={-w / 2} y={-h / 2 - 4} width={w} height={h + 4} rx="7" fill="#25313c" />
+        {premium && <rect data-material-depth="work-boot" x={-w / 2} y={-h / 2 - 4}
+          width={w} height={h + 4} rx="7" fill={`url(#${gradientPrefix}-material)`}
+          pointerEvents="none" />}
         <rect x={-w / 2 - 2} y={h / 2 - 6} width={w + 5} height="8" rx="3" fill="#151c23" />
         <path d={`M${-w / 2 + 5} ${-h / 2 + 3}h${w - 13}`} stroke="#667784" strokeWidth="2" opacity=".75" />
       </g>
@@ -139,6 +150,9 @@ function Shape({
     if (role === "accessory") return (
       <g>
         <rect x={-w / 2} y={-h / 2} width={w} height={h * 0.55} rx="5" fill="#5a3829" />
+        {premium && <rect data-material-depth="tool-belt" x={-w / 2} y={-h / 2}
+          width={w} height={h * 0.55} rx="5"
+          fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />}
         <rect x="-10" y={-h / 2 - 2} width="20" height={h * 0.52} rx="3"
           fill="#d4bd86" stroke="#553b2b" strokeWidth="2" />
         <rect x={-w / 2 + 4} y={-h / 2 + 3} width="13" height={h - 2}
@@ -157,10 +171,16 @@ function Shape({
     </g>;
   if (role === "hair")
     return (
-      <path
-        d={`M${-w / 2} 6Q${-w / 2} ${-h} 0 ${-h / 2}Q${w / 2} ${-h} ${w / 2} 6Q0 -11 ${-w / 2} 6`}
-        fill={character.hair}
-      />
+      <g>
+        <path
+          d={`M${-w / 2} 6Q${-w / 2} ${-h} 0 ${-h / 2}Q${w / 2} ${-h} ${w / 2} 6Q0 -11 ${-w / 2} 6`}
+          fill={character.hair}
+        />
+        {premium && <path data-material-depth="hair-sheen"
+          d={`M${-w * 0.31} ${-h * 0.13}Q${-w * 0.13} ${-h * 0.70} ${w * 0.22} ${-h * 0.45}`}
+          stroke="#fff9eb" strokeWidth="5" strokeLinecap="round"
+          opacity=".22" fill="none" pointerEvents="none" />}
+      </g>
     );
   if (role === "accessory")
     return (
@@ -177,14 +197,17 @@ function Shape({
         ? "#fff4da"
         : character.shirt;
   return (
-    <rect
-      x={-w / 2}
-      y={-h / 2}
-      width={w}
-      height={h}
-      rx={Math.min(w, h) * 0.35}
-      fill={fill}
-    />
+    <g>
+      <rect
+        x={-w / 2} y={-h / 2}
+        width={w} height={h}
+        rx={Math.min(w, h) * 0.35} fill={fill}
+      />
+      {premium && <rect data-material-depth={role}
+        x={-w / 2} y={-h / 2} width={w} height={h}
+        rx={Math.min(w, h) * 0.35}
+        fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />}
+    </g>
   );
 }
 
@@ -230,6 +253,12 @@ export function PuppetArt({
           <stop offset="33%" stopColor={character.skin} />
           <stop offset="100%" stopColor={character.skin} stopOpacity=".84" />
         </radialGradient>
+        <linearGradient id={`${gradientPrefix}-material`} x1="0%" y1="20%" x2="100%" y2="45%">
+          <stop offset="0%" stopColor="#fffdf7" stopOpacity=".37" />
+          <stop offset="23%" stopColor="#fff9ed" stopOpacity=".13" />
+          <stop offset="52%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="100%" stopColor="#17243b" stopOpacity=".31" />
+        </linearGradient>
       </defs>}
       {rig.parts.map((part, i) => {
         const joint = transforms[i];
@@ -277,10 +306,16 @@ export function PuppetArt({
               {part.role === "head" && rig.face && (
                 <>
                   {!asset && !rig.parts.some((p) => p.role === "hair") && (
-                    <path
-                      d="M-38 -18Q-43 -47 0 -40Q36 -44 42 -15Q20 -20 14 -28Q-10 -10 -38 -18"
-                      fill={character.hair}
-                    />
+                    <g>
+                      <path
+                        d="M-38 -18Q-43 -47 0 -40Q36 -44 42 -15Q20 -20 14 -28Q-10 -10 -38 -18"
+                        fill={character.hair}
+                      />
+                      {premium && <path data-material-depth="hair-sheen"
+                        d="M-30 -21Q-21 -41 -3 -37Q15 -39 27 -30"
+                        stroke="#fff8ec" strokeWidth="3.1" strokeLinecap="round"
+                        opacity=".23" fill="none" pointerEvents="none" />}
+                    </g>
                   )}
                   <Face
                     emotion={emotion}

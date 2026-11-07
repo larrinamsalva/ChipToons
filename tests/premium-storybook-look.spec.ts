@@ -28,6 +28,11 @@ test("Cinematic Storybook is an opt-in, saved cartoon look shared by preview and
   await expect(stage).toBeVisible();
   await expect(page.locator("svg[data-visual-style='storybook-cinematic'] [data-cinematic-workshop-lighting='true']").first()).toBeAttached();
   await expect(page.locator("svg[data-visual-style='storybook-cinematic'] [data-eye-highlight='premium']").first()).toBeAttached();
+  // Real layered vector surfaces, not a CSS-only editor preview filter.
+  for (const surface of ["workshop-shirt", "cargo-fabric", "work-boot", "hair-sheen"]) {
+    await expect(page.locator(`svg[data-visual-style='storybook-cinematic'] [data-material-depth="${surface}"]`).first()).toBeAttached();
+  }
+  await expect(page.locator("svg[data-visual-style='storybook-cinematic'] [data-facial-detail='nose']").first()).toBeAttached();
 
   await page.getByRole("button", { name: "Save and return to my cartoons" }).click();
   await page.getByRole("button", { name: `Continue ${TITLE}`, exact: true }).click();
@@ -38,4 +43,6 @@ test("Cinematic Storybook is an opt-in, saved cartoon look shared by preview and
   await saved(page);
   expect((await backup(page)).data.visualStyle).toBeUndefined();
   await expect(page.locator("svg[data-visual-style='classic']").first()).toBeVisible();
+  await expect(page.locator("svg[data-visual-style='classic'] [data-material-depth]")).toHaveCount(0);
+  await expect(page.locator("svg[data-visual-style='classic'] [data-facial-detail]")).toHaveCount(0);
 });
