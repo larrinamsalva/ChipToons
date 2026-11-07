@@ -648,7 +648,7 @@ export const Stage = memo(function Stage({
               const artwork = character?.puppet ? (
                     <PuppetArt character={character} assets={project.assets} joints={frame.joints}
                       emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening}
-                      blink={face?.blink ?? frame.blink} gaze={face}
+                      blink={face?.blink ?? frame.blink} gaze={face} gripCurl={frame.gripCurl}
                       heartOpacity={frame.heartOpacity} heartScale={frame.heartScale}
                       premium={premium} />
                   ) : asset ? (

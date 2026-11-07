@@ -106,11 +106,13 @@ function Shape({
   character,
   premium = false,
   gradientPrefix,
+  gripCurl,
 }: {
   part: PuppetPart;
   character: Character;
   premium?: boolean;
   gradientPrefix: string;
+  gripCurl?: number;
 }) {
   const { role, width: w, height: h } = part;
   // Opt-in, scalable vector workwear for a full-body cartoon performer.
@@ -166,6 +168,21 @@ function Shape({
           rx="3" fill="#9b663f" stroke="#503324" strokeWidth="1.5" />
       </g>
     );
+  }
+  if (premium && (role === "leftHand" || role === "rightHand") &&
+      typeof gripCurl === "number") {
+    const curl = Math.max(0, Math.min(1, gripCurl));
+    return <g data-cinematic-hand-grip="true" data-hand-curl={curl.toFixed(2)}>
+      <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={w * 0.35}
+        fill={character.skin} />
+      <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={w * 0.35}
+        fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />
+      {[-0.26, 0, 0.26].map((x, i) =>
+        <path key={i} d={`M${w * x} ${h * 0.02}q${w * 0.03} ${h * (0.22 - 0.13 * curl)} 0 ${h * (0.31 - 0.13 * curl)}`}
+          fill="none" stroke="#925e50" strokeWidth="1.55" strokeLinecap="round" opacity=".72" />)}
+      <path d={`M${-w * 0.32} ${-h * 0.11}q${w * (0.07 + 0.09 * curl)} ${h * 0.09} ${w * (0.20 + 0.1 * curl)} ${h * 0.23}`}
+        stroke="#925e50" strokeWidth="1.9" strokeLinecap="round" fill="none" />
+    </g>;
   }
   if (role === "head")
     return <g>
@@ -228,6 +245,7 @@ export function PuppetArt({
   heartScale = 1,
   premium = false,
   gaze,
+  gripCurl,
 }: {
   character: Character;
   assets: Asset[];
@@ -240,6 +258,7 @@ export function PuppetArt({
   heartScale?: number;
   premium?: boolean;
   gaze?: CinematicFace;
+  gripCurl?: { left?: number; right?: number };
 }) {
   const gradientPrefix = useId();
   const rig = character.puppet;
@@ -310,6 +329,8 @@ export function PuppetArt({
                 />
               ) : (
                 <Shape part={part} character={character} premium={premium}
+                  gripCurl={part.role === "leftHand" ? gripCurl?.left :
+                    part.role === "rightHand" ? gripCurl?.right : undefined}
                   gradientPrefix={gradientPrefix} />
               )}
               {part.role === "head" && rig.face && (
