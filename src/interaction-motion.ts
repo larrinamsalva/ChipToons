@@ -77,7 +77,8 @@ export function handAt(character: Character | undefined, element: SceneElement, 
 }
 
 function reach(project: Project, character: Character | undefined, actor: SceneElement, frame: InteractionFrame,
-  hand: Hand, amount: number, direction: number, target?: Point, peakAmount = 33): InteractionFrame {
+  hand: Hand, amount: number, direction: number, target?: Point,
+  peakAmount = 33, calm = false): InteractionFrame {
   if (!amount || hand === "default") return frame;
   const angle = -direction * (actor.flip ? -1 : 1) * amount;
   const rig = character?.puppet;
@@ -87,7 +88,7 @@ function reach(project: Project, character: Character | undefined, actor: SceneE
     if (parts.some(part => frame.joints?.[part.id])) return frame;
     const upper = parts.at(-1);
     if (!upper) return frame;
-    const targeted = project.visualStyle === "storybook-cinematic" && target
+    const targeted = !calm && project.visualStyle === "storybook-cinematic" && target
       ? cinematicReachJoint(rig, actor, frame, upper, target, amount / peakAmount)
       : undefined;
     return { ...frame, joints: { ...frame.joints,
@@ -97,7 +98,7 @@ function reach(project: Project, character: Character | undefined, actor: SceneE
     { ...frame, interactionArm: { ...frame.interactionArm, [hand]: angle } };
 }
 
-export function sampleInteractions(project: Project, scene: Scene, time: number, sample: Sample) {
+export function sampleInteractions(project: Project, scene: Scene, time: number, sample: Sample, calm = false) {
   const frames = new Map<string, InteractionFrame>();
   for (const item of scene.elements) frames.set(item.id, sample(item, time));
   if (!scene.interactions?.length) return frames;
@@ -132,7 +133,7 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
       const aimed = target ? sample(target, aimTime) : undefined;
       const direction = aimed && aimed.x < sample(actor, aimTime).x ? -1 : 1;
       frame = reach(project, character(actor), actor, frame, grip.hand, amount, direction,
-        aimed ? { x: aimed.x, y: aimed.y } : undefined, action.kind === "point" ? 85 : 33);
+        aimed ? { x: aimed.x, y: aimed.y } : undefined, action.kind === "point" ? 85 : 33, calm);
     }
     return frame;
   }
