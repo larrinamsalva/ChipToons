@@ -1,4 +1,5 @@
 import { WATER_TILT } from "./interaction-model";
+import { cinematicReachJoint } from "./cinematic-reach";
 import type { Character, Project, Scene, SceneElement } from "./model";
 import { neutralJoint, puppetTransforms } from "./puppet-model";
 import type { PuppetRig } from "./puppet-model";
@@ -75,8 +76,8 @@ export function handAt(character: Character | undefined, element: SceneElement, 
   return stagePoint(element, frame, { x: hand.x + grip.x, y: hand.y + grip.y });
 }
 
-function reach(character: Character | undefined, actor: SceneElement, frame: InteractionFrame,
-  hand: Hand, amount: number, direction: number): InteractionFrame {
+function reach(project: Project, character: Character | undefined, actor: SceneElement, frame: InteractionFrame,
+  hand: Hand, amount: number, direction: number, target?: Point, peakAmount = 33): InteractionFrame {
   if (!amount || hand === "default") return frame;
   const angle = -direction * (actor.flip ? -1 : 1) * amount;
   const rig = character?.puppet;
@@ -85,7 +86,12 @@ function reach(character: Character | undefined, actor: SceneElement, frame: Int
     // Authored joints (including neutral snapshots) take priority over the reach.
     if (parts.some(part => frame.joints?.[part.id])) return frame;
     const upper = parts.at(-1);
-    return upper ? { ...frame, joints: { ...frame.joints, [upper.id]: { ...neutralJoint, angle } } } : frame;
+    if (!upper) return frame;
+    const targeted = project.visualStyle === "storybook-cinematic" && target
+      ? cinematicReachJoint(rig, actor, frame, upper, target, amount / peakAmount)
+      : undefined;
+    return { ...frame, joints: { ...frame.joints,
+      [upper.id]: targeted ?? { ...neutralJoint, angle } } };
   }
   return actor.assetId || character?.assetId ? frame :
     { ...frame, interactionArm: { ...frame.interactionArm, [hand]: angle } };
@@ -119,10 +125,14 @@ export function sampleInteractions(project: Project, scene: Scene, time: number,
       const down = action.kind === "point" ? 0.24 : 0.18;
       const amount = (action.kind === "point" ? 85 : 33) *
         smooth(from, peak, t) * (1 - smooth(Math.max(peak, until - down), until, t));
-      const target = receiver && !receiving && t >= receiver.time - 0.55 ? elements.get(receiver.actorId) : prop;
-      const aimTime = receiving || target?.id === receiver?.actorId ? receiver?.time ?? action.start : action.start;
-      const direction = target && sample(target, aimTime).x < sample(actor, aimTime).x ? -1 : 1;
-      frame = reach(character(actor), actor, frame, grip.hand, amount, direction);
+      const target = receiving ? elements.get(action.actorId) :
+        receiver && t >= receiver.time - 0.55 ? elements.get(receiver.actorId) : prop;
+      const aimTime = receiving || target?.id === receiver?.actorId || target?.id === action.actorId
+        ? receiver?.time ?? action.start : action.start;
+      const aimed = target ? sample(target, aimTime) : undefined;
+      const direction = aimed && aimed.x < sample(actor, aimTime).x ? -1 : 1;
+      frame = reach(project, character(actor), actor, frame, grip.hand, amount, direction,
+        aimed ? { x: aimed.x, y: aimed.y } : undefined, action.kind === "point" ? 85 : 33);
     }
     return frame;
   }
