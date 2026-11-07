@@ -45,8 +45,9 @@ export function cinematicContactsAt(
     const held = frames.get(action.objectId);
     const ownerId = held?.heldBy;
     if (!held || !ownerId || !elements.has(action.objectId) || !elements.has(ownerId)) continue;
+    const receiver = action.transfer;
     const grip = ownerId === action.actorId ? action.grip
-      : ownerId === action.transfer?.actorId ? action.transfer.grip : undefined;
+      : receiver && ownerId === receiver.actorId ? receiver.grip : undefined;
     const side = grip?.hand;
     if (side !== "left" && side !== "right") continue;
 
