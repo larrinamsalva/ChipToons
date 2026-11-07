@@ -15,7 +15,7 @@ function fixture() {
   actor.animation = undefined; // A free right arm; keyframed arms always win.
   book.sceneryDepth = undefined;
   book.x = 465;
-  book.y = 367;
+  book.y = 330;
   const action: Interaction = {
     id: "reach-example", kind: "pickup", actorId: actor.id, objectId: book.id,
     start: 1, attach: 2.5, finish: 6,
