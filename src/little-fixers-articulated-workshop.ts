@@ -27,7 +27,9 @@ export function articulatedWorkshopCharacter(role: "scout" | "jo"): Character {
       ...newPart(`${side}Hand`, `${side}Hand`, forearm),
       x: 0, y: 27, pivotX: 0, width: 22, height: 22,
     };
-    rig.parts.push(forearm, hand);
+    // Keep the forearm and hand immediately after their upper arm in paint
+    // order, so the shirt/torso naturally overlaps the rear arm.
+    rig.parts.splice(rig.parts.indexOf(arm) + 1, 0, forearm, hand);
   }
   rig.description = "Original workshop performer with editable, parented shoulders, elbows and hands. No external image or voice recording.";
   if (role === "jo") {
