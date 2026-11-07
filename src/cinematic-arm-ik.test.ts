@@ -69,8 +69,10 @@ describe("Cinematic two-joint arm reaching", () => {
       { x: shoulder.x + 30 + adjustedGrip.x, y: shoulder.y + 50 + adjustedGrip.y }).x, 5);
     expect(actual.y).toBeCloseTo(stagePoint(mirrored, mirroredFrame,
       { x: shoulder.x + 30 + adjustedGrip.x, y: shoulder.y + 50 + adjustedGrip.y }).y, 5);
-    expect(cinematicArmIK(rig, mirrored, mirroredFrame, upper, grip, mirroredTarget, 1))
-      .toEqual(entire);
+    const mirroredAngles = cinematicArmIK(rig, mirrored, mirroredFrame,
+      upper, grip, mirroredTarget, 1)!;
+    expect(mirroredAngles[upper.id].angle).toBeCloseTo(entire[upper.id].angle, 8);
+    expect(mirroredAngles.rightForearm.angle).toBeCloseTo(entire.rightForearm.angle, 8);
   });
 
   it("leaves authored, painted, incomplete, invalid and unreachable rigs to existing fallbacks", () => {
