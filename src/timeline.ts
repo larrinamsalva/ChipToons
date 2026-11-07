@@ -243,7 +243,7 @@ export function sceneElementAt(project: Project, scene: Scene, element: SceneEle
     emotion: voice.expression === "keep" ? frame.emotion : voice.expression } : frame;
 }
 export function sceneFramesAt(project: Project, scene: Scene, time: number, start = 0, calm = false) {
-  return sampleInteractions(project, scene, time, (item, t) => sceneElementAt(project, scene, item, t, start, calm));
+  return sampleInteractions(project, scene, time, (item, t) => sceneElementAt(project, scene, item, t, start, calm), calm);
 }
 export function keyAt(
   element: SceneElement,
