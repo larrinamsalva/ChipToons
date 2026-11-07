@@ -1,7 +1,11 @@
 import type { DeliveryMedia } from "./episode-delivery";
 
 const MIB = 1024 * 1024;
-export const MOVIE_BYTES = 256 * MIB;
+// 20 minutes at our normal 2 Mbps video + 128 kbps audio target is
+// roughly 319 MB of source, so 256 MiB can reject an otherwise verified
+// complete episode. Bound assembly to the same 512 MiB as desktop ZIPs;
+// the staging estimate below still checks for ample *additional* disk.
+export const MOVIE_BYTES = 512 * MIB;
 export const MOVIE_STAGING_DIRECTORY = "chiptoons-movie-staging";
 export const MOVIE_MAX_SECONDS = 1200;
 export const MOVIE_PART_TOLERANCE = 0.3;
@@ -64,7 +68,7 @@ export function moviePlanProblem(parts: MoviePart[]) {
     hashes.add(part.sha256);
   }
   if (end > MOVIE_MAX_SECONDS + 0.001 || size > MOVIE_BYTES)
-    return "One movie supports up to 20 planned minutes and 256 MiB of source video. Keep the checked episode ZIP for larger projects.";
+    return "One movie supports up to 20 planned minutes and 512 MiB of source video. Keep the checked episode ZIP for larger projects.";
   return "";
 }
 
