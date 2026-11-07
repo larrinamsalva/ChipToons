@@ -82,6 +82,12 @@ describe("Cinematic Storybook facial acting", () => {
     expect(regular).not.toContain("data-cinematic-pupil");
     expect(polished).toContain('data-cinematic-pupil="true"');
     expect(polished).toContain('data-eye-highlight="premium"');
+    const blinking = renderToStaticMarkup(createElement(PuppetArt, {
+      character, assets: [], emotion: "happy", mouth: "smile", premium: true,
+      blink: true, gaze: { x: 1.6, y: -0.8, brow: 1.25, blink: true },
+    }));
+    expect(blinking).not.toContain('data-eye-highlight="premium"');
+    expect(blinking).toContain("M-19 -2h8");
     expect(polished).toContain("M-9 12q9 13 18 0");
   });
 });
