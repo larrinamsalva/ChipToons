@@ -23,7 +23,6 @@ function Face({
   lips?: boolean;
   premium?: boolean;
   gaze?: CinematicFace;
-  gripCurl?: { left?: number; right?: number };
 }) {
   const smile =
     mouth === "smile" ||
@@ -259,6 +258,7 @@ export function PuppetArt({
   heartScale?: number;
   premium?: boolean;
   gaze?: CinematicFace;
+  gripCurl?: { left?: number; right?: number };
 }) {
   const gradientPrefix = useId();
   const rig = character.puppet;
