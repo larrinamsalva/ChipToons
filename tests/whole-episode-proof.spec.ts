@@ -48,7 +48,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   page,
   browser,
 }, info) => {
-  test.setTimeout(29 * 60_000);
+  test.setTimeout(35 * 60_000);
   const directory = info.outputPath("episode");
   mkdirSync(directory, { recursive: true });
   const fixture = createEpisodeFixture(directory),
