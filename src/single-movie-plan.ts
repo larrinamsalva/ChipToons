@@ -8,9 +8,13 @@ const MIB = 1024 * 1024;
 export const MOVIE_BYTES = 512 * MIB;
 export const MOVIE_STAGING_DIRECTORY = "chiptoons-movie-staging";
 export const MOVIE_MAX_SECONDS = 1200;
-export const MOVIE_PART_TOLERANCE = 0.3;
 export const MOVIE_PACKET_TAIL_LIMIT = 0.4;
 export const MOVIE_TIMELINE_TOLERANCE = 0.6;
+// MediaRecorder includes the intentional 0.15s recording lead-in and can
+// finish with a short encoder tail. Permit only the SAME bounded margin
+// that the movie worker will enforce while inspecting real packet timestamps.
+// The delivery review permits up to 1s, but movie assembly remains stricter.
+export const MOVIE_PART_TOLERANCE = MOVIE_TIMELINE_TOLERANCE;
 export const OPUS_SAMPLE_RATE = 48_000;
 export const MOVIE_OPUS_BITRATE = 192_000;
 
@@ -49,7 +53,7 @@ export function moviePlanProblem(parts: MoviePart[]) {
   let end = 0;
   let size = 0;
   const hashes = new Set<string>();
-  for (const part of parts) {
+  for (const [index, part] of parts.entries()) {
     const { media } = part;
     if (!Number.isFinite(part.start) || Math.abs(part.start - end) > 0.001 || !(part.end > part.start) || part.end - part.start > 120.001)
       return "Check the story order and scene range of each video part.";
@@ -61,8 +65,10 @@ export function moviePlanProblem(parts: MoviePart[]) {
       return "Choose video parts exported at the same size, codec and frame rate.";
     if (media.audio !== first.audio || (media.audio && media.audio !== "Opus"))
       return "Choose parts with matching Opus sound or export every part without sound.";
-    if (!Number.isFinite(media.duration) || Math.abs(media.duration - (part.end - part.start)) > MOVIE_PART_TOLERANCE)
-      return "A part has unusual timing. Re-export that part before making one movie.";
+    if (!Number.isFinite(media.duration) ||
+        Math.abs(media.duration - (part.end - part.start)) > MOVIE_PART_TOLERANCE)
+      return `Part ${index + 1} has unusual timing (${Number.isFinite(media.duration)
+        ? media.duration.toFixed(3) + "s" : "invalid duration"} for a ${(part.end - part.start).toFixed(3)}s scene range). Re-export that part before making one movie.`;
     end = part.end;
     size += part.file.size;
     hashes.add(part.sha256);
