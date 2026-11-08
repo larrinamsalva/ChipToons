@@ -67,3 +67,7 @@ the manually moved scene boundary and checks their original colors.
 Before manual merge: require **Foundation/browser QA** and **the complete
 20-minute narrated episode + genuine-export job** green on the latest
 commit. **Do not merge automatically.**
+
+## PR #60 — Original frame previews
+
+Shot Director now shows **the actual chosen PNG frames** before import. Use the slider or Previous/Next buttons to inspect a shot's artwork while moving shots in the storyboard. No saved projects, source files or export settings are changed by previewing. See [Visual Shot Storyboard](FRAMEFIELD_VISUAL_SHOT_STORYBOARD.md).
