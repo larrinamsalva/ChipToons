@@ -9,6 +9,7 @@ import { STARTERS, starterProject } from "../planner";
 import { Icon } from "./Icon";
 import { Stage } from "./Stage";
 import { StudioConnections } from "./StudioConnections";
+import type { ShotBeat } from "../studio-shot-beats";
 import type { ShotDirection } from "../studio-multishot";
 
 export function Dashboard({
@@ -72,7 +73,7 @@ export function Dashboard({
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onCreateSequence: (files: File[], fps: number, multiShot: boolean,
-    direction?: ShotDirection[]) => Promise<void>;
+    direction?: ShotDirection[], beats?: ShotBeat[]) => Promise<void>;
   onDraw: () => void;
   onOpen: (p: Project) => void;
   onRecovery: () => void;
