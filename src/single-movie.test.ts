@@ -38,7 +38,7 @@ describe("single movie planning", () => {
     const withTail = { ...second, media: { ...second.media, duration: 120.55 } };
     expect(moviePlanProblem([first, withTail])).toBe("");
     const over = { ...withTail, media: { ...withTail.media, duration: 120.61 } };
-    expect(moviePlanProblem([first, over])).toMatch(/Part 2 has unusual timing.*120\\.610s.*120\\.000s/);
+    expect(moviePlanProblem([first, over])).toMatch(/Part 2 has unusual timing.*120\.610s.*120\.000s/);
     expect(moviePlanProblem([first, { ...over, media: { ...over.media, duration: NaN } }]))
       .toMatch(/Part 2 has unusual timing.*invalid duration/);
     const shortened = { ...withTail, media: { ...withTail.media, duration: 119.39 } };
