@@ -59,10 +59,13 @@ export function PropArt({
   name,
   openness = 0,
   appearance,
+  pageFlex = 0,
 }: {
   name: PropName;
   openness?: number;
   appearance?: PropAppearance;
+  /** Optional cinematic bend for an actually held book/checklist. */
+  pageFlex?: number;
 }) {
   return (
     <g strokeLinejoin="round" strokeLinecap="round">
@@ -96,6 +99,22 @@ export function PropArt({
             stroke="#9e9ab6"
             strokeWidth="3"
           />
+          {pageFlex > 0.001 && <g data-cinematic-paper-flex="true"
+            data-page-flex={pageFlex.toFixed(3)} pointerEvents="none">
+            {/* A shallow folded corner bends with the real held booklet.
+                No object geometry, hand anchor or text layout is altered. */}
+            <path d={`M${50 - 10 * pageFlex} ${-70 + 4 * pageFlex}
+              Q${49 - 14 * pageFlex} ${-59 + 3 * pageFlex}
+              ${50 - 11 * pageFlex} ${-49 + 12 * pageFlex}
+              Q${41 - 10 * pageFlex} ${-52 + 8 * pageFlex}
+              ${50 - 10 * pageFlex} ${-70 + 4 * pageFlex}Z`}
+              fill="#d6d2e1" stroke="#a4a0b5" strokeWidth="1.3" />
+            <path d={`M${50 - 10 * pageFlex} ${-70 + 4 * pageFlex}
+              Q${41 - 6 * pageFlex} ${-61 + 6 * pageFlex}
+              ${50 - 11 * pageFlex} ${-49 + 12 * pageFlex}`}
+              stroke="#fffefa" strokeWidth="1.9" fill="none"
+              strokeLinecap="round" />
+          </g>}
         </g>
       ) : name === "flower" ? (
         <g>
