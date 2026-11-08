@@ -18,7 +18,7 @@ export interface HandoffAcknowledgement {
 
 export function handoffAcknowledgementAt(
   project: Pick<Project, "visualStyle" | "characters">,
-  scene: Pick<Scene, "duration" | "interactions" | "elements">,
+  scene: Pick<Scene, "interactions" | "elements"> & Partial<Pick<Scene, "duration">>,
   element: SceneElement,
   time: number,
   calm: boolean,
@@ -34,7 +34,7 @@ export function handoffAcknowledgementAt(
     item.transfer && item.release &&
     (item.actorId === element.id || item.transfer.actorId === element.id) &&
     time >= item.release.time &&
-    time < Math.min(scene.duration, item.release.time + 1.4));
+    time < Math.min(scene.duration ?? Number.POSITIVE_INFINITY, item.release.time + 1.4));
   if (!action?.transfer || !action.release) return;
 
   const isReceiver = action.transfer.actorId === element.id;
@@ -51,7 +51,7 @@ export function handoffAcknowledgementAt(
   // The receiver responds just after the giver, rather than both performers
   // nodding in mechanical lockstep. Easing is zero at both boundaries.
   const start = action.release.time + (isReceiver ? 0.19 : 0.04);
-  const end = Math.min(scene.duration, start + 1.04);
+  const end = Math.min(scene.duration ?? Number.POSITIVE_INFINITY, start + 1.04);
   if (end <= start || time <= start || time >= end) return;
   const progress = (time - start) / (end - start);
   const attention = Math.sin(Math.PI * progress) ** 2;
