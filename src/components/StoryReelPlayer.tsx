@@ -1,0 +1,101 @@
+import { useEffect, useRef, useState } from "react";
+import { LocalFrameImage } from "./ShotFramePreview";
+import { storyReelFrameAt } from "../studio-story-reel";
+import type { ReelPlan } from "../studio-story-reel";
+
+/** A local-only filmstrip player for original PNG shots prior to import. */
+export function StoryReelPlayer({
+  plan, disabled = false,
+}: {
+  plan: ReelPlan;
+  disabled?: boolean;
+}) {
+  const [position, setPosition] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const startClock = useRef(0);
+  const frame = storyReelFrameAt(plan, position);
+
+  useEffect(() => {
+    if (!playing || disabled) return;
+    let request = 0;
+    const tick = (now: number) => {
+      const elapsed = Math.max(0, Math.min(plan.duration, (now - startClock.current) / 1000));
+      setPosition(elapsed);
+      if (elapsed >= plan.duration) {
+        setPlaying(false);
+        return;
+      }
+      request = requestAnimationFrame(tick);
+    };
+    request = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(request);
+  }, [playing, disabled, plan.duration]);
+
+  useEffect(() => {
+    const pauseForHiddenTab = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener("visibilitychange", pauseForHiddenTab);
+    return () => document.removeEventListener("visibilitychange", pauseForHiddenTab);
+  }, []);
+
+  const seek = (seconds: number) => {
+    const next = Math.max(0, Math.min(plan.duration,
+      Number.isFinite(seconds) ? seconds : 0));
+    setPosition(next);
+    startClock.current = performance.now() - next * 1000;
+    if (next >= plan.duration) setPlaying(false);
+  };
+
+  const toggle = () => {
+    if (disabled) return;
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
+    const resume = position >= plan.duration ? 0 : position;
+    startClock.current = performance.now() - resume * 1000;
+    setPosition(resume);
+    setPlaying(true);
+  };
+
+  return (
+    <section className="studio-story-reel" aria-label="Play full storyboard">
+      <h4>Watch your shots in order</h4>
+      <p className="field-hint">
+        This is a local silent preview of the original PNG frames, not a recorded
+        WebM. It follows the current shot order, frame speed, cuts and ending holds.
+      </p>
+      <div className="studio-reel-screen">
+        <LocalFrameImage key={frame.frame.name} file={frame.frame}
+          alt={`Story reel shot ${frame.shotIndex + 1}: frame ${frame.frameIndex + 1} of ${plan.shots[frame.shotIndex].files.length}, ${frame.frame.name}`} />
+      </div>
+      <p className="field-hint" role="status" aria-live={playing ? "off" : "polite"}>
+        Shot {frame.shotIndex + 1}/{plan.shots.length} · {frame.prefix} ·
+        frame {frame.frameIndex + 1}/{plan.shots[frame.shotIndex].files.length}
+        {frame.holding ? " · holding final frame" : ""}
+      </p>
+      <label className="studio-frame-scrubber">
+        Seek full storyboard (seconds)
+        <input aria-label="Seek full storyboard" type="range" min={0}
+          max={plan.duration} step="0.05" value={position}
+          disabled={disabled}
+          onChange={event => seek(Number(event.target.value))} />
+      </label>
+      <div className="studio-reel-actions">
+        <button type="button" className="button secondary small"
+          onClick={toggle} disabled={disabled}
+          aria-label={playing ? "Pause storyboard" : "Play storyboard"}>
+          {playing ? "Pause" : position >= plan.duration ? "Replay" : "Play"}
+        </button>
+        <button type="button" className="button secondary small"
+          onClick={() => { setPlaying(false); seek(0); }}
+          disabled={disabled || (!playing && position === 0)}
+          aria-label="Restart storyboard">Restart</button>
+        <span className="field-hint" data-reel-clock="true">
+          {position.toFixed(2)} / {plan.duration.toFixed(2)} seconds
+        </span>
+      </div>
+    </section>
+  );
+}
