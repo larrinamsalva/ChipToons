@@ -64,3 +64,17 @@
   outline-offset: 2px;
 }
 .studio-frame-picker button { max-width: 100%; white-space: normal; }
+
+/* Optional multi-shot switch: accessible, readable in both themes. */
+.studio-shot-mode {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin: .85rem 0 .45rem;
+  color: var(--text);
+  font-weight: 650;
+  cursor: pointer;
+}
+.studio-shot-mode input { min-width: 1.25rem; min-height: 1.25rem; accent-color: var(--primary); }
+.studio-shot-mode input:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
