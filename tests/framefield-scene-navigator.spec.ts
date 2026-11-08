@@ -42,11 +42,11 @@ test("Scene markers jump to the exact original PNG cut and pause local playback"
   await expect(reel.getByRole("button", { name: "Play storyboard" })).toBeVisible();
   await expect(second).toHaveAttribute("aria-current", "step");
   await expect(first).not.toHaveAttribute("aria-current");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("2.00 / 4.00 seconds");
   await first.click();
   await expect(first).toHaveAttribute("aria-current", "step");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("0.00 / 4.00 seconds");
   await expect(page.locator(".editor")).toHaveCount(0);
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([]);
@@ -68,10 +68,10 @@ test("Reordered shots and holds get correct scene markers and exact jump positio
   await reel.getByRole("slider", { name: "Seek full storyboard" }).focus();
   await reel.getByRole("slider", { name: "Seek full storyboard" }).press("End");
   await expect(second).toHaveAttribute("aria-current", "step");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0002\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0002\.png/);
   await first.click();
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
   await second.click();
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("3.00 / 5.00 seconds");
 });
