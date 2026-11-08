@@ -11,6 +11,8 @@ import type { FocusGraphic } from "./focus-model";
 import { learningIssue, transformIssue, validAppearance } from "./transform-model";
 import type { LearningStep, ObjectTrack, PropAppearance } from "./transform-model";
 import { interactionIssue } from "./interaction-model";
+import { validFrameSequence } from "./frame-sequence-model";
+import type { FrameSequence } from "./frame-sequence-model";
 import type { Interaction } from "./interaction-model";
 import { MAX_MOUTH_SAMPLE_BYTES, validVoiceMouthTracks } from "./voice-mouth-model";
 import type { VoiceMouthTrack } from "./voice-mouth-model";
@@ -108,6 +110,8 @@ export interface SceneElement {
   motion: Motion;
   kind?: "character" | "prop" | "art";
   assetId?: string;
+  /** Opt-in ordered PNG frames for this editable art element. */
+  frameSequence?: FrameSequence;
   prop?: PropName;
   propAppearance?: PropAppearance;
   pose?: Pose;
@@ -327,6 +331,7 @@ export function validateProject(value: unknown): Project {
     ids.add(id as string);
   }
   const assetIds = new Set<string>();
+  const assetLookup = new Map<string, Asset>();
   for (const asset of p.assets) {
     if (
       !isRecord(asset) ||
@@ -349,6 +354,7 @@ export function validateProject(value: unknown): Project {
       return fail();
     unique(asset.id);
     assetIds.add(asset.id as string);
+    assetLookup.set(asset.id as string, asset as unknown as Asset);
   }
   if (p.pictureSourceId !== undefined && (typeof p.pictureSourceId !== "string" || !assetIds.has(p.pictureSourceId))) return fail();
   const characterIds = new Set<string>();
@@ -406,6 +412,8 @@ export function validateProject(value: unknown): Project {
         (e.propAppearance !== undefined && (e.kind !== "prop" || !!e.assetId || !validAppearance(e.prop as PropName, e.propAppearance))) ||
         (e.kind === "art" && !assetIds.has(e.assetId as string)) ||
         (e.assetId !== undefined && !assetIds.has(e.assetId as string)) ||
+        (e.frameSequence !== undefined &&
+          !validFrameSequence(e.frameSequence, e as unknown as SceneElement, assetLookup, s.duration as number)) ||
         (e.pose !== undefined && !oneOf(e.pose, POSES)) ||
         (e.opacity !== undefined && !numberIn(e.opacity, 0, 1)) ||
         (e.flipY !== undefined && typeof e.flipY !== "boolean") ||
