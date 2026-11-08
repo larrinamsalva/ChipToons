@@ -70,7 +70,8 @@ export function StoryReelPlayer({
         <LocalFrameImage key={frame.frame.name} file={frame.frame}
           alt={`Story reel shot ${frame.shotIndex + 1}: frame ${frame.frameIndex + 1} of ${plan.shots[frame.shotIndex].files.length}, ${frame.frame.name}`} />
       </div>
-      <p className="field-hint" role="status" aria-live={playing ? "off" : "polite"}>
+      <p className="field-hint" data-reel-frame-status="true"
+        aria-live={playing ? "off" : "polite"}>
         Shot {frame.shotIndex + 1}/{plan.shots.length} · {frame.prefix} ·
         frame {frame.frameIndex + 1}/{plan.shots[frame.shotIndex].files.length}
         {frame.holding ? " · holding final frame" : ""}
