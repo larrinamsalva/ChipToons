@@ -59,6 +59,64 @@ describe("Cinematic foreground finger contact", () => {
     }
   });
 
+  it("shows two briefly overlapping hands before transfer while ownership remains with Scout", () => {
+    const { project, scene, action } = fixture();
+    const time = 9.7;
+    const snapshot = JSON.stringify(project);
+    const frames = sceneFramesAt(project, scene, time);
+    expect(frames.get(action.objectId)?.heldBy).toBe(action.actorId);
+    const contacts = cinematicContactsAt(project, scene, frames, time, false);
+    expect(contacts).toHaveLength(2);
+    expect(contacts[0]).toMatchObject({
+      ownerId: action.actorId, phase: "holding", side: "right",
+    });
+    expect(contacts[1]).toMatchObject({
+      ownerId: action.transfer!.actorId, phase: "receiving", side: "left",
+    });
+    expect(contacts.every(contact => contact.opacity > 0 && contact.opacity <= 1)).toBe(true);
+    expect(contacts[0].x).toBeCloseTo(contacts[1].x, 8);
+    expect(contacts[0].y).toBeCloseTo(contacts[1].y, 8);
+    const beforeOverlap = cinematicContactsAt(project, scene,
+      sceneFramesAt(project, scene, 9.3), 9.3, false);
+    expect(beforeOverlap).toHaveLength(1);
+    const after = sceneFramesAt(project, scene, 10.3);
+    expect(after.get(action.objectId)?.heldBy).toBe(action.transfer!.actorId);
+    expect(cinematicContactsAt(project, scene, after, 10.3)).toHaveLength(1);
+    expect(JSON.stringify(project)).toBe(snapshot);
+  });
+
+  it("fades finger visibility near release rather than snapping at the exact release frame", () => {
+    const { project, scene } = fixture();
+    const sample = (time: number) => cinematicContactsAt(
+      project, scene, sceneFramesAt(project, scene, time), time, false,
+    );
+    const strong = sample(11.4);
+    const gentle = sample(11.9);
+    expect(strong).toHaveLength(1);
+    expect(gentle).toHaveLength(1);
+    expect(gentle[0].opacity).toBeGreaterThan(0);
+    expect(gentle[0].opacity).toBeLessThan(strong[0].opacity);
+    expect(sample(12)).toEqual([]);
+    expect(sample(12.2)).toEqual([]);
+  });
+
+  it("paints both noninteractive hands in the correct order without copying the actual prop", () => {
+    const { project, scene, action } = fixture();
+    const svg = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: 9.7, labelled: false,
+    }));
+    expect(svg.match(/data-cinematic-prop-contact="true"/g)).toHaveLength(2);
+    expect(svg).toContain('data-contact-phase="receiving"');
+    expect(svg).toContain('data-contact-phase="holding"');
+    expect(svg).toContain(`data-contact-owner="${action.transfer!.actorId}"`);
+    const propIndex = svg.indexOf(`data-element-id="${action.objectId}"`);
+    const contactIndex = svg.indexOf('data-cinematic-prop-contact="true"');
+    expect(propIndex).toBeGreaterThan(-1);
+    expect(propIndex).toBeLessThan(contactIndex);
+    const held = sceneFramesAt(project, scene, 9.7).get(action.objectId)!;
+    expect(held.heldBy).toBe(action.actorId);
+  });
+
   it("renders skin-toned fingers ON TOP of the actual book while keeping interaction visuals selectable", () => {
     const { project, scene, action } = fixture();
     const markup = renderToStaticMarkup(createElement(Stage, {
