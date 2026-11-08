@@ -9,15 +9,20 @@ import { rangeArtwork } from "./segments";
 import { Stage } from "./components/Stage";
 import { starterProject } from "./planner";
 
-const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==";
+const pngs = [
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGO8I2f0n4GBgYGJAQoAIZICLyZ2XFkAAAAASUVORK5CYII=",
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGOUu2Tzn4GBgYGJAQoAIMoCL4mvtcwAAAAASUVORK5CYII=",
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGOUc7vzn4GBgYGJAQoAIWoCQzlp8e8AAAAASUVORK5CYII=",
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFUlEQVR4nGP8cEnjPwMDAwMTAxQAAC2QAu3XJMGWAAAAAElFTkSuQmCC",
+];
 const assets = (): Asset[] => Array.from({ length: 4 }, (_, i) => ({
   id: `png-${i + 1}`,
   name: `frame_${String(i + 1).padStart(4, "0")}.png`,
   type: "image",
   mime: "image/png",
-  dataUrl: png,
-  sourceWidth: 1,
-  sourceHeight: 1,
+  dataUrl: pngs[i],
+  sourceWidth: 2,
+  sourceHeight: 2,
 }));
 
 function fixture() {
@@ -53,8 +58,10 @@ describe("Portable PNG animation frames", () => {
         project, scene, time, labelled: false,
       }));
       expect(markup).toContain('data-element-id="' + art.id + '"');
-      expect(markup).toContain('href="' + png + '"');
-      expect(markup).toContain('data-element-id=');
+      const selected = project.assets.find(asset => asset.id === id)!;
+      expect(markup).toContain('href="' + selected.dataUrl + '"');
+      for (const other of project.assets.filter(asset => asset.id !== id))
+        expect(markup).not.toContain('href="' + other.dataUrl + '"');
     }
     expect(frameSequenceAssetIdAt(art, Number.NaN)).toBe("png-1");
     expect(frameSequenceAssetIdAt(art, -5)).toBe("png-1");
