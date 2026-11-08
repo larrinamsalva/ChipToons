@@ -132,3 +132,72 @@
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* Local-only visual shot previews. No remote images or editor-side media writes. */
+.studio-frame-preview {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .6rem;
+  padding: .75rem;
+  margin: .75rem 0;
+  min-width: 0;
+  color: var(--text);
+}
+.studio-frame-preview > p { margin-top: 0; }
+.studio-frame-image {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
+  overflow: hidden;
+  border-radius: .45rem;
+  border: 1px solid var(--line);
+  background: #202638;
+}
+.studio-frame-image img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 16rem;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.studio-frame-image [role="alert"] {
+  margin: .55rem;
+  color: #fff;
+}
+.studio-frame-scrubber {
+  display: grid;
+  gap: .35rem;
+  margin-top: .65rem;
+  font-weight: 650;
+  color: var(--text);
+}
+.studio-frame-scrubber input {
+  width: 100%;
+  min-height: 2.75rem;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+.studio-frame-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-width: 0;
+  margin-top: .55rem;
+}
+.studio-frame-stepper span {
+  overflow-wrap: anywhere;
+}
+.studio-frame-scrubber input:focus-visible,
+.studio-frame-stepper button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+@media (max-width: 740px) {
+  .studio-frame-image img { max-height: 11rem; }
+  .studio-frame-stepper button { min-height: 2.75rem; }
+}
