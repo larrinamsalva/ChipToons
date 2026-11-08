@@ -30,6 +30,7 @@ import { setSceneryDepth } from "./world-model";
 import type { LibraryItem, LibraryKind } from "./library";
 import { exportProject, readImage } from "./files";
 import { importNumberedPngSequence } from "./studio-frame-sequence";
+import { importMultiShotPngs } from "./studio-multishot";
 import { clone, duplicateProject, validateProject } from "./model";
 import type { Asset, Project } from "./model";
 import { starterProject } from "./planner";
@@ -542,15 +543,19 @@ export default function App() {
       if (imageInput.current) imageInput.current.value = "";
     }
   }
-  async function createSequence(files: File[], fps: number) {
+  async function createSequence(files: File[], fps: number, multiShot: boolean) {
     if (working) throw new Error("A different import is in progress.");
     setWorking(true);
     try {
       // No existing project is updated: imported frames become a fresh
       // portable cartoon with a standard scene and selectable art layer.
-      const project = await importNumberedPngSequence(files, fps);
+      const project = multiShot
+        ? await importMultiShotPngs(files, fps)
+        : await importNumberedPngSequence(files, fps);
       await open(project);
-      setNotice("A new numbered-PNG animation is ready. Your existing cartoons are unchanged.");
+      setNotice(multiShot
+        ? "Your new multi-shot cartoon is ready. Your original projects are unchanged."
+        : "A new numbered-PNG animation is ready. Your existing cartoons are unchanged.");
     } finally {
       setWorking(false);
     }
