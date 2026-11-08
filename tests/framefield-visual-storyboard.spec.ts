@@ -32,13 +32,13 @@ test("single-shot local preview scrubs actual PNGs and revokes temporary frame U
   await expect(image).toHaveAttribute("alt", /Frame 1 of 2.*frame_0001\.png/);
   await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth))
     .toBe(2);
-  const firstUrl = await image.getAttribute("src");
+  const firstUrl = (await image.getAttribute("src"))!;
   expect(firstUrl).toMatch(/^blob:/);
   await preview.getByRole("button", { name: "Next frame of single-shot" }).click();
   await expect(image).toHaveAttribute("alt", /Frame 2 of 2.*frame_0002\.png/);
   await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth))
     .toBe(2);
-  const secondUrl = await image.getAttribute("src");
+  const secondUrl = (await image.getAttribute("src"))!;
   expect(secondUrl).toMatch(/^blob:/);
   expect(secondUrl).not.toBe(firstUrl);
   await expect.poll(() => page.evaluate((url) =>
