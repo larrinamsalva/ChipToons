@@ -92,7 +92,7 @@ test("Shot Director reorders shots and holds a real frame across the recorded We
     { name: "shot01_frame_0002.png", mimeType: "image/png", buffer: Buffer.from(samples[1], "base64") },
   ]);
   await picker.getByLabel("Animation playback speed").selectOption("2");
-  const director = picker.getByLabel("Shot Director", { exact: true });
+  const director = picker.getByRole("region", { name: "Shot Director" });
   await expect(director.getByRole("list", { name: "Shot playback order" }).locator("li").first())
     .toContainText("shot01_frame_");
   await director.getByRole("button", { name: "Move shot01_frame_ later" }).click();
