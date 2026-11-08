@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backup } from "./production-helpers";
+import { execFileSync } from "node:child_process";
 
 const samples = [
   "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGO8I2f0n4GBgYGJAQoAIZICLyZ2XFkAAAAASUVORK5CYII=",
@@ -39,6 +40,35 @@ test("Framefield bridge creates a local editable animation from real ordered PNG
     expect(data.assets.map(a => a.name)).toEqual([
       "shot_0001.png", "shot_0002.png", "shot_0003.png", "shot_0004.png",
     ]);
+
+    // Produce a GENUINE two-second WebM from the imported sequence and
+    // independently decode its actual colored pixel frames using FFmpeg.
+    await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+    const silent = page.getByRole("checkbox", { name: "Include mixed audio", exact: true });
+    if (await silent.isEnabled() && await silent.isChecked()) await silent.uncheck();
+    const captions = page.getByRole("checkbox", { name: "Include timed captions", exact: true });
+    if (await captions.isEnabled() && await captions.isChecked()) await captions.uncheck();
+    await page.getByRole("button", { name: "Export complete cartoon", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Your movie is ready", exact: true }))
+      .toBeVisible({ timeout: 60_000 });
+    const pending = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download completed video", exact: true }).click();
+    const path = (await (await pending).path())!;
+    const rgb = (seconds: number) =>
+      execFileSync("ffmpeg", [
+        "-v", "error", "-ss", String(seconds), "-i", path,
+        "-vf", "crop=2:2:400:220", "-frames:v", "1",
+        "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1",
+      ]);
+    const first = rgb(0.35), last = rgb(1.8);
+    expect(first.length).toBe(12);
+    expect(last.length).toBe(12);
+    // 2x2 sample PNGs are solid saturated colors. The independent video
+    // decoder must see the correct *ordered* source images, not a poster.
+    expect(first[0]).toBeGreaterThan(first[1] + 55); // red frame
+    expect(first[0]).toBeGreaterThan(first[2] + 55);
+    expect(last[0]).toBeGreaterThan(last[2] + 60); // yellow frame
+    expect(last[1]).toBeGreaterThan(last[2] + 60);
   }
 });
 
