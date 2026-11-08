@@ -13,10 +13,14 @@ export function FrameSequencePicker({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   let ordered: File[] = [];
+  let validationError = "";
   if (files.length) {
     try { ordered = numberedPngFrames(files); }
-    catch (cause) { error = error || (cause instanceof Error ? cause.message : "Invalid PNG sequence."); }
+    catch (cause) {
+      validationError = cause instanceof Error ? cause.message : "Invalid PNG sequence.";
+    }
   }
+  const displayedError = error || validationError;
 
   async function create() {
     setError("");
@@ -67,9 +71,9 @@ export function FrameSequencePicker({
           : files.length ? `${files.length} files selected; check the message below.`
             : "Select your local frames; nothing is uploaded to another service."}
       </p>
-      {error && <p role="alert" className="error-message">{error}</p>}
+      {displayedError && <p role="alert" className="error-message">{displayedError}</p>}
       <button type="button" className="button secondary small"
-        disabled={!ordered.length || busy || !!error}
+        disabled={!ordered.length || busy || !!displayedError}
         onClick={() => void create()}>
         {busy ? "Checking and importing frames…" : "Create cartoon from numbered PNGs"}
       </button>
