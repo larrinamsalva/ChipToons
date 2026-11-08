@@ -201,3 +201,46 @@
   .studio-frame-image img { max-height: 11rem; }
   .studio-frame-stepper button { min-height: 2.75rem; }
 }
+
+/* An opt-in, silent, local storyboard player; works on phones and dark mode. */
+.studio-story-reel {
+  margin: 1rem 0 .2rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .7rem;
+  color: var(--text);
+  background: var(--surface);
+  min-width: 0;
+}
+.studio-story-reel h4 { margin: 0 0 .45rem; color: var(--text); }
+.studio-story-reel .field-hint { color: var(--muted); }
+.studio-reel-screen {
+  max-width: 40rem;
+  margin: .75rem auto;
+  border: 2px solid var(--line);
+  border-radius: .65rem;
+  overflow: hidden;
+  background: #202638;
+}
+.studio-reel-screen .studio-frame-image img {
+  max-height: 23rem;
+}
+.studio-reel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .7rem;
+  margin-top: .65rem;
+}
+.studio-reel-actions [data-reel-clock] {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.studio-story-reel :is(button,input):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (max-width: 740px) {
+  .studio-reel-screen .studio-frame-image img { max-height: 14rem; }
+  .studio-reel-actions button { min-height: 2.75rem; }
+}
