@@ -831,15 +831,17 @@ export const Stage = memo(function Stage({
               if (!prop) return null;
               const depth = sceneryOffset(scene, prop, camera, !!calmPreview);
               return (
-                <g key={contact.actionId} data-cinematic-prop-contact="true"
+                <g key={`${contact.actionId}-${contact.ownerId}`} data-cinematic-prop-contact="true"
                   data-contact-owner={contact.ownerId}
                   data-contact-object={contact.objectId}
+                  data-contact-phase={contact.phase}
                   pointerEvents="none" aria-hidden="true"
-                  opacity={contact.curl}
+                  opacity={contact.opacity}
                   transform={`translate(${contact.x + depth.x} ${contact.y + depth.y}) rotate(${contact.rotation}) scale(${contact.scale * (contact.side === "left" ? -1 : 1)} ${contact.scale})`}>
                   {/* Two small skin-toned fingertips in FRONT of the held prop.
                       Drawn in stage coordinates, so the object's own animation
                       and the holder's actual wrist anchor remain untouched. */}
+                  <g transform={`translate(${contact.side === "right" ? 5 : -5} 0)`}>
                   <path d="M-12 -7Q-8 -12 -3 -9L6 -4"
                     stroke={contact.skin} strokeWidth="4.2" fill="none"
                     strokeLinecap="round" strokeLinejoin="round" />
@@ -849,6 +851,7 @@ export const Stage = memo(function Stage({
                   <path d="M-7 -9Q-3 -8 1 -6M-7 0Q-3 0 2 2"
                     stroke="#8a5348" strokeWidth="1.1" opacity=".6"
                     fill="none" strokeLinecap="round" />
+                  </g>
                 </g>
               );
             })}
