@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ShotFramePreview } from "./ShotFramePreview";
+import { StoryReelPlayer } from "./StoryReelPlayer";
+import { planStoryReel } from "../studio-story-reel";
 import { FRAME_SEQUENCE_RATES, MAX_FRAME_SEQUENCE_FILES, MAX_FRAME_SEQUENCE_BYTES } from "../frame-sequence-model";
 import { numberedPngFrames } from "../studio-frame-sequence";
 import { groupNumberedShots } from "../studio-multishot";
@@ -175,6 +177,9 @@ export function FrameSequencePicker({
               );
             })}
           </ol>
+          <StoryReelPlayer key={`${selectionEpoch}-${fps}-${arranged.map(
+            item => `${item.prefix}:${item.holdSeconds}`).join("|")}`}
+            plan={planStoryReel(shots, fps, arranged)} disabled={busy} />
         </section>
       )}
       <p role="status" className="field-hint">
