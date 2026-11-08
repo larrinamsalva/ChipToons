@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { ShotFramePreview } from "./ShotFramePreview";
+import { ShotBeatEditor } from "./ShotBeatEditor";
+import { emptyShotBeat } from "../studio-shot-beats";
+import type { ShotBeat } from "../studio-shot-beats";
 import { StoryReelPlayer } from "./StoryReelPlayer";
 import { planStoryReel } from "../studio-story-reel";
 import { FRAME_SEQUENCE_RATES, MAX_FRAME_SEQUENCE_FILES, MAX_FRAME_SEQUENCE_BYTES } from "../frame-sequence-model";
@@ -12,12 +15,13 @@ export function FrameSequencePicker({
   onCreate,
 }: {
   onCreate: (files: File[], fps: number, multiShot: boolean,
-    direction?: ShotDirection[]) => Promise<void>;
+    direction?: ShotDirection[], beats?: ShotBeat[]) => Promise<void>;
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [fps, setFps] = useState<number>(8);
   const [multiShot, setMultiShot] = useState(false);
   const [shotDirection, setShotDirection] = useState<ShotDirection[]>([]);
+  const [storyBeats, setStoryBeats] = useState<Record<string, ShotBeat>>({});
   const [selectionEpoch, setSelectionEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -53,6 +57,10 @@ export function FrameSequencePicker({
     [next[index], next[target]] = [next[target], next[index]];
     setShotDirection(next);
   }
+  function changeBeat(next: ShotBeat) {
+    if (busy) return;
+    setStoryBeats(current => ({ ...current, [next.prefix]: next }));
+  }
   function holdShot(prefix: string, holdSeconds: 0 | 1 | 2 | 3) {
     if (busy) return;
     setShotDirection(arranged.map(item => item.prefix === prefix
@@ -68,9 +76,13 @@ export function FrameSequencePicker({
         ? groupNumberedShots(files).flatMap(shot => shot.files)
         : numberedPngFrames(files);
       setBusy(true);
-      await onCreate(frames, fps, multiShot, multiShot ? [...arranged] : undefined);
+      const beats = multiShot
+        ? arranged.map(item => storyBeats[item.prefix] ?? emptyShotBeat(item.prefix))
+        : undefined;
+      await onCreate(frames, fps, multiShot, multiShot ? [...arranged] : undefined, beats);
       setFiles([]);
       setShotDirection([]);
+      setStoryBeats({});
       setSelectionEpoch(value => value + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The original PNG frames could not be opened.");
@@ -94,6 +106,7 @@ export function FrameSequencePicker({
           onChange={event => {
             setMultiShot(event.target.checked);
             setShotDirection([]);
+            setStoryBeats({});
             setSelectionEpoch(value => value + 1);
             setError("");
           }} />
@@ -114,6 +127,7 @@ export function FrameSequencePicker({
             onChange={event => {
               setError("");
               setShotDirection([]);
+              setStoryBeats({});
               setSelectionEpoch(value => value + 1);
               setFiles(Array.from(event.target.files ?? []));
             }} />
@@ -151,6 +165,8 @@ export function FrameSequencePicker({
                   </div>
                   <ShotFramePreview key={`${item.prefix}-${selectionEpoch}`}
                     files={shot.files} prefix={item.prefix} fps={fps} disabled={busy} />
+                  <ShotBeatEditor beat={storyBeats[item.prefix] ??
+                    emptyShotBeat(item.prefix)} disabled={busy} onChange={changeBeat} />
                   <div className="studio-shot-actions">
                     <button type="button" className="button secondary small"
                       aria-label={`Move ${item.prefix} earlier`}
