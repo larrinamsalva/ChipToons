@@ -21,3 +21,46 @@
   gap: .5rem;
 }
 .studio-connection .series-actions > * { max-width: 100%; white-space: normal; text-align: center; }
+
+/* The optional frame importer stays usable in dark mode and on phones. */
+.studio-frame-picker {
+  border: 1px solid var(--line);
+  border-radius: .8rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: var(--text);
+  background: var(--surface);
+}
+.studio-frame-picker h3 { font-size: 1rem; margin: 0 0 .5rem; color: var(--text); }
+.studio-frame-picker .field-hint { color: var(--muted); }
+.studio-frame-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: .85rem;
+  margin: .8rem 0;
+}
+.studio-frame-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  font-weight: 600;
+  min-width: 0;
+  color: var(--text);
+}
+.studio-frame-controls input,
+.studio-frame-controls select {
+  min-height: 2.75rem;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--surface);
+  color: var(--text);
+  padding: .45rem;
+  font: inherit;
+}
+.studio-frame-controls input:focus-visible,
+.studio-frame-controls select:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.studio-frame-picker button { max-width: 100%; white-space: normal; }
