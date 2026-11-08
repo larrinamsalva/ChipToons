@@ -121,7 +121,7 @@ export function FrameSequencePicker({
         </label>
       </div>
       {multiShot && shots.length >= 2 && (
-        <div className="studio-shot-director" aria-label="Shot Director">
+        <section className="studio-shot-director" aria-label="Shot Director">
           <h4>Shot Director · arrange your story</h4>
           <p className="field-hint">Move each shot earlier or later. Optionally hold
             its final original image for 1–3 extra seconds before the next shot.
@@ -163,7 +163,7 @@ export function FrameSequencePicker({
               );
             })}
           </ol>
-        </div>
+        </section>
       )}
       <p role="status" className="field-hint">
         {multiShot && arranged.length
