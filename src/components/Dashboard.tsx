@@ -9,6 +9,7 @@ import { STARTERS, starterProject } from "../planner";
 import { Icon } from "./Icon";
 import { Stage } from "./Stage";
 import { StudioConnections } from "./StudioConnections";
+import type { ShotDirection } from "../studio-multishot";
 
 export function Dashboard({
   projects,
@@ -70,7 +71,8 @@ export function Dashboard({
   onScoutArticulatedWorkshopDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
-  onCreateSequence: (files: File[], fps: number, multiShot: boolean) => Promise<void>;
+  onCreateSequence: (files: File[], fps: number, multiShot: boolean,
+    direction?: ShotDirection[]) => Promise<void>;
   onDraw: () => void;
   onOpen: (p: Project) => void;
   onRecovery: () => void;
