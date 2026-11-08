@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Asset, Project } from "./model";
+import type { Asset } from "./model";
 import { validateProject } from "./model";
 import { groupNumberedShots, projectFromFrameAssetShots } from "./studio-multishot";
 import { frameSequenceAssetIdAt } from "./frame-sequence-model";
