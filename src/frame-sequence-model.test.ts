@@ -82,7 +82,7 @@ describe("Portable PNG animation frames", () => {
     bad({ fps: 2, assetIds: ["png-1", "png-2", "missing", "png-4"] });
     bad({ fps: 2, assetIds: ["png-2", "png-1", "png-3", "png-4"] });
     bad({ fps: 2, assetIds: art.frameSequence!.assetIds, remoteUrl: "https://example.test" });
-    bad(art.frameSequence, p => { p.assets[1].sourceWidth = 2; });
+    bad(art.frameSequence, p => { p.assets[1].sourceWidth = 3; });
     bad(art.frameSequence, p => { p.assets[1].mime = "image/jpeg"; });
     bad(art.frameSequence, p => { p.scenes[0].duration = 1.5; });
     expect(validFrameSequence(art.frameSequence, art,
