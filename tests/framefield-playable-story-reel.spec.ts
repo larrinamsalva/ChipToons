@@ -37,7 +37,8 @@ test("Playable Shot Director shows real original PNG frames across cut, pause, r
   await seek.focus();
   await seek.press("End");
   await expect(screen).toHaveAttribute("alt", /shot02_frame_0002\.png/);
-  await expect(reel.getByRole("status")).toContainText("holding final frame");
+  await expect(reel.locator("[data-reel-frame-status]"))
+    .toContainText("holding final frame");
   await reel.getByRole("button", { name: "Restart storyboard" }).click();
   await expect(screen).toHaveAttribute("alt", /shot01_frame_0001\.png/);
   await expect(clock).toContainText("0.00 / 4.00 seconds");
