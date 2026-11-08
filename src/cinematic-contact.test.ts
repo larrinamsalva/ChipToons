@@ -81,7 +81,7 @@ describe("Cinematic foreground finger contact", () => {
     expect(beforeOverlap).toHaveLength(1);
     const after = sceneFramesAt(project, scene, 10.3);
     expect(after.get(action.objectId)?.heldBy).toBe(action.transfer!.actorId);
-    expect(cinematicContactsAt(project, scene, after, 10.3)).toHaveLength(1);
+    expect(cinematicContactsAt(project, scene, after, 10.3, false)).toHaveLength(1);
     expect(JSON.stringify(project)).toBe(snapshot);
   });
 
