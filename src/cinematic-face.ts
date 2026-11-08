@@ -1,5 +1,6 @@
 import type { Project, Scene, SceneElement } from "./model";
 import type { ElementFrame } from "./timeline";
+import { handoffAcknowledgementAt } from "./cinematic-handoff-acknowledgement";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -93,10 +94,20 @@ export function cinematicFaceAt(
   const phase = (Math.max(0, localTime) + seed * 0.041) % 5.4;
   const attention = smooth((phase - 1.7) / 0.4) *
     (1 - smooth((phase - 4.3) / 0.4));
-  const direction = active ?? target;
+  // A completed safe handoff deserves a tiny moment of mutual attention.
+  // Prefer the real collaborator's sampled position, then gently return to
+  // ordinary gaze. This does not override the active prop-focused gesture.
+  const acknowledgement = handoffAcknowledgementAt(
+    project, scene, element, localTime, calm,
+  );
+  const partnerFrame = acknowledgement && frames.get(acknowledgement.partnerId);
+  const shared = acknowledgement && partnerFrame && partnerFrame.opacity >= 0.1
+    ? { dx: partnerFrame.x - frame.x, dy: partnerFrame.y - frame.y,
+      focus: acknowledgement.attention } : undefined;
+  const direction = shared ?? active ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
-  const focus = active ? active.focus : target ? attention : 0;
+  const focus = shared ? shared.focus : active ? active.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);
