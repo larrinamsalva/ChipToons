@@ -10,6 +10,7 @@ import { interpolateJoints } from "./puppet-model";
 import { cinematicMotionAt } from "./cinematic-motion";
 import { cinematicGaitAt } from "./cinematic-gait";
 import { cinematicActionHeadAt } from "./cinematic-head-attention";
+import { cinematicHandoffNodAt } from "./cinematic-handoff-acknowledgement";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
 
@@ -251,9 +252,14 @@ export function sceneFramesAt(project: Project, scene: Scene, time: number, star
   for (const item of scene.elements) {
     if (!item.characterId) continue;
     const frame = frames.get(item.id);
-    if (frame) frames.set(item.id, cinematicActionHeadAt(
-      project, scene, item, frame, frames, time, calm,
-    ));
+    if (frame) {
+      const reaching = cinematicActionHeadAt(
+        project, scene, item, frame, frames, time, calm,
+      );
+      frames.set(item.id, cinematicHandoffNodAt(
+        project, scene, item, reaching, time, calm,
+      ));
+    }
   }
   return frames;
 }
