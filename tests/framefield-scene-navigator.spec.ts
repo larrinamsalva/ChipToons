@@ -42,11 +42,11 @@ test("Scene markers jump to the exact original PNG cut and pause local playback"
   await expect(reel.getByRole("button", { name: "Play storyboard" })).toBeVisible();
   await expect(second).toHaveAttribute("aria-current", "step");
   await expect(first).not.toHaveAttribute("aria-current");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("2.00 / 4.00 seconds");
   await first.click();
   await expect(first).toHaveAttribute("aria-current", "step");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("0.00 / 4.00 seconds");
   await expect(page.locator(".editor")).toHaveCount(0);
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([]);
@@ -68,10 +68,69 @@ test("Reordered shots and holds get correct scene markers and exact jump positio
   await reel.getByRole("slider", { name: "Seek full storyboard" }).focus();
   await reel.getByRole("slider", { name: "Seek full storyboard" }).press("End");
   await expect(second).toHaveAttribute("aria-current", "step");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0002\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0002\.png/);
   await first.click();
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
   await second.click();
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("3.00 / 5.00 seconds");
+});
+
+test("Visual scene filmstrip shows real original local PNG thumbnails and revokes URLs on close", async ({ page }) => {
+  const { picker, director, reel, markers } = await preparedReel(page);
+  const thumbs = markers.locator(".studio-reel-shot-thumbnail img");
+  await expect(thumbs).toHaveCount(2);
+  await expect(thumbs.nth(0)).toHaveAttribute("alt", "Original first frame of shot01_frame_");
+  await expect(thumbs.nth(1)).toHaveAttribute("alt", "Original first frame of shot02_frame_");
+  for (const i of [0, 1]) {
+    await expect(thumbs.nth(i)).toHaveAttribute("src", /^blob:/);
+    await expect.poll(() => thumbs.nth(i).evaluate(
+      (img: HTMLImageElement) => img.naturalWidth)).toBe(2);
+  }
+  const initialImages = await thumbs.evaluateAll(async images => Promise.all(
+    images.map(async image => {
+      const source = (image as HTMLImageElement).src;
+      const buffer = await (await fetch(source)).arrayBuffer();
+      return Array.from(new Uint8Array(buffer));
+    }),
+  ));
+  // Each marker displays a separate ORIGINAL selected PNG file, not the
+  // same duplicated poster, a stock thumbnail or a remote image.
+  expect(initialImages[0]).not.toEqual(initialImages[1]);
+  expect(initialImages.every(bytes => bytes.slice(1, 4).join(",") === "80,78,71")).toBe(true);
+
+  await director.getByRole("button", { name: "Move shot01_frame_ later" }).click();
+  await expect(thumbs.nth(0)).toHaveAttribute("alt", "Original first frame of shot02_frame_");
+  await expect(thumbs.nth(1)).toHaveAttribute("alt", "Original first frame of shot01_frame_");
+  const first = markers.getByRole("button", {
+    name: "Jump to shot 1: shot02_frame_ at 0.00 seconds",
+  });
+  const second = markers.getByRole("button", {
+    name: "Jump to shot 2: shot01_frame_ at 2.00 seconds",
+  });
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  await second.click();
+  await expect(reel.locator(".studio-reel-screen").getByRole("img"))
+    .toHaveAttribute("alt", /shot01_frame_0001\.png/);
+
+  // Capture the two current temporary object URLs immediately before the
+  // selection is cleared. Both must be revoked when their components unmount.
+  const liveUrls = await thumbs.evaluateAll(images =>
+    images.map(image => (image as HTMLImageElement).src));
+  await page.evaluate(() => {
+    const original = URL.revokeObjectURL.bind(URL);
+    (window as unknown as { sceneThumbnailRevokes: string[] }).sceneThumbnailRevokes = [];
+    URL.revokeObjectURL = url => {
+      (window as unknown as { sceneThumbnailRevokes: string[] }).sceneThumbnailRevokes.push(url);
+      original(url);
+    };
+  });
+  await picker.getByLabel("Choose numbered PNG files").setInputFiles([]);
+  await expect(markers).toHaveCount(0);
+  await expect.poll(() => page.evaluate(urls =>
+    urls.every(url => (window as unknown as {
+      sceneThumbnailRevokes: string[]
+    }).sceneThumbnailRevokes.includes(url)), liveUrls)).toBe(true);
+  await expect(page.locator(".editor")).toHaveCount(0);
 });

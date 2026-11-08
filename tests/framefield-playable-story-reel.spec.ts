@@ -22,7 +22,7 @@ test("Playable Shot Director shows real original PNG frames across cut, pause, r
   ]);
   await picker.getByLabel("Animation playback speed").selectOption("2");
   const reel = picker.getByRole("region", { name: "Play full storyboard" });
-  const screen = reel.getByRole("img");
+  const screen = reel.locator(".studio-reel-screen").getByRole("img");
   const clock = reel.locator("[data-reel-clock]");
   await expect(screen).toHaveAttribute("alt", /shot01_frame_0001\.png/);
   await expect.poll(() => screen.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBe(2);
@@ -63,11 +63,11 @@ test("Reordering shots and adding a hold updates the playable reel before import
   const reel = director.getByRole("region", { name: "Play full storyboard" });
   await director.getByRole("button", { name: "Move shot01_frame_ later" }).click();
   await director.getByLabel("Hold final frame of shot02_frame_").selectOption("1");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot02_frame_0001\.png/);
   await expect(reel.locator("[data-reel-clock]")).toContainText("0.00 / 5.00 seconds");
   await reel.getByRole("slider", { name: "Seek full storyboard" }).focus();
   await reel.getByRole("slider", { name: "Seek full storyboard" }).press("End");
-  await expect(reel.getByRole("img")).toHaveAttribute("alt", /shot01_frame_0002\.png/);
+  await expect(reel.locator(".studio-reel-screen").getByRole("img")).toHaveAttribute("alt", /shot01_frame_0002\.png/);
   // The user's file set remains untouched, and old saved cartoons do not open.
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([]);
   await expect(reel).toHaveCount(0);
