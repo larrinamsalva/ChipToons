@@ -52,3 +52,7 @@ Shot Director rows, and rejecting incomplete source selections.
 
 **Do not merge this draft until the latest Foundation/browser QA and
 the full 20-minute narrated episode/genuine-export checks are green.**
+
+## PR #61 — Watch a complete original-PNG storyboard before importing
+
+The **Play full storyboard** panel plays the selected original local PNG images in the current Shot Director order, with timed scene cuts and real final-frame holds. It has Play/Pause/Restart and a keyboard-accessible seek slider; it does **not** create or record a movie. See [Playable Story Reel](FRAMEFIELD_PLAYABLE_STORY_REEL.md).
