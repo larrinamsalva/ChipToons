@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { Asset } from "./model";
 import { validateProject } from "./model";
-import { groupNumberedShots, projectFromFrameAssetShots } from "./studio-multishot";
+import { arrangeShotDirections, groupNumberedShots, projectFromFrameAssetShots } from "./studio-multishot";
 import { frameSequenceAssetIdAt } from "./frame-sequence-model";
 import { rangeArtwork, exportRange } from "./segments";
 import { frameAt } from "./timeline";
@@ -121,6 +121,74 @@ describe("Framefield multi-shot storyboard", () => {
       for (const other of project.assets.filter(item => item.id !== asset.id))
         expect(svg).not.toContain(`href="${other.dataUrl}"`);
     }
+  });
+
+  it("lets creators direct scene order and short end holds without touching original frames", () => {
+    const originalShots = [
+      { prefix: "shot01_frame_", assets: assets("shot01_frame_", 0) },
+      { prefix: "shot02_frame_", assets: assets("shot02_frame_", 2) },
+    ];
+    const snapshot = JSON.stringify(originalShots);
+    const direction = [
+      { prefix: "shot02_frame_", holdSeconds: 1 },
+      { prefix: "shot01_frame_", holdSeconds: 2 },
+    ] as const;
+    const project = projectFromFrameAssetShots(originalShots, 2, direction);
+    expect(project.scenes.map(scene => scene.title)).toEqual([
+      "Shot 1 · shot02_frame_", "Shot 2 · shot01_frame_",
+    ]);
+    expect(project.scenes.map(scene => scene.duration)).toEqual([3, 4]);
+    expect(project.scenes.map(scene => scene.transition)).toEqual(["cut", "cut"]);
+    expect(project.assets.map(asset => asset.name)).toEqual([
+      "shot02_frame_0001.png", "shot02_frame_0002.png",
+      "shot01_frame_0001.png", "shot01_frame_0002.png",
+    ]);
+    expect(exportRange(project).end).toBe(7);
+    const endOfHeldFirstShot = frameAt(project, 2.8);
+    expect(endOfHeldFirstShot.index).toBe(0);
+    expect(frameSequenceAssetIdAt(endOfHeldFirstShot.scene.elements[0],
+      endOfHeldFirstShot.localTime)).toBe("shot02_frame_-asset-2");
+    const nextShot = frameAt(project, 3.05);
+    expect(nextShot.index).toBe(1);
+    expect(frameSequenceAssetIdAt(nextShot.scene.elements[0],
+      nextShot.localTime)).toBe("shot01_frame_-asset-1");
+    expect(rangeArtwork(project, { firstScene: 0, lastScene: 0 }).map(a => a.id))
+      .toEqual(["shot02_frame_-asset-1", "shot02_frame_-asset-2"]);
+    expect(rangeArtwork(project, { firstScene: 1, lastScene: 1 }).map(a => a.id))
+      .toEqual(["shot01_frame_-asset-1", "shot01_frame_-asset-2"]);
+    expect(validateProject(project)).toEqual(project);
+    expect(JSON.stringify(originalShots)).toBe(snapshot);
+    const original = projectFromFrameAssetShots(originalShots, 2);
+    expect(original.scenes.map(scene => scene.duration)).toEqual([2, 2]);
+    expect(original.assets[0].name).toBe("shot01_frame_0001.png");
+  });
+
+  it("rejects stale, repeated, foreign or unsafe Shot Director plans before import", () => {
+    const shots = [
+      { prefix: "shot01_frame_", assets: assets("shot01_frame_", 0) },
+      { prefix: "shot02_frame_", assets: assets("shot02_frame_", 2) },
+    ];
+    const plan = (a: string, b: string, holdSeconds: number = 0) =>
+      [
+        { prefix: a, holdSeconds },
+        { prefix: b, holdSeconds: 0 },
+      ] as never;
+    expect(arrangeShotDirections(shots).map(item => item.shot.prefix))
+      .toEqual(["shot01_frame_", "shot02_frame_"]);
+    expect(() => projectFromFrameAssetShots(shots, 2,
+      plan("shot01_frame_", "shot01_frame_"))).toThrow(/invalid/);
+    expect(() => projectFromFrameAssetShots(shots, 2,
+      plan("foreign_", "shot02_frame_"))).toThrow(/invalid/);
+    expect(() => projectFromFrameAssetShots(shots, 2,
+      plan("shot01_frame_", "shot02_frame_", -1))).toThrow(/invalid/);
+    expect(() => projectFromFrameAssetShots(shots, 2,
+      plan("shot01_frame_", "shot02_frame_", 4))).toThrow(/invalid/);
+    expect(() => projectFromFrameAssetShots(shots, 2,
+      [{ prefix: "shot02_frame_", holdSeconds: 0 }])).toThrow(/no longer matches/);
+    expect(() => projectFromFrameAssetShots(shots, 2,
+      [{ prefix: "shot01_frame_", holdSeconds: 2 },
+        { prefix: "shot02_frame_", holdSeconds: Number.NaN as never }]))
+      .toThrow(/invalid/);
   });
 
   it("rejects mismatched dimensions, missing frames and repeated asset IDs during full project validation", () => {

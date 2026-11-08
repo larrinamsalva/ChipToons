@@ -77,6 +77,70 @@ test("Framefield multi-shot importer builds two real scenes and exports matching
   }
 });
 
+test("Shot Director reorders shots and holds a real frame across the recorded WebM cut", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("./");
+  await page.getByText(/More ways to create.*3D/).click();
+  const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
+  await picker.getByRole("checkbox", {
+    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+  }).check();
+  await picker.getByLabel("Choose numbered PNG files").setInputFiles([
+    { name: "shot02_frame_0002.png", mimeType: "image/png", buffer: Buffer.from(samples[3], "base64") },
+    { name: "shot01_frame_0001.png", mimeType: "image/png", buffer: Buffer.from(samples[0], "base64") },
+    { name: "shot02_frame_0001.png", mimeType: "image/png", buffer: Buffer.from(samples[2], "base64") },
+    { name: "shot01_frame_0002.png", mimeType: "image/png", buffer: Buffer.from(samples[1], "base64") },
+  ]);
+  await picker.getByLabel("Animation playback speed").selectOption("2");
+  const director = picker.getByRole("region", { name: "Shot Director" });
+  await expect(director.getByRole("list", { name: "Shot playback order" }).locator("li").first())
+    .toContainText("shot01_frame_");
+  await director.getByRole("button", { name: "Move shot01_frame_ later" }).click();
+  await director.getByLabel("Hold final frame of shot02_frame_").selectOption("1");
+  await expect(director.getByRole("list", { name: "Shot playback order" }).locator("li").first())
+    .toContainText("Shot 1 · shot02_frame_");
+  await expect(picker.getByRole("status")).toContainText("Total 5 seconds");
+  await picker.getByRole("button", { name: "Create multi-shot cartoon" }).click();
+  await expect(page.locator(".editor")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/new multi-shot cartoon is ready/i)).toBeVisible();
+
+  if ((page.viewportSize()?.width ?? 0) >= 1200) {
+    const { data } = await backup(page);
+    expect(data.scenes.map(scene => scene.duration)).toEqual([3, 2]);
+    expect(data.scenes.map(scene => scene.transition)).toEqual(["cut", "cut"]);
+    expect(data.assets.map(asset => asset.name)).toEqual([
+      "shot02_frame_0001.png", "shot02_frame_0002.png",
+      "shot01_frame_0001.png", "shot01_frame_0002.png",
+    ]);
+    await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+    const audio = page.getByRole("checkbox", { name: "Include mixed audio", exact: true });
+    if (await audio.isEnabled() && await audio.isChecked()) await audio.uncheck();
+    const captions = page.getByRole("checkbox", { name: "Include timed captions", exact: true });
+    if (await captions.isEnabled() && await captions.isChecked()) await captions.uncheck();
+    await page.getByRole("button", { name: "Export complete cartoon", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Your movie is ready", exact: true }))
+      .toBeVisible({ timeout: 90_000 });
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Download completed video", exact: true }).click();
+    const path = (await (await download).path())!;
+    const rgb = (seconds: number) => execFileSync("ffmpeg", [
+      "-v", "error", "-ss", String(seconds), "-i", path,
+      "-vf", "crop=2:2:400:220", "-frames:v", "1",
+      "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1",
+    ]);
+    // Extra hold leaves the *real yellow image* visible near the end
+    // of the first 3-second shot; the manually reordered second shot
+    // starts with the *real red image* after that hard scene cut.
+    const held = rgb(2.75), after = rgb(3.45);
+    expect(held.length).toBe(12);
+    expect(after.length).toBe(12);
+    expect(held[0]).toBeGreaterThan(held[2] + 55);
+    expect(held[1]).toBeGreaterThan(held[2] + 55);
+    expect(after[0]).toBeGreaterThan(after[1] + 55);
+    expect(after[0]).toBeGreaterThan(after[2] + 55);
+  }
+});
+
 test("Framefield multi-shot importer rejects incomplete shots before creating or changing a cartoon", async ({ page }) => {
   await page.goto("./");
   await page.getByText(/More ways to create.*3D/).click();

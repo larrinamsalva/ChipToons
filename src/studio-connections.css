@@ -78,3 +78,57 @@
 }
 .studio-shot-mode input { min-width: 1.25rem; min-height: 1.25rem; accent-color: var(--primary); }
 .studio-shot-mode input:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+
+/* Accessible optional Shot Director; never replaces beginner story tools. */
+.studio-shot-director {
+  border: 1px solid var(--line);
+  border-radius: .7rem;
+  background: var(--surface);
+  color: var(--text);
+  padding: .85rem;
+  margin: 1rem 0;
+}
+.studio-shot-director h4 { margin: 0 0 .5rem; color: var(--text); }
+.studio-shot-director ol {
+  list-style: none;
+  padding: 0;
+  margin: .75rem 0 0;
+  display: grid;
+  gap: .7rem;
+}
+.studio-shot-director li {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  padding: .7rem;
+  min-width: 0;
+}
+.studio-shot-line,
+.studio-shot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem;
+}
+.studio-shot-line { justify-content: space-between; margin-bottom: .65rem; }
+.studio-shot-line strong { overflow-wrap: anywhere; }
+.studio-shot-actions label {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  color: var(--text);
+  font-weight: 600;
+}
+.studio-shot-actions select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .45rem;
+  padding: .5rem;
+  min-height: 2.75rem;
+}
+.studio-shot-actions :is(select,button):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}

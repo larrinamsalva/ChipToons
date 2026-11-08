@@ -66,3 +66,7 @@ multi-scene ChipToons cartoon.
 Require both Foundation/browser QA and full 20-minute episode + genuine
 exports green on the **latest commit**. This PR stays draft and unmerged
 until manual review. No automatic merge or release.
+
+## PR #59 — Optional Shot Director
+
+After selecting the local PNG frames, you may now manually move shots earlier/later and hold each final PNG for 0–3 additional seconds. The original numeric ordering and zero extra hold remain the default. This creates a **new** cartoon with ordinary editable scene durations and exact original frame assets. See [Shot Director](FRAMEFIELD_SHOT_DIRECTOR.md) for controls, limits and recorded-WebM verification.

@@ -49,6 +49,40 @@ export interface ImportedShotAssets {
   prefix: string;
   assets: Asset[];
 }
+export interface ShotDirection {
+  /** Exact validated shot prefix, not an uploaded path or external URL. */
+  prefix: string;
+  /** Additional full seconds holding the final source PNG before the cut. */
+  holdSeconds: 0 | 1 | 2 | 3;
+}
+
+/**
+ * An optional, explicit shot order and ending holds. A tampered, stale,
+ * duplicated or foreign prefix is rejected rather than silently skipping it.
+ * With no plan, the original numeric filename ordering is preserved.
+ */
+export function arrangeShotDirections<T extends { prefix: string }>(
+  shots: readonly T[],
+  direction?: readonly ShotDirection[],
+): { shot: T; holdSeconds: number }[] {
+  if (!direction) return shots.map(shot => ({ shot, holdSeconds: 0 }));
+  if (direction.length !== shots.length)
+    throw new Error("Shot order no longer matches your selected PNG sequences.");
+  const byPrefix = new Map(shots.map(shot => [shot.prefix.toLowerCase(), shot]));
+  if (byPrefix.size !== shots.length)
+    throw new Error("Each numbered shot needs a distinct prefix.");
+  const used = new Set<string>();
+  return direction.map(item => {
+    const key = item.prefix.toLowerCase();
+    if (used.has(key) || !byPrefix.has(key) ||
+        !Number.isInteger(item.holdSeconds) ||
+        item.holdSeconds < 0 || item.holdSeconds > 3)
+      throw new Error("Shot order or ending pause is invalid. Reselect your frames.");
+    used.add(key);
+    return { shot: byPrefix.get(key)!, holdSeconds: item.holdSeconds };
+  });
+}
+
 
 /**
  * Create a brand-new standard ChipToons cartoon with a scene per shot.
@@ -58,6 +92,7 @@ export interface ImportedShotAssets {
 export function projectFromFrameAssetShots(
   shots: readonly ImportedShotAssets[],
   fps: FrameSequenceRate,
+  direction?: readonly ShotDirection[],
 ): Project {
   if (shots.length < 2 || shots.length > MAX_STORYBOARD_SHOTS ||
       !FRAME_SEQUENCE_RATES.includes(fps))
@@ -72,13 +107,16 @@ export function projectFromFrameAssetShots(
   if (new Set(shots.map(shot => shot.prefix.toLowerCase())).size !== shots.length)
     throw new Error("Every shot needs a distinct filename prefix.");
 
-  const first = shots[0];
+  const arranged = arrangeShotDirections(shots, direction);
+  const first = arranged[0].shot;
   const project = projectFromFrameAssets(first.assets, fps, first.prefix);
   const firstElement = project.scenes[0].elements[0];
-  const newScenes = shots.map((shot, index) => {
+  const newScenes = arranged.map(({ shot, holdSeconds }, index) => {
     const scene = index === 0 ? project.scenes[0] : makeScene(project.characters, index);
     scene.title = `Shot ${index + 1} · ${shot.prefix.slice(0, 80)}`;
-    scene.duration = Math.max(2, Math.ceil(shot.assets.length / fps));
+    // The existing time sampler automatically holds the last real PNG.
+    // Additional hold is an ordinary scene duration, never invented frames.
+    scene.duration = Math.max(2, Math.ceil(shot.assets.length / fps)) + holdSeconds;
     scene.narration = "";
     scene.dialogue = "";
     scene.action = "Render the original numbered PNG animation in the correct shot order.";
@@ -96,7 +134,8 @@ export function projectFromFrameAssetShots(
     return scene;
   });
 
-  project.assets = allAssets;
+  // Keep the portable asset list in the same order as the chosen shots.
+  project.assets = arranged.flatMap(({ shot }) => shot.assets);
   project.scenes = newScenes;
   project.title = `${first.prefix.replace(/[_ -]+$/, "").slice(0, 65)} · ${shots.length}-shot cartoon`;
   project.templateId = "frame-sequence-storyboard";
@@ -112,10 +151,14 @@ export function projectFromFrameAssetShots(
   return validateProject(project);
 }
 
-export async function importMultiShotPngs(files: readonly File[], fps: number): Promise<Project> {
+export async function importMultiShotPngs(
+  files: readonly File[], fps: number, direction?: readonly ShotDirection[],
+): Promise<Project> {
   if (!FRAME_SEQUENCE_RATES.some(rate => rate === fps))
     throw new Error("Choose a supported playback rate (2, 4, 8 or 12 fps).");
   const shots = groupNumberedShots(files);
+  // Validate the selected shot plan BEFORE decoding any large images.
+  arrangeShotDirections(shots, direction);
   const imported: ImportedShotAssets[] = [];
   for (const shot of shots) {
     const assets: Asset[] = [];
@@ -131,5 +174,5 @@ export async function importMultiShotPngs(files: readonly File[], fps: number): 
     }
     imported.push({ prefix: shot.prefix, assets });
   }
-  return projectFromFrameAssetShots(imported, fps as FrameSequenceRate);
+  return projectFromFrameAssetShots(imported, fps as FrameSequenceRate, direction);
 }

@@ -1,5 +1,6 @@
 import { CREATIVE_STUDIOS, connectionLabel } from "../studio-connections";
 import { FrameSequencePicker } from "./FrameSequencePicker";
+import type { ShotDirection } from "../studio-multishot";
 import "../studio-connections.css";
 
 /**
@@ -10,7 +11,8 @@ export function StudioConnections({
   onImportImage, onCreateSequence,
 }: {
   onImportImage: () => void;
-  onCreateSequence: (files: File[], fps: number, multiShot: boolean) => Promise<void>;
+  onCreateSequence: (files: File[], fps: number, multiShot: boolean,
+    direction?: ShotDirection[]) => Promise<void>;
 }) {
   return (
     <details className="transform-examples">
