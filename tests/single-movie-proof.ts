@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect } from "@playwright/test";
+import { MOVIE_PART_TOLERANCE } from "../src/single-movie-plan";
 import type { Page, TestInfo } from "@playwright/test";
 
 const RATE = 8000;
@@ -101,7 +102,11 @@ export function verifyJoinedMedia(path: string, sources: string[], plannedLength
     expect(times.every((time, index) => Math.abs(time + start - videoPackets[offset + index].time) <= 0.002)).toBe(true);
     offset += picture.length;
     const length = plannedLengths[index];
-    expect(Math.abs(reportedDuration - length)).toBeLessThanOrEqual(0.3);
+    // MediaRecorder may add its real 0.15s lead plus an encoder tail.
+    // Enforce the SAME bounded 0.6s per-part limit as moviePlanProblem;
+    // exact frame hashes, video timestamp offsets and PCM checks below
+    // still independently reject missing, rearranged or corrupted media.
+    expect(Math.abs(reportedDuration - length)).toBeLessThanOrEqual(MOVIE_PART_TOLERANCE);
     const outputLength = (videoPackets[offset]?.time ?? duration) - start;
     expect(outputLength).toBeGreaterThanOrEqual(sourceEnd - 0.02);
     expect(outputLength).toBeLessThanOrEqual(sourceEnd + 0.12);
