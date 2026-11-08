@@ -80,3 +80,7 @@ runtime, GPU renderer, remote account connector or an automatic film pipeline.
 The next roadmap step is still a **separate, opt-in 3D scene adapter**.
 Do not copy source trees from MichaelWave369's tools or bypass the
 original versioned-license and provenance requirements.
+
+## PR #58 — Multi-shot export
+
+You can now opt into **2–3 separate numbered PNG shot prefixes**, combining up to 40 original PNGs into a *new*, multi-scene cartoon (24 MiB total selection). This is separate from and does not change the original single-shot importer. See [Framefield multi-shot storyboard](FRAMEFIELD_MULTISHOT_STORYBOARD.md) for ordering, limits and genuine export verification.
