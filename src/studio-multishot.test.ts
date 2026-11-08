@@ -134,7 +134,7 @@ describe("Framefield multi-shot storyboard", () => {
       expect(() => projectFromFrameAssetShots(copy, 2)).toThrow();
     };
     bad(v => { v[1].assets[1].sourceWidth = 3; });
-    bad(v => { v[0].assets[0].id = "missing"; });
+    bad(v => { v[0].assets[0].id = ""; });
     bad(v => { v[1].assets[0].id = v[0].assets[0].id; });
     bad(v => { v[1].assets[1].mime = "image/jpeg"; });
     expect(() => projectFromFrameAssetShots(shots, 24 as never)).toThrow(/supported/);
