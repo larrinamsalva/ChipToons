@@ -8,6 +8,7 @@ import { sceneryOffset } from "../world-model";
 import { workshopGroundShadows } from "../cinematic-workshop";
 import { cinematicFaceAt } from "../cinematic-face";
 import { cinematicContactsAt } from "../cinematic-contact";
+import { frameSequenceAssetIdAt } from "../frame-sequence-model";
 import { cinematicPaperFlexAt } from "../cinematic-paper-flex";
 import { WorkshopDepthDefs, WorkshopDepthLayer, WorkshopGrounding } from "./CinematicWorkshop";
 import { PuppetArt } from "./PuppetArt";
@@ -628,7 +629,7 @@ export const Stage = memo(function Stage({
               const change = track && objectAppearanceAt(scene, track, t, calmPreview);
               const art = change?.state?.art;
               const assetId = art?.kind === "image" ? art.assetId :
-                art?.kind === "prop" ? undefined : element.assetId ?? character?.assetId;
+                art?.kind === "prop" ? undefined : frameSequenceAssetIdAt(element, t) ?? character?.assetId;
               const appearance = art?.kind === "prop" ? art.appearance : element.propAppearance;
               const asset = project.assets.find(a => a.id === assetId);
               const frame = frames.get(element.id)!;

@@ -34,6 +34,7 @@ export function Dashboard({
   onScoutTidyWorkshopDemo,
   onScoutArticulatedWorkshopDemo,
   onUpload,
+  onCreateSequence,
   onDraw,
   onOpen,
   onRecovery,
@@ -69,6 +70,7 @@ export function Dashboard({
   onScoutArticulatedWorkshopDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
+  onCreateSequence: (files: File[], fps: number) => Promise<void>;
   onDraw: () => void;
   onOpen: (p: Project) => void;
   onRecovery: () => void;
@@ -229,7 +231,7 @@ export function Dashboard({
           </button>
         ))}
       </section>
-      <StudioConnections onImportImage={onUpload} />
+      <StudioConnections onImportImage={onUpload} onCreateSequence={onCreateSequence} />
       <details className="transform-examples">
         <summary>Try a Fix, Build &amp; Transform example</summary>
         <div className="series-actions">

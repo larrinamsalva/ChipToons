@@ -1,11 +1,17 @@
 import { CREATIVE_STUDIOS, connectionLabel } from "../studio-connections";
+import { FrameSequencePicker } from "./FrameSequencePicker";
 import "../studio-connections.css";
 
 /**
  * An honest entry point to other studios: no cross-origin data access, hidden
  * execution, external uploads, or promised format compatibility.
  */
-export function StudioConnections({ onImportImage }: { onImportImage: () => void }) {
+export function StudioConnections({
+  onImportImage, onCreateSequence,
+}: {
+  onImportImage: () => void;
+  onCreateSequence: (files: File[], fps: number) => Promise<void>;
+}) {
   return (
     <details className="transform-examples">
       <summary>More ways to create · 3D, art, film &amp; XR studio connections</summary>
@@ -32,10 +38,11 @@ export function StudioConnections({ onImportImage }: { onImportImage: () => void
           </section>
         ))}
       </div>
+      <FrameSequencePicker onCreate={onCreateSequence} />
       <p className="field-hint">
-        PNG, JPEG and WebP are the current image inputs. 3D models, animation
-        sequences, editable layered files and XR scenes are not imported here.
-        Learn about the planned adapters in the Creative Studio Bridge guide.
+        Single stills accept PNG, JPEG and WebP. Bounded numbered PNG sequences now
+        import as timed 2D animation; 3D models, editable layered files and XR scenes
+        are still not imported here. See the Creative Studio Bridge guide.
       </p>
     </details>
   );

@@ -76,6 +76,10 @@ export function rangeArtwork(project: Project, range: SceneRange) {
         e.assetId ??
         project.characters.find((c) => c.id === e.characterId)?.assetId;
       if (id) ids.add(id);
+      // The export preload must decode *every* source image of a real
+      // frame sequence, not only its first poster frame. Stage chooses the
+      // same asset at each precise local scene time in preview and export.
+      for (const frameId of e.frameSequence?.assetIds ?? []) ids.add(frameId);
     }
   return project.assets.filter((a) => ids.has(a.id));
 }
