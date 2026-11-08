@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { LocalFrameImage } from "./ShotFramePreview";
+import { StoryReelShotNavigation } from "./StoryReelShotNavigation";
 import { storyReelFrameAt } from "../studio-story-reel";
 import type { ReelPlan } from "../studio-story-reel";
 
@@ -47,6 +48,13 @@ export function StoryReelPlayer({
     if (next >= plan.duration) setPlaying(false);
   };
 
+  const jumpToShot = (start: number) => {
+    // A deliberate jump pauses playback. Use the same bounded seek path
+    // as the slider, so resume begins at the exact selected scene cut.
+    setPlaying(false);
+    seek(start);
+  };
+
   const toggle = () => {
     if (disabled) return;
     if (playing) {
@@ -76,6 +84,8 @@ export function StoryReelPlayer({
         frame {frame.frameIndex + 1}/{plan.shots[frame.shotIndex].files.length}
         {frame.holding ? " · holding final frame" : ""}
       </p>
+      <StoryReelShotNavigation plan={plan} position={position}
+        activeIndex={frame.shotIndex} disabled={disabled} onJump={jumpToShot} />
       <label className="studio-frame-scrubber">
         Seek full storyboard (seconds)
         <input aria-label="Seek full storyboard" type="range" min={0}
