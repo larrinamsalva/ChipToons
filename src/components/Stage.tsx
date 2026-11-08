@@ -8,6 +8,7 @@ import { sceneryOffset } from "../world-model";
 import { workshopGroundShadows } from "../cinematic-workshop";
 import { cinematicFaceAt } from "../cinematic-face";
 import { cinematicContactsAt } from "../cinematic-contact";
+import { cinematicPaperFlexAt } from "../cinematic-paper-flex";
 import { WorkshopDepthDefs, WorkshopDepthLayer, WorkshopGrounding } from "./CinematicWorkshop";
 import { PuppetArt } from "./PuppetArt";
 import { stageCameraAt, backgroundAt, elementAt, sceneFramesAt, sceneStart } from "../timeline";
@@ -661,7 +662,8 @@ export const Stage = memo(function Stage({
                       cover={element.backdrop}
                     />
                   ) : element.kind === "prop" && element.prop ? (
-                    <PropArt name={element.prop} openness={frame.openness} appearance={appearance} />
+                    <PropArt name={element.prop} openness={frame.openness} appearance={appearance}
+                       pageFlex={cinematicPaperFlexAt(project, scene, element, frame, t, calmPreview)} />
                   ) : character ? (
                     <CartoonCharacter
                       character={character}
