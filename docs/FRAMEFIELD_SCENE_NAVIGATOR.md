@@ -50,3 +50,7 @@ and the next one begins.
 - Require Foundation/browser QA and the original full 20-minute genuine
   export check green on the **latest PR #62 commit**.
 - Human review and manual merge only; **do not auto-merge**.
+
+## PR #63 — Recognize every shot by its original picture
+
+Each scene marker now includes the **first actual selected PNG** for its shot, next to its existing accessible jump action, cut timings and final-frame hold. Thumbnails follow manually reordered shots and disappear when a selection is cleared, revoking temporary object URLs. No source artwork, cartoon projects, playback timing or exports are changed. See [Visual Scene Filmstrip](FRAMEFIELD_VISUAL_SCENE_FILMSTRIP.md).
