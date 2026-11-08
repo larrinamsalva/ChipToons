@@ -63,3 +63,7 @@ This increment adds a **silent playable storyboard reel BEFORE import**.
 
 Require both GitHub check groups green on **PR #61's latest commit**.
 Human reviews and merges manually; do not merge automatically.
+
+## PR #62 — Scene markers and jump-to-shot controls
+
+Below the silent storyboard player, the **Storyboard scene markers** show the real timing of every selected shot. Each button pauses and jumps to the exact opening image of a shot; the active scene is highlighted. Markers follow creator-selected shot order and final-frame holds. No project export data is changed. See [Scene Navigator](FRAMEFIELD_SCENE_NAVIGATOR.md).
