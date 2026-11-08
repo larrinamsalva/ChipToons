@@ -38,6 +38,14 @@ describe("Story Reel scene navigator", () => {
     expect(html).toContain('aria-label="Jump to shot 2: shot01_frame_ at 3.00 seconds"');
     expect(html).toContain("0.00–3.00s");
     expect(html).toContain("3.00–7.00s");
+    // The navigator shows the REAL first PNG for each shot, never a
+    // generated placeholder, and keeps the jump button's accessible name.
+    expect((html.match(/class="studio-reel-shot-thumbnail"/g) ?? [])).toHaveLength(2);
+    expect(html).toContain('data-thumbnail-shot="shot02_frame_"');
+    expect(html).toContain('data-thumbnail-shot="shot01_frame_"');
+    expect(html).toContain('alt="Original first frame of shot02_frame_"');
+    expect(html).toContain('alt="Original first frame of shot01_frame_"');
+    expect(html).toContain('aria-hidden="true"');
     expect(html).toContain("+1s final-frame hold");
     expect(html).toContain("+2s final-frame hold");
     expect((html.match(/aria-current="step"/g) ?? [])).toHaveLength(1);
@@ -53,6 +61,7 @@ describe("Story Reel scene navigator", () => {
       onJump: () => { throw new Error("SSR cannot activate a control"); },
     }));
     expect((html.match(/disabled=""/g) ?? [])).toHaveLength(2);
+    expect((html.match(/class="studio-reel-shot-thumbnail"/g) ?? [])).toHaveLength(2);
     expect(html).toContain("0.00–2.00s");
     expect(html).toContain("2.00–4.00s");
     expect(html).not.toContain("final-frame hold");
