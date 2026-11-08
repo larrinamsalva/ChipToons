@@ -70,7 +70,7 @@ export function Dashboard({
   onScoutArticulatedWorkshopDemo: () => void;
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
-  onCreateSequence: (files: File[], fps: number) => Promise<void>;
+  onCreateSequence: (files: File[], fps: number, multiShot: boolean) => Promise<void>;
   onDraw: () => void;
   onOpen: (p: Project) => void;
   onRecovery: () => void;

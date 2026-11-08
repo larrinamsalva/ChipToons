@@ -10,7 +10,7 @@ export function StudioConnections({
   onImportImage, onCreateSequence,
 }: {
   onImportImage: () => void;
-  onCreateSequence: (files: File[], fps: number) => Promise<void>;
+  onCreateSequence: (files: File[], fps: number, multiShot: boolean) => Promise<void>;
 }) {
   return (
     <details className="transform-examples">
