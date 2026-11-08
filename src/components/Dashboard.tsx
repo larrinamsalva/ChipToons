@@ -8,6 +8,7 @@ import type { Project } from "../model";
 import { STARTERS, starterProject } from "../planner";
 import { Icon } from "./Icon";
 import { Stage } from "./Stage";
+import { StudioConnections } from "./StudioConnections";
 
 export function Dashboard({
   projects,
@@ -228,6 +229,7 @@ export function Dashboard({
           </button>
         ))}
       </section>
+      <StudioConnections onImportImage={onUpload} />
       <details className="transform-examples">
         <summary>Try a Fix, Build &amp; Transform example</summary>
         <div className="series-actions">

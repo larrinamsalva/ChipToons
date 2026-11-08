@@ -1,0 +1,23 @@
+/* The advanced creative bridge stays subordinate to beginner workflows. */
+.studio-connections-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: .85rem;
+  margin: .85rem 0;
+}
+.studio-connection {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .8rem;
+  background: var(--surface);
+}
+.studio-connection h3 { font-size: 1rem; margin: 0 0 .55rem; color: var(--text); }
+.studio-connection p { margin: .4rem 0 .7rem; overflow-wrap: anywhere; }
+.studio-connection .field-hint { color: var(--muted); }
+.studio-connection .series-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.studio-connection .series-actions > * { max-width: 100%; white-space: normal; text-align: center; }
