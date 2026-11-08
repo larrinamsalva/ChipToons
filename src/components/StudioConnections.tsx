@@ -1,4 +1,5 @@
 import { CREATIVE_STUDIOS, connectionLabel } from "../studio-connections";
+import "../studio-connections.css";
 
 /**
  * An honest entry point to other studios: no cross-origin data access, hidden
