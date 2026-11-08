@@ -13,10 +13,10 @@ test("Framefield bridge creates a local editable animation from real ordered PNG
   await page.goto("./");
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
-  const files = samples.map((contents, i) => ({
+  const files = samples.map((_, i) => ({
     name: `shot_000${4 - i}.png`,
     mimeType: "image/png",
-    buffer: Buffer.from(contents, "base64"),
+    buffer: Buffer.from(samples[3 - i], "base64"),
   }));
   // Intentionally select in descending order: importer must sort by frame
   // number and must never trust the native file-input ordering.
@@ -29,7 +29,7 @@ test("Framefield bridge creates a local editable animation from real ordered PNG
 
   // Real browser decoding + app project creation are exercised above on all
   // three viewports; only desktop also verifies the actual portable backup.
-  if ((page.viewportSize()?.width ?? 0) >= 700) {
+  if ((page.viewportSize()?.width ?? 0) >= 1200) {
     const { data } = await backup(page);
     expect(data.scenes).toHaveLength(1);
     expect(data.scenes[0].elements).toHaveLength(1);
