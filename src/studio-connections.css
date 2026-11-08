@@ -244,3 +244,80 @@
   .studio-reel-screen .studio-frame-image img { max-height: 14rem; }
   .studio-reel-actions button { min-height: 2.75rem; }
 }
+
+/* Scene navigation is scaled by each real shot's duration, not file count. */
+.studio-reel-shot-nav {
+  margin: .85rem 0;
+  color: var(--text);
+  min-width: 0;
+}
+.studio-reel-shot-nav > p { margin: 0 0 .4rem; }
+.studio-reel-shot-list {
+  display: flex;
+  gap: .4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.studio-reel-shot-list li {
+  flex-basis: 0;
+  min-width: 0;
+  display: flex;
+}
+.studio-reel-shot-jump {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .28rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 5.2rem;
+  padding: .55rem;
+  border-radius: .45rem;
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.studio-reel-shot-jump[aria-current="step"] {
+  border: 2px solid var(--primary);
+  padding: calc(.55rem - 1px);
+  background: var(--surface);
+}
+.studio-reel-shot-jump:disabled { cursor: not-allowed; opacity: .65; }
+.studio-reel-shot-jump:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.studio-reel-shot-name {
+  font-size: .82rem;
+  overflow-wrap: anywhere;
+}
+.studio-reel-shot-time,
+.studio-reel-shot-hold {
+  font-size: .76rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.studio-reel-shot-progress {
+  display: block;
+  width: 100%;
+  height: .4rem;
+  border-radius: .3rem;
+  background: var(--line);
+  overflow: hidden;
+}
+.studio-reel-shot-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+@media (max-width: 740px) {
+  .studio-reel-shot-list { flex-direction: column; }
+  .studio-reel-shot-list li { flex-basis: auto; }
+  .studio-reel-shot-jump { min-height: 3rem; }
+  .studio-reel-shot-name { font-size: .85rem; }
+}
