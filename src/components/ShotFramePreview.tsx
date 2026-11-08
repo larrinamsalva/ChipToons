@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
  * This visual editor aid never writes project data, uploads files, decodes
  * external URLs or changes the existing exported frame timeline.
  */
-function LocalFrameImage({ file, alt }: { file: File; alt: string }) {
+export function LocalFrameImage({ file, alt }: { file: File; alt: string }) {
   const imageRef = useRef<HTMLImageElement>(null);
   const [broken, setBroken] = useState(false);
 
