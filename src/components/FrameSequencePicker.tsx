@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ShotFramePreview } from "./ShotFramePreview";
 import { FRAME_SEQUENCE_RATES, MAX_FRAME_SEQUENCE_FILES, MAX_FRAME_SEQUENCE_BYTES } from "../frame-sequence-model";
 import { numberedPngFrames } from "../studio-frame-sequence";
 import { groupNumberedShots } from "../studio-multishot";
@@ -15,6 +16,7 @@ export function FrameSequencePicker({
   const [fps, setFps] = useState<number>(8);
   const [multiShot, setMultiShot] = useState(false);
   const [shotDirection, setShotDirection] = useState<ShotDirection[]>([]);
+  const [selectionEpoch, setSelectionEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   let ordered: File[] = [];
@@ -67,6 +69,7 @@ export function FrameSequencePicker({
       await onCreate(frames, fps, multiShot, multiShot ? [...arranged] : undefined);
       setFiles([]);
       setShotDirection([]);
+      setSelectionEpoch(value => value + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The original PNG frames could not be opened.");
     } finally {
@@ -89,6 +92,7 @@ export function FrameSequencePicker({
           onChange={event => {
             setMultiShot(event.target.checked);
             setShotDirection([]);
+            setSelectionEpoch(value => value + 1);
             setError("");
           }} />
         Build a multi-shot cartoon (2–3 numbered sequences)
@@ -108,6 +112,7 @@ export function FrameSequencePicker({
             onChange={event => {
               setError("");
               setShotDirection([]);
+              setSelectionEpoch(value => value + 1);
               setFiles(Array.from(event.target.files ?? []));
             }} />
         </label>
@@ -120,12 +125,17 @@ export function FrameSequencePicker({
           </select>
         </label>
       </div>
+      {!multiShot && ordered.length >= 2 && (
+        <ShotFramePreview key={`single-${selectionEpoch}`}
+          files={ordered} prefix="single-shot" fps={fps} disabled={busy} />
+      )}
       {multiShot && shots.length >= 2 && (
         <section className="studio-shot-director" aria-label="Shot Director">
           <h4>Shot Director · arrange your story</h4>
-          <p className="field-hint">Move each shot earlier or later. Optionally hold
-            its final original image for 1–3 extra seconds before the next shot.
-            Nothing changes the PNGs themselves.</p>
+          <p className="field-hint">Inspect any original PNG with the frame slider,
+            then move each shot earlier or later. Optionally hold its final original
+            image for 1–3 extra seconds before the next shot. These visual previews
+            use only local files; nothing changes the PNGs themselves.</p>
           <ol aria-label="Shot playback order">
             {arranged.map((item, index) => {
               const shot = shots.find(candidate => candidate.prefix === item.prefix)!;
@@ -137,6 +147,8 @@ export function FrameSequencePicker({
                     <strong>Shot {index + 1} · {item.prefix}</strong>
                     <span className="field-hint">{shot.files.length} frames · {seconds}s</span>
                   </div>
+                  <ShotFramePreview key={`${item.prefix}-${selectionEpoch}`}
+                    files={shot.files} prefix={item.prefix} fps={fps} disabled={busy} />
                   <div className="studio-shot-actions">
                     <button type="button" className="button secondary small"
                       aria-label={`Move ${item.prefix} earlier`}
