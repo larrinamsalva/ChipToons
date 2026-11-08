@@ -1,4 +1,5 @@
 import type { ReelPlan } from "../studio-story-reel";
+import { LocalFrameImage } from "./ShotFramePreview";
 
 /**
  * Visible local shot boundaries for the same deterministic storyboard plan
@@ -33,6 +34,15 @@ export function StoryReelShotNavigation({
                 onClick={() => onJump(shot.start)}>
                 <span className="studio-reel-shot-progress" aria-hidden="true">
                   <span style={{ width: `${played.toFixed(2)}%` }} />
+                </span>
+                {/* Only the first ORIGINAL selected PNG is shown. These tiny
+                    previews are decorative inside an already-named button,
+                    keeping its accessible name and jump action unchanged.
+                    LocalFrameImage revokes every temporary blob URL on unmount. */}
+                <span className="studio-reel-shot-thumbnail" aria-hidden="true"
+                  data-thumbnail-shot={shot.prefix}>
+                  <LocalFrameImage file={shot.files[0]}
+                    alt={`Original first frame of ${shot.prefix}`} />
                 </span>
                 <strong>Shot {index + 1}</strong>
                 <span className="studio-reel-shot-name">{shot.prefix}</span>
