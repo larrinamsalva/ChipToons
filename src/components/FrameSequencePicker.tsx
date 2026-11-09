@@ -19,7 +19,8 @@ export function FrameSequencePicker({
   onCreate,
 }: {
   onCreate: (files: File[], fps: number, multiShot: boolean,
-    direction?: ShotDirection[], beats?: ShotBeat[]) => Promise<void>;
+    direction?: ShotDirection[], beats?: ShotBeat[],
+    includeDraftCaptions?: boolean, subtitleEdits?: SubtitleDraftAdjustment[]) => Promise<void>;
 }) {
   const [files, setFiles] = useState<File[]>([]);
   const [fps, setFps] = useState<number>(8);
@@ -27,6 +28,7 @@ export function FrameSequencePicker({
   const [shotDirection, setShotDirection] = useState<ShotDirection[]>([]);
   const [storyBeats, setStoryBeats] = useState<Record<string, ShotBeat>>({});
   const [subtitleEdits, setSubtitleEdits] = useState<Record<string, SubtitleDraftAdjustment>>({});
+  const [includeDraftCaptions, setIncludeDraftCaptions] = useState(false);
   const [selectionEpoch, setSelectionEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -72,6 +74,7 @@ export function FrameSequencePicker({
   }
   function changeBeat(next: ShotBeat) {
     if (busy) return;
+    setError("");
     setStoryBeats(current => ({ ...current, [next.prefix]: next }));
   }
   function downloadSubtitleDraft() {
@@ -121,6 +124,7 @@ export function FrameSequencePicker({
 
   function changeSubtitleEdit(prefix: string, next?: SubtitleDraftAdjustment) {
     if (busy) return;
+    setError("");
     setSubtitleEdits(current => {
       const updates = { ...current };
       if (next) updates[prefix] = next;
@@ -147,11 +151,14 @@ export function FrameSequencePicker({
       const beats = multiShot
         ? arranged.map(item => storyBeats[item.prefix] ?? emptyShotBeat(item.prefix))
         : undefined;
-      await onCreate(frames, fps, multiShot, multiShot ? [...arranged] : undefined, beats);
+      await onCreate(frames, fps, multiShot, multiShot ? [...arranged] : undefined,
+        beats, multiShot && includeDraftCaptions, multiShot && includeDraftCaptions
+          ? [...activeSubtitleEdits] : undefined);
       setFiles([]);
       setShotDirection([]);
       setStoryBeats({});
       setSubtitleEdits({});
+      setIncludeDraftCaptions(false);
       setSelectionEpoch(value => value + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The original PNG frames could not be opened.");
@@ -177,6 +184,7 @@ export function FrameSequencePicker({
             setShotDirection([]);
             setStoryBeats({});
             setSubtitleEdits({});
+            setIncludeDraftCaptions(false);
             setSelectionEpoch(value => value + 1);
             setError("");
           }} />
@@ -199,6 +207,7 @@ export function FrameSequencePicker({
               setShotDirection([]);
               setStoryBeats({});
               setSubtitleEdits({});
+              setIncludeDraftCaptions(false);
               setSelectionEpoch(value => value + 1);
               setFiles(Array.from(event.target.files ?? []));
             }} />
@@ -299,8 +308,23 @@ export function FrameSequencePicker({
             <p className="field-hint">
               By default subtitles cover whole shots. You can optionally
               edit one or two caption cues per shot and move their split time.
-              Drafts still require review against real recorded voices before
-              publishing; no edits change the original artwork or movie.
+              Drafts still require review against real recorded voices before publishing.
+            </p>
+            <label className="studio-import-captions-optin">
+              <input type="checkbox" checked={includeDraftCaptions}
+                disabled={busy || (!hasSubtitleDraft && !includeDraftCaptions)}
+                onChange={event => {
+                  setIncludeDraftCaptions(event.target.checked);
+                  setError("");
+                }} />
+              Include drafted subtitles as editable captions in the NEW cartoon
+            </label>
+            <p className="field-hint">
+              Optional: add the reviewed text and timings to the new cartoon's
+              normal caption editor and export. This creates no spoken audio
+              and never changes existing cartoons. Each imported subtitle
+              must be 280 characters or shorter; longer text is rejected
+              without cutting off your writing.
             </p>
           </div>
         </section>

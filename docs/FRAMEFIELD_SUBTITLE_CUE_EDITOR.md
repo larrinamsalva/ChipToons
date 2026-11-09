@@ -42,3 +42,7 @@ shorter captions with a single adjustable split inside an existing shot.
 - Both Foundation/browser QA and complete genuine 20-minute narrated
   movie export must pass on the latest PR SHA before manual merge.
   Do not automatically merge, deploy or publish.
+
+## PR #68 — Carry drafted captions into a new cartoon
+
+The **Include drafted subtitles as editable captions in the NEW cartoon** option is unchecked by default. When explicitly selected, the creation workflow validates the current one- or two-cue written subtitle drafts and adds them as standard per-scene editable captions in the newly created multi-shot PNG cartoon. Source narration, original assets and real movie timing remain intact. Every imported caption must be 280 characters or shorter; longer captions are rejected without truncating. This does not create or synchronize any recorded voice. See [Caption Import](FRAMEFIELD_CAPTION_IMPORT.md).

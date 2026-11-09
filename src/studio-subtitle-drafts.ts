@@ -9,6 +9,12 @@ export interface DraftSubtitleCue {
   text: string;
 }
 
+/** Smallest real scene timing shape needed to validate draft captions. */
+export interface SubtitleTimingPlan {
+  shots: readonly { prefix: string; start: number; duration: number }[];
+  duration: number;
+}
+
 /** User-selected preview-only caption words and optional second subtitle. */
 export interface SubtitleDraftAdjustment {
   prefix: string;
@@ -39,7 +45,7 @@ const safeText = (value: unknown): value is string =>
  * NOT applied to project narration, audio, scene duration or captions.
  */
 export function validateSubtitleAdjustments(
-  plan: ReelPlan, adjustments?: readonly SubtitleDraftAdjustment[],
+  plan: SubtitleTimingPlan, adjustments?: readonly SubtitleDraftAdjustment[],
 ): ReadonlyMap<string, SubtitleDraftAdjustment> {
   const result = new Map<string, SubtitleDraftAdjustment>();
   if (adjustments === undefined) return result;
@@ -74,7 +80,7 @@ const clean = (value: string) => value.replace(/\s+/gu, " ").trim();
  * it is not measured from speech or burned into an exported movie.
  */
 export function draftSubtitleCues(
-  plan: ReelPlan,
+  plan: SubtitleTimingPlan,
   beats: readonly ShotBeat[],
   adjustments?: readonly SubtitleDraftAdjustment[],
 ): DraftSubtitleCue[] {
@@ -104,7 +110,7 @@ export function draftSubtitleCues(
 }
 
 export function storyboardSubtitleSrt(
-  plan: ReelPlan, beats: readonly ShotBeat[],
+  plan: SubtitleTimingPlan, beats: readonly ShotBeat[],
   adjustments?: readonly SubtitleDraftAdjustment[],
 ): string {
   return formatSrt(draftSubtitleCues(plan, beats, adjustments));
