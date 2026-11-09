@@ -67,3 +67,7 @@ cartoon's normal editable caption tracks**.
 - Require **Foundation/browser QA** and **complete 20-minute genuine
   narrated video/audio export** checks green on the latest PR SHA.
   Human review and manual merge only.
+
+## PR #69 — Check caption intervals against assigned voice clips
+
+Open **Finish My Cartoon** on a new imported Framefield PNG storyboard to see a **Caption & Voice Timing Review** for each scene and caption. The report flags captions without overlapping assigned voice clips or written scenes with no actual recording. Existing voice/caption editor links let you review without changing project data automatically. This is only a **timing-coverage hint**: listen manually because clip overlap does not prove actual spoken words match the caption. See [Voice Timing Review](FRAMEFIELD_CAPTION_VOICE_REVIEW.md).
