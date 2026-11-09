@@ -312,7 +312,7 @@ export function FrameSequencePicker({
             </p>
             <label className="studio-import-captions-optin">
               <input type="checkbox" checked={includeDraftCaptions}
-                disabled={busy || !hasSubtitleDraft}
+                disabled={busy || (!hasSubtitleDraft && !includeDraftCaptions)}
                 onChange={event => {
                   setIncludeDraftCaptions(event.target.checked);
                   setError("");
