@@ -61,3 +61,7 @@ Framefield multi-shot workflow.
 - Foundation/browser QA and the original full 20-minute genuine
   narrated WebM/audio verification must both pass on PR #69's
   latest head before a human merge. No automatic merges or deployments.
+
+## PR #70 — Download a recording and caption review checklist
+
+Select **Download recording to-do sheet (.txt)** inside the existing Caption & Voice Timing Review. The locally generated file contains true scene/caption time intervals, written lines, missing assigned voice notices, and manual listening tasks. It does not edit saved files or prove that an overlapping voice clip says the matching words. See [Recording Checklist](FRAMEFIELD_RECORDING_PUNCH_LIST.md).

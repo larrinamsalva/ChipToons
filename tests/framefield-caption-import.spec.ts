@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { backup } from "./production-helpers";
+import { readFile } from "node:fs/promises";
 
 const samples = [
   "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGO8I2f0n4GBgYGJAQoAIZICLyZ2XFkAAAAASUVORK5CYII=",
@@ -89,6 +90,24 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   await expect(report.getByRole("list", {
     name: "Caption cue coverage for scene 1",
   })).toContainText("Jo checks.");
+  const downloadStarted = page.waitForEvent("download");
+  await report.getByRole("button", {
+    name: "Download recording to-do sheet (.txt)",
+  }).click();
+  const checklist = await downloadStarted;
+  expect(checklist.suggestedFilename()).toContain("-recording-checklist.txt");
+  const written = await readFile((await checklist.path())!, "utf8");
+  expect(written).toContain("CHIPTOONS — RECORDING & CAPTION REVIEW CHECKLIST");
+  expect(written).toContain("Scenes: 2 | Scenes with assigned voice intervals: 0");
+  expect(written).toContain("Captions: 3 | Captions without overlapping assigned voice: 3");
+  expect(written).toContain("SCENE 1");
+  expect(written).toContain("Episode time: 0.00s to 3.00s");
+  expect(written).toContain("CAPTION 0.00s–1.20s: Jo checks.");
+  expect(written).toContain("CAPTION 1.20s–3.00s: Jo explains the next step.");
+  expect(written).toContain("Episode time: 3.00s to 5.00s");
+  expect(written).toContain("CAPTION 3.00s–5.00s: Scout checks the wheel.");
+  expect(written).toContain("Record or assign actual narration/dialogue");
+  await expect(report).toBeVisible();
   await report.getByRole("button", {
     name: "Review captions for scene 1",
   }).click();
