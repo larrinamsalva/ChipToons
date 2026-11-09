@@ -10,6 +10,7 @@ import { Icon } from "./Icon";
 import { Stage } from "./Stage";
 import { StudioConnections } from "./StudioConnections";
 import type { ShotBeat } from "../studio-shot-beats";
+import type { SubtitleDraftAdjustment } from "../studio-subtitle-drafts";
 import type { ShotDirection } from "../studio-multishot";
 
 export function Dashboard({
@@ -73,7 +74,8 @@ export function Dashboard({
   onParticipationDemo: (example: TransformExample) => void;
   onUpload: () => void;
   onCreateSequence: (files: File[], fps: number, multiShot: boolean,
-    direction?: ShotDirection[], beats?: ShotBeat[]) => Promise<void>;
+    direction?: ShotDirection[], beats?: ShotBeat[],
+    includeDraftCaptions?: boolean, subtitleEdits?: SubtitleDraftAdjustment[]) => Promise<void>;
   onDraw: () => void;
   onOpen: (p: Project) => void;
   onRecovery: () => void;
