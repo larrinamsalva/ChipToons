@@ -1,6 +1,7 @@
 import type { Project } from "../model";
 import { framefieldCaptionVoiceReview } from "../framefield-caption-voice-review";
 import { framefieldRecordingPunchList } from "../framefield-recording-punch-list";
+import { FramefieldGuidedRecording } from "./FramefieldGuidedRecording";
 import { downloadBlob, safeFilename } from "../files";
 
 /** Explicitly scoped to cartoons created from the local multi-shot bridge. */
@@ -20,6 +21,7 @@ export function FramefieldCaptionVoiceReview({
         overlap. This does not listen to recordings or verify spoken words.
         Even overlapping clips must be played and checked by a person.
       </p>
+      <FramefieldGuidedRecording project={project} onScene={onScene} />
       <div className="animation-actions">
         <button type="button" className="button secondary"
           onClick={() => downloadBlob(

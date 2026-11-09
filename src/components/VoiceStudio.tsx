@@ -384,6 +384,26 @@ export function VoiceStudio({
   }
   return (
     <Modal title={target ? "Record This Line" : "Voices & Sound Studio"} onClose={close} wide>
+      {!target && project.templateId === "frame-sequence-storyboard" && (
+        <section className="director-recording" aria-label="Imported storyboard recording prompt">
+          <h3>{"Scene " + (sceneIndex + 1) + " recording prompt"}</h3>
+          <p className="field-hint">
+            Here are your original written words. The microphone starts only
+            when you press Start microphone recording. Preview and save each
+            real take to assign it to your cartoon.
+          </p>
+          {project.scenes[sceneIndex].narration.trim() && (
+            <p><strong>Written narration:</strong> {project.scenes[sceneIndex].narration}</p>
+          )}
+          {project.scenes[sceneIndex].dialogue.trim() && (
+            <p><strong>Written dialogue:</strong> {project.scenes[sceneIndex].dialogue}</p>
+          )}
+          {!project.scenes[sceneIndex].narration.trim() &&
+            !project.scenes[sceneIndex].dialogue.trim() && (
+              <p>No scripted words in this scene. A silent scene is allowed.</p>
+            )}
+        </section>
+      )}
       {target && <section className="director-recording" aria-label="Recording script">
         <strong>{target.kind === "narration" ? "Narrator" :
           project.characters.find(character => character.id === target.speakerId)?.name ?? "Unassigned speaker"}</strong>
