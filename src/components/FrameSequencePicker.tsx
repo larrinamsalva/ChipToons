@@ -3,6 +3,7 @@ import { ShotFramePreview } from "./ShotFramePreview";
 import { ShotBeatEditor } from "./ShotBeatEditor";
 import { emptyShotBeat } from "../studio-shot-beats";
 import { formatVoiceCueSheet } from "../studio-voice-cues";
+import { storyboardSubtitleSrt } from "../studio-subtitle-drafts";
 import type { ShotBeat } from "../studio-shot-beats";
 import { StoryReelPlayer } from "./StoryReelPlayer";
 import { planStoryReel } from "../studio-story-reel";
@@ -62,6 +63,28 @@ export function FrameSequencePicker({
     if (busy) return;
     setStoryBeats(current => ({ ...current, [next.prefix]: next }));
   }
+  function downloadSubtitleDraft() {
+    if (busy || !multiShot || !canCreate || displayedError) return;
+    try {
+      const plan = planStoryReel(shots, fps, arranged);
+      const beats = arranged.map(item =>
+        storyBeats[item.prefix] ?? emptyShotBeat(item.prefix));
+      const srt = storyboardSubtitleSrt(plan, beats);
+      if (!srt) return;
+      // Explicit local download only. Caption data never enters the
+      // project or finished movie until reviewed in the real editor.
+      const link = document.createElement("a");
+      link.href = `data:application/x-subrip;charset=utf-8,${encodeURIComponent(srt)}`;
+      link.download = "chiptoons-storyboard-subtitle-draft.srt";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message
+        : "Could not prepare your local subtitle draft.");
+    }
+  }
+
   function downloadVoiceCues() {
     if (busy || !multiShot || !canCreate || displayedError) return;
     try {
@@ -220,7 +243,10 @@ export function FrameSequencePicker({
           </ol>
           <StoryReelPlayer key={`${selectionEpoch}-${fps}-${arranged.map(
             item => `${item.prefix}:${item.holdSeconds}`).join("|")}`}
-            plan={planStoryReel(shots, fps, arranged)} disabled={busy} />
+            plan={planStoryReel(shots, fps, arranged)}
+            beats={arranged.map(item => storyBeats[item.prefix] ??
+              emptyShotBeat(item.prefix))}
+            disabled={busy} />
           <div className="studio-voice-cue-download">
             <h4>Recording script · before import</h4>
             <p className="field-hint">
@@ -228,11 +254,24 @@ export function FrameSequencePicker({
               time, action notes and written narration. Your story, PNGs and
               recordings stay local. This is not speech audio.
             </p>
-            <button type="button" className="button secondary small"
-              disabled={busy || !!displayedError || !canCreate}
-              onClick={downloadVoiceCues}>
-              Download voice cue sheet (.txt)
-            </button>
+            <div className="studio-script-download-actions">
+              <button type="button" className="button secondary small"
+                disabled={busy || !!displayedError || !canCreate}
+                onClick={downloadVoiceCues}>
+                Download voice cue sheet (.txt)
+              </button>
+              <button type="button" className="button secondary small"
+                disabled={busy || !!displayedError || !canCreate ||
+                  !arranged.some(item => !!storyBeats[item.prefix]?.narration.trim())}
+                onClick={downloadSubtitleDraft}>
+                Download subtitle draft (.srt)
+              </button>
+            </div>
+            <p className="field-hint">
+              Draft subtitles use each shot's start and end times, not real
+              voice timing. Review and retime against your recording before
+              publishing. Empty written narration creates no cue.
+            </p>
           </div>
         </section>
       )}
