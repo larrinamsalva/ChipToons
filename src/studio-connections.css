@@ -578,3 +578,61 @@
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* Optional review of imported storyboard captions against real clip windows. */
+.framefield-caption-voice-review {
+  margin: .9rem 0;
+  border: 1px solid var(--line);
+  border-radius: .65rem;
+  background: var(--surface);
+  color: var(--text);
+  padding: .85rem;
+}
+.framefield-caption-voice-review h3 {
+  color: var(--text);
+  margin: 0 0 .55rem;
+}
+.framefield-voice-summary {
+  font-weight: 700;
+  margin: .55rem 0 .75rem;
+}
+.framefield-caption-voice-review > ol {
+  display: grid;
+  gap: .7rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.framefield-caption-voice-review > ol > li {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: .5rem;
+  padding: .75rem;
+}
+.framefield-caption-voice-review li ul {
+  margin: .5rem 0 .75rem;
+  padding-left: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.framefield-caption-voice-review li ul li { margin: .3rem 0; }
+.framefield-voice-warning {
+  border-left: .25rem solid #c98e35;
+  color: var(--text);
+  padding: .35rem .65rem;
+  margin: .55rem 0;
+  font-weight: 600;
+}
+.framefield-caption-voice-review .animation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.framefield-caption-voice-review button {
+  min-height: 2.75rem;
+  white-space: normal;
+}
+@media (max-width:740px) {
+  .framefield-caption-voice-review { padding: .65rem; }
+  .framefield-caption-voice-review .animation-actions { flex-direction: column; }
+  .framefield-caption-voice-review .animation-actions button { width: 100%; }
+}
