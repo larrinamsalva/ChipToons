@@ -33,6 +33,7 @@ import { importNumberedPngSequence } from "./studio-frame-sequence";
 import { importMultiShotPngs } from "./studio-multishot";
 import type { ShotDirection } from "./studio-multishot";
 import type { ShotBeat } from "./studio-shot-beats";
+import type { SubtitleDraftAdjustment } from "./studio-subtitle-drafts";
 import { clone, duplicateProject, validateProject } from "./model";
 import type { Asset, Project } from "./model";
 import { starterProject } from "./planner";
@@ -546,18 +547,21 @@ export default function App() {
     }
   }
   async function createSequence(files: File[], fps: number, multiShot: boolean,
-    direction?: ShotDirection[], beats?: ShotBeat[]) {
+    direction?: ShotDirection[], beats?: ShotBeat[],
+    includeDraftCaptions = false, subtitleEdits?: SubtitleDraftAdjustment[]) {
     if (working) throw new Error("A different import is in progress.");
     setWorking(true);
     try {
       // No existing project is updated: imported frames become a fresh
       // portable cartoon with a standard scene and selectable art layer.
       const project = multiShot
-        ? await importMultiShotPngs(files, fps, direction, beats)
+        ? await importMultiShotPngs(files, fps, direction, beats, includeDraftCaptions, subtitleEdits)
         : await importNumberedPngSequence(files, fps);
       await open(project);
       setNotice(multiShot
-        ? "Your new multi-shot cartoon is ready. Your original projects are unchanged."
+        ? includeDraftCaptions
+           ? "Your new cartoon has editable draft captions. Check their timing against recorded speech."
+           : "Your new multi-shot cartoon is ready. Your original projects are unchanged."
         : "A new numbered-PNG animation is ready. Your existing cartoons are unchanged.");
     } finally {
       setWorking(false);
