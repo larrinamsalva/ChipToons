@@ -552,3 +552,29 @@
     justify-self: stretch;
   }
 }
+
+/* Deliberate, unchecked-by-default standard caption track import. */
+.studio-import-captions-optin {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  color: var(--text);
+  font-weight: 700;
+  padding: .7rem .75rem;
+  margin-top: .85rem;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  background: var(--surface);
+  cursor: pointer;
+}
+.studio-import-captions-optin input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: .08rem 0 0;
+  accent-color: var(--primary);
+}
+.studio-import-captions-optin:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
