@@ -83,6 +83,23 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   await expect(report).toContainText("0/2 scenes with an assigned audible voice clip");
   await expect(report).toContainText("3 timed captions");
   await expect(report).toContainText("3 captions with no overlapping voice clip");
+  // Guide is read-only; its recorder link opens the actual existing microphone UI.
+  const guide = report.getByRole("region", { name: "Guided scene voice recording" });
+  await guide.getByRole("button", { name: "Start guided voice recording" }).click();
+  await expect(guide).toContainText("Original Jo narration.");
+  await expect(guide).toContainText("Episode time: 0.00s–3.00s");
+  await guide.getByRole("button", { name: "Next scene" }).click();
+  await expect(guide).toContainText("Episode time: 3.00s–5.00s");
+  await expect(guide).toContainText("Scout checks the wheel.");
+  await guide.getByRole("button", { name: "Previous scene" }).click();
+  await guide.getByRole("button", { name: "Record or upload this scene" }).click();
+  const recorder = page.getByRole("dialog");
+  await expect(recorder).toContainText("Scene 1 recording prompt");
+  await expect(recorder).toContainText("Original Jo narration.");
+  await expect(recorder.getByRole("button", { name: "Start microphone recording" }))
+    .toBeVisible();
+  await recorder.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
   await expect(report.getByRole("list", {
     name: "Storyboard scene audio and caption review",
   }).locator(":scope > li")).toHaveCount(2);
