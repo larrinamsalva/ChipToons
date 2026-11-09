@@ -64,3 +64,7 @@ simple subtitles and export a real, independently editable **SubRip
   **complete 20-minute narrated video/audio export proof** green
   on the latest PR SHA before human review and manual merge.
   Never automatically merge, publish or deploy.
+
+## PR #67 — Review one or two caption cues per shot
+
+In the optional **Subtitle cue review** panel, customize the first and second subtitle text per original PNG shot and move their split point between 20–80% of that scene. The local silent filmstrip preview and downloaded .srt reflect the chosen text, shot order and holds. **Use original narration** returns to the old one-cue behavior. The edits are not recorded speech, not saved project captions and not automatically placed into the final movie. See [Cue Editor](FRAMEFIELD_SUBTITLE_CUE_EDITOR.md).
