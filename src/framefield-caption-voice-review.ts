@@ -1,5 +1,6 @@
 import type { Project } from "./model";
 import { clipStart } from "./production";
+import { framefieldCueTimingCoverage } from "./framefield-caption-coverage";
 
 /**
  * A read-only check of *assigned clip intervals*, not waveform analysis or
@@ -21,30 +22,40 @@ export function framefieldCaptionVoiceReview(project: Project) {
     const captions = project.captions
       .filter(caption => caption.sceneId === scene.id)
       .sort((a, b) => a.start - b.start || a.end - b.end);
+    const voiceWindows = voices.map(clip => {
+      const voiceStart = clipStart(project, clip);
+      return { start: voiceStart, end: voiceStart + clip.duration };
+    });
 
     const cues = captions.map(caption => {
       const absoluteStart = start + caption.start;
       const absoluteEnd = start + caption.end;
-      const overlapsVoice = voices.some(clip => {
-        const voiceStart = clipStart(project, clip);
-        return voiceStart < absoluteEnd && voiceStart + clip.duration > absoluteStart;
-      });
+      const coverage = framefieldCueTimingCoverage(
+        absoluteStart, absoluteEnd, voiceWindows,
+      );
       return {
         id: caption.id,
         text: caption.text,
         start: caption.start,
         end: caption.end,
-        overlapsVoice,
+        overlapsVoice: coverage.coveredSeconds > 0,
+        coverageFraction: coverage.coverageFraction,
+        uncovered: coverage.gaps.map(gap => ({
+          start: gap.start - start,
+          end: gap.end - start,
+        })),
       };
     });
     const written = !!(scene.narration.trim() || scene.dialogue.trim());
     const missingVoice = written && voices.length === 0;
     const missingCaptions = (written || voices.length > 0) && captions.length === 0;
     const unmatchedCues = cues.filter(cue => !cue.overlapsVoice).length;
+    const partiallyCoveredCues = cues.filter(cue =>
+      cue.overlapsVoice && cue.uncovered.length > 0).length;
     return {
       sceneIndex, sceneId: scene.id, title: scene.title, duration: scene.duration,
       voiceClips: voices.length, captions: captions.length, written,
-      missingVoice, missingCaptions, unmatchedCues, cues,
+      missingVoice, missingCaptions, unmatchedCues, partiallyCoveredCues, cues,
     };
   });
 
@@ -55,6 +66,7 @@ export function framefieldCaptionVoiceReview(project: Project) {
     captions: scenes.reduce((sum, scene) => sum + scene.captions, 0),
     captionsWithoutOverlappingVoice: scenes.reduce(
       (sum, scene) => sum + scene.unmatchedCues, 0),
+    partiallyCoveredCues: scenes.reduce((n, scene) => n + scene.partiallyCoveredCues, 0),
     scenesNeedingVoice: scenes.filter(scene => scene.missingVoice).length,
     scenesNeedingCaptions: scenes.filter(scene => scene.missingCaptions).length,
   };

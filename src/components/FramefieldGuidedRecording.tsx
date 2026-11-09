@@ -64,6 +64,14 @@ export function FramefieldGuidedRecording({
                   {" · " + (cue.overlapsVoice
                     ? "An assigned voice clip overlaps; listen to confirm"
                     : "No assigned voice clip overlaps")}
+                  {" · " + Math.round(cue.coverageFraction * 100) +
+                    "% of cue interval overlaps assigned voice"}
+                  {cue.uncovered.length > 0 && (
+                    <span>{" · Uncovered: " + cue.uncovered.map(gap =>
+                      (scene.episodeStart + gap.start).toFixed(2) + "–" +
+                      (scene.episodeStart + gap.end).toFixed(2) + "s"
+                    ).join(", ")}</span>
+                  )}
                 </li>
               ))}
             </ul>

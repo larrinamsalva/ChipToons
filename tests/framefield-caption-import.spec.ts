@@ -152,6 +152,16 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   const source = listenGuide.getByRole("region", { name: "Recorded scene voice listen-back" });
   await expect(source).toContainText("sample-voice-lane-original");
   await expect(source).toContainText("Source trim:");
+  // The first voice clip's scene interval covers both scene-one captions,
+  // but leaves all of scene two's captions without time-window coverage.
+  const coverageFirst = page.getByRole("list", {
+    name: "Caption cue coverage for scene 1",
+  });
+  const coverageSecond = page.getByRole("list", {
+    name: "Caption cue coverage for scene 2",
+  });
+  await expect(coverageFirst).toContainText("100% of cue interval overlaps voice");
+  await expect(coverageSecond).toContainText("0% of cue interval overlaps voice");
   const player = source.getByLabel("Original audio source", { exact: true });
   await player.evaluate((el: HTMLAudioElement) => el.play());
   await expect.poll(() =>
