@@ -3,18 +3,22 @@ import { LocalFrameImage } from "./ShotFramePreview";
 import { StoryReelShotNavigation } from "./StoryReelShotNavigation";
 import { storyReelFrameAt } from "../studio-story-reel";
 import type { ReelPlan } from "../studio-story-reel";
+import type { ShotBeat } from "../studio-shot-beats";
+import { storyboardSubtitleAt } from "../studio-subtitle-drafts";
 
 /** A local-only filmstrip player for original PNG shots prior to import. */
 export function StoryReelPlayer({
-  plan, disabled = false,
+  plan, beats, disabled = false,
 }: {
   plan: ReelPlan;
+  beats?: readonly ShotBeat[];
   disabled?: boolean;
 }) {
   const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
   const startClock = useRef(0);
   const frame = storyReelFrameAt(plan, position);
+  const draftSubtitle = beats ? storyboardSubtitleAt(plan, beats, position) : "";
 
   useEffect(() => {
     if (!playing || disabled) return;
@@ -78,6 +82,12 @@ export function StoryReelPlayer({
         <LocalFrameImage key={frame.frame.name} file={frame.frame}
           alt={`Story reel shot ${frame.shotIndex + 1}: frame ${frame.frameIndex + 1} of ${plan.shots[frame.shotIndex].files.length}, ${frame.frame.name}`} />
       </div>
+      {beats && (
+        <div className="studio-reel-subtitle-draft" data-subtitle-draft="true">
+          <strong>Written subtitle preview · not synchronized to recorded speech</strong>
+          <p>{draftSubtitle || "No written narration for this shot."}</p>
+        </div>
+      )}
       <p className="field-hint" data-reel-frame-status="true"
         aria-live={playing ? "off" : "polite"}>
         Shot {frame.shotIndex + 1}/{plan.shots.length} · {frame.prefix} ·

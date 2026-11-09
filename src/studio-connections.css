@@ -453,3 +453,36 @@
   outline: 3px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* Written draft subtitles, never overlaid on saved assets or exports. */
+.studio-reel-subtitle-draft {
+  max-width: 40rem;
+  margin: .65rem auto;
+  padding: .65rem .85rem;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  color: var(--text);
+  background: var(--surface);
+  text-align: center;
+}
+.studio-reel-subtitle-draft strong { color: var(--text); font-size: .84rem; }
+.studio-reel-subtitle-draft p {
+  margin: .45rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.studio-script-download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+.studio-script-download-actions button {
+  white-space: normal;
+  min-height: 2.75rem;
+}
+@media (max-width: 740px) {
+  .studio-script-download-actions { flex-direction: column; }
+  .studio-script-download-actions button { width: 100%; }
+}
