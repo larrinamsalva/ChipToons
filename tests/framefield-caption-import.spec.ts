@@ -72,6 +72,27 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
       ]);
     expect(data.audioClips).toHaveLength(0);
   }
+  // PR #69: the new actual caption tracks are visible in the regular
+  // finishing workflow, without ever mistaking written text for audio.
+  await page.getByRole("button", { name: "Finish My Cartoon" }).click();
+  const report = page.getByRole("region", {
+    name: "Storyboard caption and voice timing review",
+  });
+  await expect(report).toBeVisible();
+  await expect(report).toContainText("0/2 scenes with an assigned audible voice clip");
+  await expect(report).toContainText("3 timed captions");
+  await expect(report).toContainText("3 captions with no overlapping voice clip");
+  await expect(report.getByRole("list", {
+    name: "Storyboard scene audio and caption review",
+  }).locator(":scope > li")).toHaveCount(2);
+  await expect(report).toContainText("Written narration has no assigned audible voice clip");
+  await expect(report.getByRole("list", {
+    name: "Caption cue coverage for scene 1",
+  })).toContainText("Jo checks.");
+  await report.getByRole("button", {
+    name: "Review captions for scene 1",
+  }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
 });
 
 test("Caption import remains off by default and rejects overlong text before creating a project", async ({ page }) => {
