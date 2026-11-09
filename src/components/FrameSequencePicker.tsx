@@ -74,6 +74,7 @@ export function FrameSequencePicker({
   }
   function changeBeat(next: ShotBeat) {
     if (busy) return;
+    setError("");
     setStoryBeats(current => ({ ...current, [next.prefix]: next }));
   }
   function downloadSubtitleDraft() {
@@ -123,6 +124,7 @@ export function FrameSequencePicker({
 
   function changeSubtitleEdit(prefix: string, next?: SubtitleDraftAdjustment) {
     if (busy) return;
+    setError("");
     setSubtitleEdits(current => {
       const updates = { ...current };
       if (next) updates[prefix] = next;
@@ -311,7 +313,10 @@ export function FrameSequencePicker({
             <label className="studio-import-captions-optin">
               <input type="checkbox" checked={includeDraftCaptions}
                 disabled={busy || !hasSubtitleDraft}
-                onChange={event => setIncludeDraftCaptions(event.target.checked)} />
+                onChange={event => {
+                  setIncludeDraftCaptions(event.target.checked);
+                  setError("");
+                }} />
               Include drafted subtitles as editable captions in the NEW cartoon
             </label>
             <p className="field-hint">
