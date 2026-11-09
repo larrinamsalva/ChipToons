@@ -34,3 +34,8 @@ including rearranged shots and final-frame holds.
 - Foundation checks and independent complete 20-minute real audio/video
   export proof must be green on the exact PR SHA before human review.
 - Do not merge, publish, release or deploy automatically.
+
+
+## PR #72 — Listen to saved voice sources
+
+The guided scene now lists original narration/dialogue source files that overlap the current scene. Select a source and play the untrimmed original, even when its clip is muted in the final mix. This does not preview edit trims, fades, caption sync or final soundtrack. Use complete-cartoon preview to verify those. A saved source is not proof that it contains spoken or matching words.

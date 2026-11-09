@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { backup } from "./production-helpers";
+import { builtInSound } from "../src/sounds";
 import { readFile } from "node:fs/promises";
 
 const samples = [
@@ -129,6 +130,34 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
     name: "Review captions for scene 1",
   }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  // PR #72: saved original on a narration lane, playable inside the guide.
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+  await report.getByRole("button", { name: "Review voices for scene 1" }).click();
+  const voice = page.getByRole("dialog");
+  await voice.getByRole("combobox", { name: "New audio category" })
+    .selectOption("narration");
+  await voice.getByLabel("Upload audio file").setInputFiles({
+    name: "sample-voice-lane-original.wav",
+    mimeType: "audio/wav",
+    buffer: Buffer.from(builtInSound("melody").dataUrl.split(",")[1], "base64"),
+  });
+  await voice.getByRole("button", { name: "Save audio clip" }).click();
+  await expect(voice.getByRole("textbox", { name: "Audio clip name" }))
+    .toHaveValue("sample-voice-lane-original.wav");
+  await voice.getByRole("button", { name: "Back to cartoon" }).click();
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+  const listenGuide = page.getByRole("region", { name: "Guided scene voice recording" });
+  await listenGuide.getByRole("button", { name: "Start guided voice recording" }).click();
+  const source = listenGuide.getByRole("region", { name: "Recorded scene voice listen-back" });
+  await expect(source).toContainText("sample-voice-lane-original.wav");
+  await expect(source).toContainText("Source trim:");
+  const player = source.getByLabel("Original audio source", { exact: true });
+  await player.evaluate((el: HTMLAudioElement) => el.play());
+  await expect.poll(() =>
+    player.evaluate((el: HTMLAudioElement) => el.currentTime))
+    .toBeGreaterThan(0.05);
+  await player.evaluate((el: HTMLAudioElement) => el.pause());
 });
 
 test("Caption import remains off by default and rejects overlong text before creating a project", async ({ page }) => {
