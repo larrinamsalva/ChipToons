@@ -74,7 +74,7 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   }
   // PR #69: the new actual caption tracks are visible in the regular
   // finishing workflow, without ever mistaking written text for audio.
-  await page.getByRole("button", { name: "Finish My Cartoon" }).click();
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
   const report = page.getByRole("region", {
     name: "Storyboard caption and voice timing review",
   });
