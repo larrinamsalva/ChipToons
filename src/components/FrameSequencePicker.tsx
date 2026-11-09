@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ShotFramePreview } from "./ShotFramePreview";
 import { ShotBeatEditor } from "./ShotBeatEditor";
 import { emptyShotBeat } from "../studio-shot-beats";
+import { formatVoiceCueSheet } from "../studio-voice-cues";
 import type { ShotBeat } from "../studio-shot-beats";
 import { StoryReelPlayer } from "./StoryReelPlayer";
 import { planStoryReel } from "../studio-story-reel";
@@ -61,6 +62,29 @@ export function FrameSequencePicker({
     if (busy) return;
     setStoryBeats(current => ({ ...current, [next.prefix]: next }));
   }
+  function downloadVoiceCues() {
+    if (busy || !multiShot || !canCreate || displayedError) return;
+    try {
+      // Only the creator's existing short local notes leave as a user-
+      // initiated .txt download. No remote submission or hidden export.
+      const plan = planStoryReel(shots, fps, arranged);
+      const beats = arranged.map(item =>
+        storyBeats[item.prefix] ?? emptyShotBeat(item.prefix));
+      const report = formatVoiceCueSheet(plan, beats);
+      const link = document.createElement("a");
+      // The bounded text is small enough for a local data URL; this avoids
+      // object-URL lifetime issues and does not navigate or upload anything.
+      link.href = `data:text/plain;charset=utf-8,${encodeURIComponent(report)}`;
+      link.download = "chiptoons-storyboard-voice-cues.txt";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message
+        : "Could not prepare your local recording script.");
+    }
+  }
+
   function holdShot(prefix: string, holdSeconds: 0 | 1 | 2 | 3) {
     if (busy) return;
     setShotDirection(arranged.map(item => item.prefix === prefix
@@ -166,7 +190,8 @@ export function FrameSequencePicker({
                   <ShotFramePreview key={`${item.prefix}-${selectionEpoch}`}
                     files={shot.files} prefix={item.prefix} fps={fps} disabled={busy} />
                   <ShotBeatEditor beat={storyBeats[item.prefix] ??
-                    emptyShotBeat(item.prefix)} disabled={busy} onChange={changeBeat} />
+                    emptyShotBeat(item.prefix)} shotSeconds={seconds}
+                    disabled={busy} onChange={changeBeat} />
                   <div className="studio-shot-actions">
                     <button type="button" className="button secondary small"
                       aria-label={`Move ${item.prefix} earlier`}
@@ -196,6 +221,19 @@ export function FrameSequencePicker({
           <StoryReelPlayer key={`${selectionEpoch}-${fps}-${arranged.map(
             item => `${item.prefix}:${item.holdSeconds}`).join("|")}`}
             plan={planStoryReel(shots, fps, arranged)} disabled={busy} />
+          <div className="studio-voice-cue-download">
+            <h4>Recording script · before import</h4>
+            <p className="field-hint">
+              Download a text-only cue sheet with each shot's real start/end
+              time, action notes and written narration. Your story, PNGs and
+              recordings stay local. This is not speech audio.
+            </p>
+            <button type="button" className="button secondary small"
+              disabled={busy || !!displayedError || !canCreate}
+              onClick={downloadVoiceCues}>
+              Download voice cue sheet (.txt)
+            </button>
+          </div>
         </section>
       )}
       <p role="status" className="field-hint">
