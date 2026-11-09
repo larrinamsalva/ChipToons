@@ -144,13 +144,13 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   });
   await voice.getByRole("button", { name: "Save audio clip" }).click();
   await expect(voice.getByRole("textbox", { name: "Audio clip name" }))
-    .toHaveValue("sample-voice-lane-original.wav");
+    .toHaveValue("sample-voice-lane-original");
   await voice.getByRole("button", { name: "Back to cartoon" }).click();
   await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
   const listenGuide = page.getByRole("region", { name: "Guided scene voice recording" });
   await listenGuide.getByRole("button", { name: "Start guided voice recording" }).click();
   const source = listenGuide.getByRole("region", { name: "Recorded scene voice listen-back" });
-  await expect(source).toContainText("sample-voice-lane-original.wav");
+  await expect(source).toContainText("sample-voice-lane-original");
   await expect(source).toContainText("Source trim:");
   const player = source.getByLabel("Original audio source", { exact: true });
   await player.evaluate((el: HTMLAudioElement) => el.play());
