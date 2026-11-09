@@ -44,8 +44,13 @@ test("Manually split one scene into two genuine downloadable SRT cues without al
   await expect(first).toHaveValue("Jo explains each step carefully.");
   await first.fill("Jo checks.");
   await second.fill("Jo shows a safe fix.");
-  await editor.getByRole("slider", { name: "Second subtitle timing for shot02_frame_" })
-    .fill("40");
+  const timing = editor.getByRole("slider", {
+    name: "Second subtitle timing for shot02_frame_",
+  });
+  await timing.focus();
+  await timing.press("Home");
+  for (let i = 0; i < 4; i++) await timing.press("ArrowRight");
+  await expect(timing).toHaveValue("40");
   await expect(editor).toContainText("1.20s into this 3.00s shot.");
   await expect(secondNarration).toHaveValue("Jo explains each step carefully.");
   const reel = director.getByRole("region", { name: "Play full storyboard" });
