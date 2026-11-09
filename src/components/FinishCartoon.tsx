@@ -18,6 +18,7 @@ import type { ExportSegment } from "../segments";
 import { SegmentExports } from "./SegmentExports";
 import { ReadinessChecklist } from "./ReadinessChecklist";
 import { EpisodeReadiness } from "./EpisodeReadiness";
+import { FramefieldCaptionVoiceReview } from "./FramefieldCaptionVoiceReview";
 import { productionReadiness } from "../readiness";
 import type { PublishingMovie, PublishingParts } from "../youtube-kit";
 const YouTubeKit = lazy(() => import("./YouTubeKit").then(module => ({ default: module.YouTubeKit })));
@@ -192,6 +193,9 @@ export function FinishCartoon({
         onReady={setSourcesReady}
         onScene={onScene}
       />
+      {project.templateId === "frame-sequence-storyboard" && (
+        <FramefieldCaptionVoiceReview project={project} onScene={onScene} />
+      )}
       <ReadinessChecklist
         project={project}
         limit={exportLimit()}
