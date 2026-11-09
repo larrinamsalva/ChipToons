@@ -49,7 +49,7 @@ describe("Framefield caption-to-assigned voice interval review", () => {
     voice.duration=0.8;
     voice.fadeOut=0;
     p.audioClips=[voice];
-    let board=framefieldCaptionVoiceReview(p);
+    const board=framefieldCaptionVoiceReview(p);
     expect(board.scenesWithAssignedVoice).toBe(1);
     expect(board.captionsWithoutOverlappingVoice).toBe(2);
     expect(board.scenes[0].cues.map(c=>c.overlapsVoice)).toEqual([true,false]);
