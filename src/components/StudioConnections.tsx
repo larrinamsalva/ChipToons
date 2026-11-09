@@ -1,6 +1,7 @@
 import { CREATIVE_STUDIOS, connectionLabel } from "../studio-connections";
 import { FrameSequencePicker } from "./FrameSequencePicker";
 import type { ShotBeat } from "../studio-shot-beats";
+import type { SubtitleDraftAdjustment } from "../studio-subtitle-drafts";
 import type { ShotDirection } from "../studio-multishot";
 import "../studio-connections.css";
 
@@ -13,7 +14,8 @@ export function StudioConnections({
 }: {
   onImportImage: () => void;
   onCreateSequence: (files: File[], fps: number, multiShot: boolean,
-    direction?: ShotDirection[], beats?: ShotBeat[]) => Promise<void>;
+    direction?: ShotDirection[], beats?: ShotBeat[],
+    includeDraftCaptions?: boolean, subtitleEdits?: SubtitleDraftAdjustment[]) => Promise<void>;
 }) {
   return (
     <details className="transform-examples">
