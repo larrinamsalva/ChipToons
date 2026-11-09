@@ -58,3 +58,7 @@ first source PNG thumbnail** rather than just an identifier.
 - Require both Foundation/browser QA and complete 20-minute narrated
   genuine-WebM export checks **green on PR #63's latest commit**.
   Do not merge automatically.
+
+## PR #64 — Write the story behind each shot
+
+Each imported multi-shot PNG sequence can now have an optional short **scene title**, **action/lesson description**, and **written narration** prepared in Shot Director before import. These written notes follow the original shot after reordering and become normal editable scene fields in the newly created cartoon. Written narration is **not** a voice recording. See [Story Beats](FRAMEFIELD_STORY_BEATS.md).

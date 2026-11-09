@@ -4,6 +4,8 @@ import { readImage } from "./files";
 import { numberedPngFrames, projectFromFrameAssets } from "./studio-frame-sequence";
 import { FRAME_SEQUENCE_RATES, MAX_FRAME_SEQUENCE_BYTES } from "./frame-sequence-model";
 import type { FrameSequenceRate } from "./frame-sequence-model";
+import { validateShotBeats } from "./studio-shot-beats";
+import type { ShotBeat } from "./studio-shot-beats";
 
 export const MAX_STORYBOARD_SHOTS = 3;
 export const MAX_STORYBOARD_ASSETS = 40;
@@ -93,6 +95,7 @@ export function projectFromFrameAssetShots(
   shots: readonly ImportedShotAssets[],
   fps: FrameSequenceRate,
   direction?: readonly ShotDirection[],
+  beats?: readonly ShotBeat[],
 ): Project {
   if (shots.length < 2 || shots.length > MAX_STORYBOARD_SHOTS ||
       !FRAME_SEQUENCE_RATES.includes(fps))
@@ -108,18 +111,24 @@ export function projectFromFrameAssetShots(
     throw new Error("Every shot needs a distinct filename prefix.");
 
   const arranged = arrangeShotDirections(shots, direction);
+  const notes = validateShotBeats(shots, beats);
   const first = arranged[0].shot;
   const project = projectFromFrameAssets(first.assets, fps, first.prefix);
   const firstElement = project.scenes[0].elements[0];
   const newScenes = arranged.map(({ shot, holdSeconds }, index) => {
     const scene = index === 0 ? project.scenes[0] : makeScene(project.characters, index);
-    scene.title = `Shot ${index + 1} · ${shot.prefix.slice(0, 80)}`;
+    const beat = notes.get(shot.prefix.toLowerCase());
+    scene.title = beat?.title.trim() ||
+      `Shot ${index + 1} · ${shot.prefix.slice(0, 80)}`;
     // The existing time sampler automatically holds the last real PNG.
     // Additional hold is an ordinary scene duration, never invented frames.
     scene.duration = Math.max(2, Math.ceil(shot.assets.length / fps)) + holdSeconds;
-    scene.narration = "";
+    // Plain scene text is part of the ordinary editable portable backup.
+    // Writing narration never silently creates a synthetic voice recording.
+    scene.narration = beat?.narration.trim() ?? "";
     scene.dialogue = "";
-    scene.action = "Render the original numbered PNG animation in the correct shot order.";
+    scene.action = beat?.action.trim() ||
+      "Render the original numbered PNG animation in the correct shot order.";
     scene.props = "";
     scene.background = "classroom";
     scene.camera = "wide";
@@ -153,12 +162,14 @@ export function projectFromFrameAssetShots(
 
 export async function importMultiShotPngs(
   files: readonly File[], fps: number, direction?: readonly ShotDirection[],
+  beats?: readonly ShotBeat[],
 ): Promise<Project> {
   if (!FRAME_SEQUENCE_RATES.some(rate => rate === fps))
     throw new Error("Choose a supported playback rate (2, 4, 8 or 12 fps).");
   const shots = groupNumberedShots(files);
   // Validate the selected shot plan BEFORE decoding any large images.
   arrangeShotDirections(shots, direction);
+  validateShotBeats(shots, beats);
   const imported: ImportedShotAssets[] = [];
   for (const shot of shots) {
     const assets: Asset[] = [];
@@ -174,5 +185,5 @@ export async function importMultiShotPngs(
     }
     imported.push({ prefix: shot.prefix, assets });
   }
-  return projectFromFrameAssetShots(imported, fps as FrameSequenceRate, direction);
+  return projectFromFrameAssetShots(imported, fps as FrameSequenceRate, direction, beats);
 }

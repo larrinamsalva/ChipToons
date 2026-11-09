@@ -373,3 +373,55 @@
     grid-column: 2;
   }
 }
+
+/* Optional text-only story beats: stays subordinate to the visual Shot Director. */
+.studio-shot-beat-editor {
+  display: grid;
+  gap: .6rem;
+  min-width: 0;
+  margin: .75rem 0;
+  padding: .7rem;
+  border: 1px solid var(--line);
+  border-radius: .6rem;
+  color: var(--text);
+  background: var(--surface);
+}
+.studio-shot-beat-editor legend {
+  color: var(--text);
+  font-weight: 700;
+  padding: 0 .35rem;
+}
+.studio-shot-beat-editor label {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text);
+}
+.studio-shot-beat-editor input,
+.studio-shot-beat-editor textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  resize: vertical;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  padding: .55rem;
+}
+.studio-shot-beat-editor :is(input,textarea):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.studio-shot-beat-editor .field-hint {
+  font-weight: 400;
+  margin: .2rem 0 0;
+}
+@media (max-width: 740px) {
+  .studio-shot-beat-editor { padding: .65rem; }
+  .studio-shot-beat-editor textarea { min-height: 5rem; }
+}
