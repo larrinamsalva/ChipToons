@@ -72,3 +72,7 @@ story, lesson and narration alongside the real animated pictures.
   mandatory and must both be green on the latest PR #64 SHA.
 - Keep the PR as a **draft** until reviewed. No automatic merging or
   deployment.
+
+## PR #65 — Prepare a real recording session
+
+The optional **Narration Timing & Voice Cue Sheet** guide shows a rough 120-wpm spoken-line estimate next to each editable shot's written narration. Select **Download voice cue sheet (.txt)** for a genuine local time-coded script with your chosen shot order, holds, action notes, and original written lines. This does not create audio or retime scenes. See [Voice Cues](FRAMEFIELD_VOICE_CUE_SHEET.md).

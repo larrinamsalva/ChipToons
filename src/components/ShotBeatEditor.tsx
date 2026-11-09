@@ -2,15 +2,18 @@ import {
   SHOT_BEAT_ACTION_LIMIT, SHOT_BEAT_NARRATION_LIMIT, SHOT_BEAT_TITLE_LIMIT,
 } from "../studio-shot-beats";
 import type { ShotBeat } from "../studio-shot-beats";
+import { narrationTiming } from "../studio-voice-cues";
 
 /** Optional original story text for a locally selected shot, not a voice generator. */
 export function ShotBeatEditor({
-  beat, onChange, disabled = false,
+  beat, onChange, shotSeconds, disabled = false,
 }: {
   beat: ShotBeat;
   onChange: (next: ShotBeat) => void;
+  shotSeconds: number;
   disabled?: boolean;
 }) {
+  const pacing = narrationTiming(beat.narration, shotSeconds);
   return (
     <fieldset className="studio-shot-beat-editor" disabled={disabled}
       aria-label={`Story beat for ${beat.prefix}`}>
@@ -39,10 +42,18 @@ export function ShotBeatEditor({
           value={beat.narration}
           onChange={event => onChange({ ...beat, narration: event.target.value })} />
       </label>
+      <p className={pacing.estimatedOverrun
+        ? "studio-voice-timing-warning" : "field-hint"}
+        data-narration-timing={beat.prefix}>
+        {pacing.words} spoken word{pacing.words === 1 ? "" : "s"} · about
+        {" "}{pacing.estimatedSeconds.toFixed(1)}s at 120 words/minute,
+        for a {shotSeconds.toFixed(1)}s shot.
+        {pacing.estimatedOverrun
+          ? " The script may run past this scene. Shorten it or adjust its duration after importing."
+          : " Rehearse your narration—actual speaking time may vary."}
+      </p>
       <p className="field-hint">
-        Your text becomes editable scene notes in the new cartoon.
-        Narration is a script, not an automatic voice recording.
-        Keep spoken lines short enough for this shot's duration.
+        Your text becomes editable scene notes, not an automatic voice recording.
       </p>
     </fieldset>
   );

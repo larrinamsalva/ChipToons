@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { expect } from "@playwright/test";
 import { MOVIE_PART_TOLERANCE } from "../src/single-movie-plan";
+import { audibleTailSamplePosition } from "./audio-proof-sampling";
 import type { Page, TestInfo } from "@playwright/test";
 
 const RATE = 8000;
@@ -114,7 +115,12 @@ export function verifyJoinedMedia(path: string, sources: string[], plannedLength
     if (audio) {
       const sound = pcm(source);
       const scenes = length > 20 ? Array.from({ length: Math.floor(length / 20) - 1 }, (_, i) => (i + 1) * 20 + 0.2) : [length / 2 + 0.05];
-      const times = [0.2, ...scenes, sound.length / RATE - 0.3];
+      // An encoder tail or music pause can be legitimately quiet. Select
+      // the closest audible original window within the last eight seconds,
+      // then keep the SAME strict correlation and timing proof against the
+      // joined movie. We never skip a part or waive the sound check.
+      const tail = audibleTailSamplePosition(sound, RATE);
+      const times = [0.2, ...scenes, tail];
       for (const time of times) samples.push(audioMatch(sound, audio, start, time, 0.26));
     }
     return { start, outputLength, sourceEnd, reportedDuration, frames: picture.length, samples };
