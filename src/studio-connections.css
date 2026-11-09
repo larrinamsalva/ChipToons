@@ -425,3 +425,31 @@
   .studio-shot-beat-editor { padding: .65rem; }
   .studio-shot-beat-editor textarea { min-height: 5rem; }
 }
+
+/* Voice script preparation is optional, local, legible and non-blocking. */
+.studio-voice-timing-warning {
+  margin: .25rem 0;
+  color: var(--text);
+  border-left: .25rem solid #db9236;
+  padding: .45rem .6rem;
+  font-weight: 650;
+  background: var(--surface);
+}
+.studio-voice-cue-download {
+  border: 1px solid var(--line);
+  border-radius: .6rem;
+  padding: .85rem;
+  margin: .85rem 0 0;
+  color: var(--text);
+  background: var(--surface);
+}
+.studio-voice-cue-download h4 { margin: 0 0 .35rem; color: var(--text); }
+.studio-voice-cue-download p { margin: .35rem 0 .7rem; }
+.studio-voice-cue-download button {
+  min-height: 2.75rem;
+  white-space: normal;
+}
+.studio-voice-cue-download button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
