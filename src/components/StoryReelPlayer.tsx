@@ -5,20 +5,24 @@ import { storyReelFrameAt } from "../studio-story-reel";
 import type { ReelPlan } from "../studio-story-reel";
 import type { ShotBeat } from "../studio-shot-beats";
 import { storyboardSubtitleAt } from "../studio-subtitle-drafts";
+import type { SubtitleDraftAdjustment } from "../studio-subtitle-drafts";
 
 /** A local-only filmstrip player for original PNG shots prior to import. */
 export function StoryReelPlayer({
-  plan, beats, disabled = false,
+  plan, beats, adjustments, disabled = false,
 }: {
   plan: ReelPlan;
   beats?: readonly ShotBeat[];
+  adjustments?: readonly SubtitleDraftAdjustment[];
   disabled?: boolean;
 }) {
   const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
   const startClock = useRef(0);
   const frame = storyReelFrameAt(plan, position);
-  const draftSubtitle = beats ? storyboardSubtitleAt(plan, beats, position) : "";
+  const draftSubtitle = beats
+    ? storyboardSubtitleAt(plan, beats, position, adjustments)
+    : "";
 
   useEffect(() => {
     if (!playing || disabled) return;
