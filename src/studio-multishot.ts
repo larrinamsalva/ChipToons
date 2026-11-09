@@ -6,6 +6,9 @@ import { FRAME_SEQUENCE_RATES, MAX_FRAME_SEQUENCE_BYTES } from "./frame-sequence
 import type { FrameSequenceRate } from "./frame-sequence-model";
 import { validateShotBeats } from "./studio-shot-beats";
 import type { ShotBeat } from "./studio-shot-beats";
+import { emptyShotBeat } from "./studio-shot-beats";
+import { attachStoryboardCaptionDrafts, verifiedImportCaptionCues } from "./studio-caption-import";
+import type { SubtitleDraftAdjustment, SubtitleTimingPlan } from "./studio-subtitle-drafts";
 
 export const MAX_STORYBOARD_SHOTS = 3;
 export const MAX_STORYBOARD_ASSETS = 40;
@@ -163,13 +166,31 @@ export function projectFromFrameAssetShots(
 export async function importMultiShotPngs(
   files: readonly File[], fps: number, direction?: readonly ShotDirection[],
   beats?: readonly ShotBeat[],
+  includeDraftCaptions = false,
+  subtitleEdits?: readonly SubtitleDraftAdjustment[],
 ): Promise<Project> {
   if (!FRAME_SEQUENCE_RATES.some(rate => rate === fps))
     throw new Error("Choose a supported playback rate (2, 4, 8 or 12 fps).");
   const shots = groupNumberedShots(files);
   // Validate the selected shot plan BEFORE decoding any large images.
-  arrangeShotDirections(shots, direction);
+  const ordered = arrangeShotDirections(shots, direction);
   validateShotBeats(shots, beats);
+  const selectedNotes = beats ?? shots.map(shot => emptyShotBeat(shot.prefix));
+  // Fail before image decoding for stale captions or editor-sized text.
+  // This is opt-in: the legacy import path does not add any caption tracks.
+  if (includeDraftCaptions) {
+    let elapsed = 0;
+    const timing: SubtitleTimingPlan = {
+      shots: ordered.map(({ shot, holdSeconds }) => {
+        const duration = Math.max(2, Math.ceil(shot.files.length / fps)) + holdSeconds;
+        const entry = { prefix: shot.prefix, start: elapsed, duration };
+        elapsed += duration;
+        return entry;
+      }),
+      get duration() { return elapsed; },
+    };
+    verifiedImportCaptionCues(timing, selectedNotes, subtitleEdits);
+  }
   const imported: ImportedShotAssets[] = [];
   for (const shot of shots) {
     const assets: Asset[] = [];
@@ -185,5 +206,9 @@ export async function importMultiShotPngs(
     }
     imported.push({ prefix: shot.prefix, assets });
   }
-  return projectFromFrameAssetShots(imported, fps as FrameSequenceRate, direction, beats);
+  const project = projectFromFrameAssetShots(imported, fps as FrameSequenceRate, direction, beats);
+  return includeDraftCaptions
+    ? attachStoryboardCaptionDrafts(project, ordered.map(item => item.shot.prefix),
+      selectedNotes, subtitleEdits)
+    : project;
 }
