@@ -486,3 +486,69 @@
   .studio-script-download-actions { flex-direction: column; }
   .studio-script-download-actions button { width: 100%; }
 }
+
+/* Optional subtitle review fields, kept distinct from authored narration. */
+.studio-subtitle-cue-editor {
+  display: grid;
+  gap: .65rem;
+  min-width: 0;
+  margin: .75rem 0;
+  padding: .75rem;
+  border: 1px solid var(--line);
+  border-radius: .6rem;
+  color: var(--text);
+  background: var(--surface);
+}
+.studio-subtitle-cue-editor legend {
+  padding: 0 .35rem;
+  color: var(--text);
+  font-weight: 700;
+}
+.studio-subtitle-cue-editor label {
+  display: grid;
+  min-width: 0;
+  gap: .3rem;
+  color: var(--text);
+  font-weight: 600;
+}
+.studio-subtitle-cue-editor textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 4.8rem;
+  padding: .55rem;
+  border: 1px solid var(--line);
+  border-radius: .45rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  resize: vertical;
+}
+.studio-subtitle-cue-editor input[type="range"] {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  width: 100%;
+  accent-color: var(--primary);
+}
+.studio-subtitle-cue-editor :is(button,textarea,input):focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.studio-subtitle-cue-editor button {
+  min-height: 2.75rem;
+  white-space: normal;
+  justify-self: start;
+}
+.studio-subtitle-cue-editor .field-hint {
+  margin: .15rem 0;
+  color: var(--muted);
+  font-weight: 400;
+}
+@media (max-width: 740px) {
+  .studio-subtitle-cue-editor {
+    padding: .65rem;
+  }
+  .studio-subtitle-cue-editor button {
+    justify-self: stretch;
+  }
+}
