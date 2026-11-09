@@ -17,9 +17,15 @@ export const emptyShotBeat = (prefix: string): ShotBeat => ({
   prefix, title: "", action: "", narration: "",
 });
 
+// Check character codes rather than a control-character regex, preserving
+// the exact original validation while satisfying ESLint's no-control-regex.
 const validText = (value: unknown, limit: number): value is string =>
   typeof value === "string" && value.length <= limit &&
-  !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value);
+  !Array.from(value).some(character => {
+    const code = character.charCodeAt(0);
+    return (code < 32 && code !== 9 && code !== 10 && code !== 13) ||
+      code === 127;
+  });
 
 /**
  * Fail closed for malformed, stale or extra notes before image decoding.
