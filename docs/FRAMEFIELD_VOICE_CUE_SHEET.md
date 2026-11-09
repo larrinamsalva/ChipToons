@@ -60,3 +60,7 @@ or a separate recording session, **without creating fake audio**.
 - Both existing Foundation/browser QA and complete 20-minute
   real narrated-export jobs must be green on the **latest commit**.
 - Human merges the reviewed PR manually. **Do not auto-merge.**
+
+## PR #66 — Review written subtitles before recording
+
+A preview-only line in the story reel now follows each shot's written narration. **Download subtitle draft (.srt)** produces a real local SubRip file using the chosen shot order and start/end timings. These captions are **drafts timed to scenes, not to actual voice recordings**: review and retime them against the real performance. No audio, scene duration, export, storage or previously saved project is changed. See [Subtitle Drafts](FRAMEFIELD_SUBTITLE_DRAFTS.md).
