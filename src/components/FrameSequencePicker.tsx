@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { ShotFramePreview } from "./ShotFramePreview";
 import { ShotBeatEditor } from "./ShotBeatEditor";
+import { SubtitleCueEditor } from "./SubtitleCueEditor";
 import { emptyShotBeat } from "../studio-shot-beats";
 import { formatVoiceCueSheet } from "../studio-voice-cues";
 import { storyboardSubtitleSrt } from "../studio-subtitle-drafts";
+import type { SubtitleDraftAdjustment } from "../studio-subtitle-drafts";
 import type { ShotBeat } from "../studio-shot-beats";
 import { StoryReelPlayer } from "./StoryReelPlayer";
 import { planStoryReel } from "../studio-story-reel";
@@ -24,6 +26,7 @@ export function FrameSequencePicker({
   const [multiShot, setMultiShot] = useState(false);
   const [shotDirection, setShotDirection] = useState<ShotDirection[]>([]);
   const [storyBeats, setStoryBeats] = useState<Record<string, ShotBeat>>({});
+  const [subtitleEdits, setSubtitleEdits] = useState<Record<string, SubtitleDraftAdjustment>>({});
   const [selectionEpoch, setSelectionEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -48,6 +51,14 @@ export function FrameSequencePicker({
         ? shotDirection
         : shots.map(shot => ({ prefix: shot.prefix, holdSeconds: 0 as const })))
     : [];
+  const activeSubtitleEdits = arranged.flatMap(item =>
+    subtitleEdits[item.prefix] ? [subtitleEdits[item.prefix]] : []);
+  const hasSubtitleDraft = arranged.some(item => {
+    const edit = subtitleEdits[item.prefix];
+    return edit
+      ? !!(edit.first.trim() || edit.second.trim())
+      : !!storyBeats[item.prefix]?.narration.trim();
+  });
   const totalSeconds = arranged.reduce((seconds, item) => {
     const shot = shots.find(candidate => candidate.prefix === item.prefix)!;
     return seconds + Math.max(2, Math.ceil(shot.files.length / fps)) + item.holdSeconds;
@@ -69,7 +80,7 @@ export function FrameSequencePicker({
       const plan = planStoryReel(shots, fps, arranged);
       const beats = arranged.map(item =>
         storyBeats[item.prefix] ?? emptyShotBeat(item.prefix));
-      const srt = storyboardSubtitleSrt(plan, beats);
+      const srt = storyboardSubtitleSrt(plan, beats, activeSubtitleEdits);
       if (!srt) return;
       // Explicit local download only. Caption data never enters the
       // project or finished movie until reviewed in the real editor.
@@ -108,6 +119,16 @@ export function FrameSequencePicker({
     }
   }
 
+  function changeSubtitleEdit(prefix: string, next?: SubtitleDraftAdjustment) {
+    if (busy) return;
+    setSubtitleEdits(current => {
+      const updates = { ...current };
+      if (next) updates[prefix] = next;
+      else delete updates[prefix];
+      return updates;
+    });
+  }
+
   function holdShot(prefix: string, holdSeconds: 0 | 1 | 2 | 3) {
     if (busy) return;
     setShotDirection(arranged.map(item => item.prefix === prefix
@@ -130,6 +151,7 @@ export function FrameSequencePicker({
       setFiles([]);
       setShotDirection([]);
       setStoryBeats({});
+      setSubtitleEdits({});
       setSelectionEpoch(value => value + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The original PNG frames could not be opened.");
@@ -154,6 +176,7 @@ export function FrameSequencePicker({
             setMultiShot(event.target.checked);
             setShotDirection([]);
             setStoryBeats({});
+            setSubtitleEdits({});
             setSelectionEpoch(value => value + 1);
             setError("");
           }} />
@@ -175,6 +198,7 @@ export function FrameSequencePicker({
               setError("");
               setShotDirection([]);
               setStoryBeats({});
+              setSubtitleEdits({});
               setSelectionEpoch(value => value + 1);
               setFiles(Array.from(event.target.files ?? []));
             }} />
@@ -215,6 +239,11 @@ export function FrameSequencePicker({
                   <ShotBeatEditor beat={storyBeats[item.prefix] ??
                     emptyShotBeat(item.prefix)} shotSeconds={seconds}
                     disabled={busy} onChange={changeBeat} />
+                  <SubtitleCueEditor prefix={item.prefix} shotSeconds={seconds}
+                    narration={storyBeats[item.prefix]?.narration ?? ""}
+                    adjustment={subtitleEdits[item.prefix]}
+                    disabled={busy}
+                    onChange={next => changeSubtitleEdit(item.prefix, next)} />
                   <div className="studio-shot-actions">
                     <button type="button" className="button secondary small"
                       aria-label={`Move ${item.prefix} earlier`}
@@ -246,6 +275,7 @@ export function FrameSequencePicker({
             plan={planStoryReel(shots, fps, arranged)}
             beats={arranged.map(item => storyBeats[item.prefix] ??
               emptyShotBeat(item.prefix))}
+            adjustments={activeSubtitleEdits}
             disabled={busy} />
           <div className="studio-voice-cue-download">
             <h4>Recording script · before import</h4>
@@ -261,16 +291,16 @@ export function FrameSequencePicker({
                 Download voice cue sheet (.txt)
               </button>
               <button type="button" className="button secondary small"
-                disabled={busy || !!displayedError || !canCreate ||
-                  !arranged.some(item => !!storyBeats[item.prefix]?.narration.trim())}
+                disabled={busy || !!displayedError || !canCreate || !hasSubtitleDraft}
                 onClick={downloadSubtitleDraft}>
                 Download subtitle draft (.srt)
               </button>
             </div>
             <p className="field-hint">
-              Draft subtitles use each shot's start and end times, not real
-              voice timing. Review and retime against your recording before
-              publishing. Empty written narration creates no cue.
+              By default subtitles cover whole shots. You can optionally
+              edit one or two caption cues per shot and move their split time.
+              Drafts still require review against real recorded voices before
+              publishing; no edits change the original artwork or movie.
             </p>
           </div>
         </section>
