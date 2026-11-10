@@ -218,16 +218,16 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   await exportGuide.getByRole("button", {
     name: "Give this scene a gentle cinematic push-in",
   }).click();
-  const director = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
-  await expect(director.getByRole("combobox", { name: "Shot style" }))
+  const cameraDirector = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
+  await expect(cameraDirector.getByRole("combobox", { name: "Shot style" }))
     .toHaveValue("move");
-  await expect(director.getByText(/camera eases from wide to 1.35×/))
+  await expect(cameraDirector.getByText(/camera eases from wide to 1.35×/))
     .toBeVisible();
-  await expect(director.getByRole("button", { name: "Apply" })).toBeDisabled();
-  await director.getByRole("button", { name: "Preview Shot" }).click();
-  await expect(director.getByRole("region", { name: "Proposed scene preview" }))
+  await expect(cameraDirector.getByRole("button", { name: "Apply" })).toBeDisabled();
+  await cameraDirector.getByRole("button", { name: "Preview Shot" }).click();
+  await expect(cameraDirector.getByRole("region", { name: "Proposed scene preview" }))
     .toBeVisible();
-  await director.getByRole("button", { name: "Apply" }).click();
+  await cameraDirector.getByRole("button", { name: "Apply" }).click();
   await expect(director).toBeHidden();
   if ((page.viewportSize()?.width ?? 0) >= 1200) {
     const { data: approved } = await backup(page);
