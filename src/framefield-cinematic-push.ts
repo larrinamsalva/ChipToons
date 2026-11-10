@@ -138,3 +138,36 @@ export function framefieldGentleCinematicTilt(
   if (issue) throw new Error(issue);
   return shot;
 }
+
+
+/** A single continuous, gentle diagonal glide over the source PNG frames.
+ * At 1.3x zoom the visible half-width and half-height are ~308x173;
+ * offsets of 65/35 leave margin on every side and along the eased path. */
+export type FramefieldGlideDirection =
+  "up-left" | "up-right" | "down-left" | "down-right";
+export function framefieldCinematicGlideFrame(direction: FramefieldGlideDirection) {
+  if (!["up-left", "up-right", "down-left", "down-right"].includes(direction))
+    throw new Error("Choose a valid diagonal cinematic glide direction.");
+  return {
+    x: direction.endsWith("left") ? 335 : 465,
+    y: direction.startsWith("up") ? 190 : 260,
+    zoom: 1.3,
+  };
+}
+export function framefieldGentleCinematicGlide(
+  project: Project, scene: Scene, direction: FramefieldGlideDirection,
+): CameraShot {
+  if (!canStartFramefieldCinematicPush(project, scene))
+    throw new Error("A diagonal glide needs a PNG scene without authored camera shots or tracks.");
+  const shot: CameraShot = {
+    ...newCameraShot(project, scene, 0),
+    style: "move", start: 0, end: scene.duration, move: scene.duration,
+    frame: framefieldCinematicGlideFrame(direction),
+    targets: [], follow: false, offset: { x: 0, y: 0 },
+    placement: "center",
+    note: "Gentle diagonal cinematic glide " + direction + " with a mild original PNG zoom",
+  };
+  const issue = shotIssue([shot], scene);
+  if (issue) throw new Error(issue);
+  return shot;
+}

@@ -9,10 +9,11 @@ import {
   canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
   framefieldGentleCinematicTilt, framefieldCinematicTiltFrame,
+  framefieldGentleCinematicGlide, framefieldCinematicGlideFrame,
   framefieldGentleCinematicReveal, framefieldRevealStartingView, framefieldRevealFocusOf,
 } from "../framefield-cinematic-push";
 import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
-import type { FramefieldPanDirection, FramefieldTiltDirection } from "../framefield-cinematic-push";
+import type { FramefieldPanDirection, FramefieldTiltDirection, FramefieldGlideDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { cameraMotionArtworkSweep } from "../camera-motion-framing";
 import { MediaNumber } from "./MediaNumber";
@@ -23,7 +24,7 @@ import { CameraMotionContactSheet } from "./CameraMotionContactSheet";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
-  initialPreset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-reveal";
+  initialPreset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
   const saved = scene.cameraShots ?? [];
@@ -35,9 +36,11 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         ? framefieldGentleCinematicPan(project, scene, "left")
         : initialPreset === "framefield-tilt" && canStartFramefieldCinematicPush(project, scene)
           ? framefieldGentleCinematicTilt(project, scene, "up")
-          : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
-            ? framefieldGentleCinematicReveal(project, scene)
-            : newCameraShot(project, scene, time, lineId)));
+          : initialPreset === "framefield-glide" && canStartFramefieldCinematicPush(project, scene)
+            ? framefieldGentleCinematicGlide(project, scene, "up-left")
+            : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
+              ? framefieldGentleCinematicReveal(project, scene)
+              : newCameraShot(project, scene, time, lineId)));
   const [review, setReview] = useState(0);
   const [mode, setMode] = useState<"shot" | "sequence">("shot");
   const [compare, setCompare] = useState(false);
@@ -206,6 +209,35 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
           </select>
         </label>
       </div>
+    )}
+    {initialPreset === "framefield-glide" && !editing && (
+      <section className="interaction-controls" aria-label="Cinematic diagonal glide options">
+        <p className="field-hint">
+          Add a soft diagonal glide across the original artwork,
+          from the wide view to a gentle 1.3× close-up.
+          Choose one of four directions; the canvas stays in frame.
+          Preview before Apply. Cancel leaves your cartoon unchanged.
+        </p>
+        <label>
+          Diagonal glide direction
+          <select aria-label="Diagonal glide direction"
+            value={(draft.frame.y < 225 ? "up-" : "down-") +
+              (draft.frame.x < 400 ? "left" : "right")}
+            onChange={event => {
+              const direction = event.target.value as FramefieldGlideDirection;
+              patch({
+                frame: { ...draft.frame, ...framefieldCinematicGlideFrame(direction) },
+                note: "Gentle diagonal cinematic glide " + direction +
+                  " with a mild original PNG zoom",
+              });
+            }}>
+            <option value="up-left">Look up and left</option>
+            <option value="up-right">Look up and right</option>
+            <option value="down-left">Look down and left</option>
+            <option value="down-right">Look down and right</option>
+          </select>
+        </label>
+      </section>
     )}
     <div className="interaction-layout shot-director">
       <div className="interaction-controls">

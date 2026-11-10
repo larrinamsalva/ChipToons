@@ -10,7 +10,7 @@ export function FramefieldCaptionVoiceReview({
   project, onScene, onExportScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan" | "camera-tilt" | "camera-reveal") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan" | "camera-tilt" | "camera-glide" | "camera-reveal") => void;
   onExportScene: (index: number) => void;
 }) {
   const review = framefieldCaptionVoiceReview(project);
@@ -124,6 +124,10 @@ export function FramefieldCaptionVoiceReview({
                   <button type="button" className="button secondary small"
                     onClick={() => onScene(scene.sceneIndex, "camera-tilt")}>
                     Try vertical tilt for scene {scene.sceneIndex + 1}
+                  </button>
+                  <button type="button" className="button secondary small"
+                    onClick={() => onScene(scene.sceneIndex, "camera-glide")}>
+                    Try diagonal glide for scene {scene.sceneIndex + 1}
                   </button>
                   <button type="button" className="button secondary small"
                     onClick={() => onScene(scene.sceneIndex, "camera-reveal")}>
