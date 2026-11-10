@@ -44,6 +44,11 @@ test("reviews the existing camera, applies and undoes a shot, and reopens it wit
   await expect(contact.getByRole("figure")).toHaveCount(3);
   await expect(contact.getByRole("figure", { name: "Beginning frame" })
     .locator("[data-camera-transform]")).toHaveAttribute("data-camera-zoom", "1.6");
+  // PR #81: the quality check samples actual Stage camera geometry.
+  // It is advisory and does not interfere with manual editing/review.
+  await expect(contact.getByRole("status")).toContainText("Artwork-edge check:");
+  await expect(contact.getByText(/canvas-boundary check, not a pixel-level test/))
+    .toBeVisible();
   await expect(form.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
   const compare = form.getByRole("checkbox", { name: "Compare with the saved camera" });
   await compare.check();
