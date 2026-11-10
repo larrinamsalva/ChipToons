@@ -75,8 +75,10 @@ export function SegmentExports({
   onScene,
   onPreview,
   onDelivery,
+  sceneRequest,
 }: {
   project: Project;
+  sceneRequest?: { sceneIndex: number; serial: number };
   settings: ExportSettings;
   cache: AudioDecodeCache;
   busy: boolean;
@@ -143,6 +145,20 @@ export function SegmentExports({
   );
   const exportRangeDetails = useRef<HTMLDetailsElement>(null);
   const rangeButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!sceneRequest) return;
+    const sceneIndex = sceneRequest.sceneIndex;
+    if (!Number.isInteger(sceneIndex) || sceneIndex < 0 ||
+        sceneIndex >= project.scenes.length) return;
+    setFirst(sceneIndex);
+    setLast(sceneIndex);
+    if (exportRangeDetails.current) exportRangeDetails.current.open = true;
+    const frame = requestAnimationFrame(() => {
+      rangeButton.current?.scrollIntoView({ block: "center" });
+      rangeButton.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [sceneRequest, project.scenes.length]);
   function focusPart(part: ExportSegment, index: number) {
     const planned = plan.segments[index]?.id === part.id;
     if (!planned) {

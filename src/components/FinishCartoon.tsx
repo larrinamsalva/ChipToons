@@ -52,6 +52,7 @@ export function FinishCartoon({
   const [delivery, setDelivery] = useState<{ limit: number; focus: (segment: ExportSegment, index: number) => void }>();
   const [audioCache] = useState(() => new AudioDecodeCache());
   const [partPreview, setPartPreview] = useState(false);
+  const [sceneExportRequest, setSceneExportRequest] = useState<{ sceneIndex: number; serial: number }>();
   const [sourcesReady, setSourcesReady] = useState(
     !project.audioAssets.some((a) => a.file),
   );
@@ -194,7 +195,10 @@ export function FinishCartoon({
         onScene={onScene}
       />
       {project.templateId === "frame-sequence-storyboard" && (
-        <FramefieldCaptionVoiceReview project={project} onScene={onScene} />
+        <FramefieldCaptionVoiceReview project={project} onScene={onScene}
+          onExportScene={(sceneIndex) => setSceneExportRequest(previous => ({
+            sceneIndex, serial: (previous?.serial ?? 0) + 1,
+          }))} />
       )}
       <ReadinessChecklist
         project={project}
@@ -443,6 +447,7 @@ export function FinishCartoon({
         )}
       </section>
       <SegmentExports
+        sceneRequest={sceneExportRequest}
         project={project}
         settings={settings}
         cache={audioCache}

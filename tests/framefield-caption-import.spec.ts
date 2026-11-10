@@ -185,6 +185,34 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   await preview.getByRole("button", { name: "Play cartoon" }).click();
   await expect(preview).toContainText("Playing your story");
   await preview.getByRole("button", { name: "Pause cartoon" }).click();
+  // PR #75: the shortcut preselects the real verified range exporter
+  // for an individual PNG scene; no export starts on the navigation click.
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+  const exportGuide = page.getByRole("region", {
+    name: "Guided scene voice recording",
+  });
+  await exportGuide.getByRole("button", { name: "Start guided voice recording" }).click();
+  await exportGuide.getByRole("button", { name: "Next scene" }).click();
+  await exportGuide.getByRole("button", {
+    name: "Prepare a real WebM clip for this scene",
+  }).click();
+  const segment = page.getByRole("region", { name: "Scene segment exports" });
+  await expect(segment.getByRole("combobox", { name: "Export first scene" }))
+    .toHaveValue("1");
+  await expect(segment.getByRole("combobox", { name: "Export last scene" }))
+    .toHaveValue("1");
+  await expect(segment).toContainText("Selected scenes: 0:02");
+  await expect(segment.getByRole("button", { name: "Export selected scene range" }))
+    .toBeVisible();
+  // A second selection updates the real export range rather than duplicating a renderer.
+  await exportGuide.getByRole("button", { name: "Previous scene" }).click();
+  await exportGuide.getByRole("button", {
+    name: "Prepare a real WebM clip for this scene",
+  }).click();
+  await expect(segment.getByRole("combobox", { name: "Export first scene" }))
+    .toHaveValue("0");
+  await expect(segment.getByRole("combobox", { name: "Export last scene" }))
+    .toHaveValue("0");
 });
 
 test("Caption import remains off by default and rejects overlong text before creating a project", async ({ page }) => {

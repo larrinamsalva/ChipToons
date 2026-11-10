@@ -6,10 +6,11 @@ import { OriginalAudio } from "./VoiceStudio";
 
 /** A read-only rehearsal guide; actual recording remains in VoiceStudio. */
 export function FramefieldGuidedRecording({
-  project, onScene,
+  project, onScene, onExportScene,
 }: {
   project: Project;
   onScene: (index: number, panel?: "voices" | "captions" | "preview") => void;
+  onExportScene: (index: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState(0);
@@ -137,6 +138,10 @@ export function FramefieldGuidedRecording({
               onClick={() => onScene(position, "preview")}>
               Open this scene with picture and mixed sound
             </button>
+            <button type="button" className="button secondary"
+              onClick={() => onExportScene(position)}>
+              Prepare a real WebM clip for this scene
+            </button>
             <button type="button" className="button primary"
               onClick={() => onScene(position, "voices")}>
               Record or upload this scene
@@ -162,7 +167,10 @@ export function FramefieldGuidedRecording({
           </div>
           <p className="field-hint">
             Open this scene to inspect the real moving images and the mixed
-            soundtrack, then press Play cartoon. The editor selects this scene,
+            soundtrack, then press Play cartoon. You can also jump to the
+            existing scene-range exporter, where the selected scene is
+            prefilled; rendering starts only after you press Export selected
+            scene range. The editor selects this scene,
             turns Sound on and sets Preview scope to Selected scene; no audio
             begins until you press Play. Return to Finish My Cartoon after
             recording to inspect updated voice coverage. This guide never
