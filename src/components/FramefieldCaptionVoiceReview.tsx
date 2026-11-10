@@ -3,13 +3,14 @@ import { framefieldCaptionVoiceReview } from "../framefield-caption-voice-review
 import { framefieldRecordingPunchList } from "../framefield-recording-punch-list";
 import { FramefieldGuidedRecording } from "./FramefieldGuidedRecording";
 import { downloadBlob, safeFilename } from "../files";
+import { canStartFramefieldCinematicPush } from "../framefield-cinematic-push";
 
 /** Explicitly scoped to cartoons created from the local multi-shot bridge. */
 export function FramefieldCaptionVoiceReview({
   project, onScene, onExportScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera") => void;
   onExportScene: (index: number) => void;
 }) {
   const review = framefieldCaptionVoiceReview(project);
@@ -110,6 +111,12 @@ export function FramefieldCaptionVoiceReview({
                 onClick={() => onScene(scene.sceneIndex, "preview")}>
                 Preview scene {scene.sceneIndex + 1} with mixed sound
               </button>
+              {canStartFramefieldCinematicPush(project, project.scenes[scene.sceneIndex]) && (
+                <button type="button" className="button secondary small"
+                  onClick={() => onScene(scene.sceneIndex, "camera")}>
+                  Create gentle camera move for scene {scene.sceneIndex + 1}
+                </button>
+              )}
               <button type="button" className="button secondary small"
                 onClick={() => onExportScene(scene.sceneIndex)}>
                 Prepare WebM clip for scene {scene.sceneIndex + 1}

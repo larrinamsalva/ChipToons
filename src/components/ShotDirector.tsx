@@ -5,18 +5,24 @@ import { elementName } from "../library";
 import { uid } from "../model";
 import type { Project, Scene } from "../model";
 import { newCameraShot, shotAnchorKey, shotCueChoices, shotGap, shotPreset, subjectsOutside } from "../shot-director";
+import { canStartFramefieldCinematicPush, framefieldGentleCinematicPush } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { MediaNumber } from "./MediaNumber";
 import { Modal } from "./Modal";
 import { ScenePreview } from "./ScenePreview";
 import { Stage } from "./Stage";
 
-export function ShotDirector({ project, scene, time, id, lineId, onScene, onClose, onApply }: {
+export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
+  initialPreset?: "framefield-push";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
   const saved = scene.cameraShots ?? [];
-  const [draft, setDraft] = useState(() => saved.find(shot => id ? shot.id === id : lineId && shot.lineId === lineId) ?? newCameraShot(project, scene, time, lineId));
+  const [draft, setDraft] = useState(() =>
+    saved.find(shot => id ? shot.id === id : lineId && shot.lineId === lineId) ??
+    (initialPreset === "framefield-push" && canStartFramefieldCinematicPush(project, scene)
+      ? framefieldGentleCinematicPush(project, scene)
+      : newCameraShot(project, scene, time, lineId)));
   const [review, setReview] = useState(0);
   const [mode, setMode] = useState<"shot" | "sequence">("shot");
   const [compare, setCompare] = useState(false);
@@ -77,6 +83,14 @@ export function ShotDirector({ project, scene, time, id, lineId, onScene, onClos
 
   return <Modal title={SHOT_TITLE} onClose={onClose} wide>
     <p className="field-hint">Frame what viewers should see. Shots use the same animated scene, dialogue, and sounds.</p>
+    {initialPreset === "framefield-push" && !editing && (
+      <p className="field-hint">
+        Gentle imported-PNG push-in preset: the actual numbered PNG frames
+        stay untouched. The camera eases from wide to 1.35× across the
+        whole scene. Preview Shot or Preview Full Sequence before pressing
+        Apply. Cancel leaves your project unchanged.
+      </p>
+    )}
     <div className="interaction-layout shot-director">
       <div className="interaction-controls">
         <label>Choose a scene<select aria-label="Choose a scene" value={scene.id} onChange={event => {

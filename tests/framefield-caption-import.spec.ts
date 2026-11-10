@@ -213,6 +213,32 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
     .toHaveValue("0");
   await expect(segment.getByRole("combobox", { name: "Export last scene" }))
     .toHaveValue("0");
+  // PR #76: a real editable cinematic camera push, not an artificial
+  // preview-only effect, with user review before an explicit Apply.
+  await exportGuide.getByRole("button", {
+    name: "Give this scene a gentle cinematic push-in",
+  }).click();
+  const director = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
+  await expect(director.getByRole("combobox", { name: "Shot style" }))
+    .toHaveValue("move");
+  await expect(director.getByText(/camera eases from wide to 1.35×/))
+    .toBeVisible();
+  await expect(director.getByRole("button", { name: "Apply" })).toBeDisabled();
+  await director.getByRole("button", { name: "Preview Shot" }).click();
+  await expect(director.getByRole("region", { name: "Proposed scene preview" }))
+    .toBeVisible();
+  await director.getByRole("button", { name: "Apply" }).click();
+  await expect(director).toBeHidden();
+  if ((page.viewportSize()?.width ?? 0) >= 1200) {
+    const { data: approved } = await backup(page);
+    expect(approved.scenes[0].cameraShots?.[0]).toMatchObject({
+      style: "move", start: 0, end: 3, move: 3,
+      frame: { x: 400, y: 225, zoom: 1.35 }, targets: [],
+    });
+    expect(approved.scenes[0].elements[0].frameSequence?.assetIds)
+      .toHaveLength(2);
+    expect(approved.scenes[1].cameraShots).toBeUndefined();
+  }
 });
 
 test("Caption import remains off by default and rejects overlong text before creating a project", async ({ page }) => {
