@@ -47,7 +47,10 @@ test("reviews the existing camera, applies and undoes a shot, and reopens it wit
   // PR #81: the quality check samples actual Stage camera geometry.
   // It is advisory and does not interfere with manual editing/review.
   await expect(contact.getByRole("status")).toContainText("Artwork-edge check:");
-  await expect(contact.getByText(/canvas-boundary check, not a pixel-level test/))
+  const moveScan=contact.getByRole("region",{name:"Full camera move safety scan"});
+  await expect(moveScan).toContainText("Full-move scan:");
+  await expect(moveScan).toContainText("21 sampled moments");
+  await expect(contact.getByText(/canvas-boundary scan, not a pixel-level test/))
     .toBeVisible();
   await expect(form.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
   const compare = form.getByRole("checkbox", { name: "Compare with the saved camera" });

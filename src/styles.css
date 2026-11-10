@@ -5958,3 +5958,18 @@ fieldset.interaction-fields {
   color: var(--text);
   font-weight: 650;
 }
+
+
+/* PR #82: read-only full camera-move check, using existing theme contrast. */
+.camera-motion-contact-sheet .camera-motion-sweep {
+  display: grid;
+  gap: .35rem;
+  padding: .6rem .7rem;
+  margin: .5rem 0 .7rem;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  background: var(--surface);
+  min-width: 0;
+}
+.camera-motion-sweep p { margin: .2rem 0; color: var(--text); overflow-wrap: anywhere; }
+.camera-motion-sweep .button { justify-self: start; max-width: 100%; white-space: normal; }

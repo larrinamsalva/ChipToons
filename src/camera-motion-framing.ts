@@ -50,3 +50,28 @@ export function cameraMotionArtworkChecks(project:Project,scene:Scene,shot:Pick<
     return {...sample,...inspectCameraArtworkCoverage(camera,sample.time)};
   });
 }
+
+
+/** Additional full-move advisory: 21 deterministic samples, including the
+ * half-open end, catch problems between the three large preview frames.
+ * These are samples, not a continuous-motion mathematical proof. */
+export function cameraMotionArtworkSweep(
+  project: Project, scene: Scene, shot: Pick<CameraShot, "start" | "end">,
+) {
+  const duration = shot.end - shot.start;
+  if (!Number.isFinite(shot.start) || !Number.isFinite(shot.end) || duration <= 0) {
+    return { checks: [] as CameraArtworkCheck[], flaggedCount: 0, worst: undefined as CameraArtworkCheck | undefined };
+  }
+  const checks = Array.from({length:21},(_,i)=>{
+    const time = i === 20
+      ? shot.end - Math.min(0.005,duration/10)
+      : shot.start + duration*i/20;
+    return inspectCameraArtworkCoverage(stageCameraAt(project,scene,time),time);
+  });
+  const flaggedCount=checks.filter(check=>check.edges.length>0).length;
+  const worst=checks.reduce<CameraArtworkCheck | undefined>(
+    (chosen,check)=>check.outsideFraction>(chosen?.outsideFraction??0) ? check : chosen,
+    undefined,
+  );
+  return {checks,flaggedCount,worst};
+}

@@ -1,5 +1,5 @@
 import { cameraMotionSamples } from "../camera-motion-samples";
-import { cameraMotionArtworkChecks } from "../camera-motion-framing";
+import { cameraMotionArtworkChecks, cameraMotionArtworkSweep } from "../camera-motion-framing";
 import type { CameraShot } from "../camera-shots";
 import type { Project, Scene } from "../model";
 import { sceneCaptionText } from "../production";
@@ -9,13 +9,15 @@ import { Stage } from "./Stage";
 /** Purely opt-in preview. Real Stage and caption sampler are used at three
  * deterministic times; no frame export, playback or project writes occur. */
 export function CameraMotionContactSheet({
-  project, scene, shot,
+  project, scene, shot, onInspectTime,
 }: {
   project: Project; scene: Scene; shot: CameraShot;
+  onInspectTime?: (time: number) => void;
 }) {
   const samples = cameraMotionSamples(shot);
   const checks = cameraMotionArtworkChecks(project, scene, shot);
   const warnings = checks.filter(check => check.edges.length > 0);
+  const sweep = cameraMotionArtworkSweep(project, scene, shot);
   return (
     <section className="camera-motion-contact-sheet"
       aria-label="Camera motion contact sheet">
@@ -28,9 +30,32 @@ export function CameraMotionContactSheet({
             " of 3 frames may show beyond the original artwork bounds. Review the marked frames."
           : "Artwork-edge check: no canvas edges exposed at the three sampled times."}
       </p>
+      <div className="camera-motion-sweep" aria-label="Full camera move safety scan">
+        <p className={sweep.flaggedCount ? "camera-motion-edge-warning" : "camera-motion-edge-ok"}
+          aria-label="Full-move edge scan result">
+          {sweep.flaggedCount
+            ? "Full-move scan: " + sweep.flaggedCount + " of " + sweep.checks.length +
+              " sampled moments may expose original canvas edges."
+            : "Full-move scan: no canvas overrun found at " + sweep.checks.length +
+              " sampled moments."}
+        </p>
+        {sweep.worst && <p>
+          Worst sampled moment: {sweep.worst.time.toFixed(2)}s,
+          approximately {(sweep.worst.outsideFraction * 100).toFixed(1)}%
+          outside the original canvas
+          ({sweep.worst.edges.join(", ")}).
+        </p>}
+        {sweep.worst && onInspectTime && (
+          <button type="button" className="button secondary small"
+            onClick={() => onInspectTime(sweep.worst!.time)}>
+            Inspect worst sampled moment in preview
+          </button>
+        )}
+      </div>
       <p className="field-hint">
-        This is an advisory 800×450 canvas-boundary check, not a pixel-level test.
-        A custom background may extend beyond that canvas; inspect the actual pictures.
+        This is an advisory 800×450 canvas-boundary scan, not a pixel-level test.
+        A custom background may extend beyond the canvas; inspect the actual pictures.
+        The 21 samples cannot guarantee every in-between moment is safe.
       </p>
       <div className="camera-motion-frames">
         {samples.map(sample => (

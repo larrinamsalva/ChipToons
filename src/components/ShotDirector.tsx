@@ -40,6 +40,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   const [guides, setGuides] = useState(true);
   const [thumbnails, setThumbnails] = useState(false);
   const [contactSheet, setContactSheet] = useState(false);
+  const [inspectTime, setInspectTime] = useState<number>();
   const [remove, setRemove] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -69,7 +70,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         next.style !== "move" || next.targets.length > 0 || next.follow)
         ? { ...next, fromFrame: undefined } : next;
     });
-    setReview(0); setDirty(true); setError(""); setRemove(false);
+    setReview(0); setInspectTime(undefined); setDirty(true); setError(""); setRemove(false);
   }
 
   function shift(start: number) {
@@ -88,7 +89,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   }
 
   function loadDraft(shot: CameraShot) {
-    setDraft(shot); setReview(0); setCompare(false); setDirty(false); setRemove(false); setError("");
+    setDraft(shot); setReview(0); setInspectTime(undefined); setCompare(false); setDirty(false); setRemove(false); setError("");
   }
 
   function apply() {
@@ -289,8 +290,8 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             Use this shot over the camera track during its time</label>
         </div>}
         <div className="director-actions">
-          <button className="button secondary" disabled={!!issue} onClick={() => { setMode("shot"); setCompare(false); setReview(value => value + 1); }}>Preview Shot</button>
-          <button className="button secondary" disabled={!!issue} onClick={() => { setMode("sequence"); setCompare(false); setReview(value => value + 1); }}>Preview Full Sequence</button>
+          <button className="button secondary" disabled={!!issue} onClick={() => { setMode("shot"); setInspectTime(undefined); setCompare(false); setReview(value => value + 1); }}>Preview Shot</button>
+          <button className="button secondary" disabled={!!issue} onClick={() => { setMode("sequence"); setInspectTime(undefined); setCompare(false); setReview(value => value + 1); }}>Preview Full Sequence</button>
         </div>
         {issue && <p role="status" className="interaction-empty">{issue}</p>}
         {!!review && !issue && <>
@@ -301,13 +302,14 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             Show beginning, middle and end frames
           </label>
           {contactSheet && <CameraMotionContactSheet project={project}
-            scene={previewScene} shot={draft} />}
+            scene={previewScene} shot={draft}
+            onInspectTime={time => { setInspectTime(time); setReview(value => value + 1); }} />}
           {subjectsOutside(project, planned, draft) && <p className="interaction-empty" role="status">
             A selected subject may be near the edge or out of view. Check it at the start, during movement, and near the end.
           </p>}
           <ScenePreview key={review} project={project} scene={previewScene} showCaptions precision={2}
             captionGuide={guides} shotGuides={guides ? { ids: draft.targets, offset: draft.offset } : undefined}
-            initialTime={mode === "shot" ? previewTime : 0}
+            initialTime={inspectTime ?? (mode === "shot" ? previewTime : 0)}
             playFrom={mode === "shot" ? draft.start : 0} playTo={mode === "shot" ? draft.end : scene.duration}
             soundPreview={project.audioClips.length > 0} />
         </>}
