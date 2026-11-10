@@ -75,8 +75,10 @@ export function SegmentExports({
   onScene,
   onPreview,
   onDelivery,
+  sceneRequest,
 }: {
   project: Project;
+  sceneRequest?: { sceneIndex: number; serial: number };
   settings: ExportSettings;
   cache: AudioDecodeCache;
   busy: boolean;
@@ -143,6 +145,28 @@ export function SegmentExports({
   );
   const exportRangeDetails = useRef<HTMLDetailsElement>(null);
   const rangeButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!sceneRequest) return;
+    const sceneIndex = sceneRequest.sceneIndex;
+    if (!Number.isInteger(sceneIndex) || sceneIndex < 0 ||
+        sceneIndex >= project.scenes.length) return;
+    // Handle the user's explicit shortcut on the next frame, not as a
+    // synchronous cascading state update inside a React effect.
+    let focusFrame = 0;
+    const frame = requestAnimationFrame(() => {
+      setFirst(sceneIndex);
+      setLast(sceneIndex);
+      if (exportRangeDetails.current) exportRangeDetails.current.open = true;
+      focusFrame = requestAnimationFrame(() => {
+        rangeButton.current?.scrollIntoView({ block: "center" });
+        rangeButton.current?.focus();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimationFrame(focusFrame);
+    };
+  }, [sceneRequest, project.scenes.length]);
   function focusPart(part: ExportSegment, index: number) {
     const planned = plan.segments[index]?.id === part.id;
     if (!planned) {

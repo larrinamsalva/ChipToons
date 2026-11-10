@@ -6,10 +6,11 @@ import { downloadBlob, safeFilename } from "../files";
 
 /** Explicitly scoped to cartoons created from the local multi-shot bridge. */
 export function FramefieldCaptionVoiceReview({
-  project, onScene,
+  project, onScene, onExportScene,
 }: {
   project: Project;
   onScene: (index: number, panel?: "voices" | "captions" | "preview") => void;
+  onExportScene: (index: number) => void;
 }) {
   const review = framefieldCaptionVoiceReview(project);
   return (
@@ -21,7 +22,8 @@ export function FramefieldCaptionVoiceReview({
         overlap. This does not listen to recordings or verify spoken words.
         Even overlapping clips must be played and checked by a person.
       </p>
-      <FramefieldGuidedRecording project={project} onScene={onScene} />
+      <FramefieldGuidedRecording project={project} onScene={onScene}
+        onExportScene={onExportScene} />
       <div className="animation-actions">
         <button type="button" className="button secondary"
           onClick={() => downloadBlob(
@@ -107,6 +109,10 @@ export function FramefieldCaptionVoiceReview({
               <button type="button" className="button secondary small"
                 onClick={() => onScene(scene.sceneIndex, "preview")}>
                 Preview scene {scene.sceneIndex + 1} with mixed sound
+              </button>
+              <button type="button" className="button secondary small"
+                onClick={() => onExportScene(scene.sceneIndex)}>
+                Prepare WebM clip for scene {scene.sceneIndex + 1}
               </button>
               <button type="button" className="button secondary small"
                 onClick={() => onScene(scene.sceneIndex, "voices")}>
