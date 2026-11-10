@@ -1871,6 +1871,17 @@ export function Editor({
             onScene={(i, reviewPanel) => {
               setFinish(false);
               selectScene(i);
+              if (reviewPanel === "preview") {
+                setScope("scene");
+                setSound(true);
+                setMobilePanel("stage");
+                // The creator presses Play; we never autoplay or request media.
+                requestAnimationFrame(() =>
+                  document.querySelector(".stage-panel")
+                    ?.scrollIntoView({ block: "start" }),
+                );
+                return;
+              }
               setMobilePanel("properties");
               if (reviewPanel)
                 openVoice(

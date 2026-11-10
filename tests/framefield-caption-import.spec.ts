@@ -168,6 +168,23 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
     player.evaluate((el: HTMLAudioElement) => el.currentTime))
     .toBeGreaterThan(0.05);
   await player.evaluate((el: HTMLAudioElement) => el.pause());
+  // PR #74 hands off to the real scene player, with the existing timeline mix.
+  // No automatic playback or microphone request occurs.
+  await listenGuide.getByRole("button", {
+    name: "Open this scene with picture and mixed sound",
+  }).click();
+  const preview = page.getByRole("region", { name: "Cartoon preview" });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByRole("combobox", { name: "Preview scope" }))
+    .toHaveValue("scene");
+  await expect(preview.getByRole("checkbox", { name: "Sound" })).toBeChecked();
+  await expect(preview).toContainText("SCENE 1 OF 2");
+  await expect(preview.getByRole("button", { name: "Play cartoon" }))
+    .toBeVisible();
+  // Use the real animation-and-sound player, not a fake source-only playback.
+  await preview.getByRole("button", { name: "Play cartoon" }).click();
+  await expect(preview).toContainText("Playing your story");
+  await preview.getByRole("button", { name: "Pause cartoon" }).click();
 });
 
 test("Caption import remains off by default and rejects overlong text before creating a project", async ({ page }) => {

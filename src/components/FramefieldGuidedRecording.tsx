@@ -9,7 +9,7 @@ export function FramefieldGuidedRecording({
   project, onScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview") => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState(0);
@@ -133,6 +133,10 @@ export function FramefieldGuidedRecording({
             )}
           </section>
           <div className="animation-actions">
+            <button type="button" className="button secondary"
+              onClick={() => onScene(position, "preview")}>
+              Open this scene with picture and mixed sound
+            </button>
             <button type="button" className="button primary"
               onClick={() => onScene(position, "voices")}>
               Record or upload this scene
@@ -157,9 +161,12 @@ export function FramefieldGuidedRecording({
             </button>
           </div>
           <p className="field-hint">
-            Return to Finish My Cartoon after recording to inspect updated
-            voice coverage. The guide never approves speech, changes a project,
-            or saves its current step.
+            Open this scene to inspect the real moving images and the mixed
+            soundtrack, then press Play cartoon. The editor selects this scene,
+            turns Sound on and sets Preview scope to Selected scene; no audio
+            begins until you press Play. Return to Finish My Cartoon after
+            recording to inspect updated voice coverage. This guide never
+            approves speech, changes a project or saves its current step.
           </p>
         </div>
       )}
