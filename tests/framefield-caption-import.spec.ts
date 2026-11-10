@@ -239,6 +239,36 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
       .toHaveLength(2);
     expect(approved.scenes[1].cameraShots).toBeUndefined();
   }
+  // PR #77: Try a different actual moving camera on the other untouched
+  // imported PNG scene. Switch left/right and review before applying.
+  await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
+  const panGuide = page.getByRole("region", { name: "Guided scene voice recording" });
+  await panGuide.getByRole("button", { name: "Start guided voice recording" }).click();
+  await panGuide.getByRole("button", { name: "Next scene" }).click();
+  await panGuide.getByRole("button", { name: "Try a gentle cinematic side-pan" }).click();
+  const panDirector = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
+  await expect(panDirector.getByRole("combobox", { name: "Shot style" }))
+    .toHaveValue("move");
+  await expect(panDirector.getByRole("combobox", { name: "Gentle pan direction" }))
+    .toHaveValue("left");
+  await panDirector.getByRole("combobox", { name: "Gentle pan direction" })
+    .selectOption("right");
+  await expect(panDirector.getByRole("button", { name: "Apply" })).toBeDisabled();
+  await panDirector.getByRole("button", { name: "Preview Full Sequence" }).click();
+  await expect(panDirector.getByRole("region", { name: "Proposed scene preview" }))
+    .toBeVisible();
+  await panDirector.getByRole("button", { name: "Apply" }).click();
+  await expect(panDirector).toBeHidden();
+  if ((page.viewportSize()?.width ?? 0) >= 1200) {
+    const { data: approvedPan } = await backup(page);
+    expect(approvedPan.scenes[1].cameraShots?.[0]).toMatchObject({
+      style: "move", start: 0, end: 2, move: 2,
+      frame: { x: 455, y: 225, zoom: 1.25 }, targets: [],
+    });
+    expect(approvedPan.scenes[0].cameraShots?.[0].frame.zoom).toBe(1.35);
+    expect(approvedPan.scenes[1].elements[0].frameSequence?.assetIds)
+      .toHaveLength(2);
+  }
 });
 
 test("Caption import remains off by default and rejects overlong text before creating a project", async ({ page }) => {

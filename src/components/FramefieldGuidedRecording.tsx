@@ -10,7 +10,7 @@ export function FramefieldGuidedRecording({
   project, onScene, onExportScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan") => void;
   onExportScene: (index: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -140,10 +140,16 @@ export function FramefieldGuidedRecording({
               Open this scene with picture and mixed sound
             </button>
             {canStartFramefieldCinematicPush(project, project.scenes[position]) && (
-              <button type="button" className="button secondary"
-                onClick={() => onScene(position, "camera")}>
-                Give this scene a gentle cinematic push-in
-              </button>
+              <>
+                <button type="button" className="button secondary"
+                  onClick={() => onScene(position, "camera")}>
+                  Give this scene a gentle cinematic push-in
+                </button>
+                <button type="button" className="button secondary"
+                  onClick={() => onScene(position, "camera-pan")}>
+                  Try a gentle cinematic side-pan
+                </button>
+              </>
             )}
             <button type="button" className="button secondary"
               onClick={() => onExportScene(position)}>
@@ -177,7 +183,8 @@ export function FramefieldGuidedRecording({
             soundtrack, then press Play cartoon. On an original PNG shot
             without existing camera work, choose a gentle cinematic push-in:
             preview it in the normal Camera Director and approve Apply
-            before it changes your movie. You can also jump to the
+            before it changes your movie. Or try a sideways camera move
+            with a little zoom, choosing left or right in that same editor. You can also jump to the
             existing scene-range exporter, where the selected scene is
             prefilled; rendering starts only after you press Export selected
             scene range. The editor selects this scene,

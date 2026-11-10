@@ -5,7 +5,11 @@ import { elementName } from "../library";
 import { uid } from "../model";
 import type { Project, Scene } from "../model";
 import { newCameraShot, shotAnchorKey, shotCueChoices, shotGap, shotPreset, subjectsOutside } from "../shot-director";
-import { canStartFramefieldCinematicPush, framefieldGentleCinematicPush } from "../framefield-cinematic-push";
+import {
+  canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
+  framefieldGentleCinematicPan, framefieldCinematicPanFrame,
+} from "../framefield-cinematic-push";
+import type { FramefieldPanDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { MediaNumber } from "./MediaNumber";
 import { Modal } from "./Modal";
@@ -14,7 +18,7 @@ import { Stage } from "./Stage";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
-  initialPreset?: "framefield-push";
+  initialPreset?: "framefield-push" | "framefield-pan";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
   const saved = scene.cameraShots ?? [];
@@ -22,7 +26,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
     saved.find(shot => id ? shot.id === id : lineId && shot.lineId === lineId) ??
     (initialPreset === "framefield-push" && canStartFramefieldCinematicPush(project, scene)
       ? framefieldGentleCinematicPush(project, scene)
-      : newCameraShot(project, scene, time, lineId)));
+      : initialPreset === "framefield-pan" && canStartFramefieldCinematicPush(project, scene)
+        ? framefieldGentleCinematicPan(project, scene, "left")
+        : newCameraShot(project, scene, time, lineId)));
   const [review, setReview] = useState(0);
   const [mode, setMode] = useState<"shot" | "sequence">("shot");
   const [compare, setCompare] = useState(false);
@@ -90,6 +96,31 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         whole scene. Preview Shot or Preview Full Sequence before pressing
         Apply. Cancel leaves your project unchanged.
       </p>
+    )}
+    {initialPreset === "framefield-pan" && !editing && (
+      <div>
+        <p className="field-hint">
+          Gentle cinematic side-pan: the original numbered PNGs stay untouched.
+          The camera slides slowly toward one side and eases to 1.25× zoom.
+          Review the composition before pressing Apply. Cancel makes no changes.
+        </p>
+        <label>
+          Gentle pan direction
+          <select aria-label="Gentle pan direction"
+            value={draft.frame.x < 400 ? "left" : "right"}
+            onChange={event => {
+              const direction = event.target.value as FramefieldPanDirection;
+              patch({
+                frame: { ...draft.frame, ...framefieldCinematicPanFrame(direction) },
+                note: "Gentle cinematic pan " + direction +
+                  " with slight zoom over original PNG frames",
+              });
+            }}>
+            <option value="left">Slide view left</option>
+            <option value="right">Slide view right</option>
+          </select>
+        </label>
+      </div>
     )}
     <div className="interaction-layout shot-director">
       <div className="interaction-controls">
