@@ -40,12 +40,17 @@ test("reviews the existing camera, applies and undoes a shot, and reopens it wit
   // PR #83: the live camera preview scrubs actual animation frames without applying.
   const scrub=preview.getByRole("slider",{name:"Camera motion scrubber"});
   await expect(scrub).toBeVisible();
+  const liveMeter=preview.getByRole("group",{name:"Live camera framing meter"});
+  await expect(liveMeter).toBeVisible();
+  await expect(liveMeter).toContainText("Live camera zoom:");
+  await expect(liveMeter).toContainText("1.60×");
   await scrub.focus();
   await scrub.press("Home");
   await expect(preview.getByRole("spinbutton",{name:"Preview time (seconds)"})).toHaveValue("1.2");
   await scrub.press("End");
   expect(Number(await preview.getByRole("spinbutton",{name:"Preview time (seconds)"}).inputValue()))
     .toBeGreaterThan(3.15);
+  await expect(liveMeter).toContainText("Live camera zoom:");
   await form.getByRole("checkbox", {
     name: "Show beginning, middle and end frames",
   }).check();

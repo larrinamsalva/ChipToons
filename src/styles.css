@@ -6002,3 +6002,26 @@ fieldset.interaction-fields {
 .camera-motion-risk-navigation {display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;}
 .camera-motion-risk-navigation span {font-size:.84rem;flex-basis:100%;color:var(--muted);}
 .camera-motion-risk-navigation .button {min-height:44px;white-space:normal;}
+
+
+/* PR #84: live framing readout only inside the existing camera preview. */
+.camera-live-framing-meter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .75rem;
+  align-items: baseline;
+  padding: .5rem .65rem;
+  border: 1px solid var(--line);
+  border-radius: .5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: .86rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.camera-live-framing-meter output {
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.camera-live-framing-meter span { min-width: 0; }
