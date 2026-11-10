@@ -8,6 +8,7 @@ import { newCameraShot, shotAnchorKey, shotCueChoices, shotGap, shotPreset, subj
 import {
   canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
+  framefieldGentleCinematicReveal,
 } from "../framefield-cinematic-push";
 import type { FramefieldPanDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
@@ -18,7 +19,7 @@ import { Stage } from "./Stage";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
-  initialPreset?: "framefield-push" | "framefield-pan";
+  initialPreset?: "framefield-push" | "framefield-pan" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
   const saved = scene.cameraShots ?? [];
@@ -28,7 +29,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
       ? framefieldGentleCinematicPush(project, scene)
       : initialPreset === "framefield-pan" && canStartFramefieldCinematicPush(project, scene)
         ? framefieldGentleCinematicPan(project, scene, "left")
-        : newCameraShot(project, scene, time, lineId)));
+        : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
+          ? framefieldGentleCinematicReveal(project, scene)
+          : newCameraShot(project, scene, time, lineId)));
   const [review, setReview] = useState(0);
   const [mode, setMode] = useState<"shot" | "sequence">("shot");
   const [compare, setCompare] = useState(false);
@@ -56,7 +59,13 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   }).join(" & ") || "Fixed frame";
 
   function patch(change: Partial<CameraShot>) {
-    setDraft(value => ({ ...value, ...change }));
+    setDraft(value => {
+      const next = { ...value, ...change };
+      // An explicit start view applies only to full-scene, untargeted moves.
+      return next.fromFrame && (next.start !== 0 || next.move <= 0 ||
+        next.style !== "move" || next.targets.length > 0 || next.follow)
+        ? { ...next, fromFrame: undefined } : next;
+    });
     setReview(0); setDirty(true); setError(""); setRemove(false);
   }
 
@@ -95,6 +104,13 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         stay untouched. The camera eases from wide to 1.35× across the
         whole scene. Preview Shot or Preview Full Sequence before pressing
         Apply. Cancel leaves your project unchanged.
+      </p>
+    )}
+    {initialPreset === "framefield-reveal" && !editing && (
+      <p className="field-hint">
+        Gentle cinematic pull-back: the camera eases out from 1.45× to 1×,
+        revealing the entire original PNG scene. Preview Shot or Preview
+        Full Sequence, then choose Apply or Cancel. The source is unchanged.
       </p>
     )}
     {initialPreset === "framefield-pan" && !editing && (

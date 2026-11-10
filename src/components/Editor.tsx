@@ -148,7 +148,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
-  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; preset?: "framefield-push" | "framefield-pan" }>();
+  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; preset?: "framefield-push" | "framefield-pan" | "framefield-reveal" }>();
   const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
@@ -1883,9 +1883,10 @@ export function Editor({
                 );
                 return;
               }
-              if (reviewPanel === "camera" || reviewPanel === "camera-pan") {
+              if (reviewPanel === "camera" || reviewPanel === "camera-pan" || reviewPanel === "camera-reveal") {
                 setShotEditor({
-                  preset: reviewPanel === "camera" ? "framefield-push" : "framefield-pan",
+                  preset: reviewPanel === "camera" ? "framefield-push" :
+                    reviewPanel === "camera-pan" ? "framefield-pan" : "framefield-reveal",
                 });
                 setMobilePanel("stage");
                 // The existing camera director previews before any Apply.

@@ -26,6 +26,8 @@ export type CameraShot = {
   end: number;
   move: number;
   frame: CameraValues;
+  /** Optional starting camera; absent in all existing shots. */
+  fromFrame?: CameraValues;
   targets: string[];
   follow: boolean;
   offset: { x: number; y: number };
@@ -68,12 +70,19 @@ export function shotIssue(value: unknown, scene: Scene, unique: (id: string) => 
   const intervals: { start: number; end: number }[] = [];
   for (const item of value) {
     if (!record(item) || !keys(item, ["id", "style", "start", "end", "move", "frame", "targets", "follow",
-      "offset", "placement", "note", "cue", "lineId", "overlays", "missingTarget", "missingLink"]) ||
+      "offset", "placement", "note", "cue", "lineId", "overlays", "missingTarget", "missingLink", "fromFrame"]) ||
       !id(item.id) || ids.has(item.id) || typeof item.style !== "string" || !Object.hasOwn(SHOT_STYLES, item.style) ||
       !numberIn(item.start, 0, scene.duration) || !numberIn(item.end, item.start, scene.duration) || item.end - item.start <= epsilon ||
       !numberIn(item.move, 0, item.end - item.start + epsilon) ||
       !record(item.frame) || !keys(item.frame, ["x", "y", "zoom"]) ||
       !numberIn(item.frame.x, 0, 800) || !numberIn(item.frame.y, 0, 450) || !numberIn(item.frame.zoom, 1, 3) ||
+      (item.fromFrame !== undefined && (
+        !record(item.fromFrame) || !keys(item.fromFrame, ["x", "y", "zoom"]) ||
+        !numberIn(item.fromFrame.x, 0, 800) || !numberIn(item.fromFrame.y, 0, 450) ||
+        !numberIn(item.fromFrame.zoom, 1, 3) || item.start !== 0 ||
+        item.move <= 0 || item.style !== "move" ||
+        (Array.isArray(item.targets) && item.targets.length !== 0) || item.follow !== false
+      )) ||
       !record(item.offset) || !keys(item.offset, ["x", "y"]) ||
       !numberIn(item.offset.x, -300, 300) || !numberIn(item.offset.y, -300, 300) ||
       !Array.isArray(item.targets) || item.targets.length > 2 ||

@@ -363,8 +363,8 @@ export function stageCameraAt(project: Project, scene: Scene, time: number, calm
   const target = frameFor(shot, time);
   if (calm || !shot.move || time >= shot.start + shot.move) return { ...target, shotId: shot.id };
   const previous = scene.cameraShots?.find(item => item.id !== shot.id && Math.abs(item.end - shot.start) < 1e-8);
-  const from = previous ? frameFor(previous, shot.start) :
-    cameraAt(scene, shot.start, calm, sampleFrames(shot.start).get(scene.cameraAnimation?.followId ?? ""));
+  const from = shot.fromFrame ?? (previous ? frameFor(previous, shot.start) :
+    cameraAt(scene, shot.start, calm, sampleFrames(shot.start).get(scene.cameraAnimation?.followId ?? "")));
   const p = easeAt((time - shot.start) / shot.move, "ease-in-out");
   return { x: from.x + (target.x - from.x) * p, y: from.y + (target.y - from.y) * p,
     zoom: from.zoom + (target.zoom - from.zoom) * p, shotId: shot.id };

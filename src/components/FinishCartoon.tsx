@@ -41,7 +41,7 @@ export function FinishCartoon({
   onCaptions: () => void;
   onPreview: (sound: boolean) => void;
   saveStatus: string;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan" | "camera-reveal") => void;
 }) {
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
