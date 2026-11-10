@@ -395,3 +395,53 @@ test("Cinematic vertical tilt previews and applies genuine original PNG frames s
     expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
   }
 });
+
+
+test("Diagonal cinematic glide previews and applies original PNGs only after approval", async ({ page }) => {
+  const {picker}=await prepare(page);
+  await picker.getByRole("button",{name:"Create multi-shot cartoon"}).click();
+  await expect(page.locator(".editor")).toBeVisible({timeout:30_000});
+  await page.getByRole("button",{name:"Finish My Cartoon",exact:true}).click();
+  const guide=page.getByRole("region",{name:"Guided scene voice recording"});
+  await guide.getByRole("button",{name:"Start guided voice recording"}).click();
+  await guide.getByRole("button",{name:"Try a gentle diagonal cinematic glide"}).click();
+  const camera=page.getByRole("dialog",{name:"Direct My Cartoon Camera"});
+  await expect(camera.getByRole("combobox",{name:"Shot style"})).toHaveValue("move");
+  const direction=camera.getByRole("combobox",{name:"Diagonal glide direction"});
+  await expect(direction).toHaveValue("up-left");
+  await direction.selectOption("down-right");
+  await expect(camera.getByRole("button",{name:"Apply"})).toBeDisabled();
+  await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
+  const preview=camera.getByRole("region",{name:"Proposed scene preview"});
+  await expect(preview).toBeVisible();
+  await camera.getByRole("checkbox",{name:"Show beginning, middle and end frames"}).check();
+  const contact=camera.getByRole("region",{name:"Camera motion contact sheet"});
+  await expect(contact.getByRole("figure")).toHaveCount(3);
+  await expect(contact.getByRole("region",{name:"Full camera move safety scan"}))
+    .toContainText("no canvas overrun found at 21 sampled moments");
+  const halfway=contact.getByRole("figure",{name:"Middle frame"});
+  const zoom=Number(await halfway.locator("[data-camera-transform]").getAttribute("data-camera-zoom"));
+  expect(zoom).toBeGreaterThan(1);
+  expect(zoom).toBeLessThan(1.3);
+  const last=contact.getByRole("figure",{name:"End frame"});
+  expect(Number(await last.locator("[data-camera-transform]").getAttribute("data-camera-zoom")))
+    .toBeGreaterThan(1.299);
+  // The compare toggle replaces proposal with saved wide view in the actual Stage.
+  await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).check();
+  await expect(halfway.locator("[data-camera-transform]"))
+    .not.toHaveAttribute("data-camera-shot",/.+/);
+  await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
+  await expect(halfway.locator("[data-camera-transform]"))
+    .toHaveAttribute("data-camera-shot",/.+/);
+  await camera.getByRole("button",{name:"Apply"}).click();
+  await expect(camera).toBeHidden();
+  if ((page.viewportSize()?.width??0)>=1200) {
+    const {data}=await backup(page);
+    expect(data.scenes[0].cameraShots?.[0]).toMatchObject({
+      style:"move",start:0,end:2,move:2,
+      frame:{x:465,y:260,zoom:1.3},targets:[],follow:false,
+    });
+    expect(data.scenes[1].cameraShots).toBeUndefined();
+    expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
+  }
+});
