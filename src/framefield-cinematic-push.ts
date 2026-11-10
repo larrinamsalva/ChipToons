@@ -68,3 +68,45 @@ export function framefieldGentleCinematicPan(
   if (issue) throw new Error(issue);
   return shot;
 }
+
+/** Keep start crops inside the original 800×450 picture as zoom varies.
+ * The user chooses which artwork area to emphasize before the full reveal. */
+export type FramefieldRevealFocus = "left" | "center" | "right";
+
+export function framefieldRevealStartingView(
+  zoom: number,
+  focus: FramefieldRevealFocus = "center",
+) {
+  if (!Number.isFinite(zoom) || zoom < 1.15 || zoom > 1.85 ||
+      !["left", "center", "right"].includes(focus))
+    throw new Error("Choose a valid cinematic reveal focus and zoom.");
+  const safeOffset = Math.round((400 - 400 / zoom) * 0.65 * 100) / 100;
+  return {
+    x: focus === "left" ? 400 - safeOffset :
+      focus === "right" ? 400 + safeOffset : 400,
+    y: 225,
+    zoom,
+  };
+}
+
+export function framefieldRevealFocusOf(view: { x: number }): FramefieldRevealFocus {
+  return view.x < 399 ? "left" : view.x > 401 ? "right" : "center";
+}
+
+/** Optional close-to-wide reveal using the same Stage and WebM camera compositor. */
+export function framefieldGentleCinematicReveal(project: Project, scene: Scene): CameraShot {
+  if (!canStartFramefieldCinematicPush(project, scene))
+    throw new Error("A cinematic reveal needs a PNG scene without authored camera shots or tracks.");
+  const shot: CameraShot = {
+    ...newCameraShot(project, scene, 0),
+    style: "move", start: 0, end: scene.duration, move: scene.duration,
+    fromFrame: framefieldRevealStartingView(1.45),
+    frame: { x: 400, y: 225, zoom: 1 },
+    targets: [], follow: false, offset: { x: 0, y: 0 },
+    placement: "center",
+    note: "Gentle cinematic reveal from a closer view to the full original PNG frame",
+  };
+  const issue = shotIssue([shot], scene);
+  if (issue) throw new Error(issue);
+  return shot;
+}

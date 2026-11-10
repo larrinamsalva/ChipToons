@@ -8,7 +8,9 @@ import { newCameraShot, shotAnchorKey, shotCueChoices, shotGap, shotPreset, subj
 import {
   canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
+  framefieldGentleCinematicReveal, framefieldRevealStartingView, framefieldRevealFocusOf,
 } from "../framefield-cinematic-push";
+import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
 import type { FramefieldPanDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { MediaNumber } from "./MediaNumber";
@@ -18,7 +20,7 @@ import { Stage } from "./Stage";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
-  initialPreset?: "framefield-push" | "framefield-pan";
+  initialPreset?: "framefield-push" | "framefield-pan" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
   const saved = scene.cameraShots ?? [];
@@ -28,7 +30,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
       ? framefieldGentleCinematicPush(project, scene)
       : initialPreset === "framefield-pan" && canStartFramefieldCinematicPush(project, scene)
         ? framefieldGentleCinematicPan(project, scene, "left")
-        : newCameraShot(project, scene, time, lineId)));
+        : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
+          ? framefieldGentleCinematicReveal(project, scene)
+          : newCameraShot(project, scene, time, lineId)));
   const [review, setReview] = useState(0);
   const [mode, setMode] = useState<"shot" | "sequence">("shot");
   const [compare, setCompare] = useState(false);
@@ -56,7 +60,13 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   }).join(" & ") || "Fixed frame";
 
   function patch(change: Partial<CameraShot>) {
-    setDraft(value => ({ ...value, ...change }));
+    setDraft(value => {
+      const next = { ...value, ...change };
+      // An explicit start view applies only to full-scene, untargeted moves.
+      return next.fromFrame && (next.start !== 0 || next.move <= 0 ||
+        next.style !== "move" || next.targets.length > 0 || next.follow)
+        ? { ...next, fromFrame: undefined } : next;
+    });
     setReview(0); setDirty(true); setError(""); setRemove(false);
   }
 
@@ -96,6 +106,45 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         whole scene. Preview Shot or Preview Full Sequence before pressing
         Apply. Cancel leaves your project unchanged.
       </p>
+    )}
+    {initialPreset === "framefield-reveal" && !editing && (
+      <p className="field-hint">
+        Gentle cinematic pull-back: the camera eases out from an adjustable
+        close-up to the complete original PNG scene. Preview Shot or Preview
+        Full Sequence, then choose Apply or Cancel. The source is unchanged.
+      </p>
+    )}
+    {draft.fromFrame && (
+      <section aria-label="Cinematic reveal starting view" className="interaction-controls">
+        <label>
+          Reveal starting focus
+          <select aria-label="Reveal starting focus"
+            value={framefieldRevealFocusOf(draft.fromFrame)}
+            onChange={event => patch({
+              fromFrame: framefieldRevealStartingView(
+                draft.fromFrame?.zoom ?? 1.45,
+                event.target.value as FramefieldRevealFocus,
+              ),
+            })}>
+            <option value="left">Focus on left side of artwork</option>
+            <option value="center">Focus on center</option>
+            <option value="right">Focus on right side of artwork</option>
+          </select>
+        </label>
+        <MediaNumber label="Reveal starting zoom"
+          value={draft.fromFrame.zoom} min={1.15} max={1.85} step={0.05}
+          onChange={zoom => patch({
+            fromFrame: framefieldRevealStartingView(
+              zoom, framefieldRevealFocusOf(draft.fromFrame ?? { x: 400 }),
+            ),
+          })}
+        />
+        <p className="field-hint">
+          The starting crop stays within your original PNG image.
+          Adjust the beginning view here, preview the entire move and
+          press Apply when ready. The saved picture is unchanged until then.
+        </p>
+      </section>
     )}
     {initialPreset === "framefield-pan" && !editing && (
       <div>
