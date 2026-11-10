@@ -68,3 +68,21 @@ export function framefieldGentleCinematicPan(
   if (issue) throw new Error(issue);
   return shot;
 }
+
+/** Optional close-to-wide reveal using the same Stage and WebM camera compositor. */
+export function framefieldGentleCinematicReveal(project: Project, scene: Scene): CameraShot {
+  if (!canStartFramefieldCinematicPush(project, scene))
+    throw new Error("A cinematic reveal needs a PNG scene without authored camera shots or tracks.");
+  const shot: CameraShot = {
+    ...newCameraShot(project, scene, 0),
+    style: "move", start: 0, end: scene.duration, move: scene.duration,
+    fromFrame: { x: 400, y: 225, zoom: 1.45 },
+    frame: { x: 400, y: 225, zoom: 1 },
+    targets: [], follow: false, offset: { x: 0, y: 0 },
+    placement: "center",
+    note: "Gentle cinematic reveal from a closer view to the full original PNG frame",
+  };
+  const issue = shotIssue([shot], scene);
+  if (issue) throw new Error(issue);
+  return shot;
+}
