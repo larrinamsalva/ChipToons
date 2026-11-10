@@ -9,7 +9,7 @@ export function FramefieldCaptionVoiceReview({
   project, onScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview") => void;
 }) {
   const review = framefieldCaptionVoiceReview(project);
   return (
@@ -104,6 +104,10 @@ export function FramefieldCaptionVoiceReview({
               </ul>
             )}
             <div className="animation-actions">
+              <button type="button" className="button secondary small"
+                onClick={() => onScene(scene.sceneIndex, "preview")}>
+                Preview scene {scene.sceneIndex + 1} with mixed sound
+              </button>
               <button type="button" className="button secondary small"
                 onClick={() => onScene(scene.sceneIndex, "voices")}>
                 Review voices for scene {scene.sceneIndex + 1}
