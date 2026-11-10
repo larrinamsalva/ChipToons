@@ -1,4 +1,8 @@
 import { sceneCaptionText } from "../production";
+import {
+  adjacentCameraRiskTime, cameraRiskMarkerOffset,
+  cameraScrubWindow, inCameraScrubWindow,
+} from "../camera-motion-scrub";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Project, Scene } from "../model";
@@ -8,9 +12,11 @@ import { sceneStart } from "../timeline";
 import { PlaybackClock } from "../playback";
 import { Stage } from "./Stage";
 
-export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition, soundPreview = false, initialSound = false, playFrom = 0, playTo = scene.duration, shotGuides }: {
+export function ScenePreview({ project, scene, markers, releaseMarker, initialTime = 0.4, precision = 1, captionGuide = false, showCaptions = false, onFocusPosition, soundPreview = false, initialSound = false, playFrom = 0, playTo = scene.duration, shotGuides, scrubTimeline }: {
   project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point; precision?: 1 | 2 | 3;
   soundPreview?: boolean; initialSound?: boolean; playFrom?: number; playTo?: number; shotGuides?: { ids: string[]; offset: Point }; captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
+  /** Opt-in review-only motion timeline; risk moments come from real camera scans. */
+  scrubTimeline?: { start: number; end: number; riskyTimes?: number[] };
 }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
@@ -27,6 +33,13 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
   const [error, setError] = useState("");
   const ticket = useRef(0);
   const frame = useSyncExternalStore(clock.subscribe, clock.getSnapshot);
+  const scrubWindow = scrubTimeline
+    ? cameraScrubWindow(scrubTimeline.start, scrubTimeline.end) : undefined;
+  const riskTimes = scrubTimeline?.riskyTimes ?? [];
+  const previousRisk = scrubWindow
+    ? adjacentCameraRiskTime(riskTimes,frame.seconds,"previous",scrubWindow) : undefined;
+  const nextRisk = scrubWindow
+    ? adjacentCameraRiskTime(riskTimes,frame.seconds,"next",scrubWindow) : undefined;
   useEffect(() => {
     clock.configure(0, playTo, false);
     return () => clock.pause();
@@ -46,6 +59,11 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
     clock.setTimeSource();
     clock.pause();
     setBusy(false);
+  }
+
+  function seekPreview(time:number) {
+    stop();
+    if (Number.isFinite(time)) clock.seek(time);
   }
 
   async function play() {
@@ -107,6 +125,41 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
         </label>
       </div>
       {error && <p role="alert">{error}</p>}
+      {scrubWindow && <div className="camera-motion-scrubber"
+        role="group" aria-label="Camera motion scrubber controls">
+        <div className="camera-motion-scrubber-head">
+          <strong>Scrub camera motion</strong>
+          <output>{frame.seconds.toFixed(2)}s</output>
+        </div>
+        <div className="camera-motion-scrubber-track">
+          <input type="range" aria-label="Camera motion scrubber"
+            min={scrubWindow.start} max={scrubWindow.end} step={.005}
+            value={inCameraScrubWindow(frame.seconds,scrubWindow)}
+            onChange={event=>seekPreview(Number(event.target.value))} />
+          <div className="camera-motion-risk-ticks" aria-hidden="true">
+            {riskTimes.filter(t=>t>=scrubWindow.start&&t<=scrubWindow.end).map((time,i)=>(
+              <span key={i} style={{left:cameraRiskMarkerOffset(time,scrubWindow)+"%"}} />
+            ))}
+          </div>
+        </div>
+        <p className="field-hint">
+          Drag the slider or use arrow keys to inspect the real animated
+          preview and timed captions. Nothing is saved by scrubbing.
+        </p>
+        {!!riskTimes.length && <div className="camera-motion-risk-navigation">
+          <span>{riskTimes.length} flagged sample{riskTimes.length===1?"":"s"} marked on the timeline</span>
+          <button type="button" className="button secondary small"
+            disabled={previousRisk===undefined}
+            onClick={()=>{if(previousRisk!==undefined)seekPreview(previousRisk);}}>
+            Previous risky moment
+          </button>
+          <button type="button" className="button secondary small"
+            disabled={nextRisk===undefined}
+            onClick={()=>{if(nextRisk!==undefined)seekPreview(nextRisk);}}>
+            Next risky moment
+          </button>
+        </div>}
+      </div>}
       <label>
         Preview time (seconds)
         <input
@@ -116,8 +169,7 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
           step={10 ** -precision}
           value={Number(frame.seconds.toFixed(precision))}
           onChange={(e) => {
-            stop();
-            clock.seek(e.target.valueAsNumber || 0);
+            seekPreview(e.target.valueAsNumber || 0);
           }}
         />
       </label>

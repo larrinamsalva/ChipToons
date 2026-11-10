@@ -13,6 +13,7 @@ import {
 import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
 import type { FramefieldPanDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
+import { cameraMotionArtworkSweep } from "../camera-motion-framing";
 import { MediaNumber } from "./MediaNumber";
 import { Modal } from "./Modal";
 import { ScenePreview } from "./ScenePreview";
@@ -55,6 +56,10 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   const cues = useMemo(() => shotCueChoices(project, scene), [project, scene]);
   const cue = cues.find(item => draft.cue && shotAnchorKey(item.anchor) === shotAnchorKey(draft.cue.anchor));
   const previewScene = compare ? scene : planned;
+  const risks = contactSheet && review && !issue
+    ? cameraMotionArtworkSweep(project,previewScene,draft).checks
+        .filter(check=>check.edges.length>0).map(check=>check.time)
+    : [];
   const span = draft.end - draft.start;
   const previewTime = Math.min(draft.end - span / 20, draft.start + Math.max(span / 3, draft.move));
   const subject = (shot: CameraShot) => shot.targets.map(id => {
@@ -311,6 +316,11 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             captionGuide={guides} shotGuides={guides ? { ids: draft.targets, offset: draft.offset } : undefined}
             initialTime={inspectTime ?? (mode === "shot" ? previewTime : 0)}
             playFrom={mode === "shot" ? draft.start : 0} playTo={mode === "shot" ? draft.end : scene.duration}
+            scrubTimeline={{
+              start: mode==="shot" ? draft.start : 0,
+              end: mode==="shot" ? draft.end : scene.duration,
+              riskyTimes: risks,
+            }}
             soundPreview={project.audioClips.length > 0} />
         </>}
       </div>
