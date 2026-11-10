@@ -30,7 +30,7 @@ export function CameraMotionContactSheet({
             " of 3 frames may show beyond the original artwork bounds. Review the marked frames."
           : "Artwork-edge check: no canvas edges exposed at the three sampled times."}
       </p>
-      <div className="camera-motion-sweep" aria-label="Full camera move safety scan">
+      <div role="region" className="camera-motion-sweep" aria-label="Full camera move safety scan">
         <p className={sweep.flaggedCount ? "camera-motion-edge-warning" : "camera-motion-edge-ok"}
           aria-label="Full-move edge scan result">
           {sweep.flaggedCount
