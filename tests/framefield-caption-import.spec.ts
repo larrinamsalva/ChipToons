@@ -356,3 +356,42 @@ test("Cinematic pull-back reveals actual original PNG frames only after Apply", 
     expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
   }
 });
+
+
+test("Cinematic vertical tilt previews and applies genuine original PNG frames safely", async ({ page }) => {
+  const {picker}=await prepare(page);
+  await picker.getByRole("button",{name:"Create multi-shot cartoon"}).click();
+  await expect(page.locator(".editor")).toBeVisible({timeout:30_000});
+  await page.getByRole("button",{name:"Finish My Cartoon",exact:true}).click();
+  const guide=page.getByRole("region",{name:"Guided scene voice recording"});
+  await guide.getByRole("button",{name:"Start guided voice recording"}).click();
+  await guide.getByRole("button",{name:"Try a gentle cinematic vertical tilt"}).click();
+  const director=page.getByRole("dialog",{name:"Direct My Cartoon Camera"});
+  await expect(director.getByRole("combobox",{name:"Shot style"})).toHaveValue("move");
+  const direction=director.getByRole("combobox",{name:"Gentle tilt direction"});
+  await expect(direction).toHaveValue("up");
+  await direction.selectOption("down");
+  await expect(director.getByRole("button",{name:"Apply"})).toBeDisabled();
+  await director.getByRole("button",{name:"Preview Full Sequence"}).click();
+  const preview=director.getByRole("region",{name:"Proposed scene preview"});
+  await expect(preview).toBeVisible();
+  await director.getByRole("checkbox",{name:"Show beginning, middle and end frames"}).check();
+  const frames=director.getByRole("region",{name:"Camera motion contact sheet"});
+  await expect(frames.getByRole("figure")).toHaveCount(3);
+  await expect(frames.getByRole("region",{name:"Full camera move safety scan"}))
+    .toContainText("no canvas overrun found at 21 sampled moments");
+  const end=frames.getByRole("figure",{name:"End frame"});
+  const zoom=Number(await end.locator("[data-camera-transform]").getAttribute("data-camera-zoom"));
+  expect(zoom).toBeGreaterThan(1.249);
+  await director.getByRole("button",{name:"Apply"}).click();
+  await expect(director).toBeHidden();
+  if ((page.viewportSize()?.width??0)>=1200) {
+    const {data}=await backup(page);
+    expect(data.scenes[0].cameraShots?.[0]).toMatchObject({
+      style:"move",start:0,end:2,move:2,
+      frame:{x:400,y:260,zoom:1.25},targets:[],follow:false,
+    });
+    expect(data.scenes[1].cameraShots).toBeUndefined();
+    expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
+  }
+});
