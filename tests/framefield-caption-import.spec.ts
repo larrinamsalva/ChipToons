@@ -327,7 +327,7 @@ test("Cinematic pull-back reveals actual original PNG frames only after Apply", 
       fromFrame:{y:225,zoom:1.65},
       frame:{x:400,y:225,zoom:1},targets:[],
     });
-    expect(data.scenes[0].cameraShots?.[0].fromFrame.x).toBeGreaterThan(400);
+    expect(data.scenes[0].cameraShots?.[0].fromFrame?.x).toBeGreaterThan(400);
     expect(data.scenes[1].cameraShots).toBeUndefined();
     expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
   }
