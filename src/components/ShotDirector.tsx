@@ -8,8 +8,9 @@ import { newCameraShot, shotAnchorKey, shotCueChoices, shotGap, shotPreset, subj
 import {
   canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
-  framefieldGentleCinematicReveal,
+  framefieldGentleCinematicReveal, framefieldRevealStartingView, framefieldRevealFocusOf,
 } from "../framefield-cinematic-push";
+import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
 import type { FramefieldPanDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { MediaNumber } from "./MediaNumber";
@@ -108,10 +109,42 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
     )}
     {initialPreset === "framefield-reveal" && !editing && (
       <p className="field-hint">
-        Gentle cinematic pull-back: the camera eases out from 1.45× to 1×,
-        revealing the entire original PNG scene. Preview Shot or Preview
+        Gentle cinematic pull-back: the camera eases out from an adjustable
+        close-up to the complete original PNG scene. Preview Shot or Preview
         Full Sequence, then choose Apply or Cancel. The source is unchanged.
       </p>
+    )}
+    {draft.fromFrame && (
+      <section aria-label="Cinematic reveal starting view" className="interaction-controls">
+        <label>
+          Reveal starting focus
+          <select aria-label="Reveal starting focus"
+            value={framefieldRevealFocusOf(draft.fromFrame)}
+            onChange={event => patch({
+              fromFrame: framefieldRevealStartingView(
+                draft.fromFrame?.zoom ?? 1.45,
+                event.target.value as FramefieldRevealFocus,
+              ),
+            })}>
+            <option value="left">Focus on left side of artwork</option>
+            <option value="center">Focus on center</option>
+            <option value="right">Focus on right side of artwork</option>
+          </select>
+        </label>
+        <MediaNumber label="Reveal starting zoom"
+          value={draft.fromFrame.zoom} min={1.15} max={1.85} step={0.05}
+          onChange={zoom => patch({
+            fromFrame: framefieldRevealStartingView(
+              zoom, framefieldRevealFocusOf(draft.fromFrame ?? { x: 400 }),
+            ),
+          })}
+        />
+        <p className="field-hint">
+          The starting crop stays within your original PNG image.
+          Adjust the beginning view here, preview the entire move and
+          press Apply when ready. The saved picture is unchanged until then.
+        </p>
+      </section>
     )}
     {initialPreset === "framefield-pan" && !editing && (
       <div>

@@ -307,7 +307,14 @@ test("Cinematic pull-back reveals actual original PNG frames only after Apply", 
   await guide.getByRole("button",{name:"Try a cinematic pull-back reveal"}).click();
   const camera=page.getByRole("dialog",{name:"Direct My Cartoon Camera"});
   await expect(camera.getByRole("combobox",{name:"Shot style"})).toHaveValue("move");
-  await expect(camera).toContainText("eases out from 1.45× to 1×");
+  await expect(camera.getByRole("combobox",{name:"Reveal starting focus"}))
+    .toHaveValue("center");
+  await camera.getByRole("combobox",{name:"Reveal starting focus"})
+    .selectOption("right");
+  const startingZoom = camera.getByRole("spinbutton",{name:"Reveal starting zoom"});
+  await startingZoom.fill("1.65");
+  await startingZoom.press("Tab");
+  await expect(startingZoom).toHaveValue("1.65");
   await expect(camera.getByRole("button",{name:"Apply"})).toBeDisabled();
   await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
   await expect(camera.getByRole("region",{name:"Proposed scene preview"})).toBeVisible();
@@ -317,9 +324,10 @@ test("Cinematic pull-back reveals actual original PNG frames only after Apply", 
     const {data}=await backup(page);
     expect(data.scenes[0].cameraShots?.[0]).toMatchObject({
       style:"move",start:0,end:2,move:2,
-      fromFrame:{x:400,y:225,zoom:1.45},
+      fromFrame:{y:225,zoom:1.65},
       frame:{x:400,y:225,zoom:1},targets:[],
     });
+    expect(data.scenes[0].cameraShots?.[0].fromFrame?.x).toBeGreaterThan(400);
     expect(data.scenes[1].cameraShots).toBeUndefined();
     expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
   }

@@ -23,3 +23,8 @@ to a different shot style, offset start, zero-duration movement or a
 tracked subject clears the starting camera to avoid hidden invalid
 motion. Full 20-minute media export tests and desktop/phone/tablet
 browser checks must pass before a human-controlled merge.
+
+
+## PR #79 — Adjustable reveal starting view
+
+In the real Camera Director, you can now choose which side of the original art to focus on and adjust the opening zoom of an existing or proposed pull-back. Both require preview and explicit Apply. See [Reveal Framing](FRAMEFIELD_REVEAL_FRAMING.md).
