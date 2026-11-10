@@ -318,6 +318,30 @@ test("Cinematic pull-back reveals actual original PNG frames only after Apply", 
   await expect(camera.getByRole("button",{name:"Apply"})).toBeDisabled();
   await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
   await expect(camera.getByRole("region",{name:"Proposed scene preview"})).toBeVisible();
+  // PR #80: inspect three actual times in the same Stage used by export.
+  const contact = camera.getByRole("region",{name:"Camera motion contact sheet"});
+  await expect(contact).toHaveCount(0);
+  await camera.getByRole("checkbox",{name:"Show beginning, middle and end frames"}).check();
+  await expect(contact.getByRole("figure")).toHaveCount(3);
+  const startFrame=contact.getByRole("figure",{name:"Beginning frame"});
+  const midFrame=contact.getByRole("figure",{name:"Middle frame"});
+  const endFrame=contact.getByRole("figure",{name:"End frame"});
+  await expect(startFrame.locator("[data-camera-transform]"))
+    .toHaveAttribute("data-camera-zoom","1.65");
+  const midwayZoom=Number(await midFrame.locator("[data-camera-transform]")
+    .getAttribute("data-camera-zoom"));
+  const endZoom=Number(await endFrame.locator("[data-camera-transform]")
+    .getAttribute("data-camera-zoom"));
+  expect(midwayZoom).toBeGreaterThan(1);
+  expect(midwayZoom).toBeLessThan(1.65);
+  expect(endZoom).toBeGreaterThanOrEqual(1);
+  expect(endZoom).toBeLessThan(1.01);
+  await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).check();
+  await expect(startFrame.locator("[data-camera-transform]"))
+    .not.toHaveAttribute("data-camera-shot",/.+/);
+  await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
+  await expect(startFrame.locator("[data-camera-transform]"))
+    .toHaveAttribute("data-camera-shot",/.+/);
   await camera.getByRole("button",{name:"Apply"}).click();
   await expect(camera).toBeHidden();
   if ((page.viewportSize()?.width??0)>=1200){

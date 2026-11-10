@@ -17,6 +17,7 @@ import { MediaNumber } from "./MediaNumber";
 import { Modal } from "./Modal";
 import { ScenePreview } from "./ScenePreview";
 import { Stage } from "./Stage";
+import { CameraMotionContactSheet } from "./CameraMotionContactSheet";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
@@ -38,6 +39,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   const [compare, setCompare] = useState(false);
   const [guides, setGuides] = useState(true);
   const [thumbnails, setThumbnails] = useState(false);
+  const [contactSheet, setContactSheet] = useState(false);
   const [remove, setRemove] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -294,6 +296,12 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         {!!review && !issue && <>
           <label className="world-check"><input type="checkbox" checked={compare} onChange={event => setCompare(event.target.checked)} /> Compare with the saved camera</label>
           <label className="world-check"><input type="checkbox" checked={guides} onChange={event => setGuides(event.target.checked)} /> Show composition and caption guides</label>
+          <label className="world-check"><input type="checkbox" checked={contactSheet}
+            onChange={event => setContactSheet(event.target.checked)} />
+            Show beginning, middle and end frames
+          </label>
+          {contactSheet && <CameraMotionContactSheet project={project}
+            scene={previewScene} shot={draft} />}
           {subjectsOutside(project, planned, draft) && <p className="interaction-empty" role="status">
             A selected subject may be near the edge or out of view. Check it at the start, during movement, and near the end.
           </p>}

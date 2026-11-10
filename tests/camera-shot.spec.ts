@@ -37,6 +37,13 @@ test("reviews the existing camera, applies and undoes a shot, and reopens it wit
   const proposed = preview.locator("g[data-camera-transform]");
   await expect(proposed).toHaveAttribute("data-camera-zoom", "1.6");
   await expect(preview.locator("[data-shot-guides]")).toBeVisible();
+  await form.getByRole("checkbox", {
+    name: "Show beginning, middle and end frames",
+  }).check();
+  const contact = form.getByRole("region", { name: "Camera motion contact sheet" });
+  await expect(contact.getByRole("figure")).toHaveCount(3);
+  await expect(contact.getByRole("figure", { name: "Beginning frame" })
+    .locator("[data-camera-transform]")).toHaveAttribute("data-camera-zoom", "1.6");
   await expect(form.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
   const compare = form.getByRole("checkbox", { name: "Compare with the saved camera" });
   await compare.check();
