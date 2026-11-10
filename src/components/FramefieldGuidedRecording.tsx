@@ -10,7 +10,7 @@ export function FramefieldGuidedRecording({
   project, onScene, onExportScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan" | "camera-reveal") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan" | "camera-tilt" | "camera-reveal") => void;
   onExportScene: (index: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -148,6 +148,10 @@ export function FramefieldGuidedRecording({
                 <button type="button" className="button secondary"
                   onClick={() => onScene(position, "camera-pan")}>
                   Try a gentle cinematic side-pan
+                </button>
+                <button type="button" className="button secondary"
+                  onClick={() => onScene(position, "camera-tilt")}>
+                  Try a gentle cinematic vertical tilt
                 </button>
                 <button type="button" className="button secondary"
                   onClick={() => onScene(position, "camera-reveal")}>

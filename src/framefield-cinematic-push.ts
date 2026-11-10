@@ -110,3 +110,31 @@ export function framefieldGentleCinematicReveal(project: Project, scene: Scene):
   if (issue) throw new Error(issue);
   return shot;
 }
+
+
+/** Look up toward the sky or down toward a workbench over the original
+ * numbered PNGs. At 1.25x zoom the camera half-height is 180 pixels;
+ * y=190 or y=260 stays safely within the 800x450 source canvas. */
+export type FramefieldTiltDirection = "up" | "down";
+export function framefieldCinematicTiltFrame(direction: FramefieldTiltDirection) {
+  if (direction !== "up" && direction !== "down")
+    throw new Error("Choose an up or down cinematic camera tilt.");
+  return { x: 400, y: direction === "up" ? 190 : 260, zoom: 1.25 };
+}
+export function framefieldGentleCinematicTilt(
+  project: Project, scene: Scene, direction: FramefieldTiltDirection,
+): CameraShot {
+  if (!canStartFramefieldCinematicPush(project, scene))
+    throw new Error("A gentle tilt needs a PNG scene without authored camera shots or tracks.");
+  const shot: CameraShot = {
+    ...newCameraShot(project, scene, 0),
+    style: "move", start: 0, end: scene.duration, move: scene.duration,
+    frame: framefieldCinematicTiltFrame(direction),
+    targets: [], follow: false, offset: { x: 0, y: 0 },
+    placement: "center",
+    note: "Gentle cinematic tilt " + direction + " with slight zoom over original PNG frames",
+  };
+  const issue = shotIssue([shot], scene);
+  if (issue) throw new Error(issue);
+  return shot;
+}
