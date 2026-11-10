@@ -8,10 +8,11 @@ import { newCameraShot, shotAnchorKey, shotCueChoices, shotGap, shotPreset, subj
 import {
   canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
+  framefieldGentleCinematicTilt, framefieldCinematicTiltFrame,
   framefieldGentleCinematicReveal, framefieldRevealStartingView, framefieldRevealFocusOf,
 } from "../framefield-cinematic-push";
 import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
-import type { FramefieldPanDirection } from "../framefield-cinematic-push";
+import type { FramefieldPanDirection, FramefieldTiltDirection } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { cameraMotionArtworkSweep } from "../camera-motion-framing";
 import { MediaNumber } from "./MediaNumber";
@@ -22,7 +23,7 @@ import { CameraMotionContactSheet } from "./CameraMotionContactSheet";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
-  initialPreset?: "framefield-push" | "framefield-pan" | "framefield-reveal";
+  initialPreset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
   const saved = scene.cameraShots ?? [];
@@ -32,9 +33,11 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
       ? framefieldGentleCinematicPush(project, scene)
       : initialPreset === "framefield-pan" && canStartFramefieldCinematicPush(project, scene)
         ? framefieldGentleCinematicPan(project, scene, "left")
-        : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
-          ? framefieldGentleCinematicReveal(project, scene)
-          : newCameraShot(project, scene, time, lineId)));
+        : initialPreset === "framefield-tilt" && canStartFramefieldCinematicPush(project, scene)
+          ? framefieldGentleCinematicTilt(project, scene, "up")
+          : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
+            ? framefieldGentleCinematicReveal(project, scene)
+            : newCameraShot(project, scene, time, lineId)));
   const [review, setReview] = useState(0);
   const [mode, setMode] = useState<"shot" | "sequence">("shot");
   const [compare, setCompare] = useState(false);
@@ -175,6 +178,31 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             }}>
             <option value="left">Slide view left</option>
             <option value="right">Slide view right</option>
+          </select>
+        </label>
+      </div>
+    )}
+    {initialPreset === "framefield-tilt" && !editing && (
+      <div>
+        <p className="field-hint">
+          Gentle vertical cinematic tilt: look up toward the sky or down
+          toward a workbench while easing from 1× to 1.25× zoom.
+          The original numbered PNGs stay untouched; review before Apply.
+        </p>
+        <label>
+          Gentle tilt direction
+          <select aria-label="Gentle tilt direction"
+            value={draft.frame.y < 225 ? "up" : "down"}
+            onChange={event => {
+              const direction = event.target.value as FramefieldTiltDirection;
+              patch({
+                frame: { ...draft.frame, ...framefieldCinematicTiltFrame(direction) },
+                note: "Gentle cinematic tilt " + direction +
+                  " with slight zoom over original PNG frames",
+              });
+            }}>
+            <option value="up">Look upward across the artwork</option>
+            <option value="down">Look downward across the artwork</option>
           </select>
         </label>
       </div>
