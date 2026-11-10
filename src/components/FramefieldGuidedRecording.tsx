@@ -3,13 +3,14 @@ import type { Project } from "../model";
 import { framefieldGuidedSession } from "../framefield-guided-session";
 import { framefieldSceneVoiceSources } from "../framefield-voice-listenback";
 import { OriginalAudio } from "./VoiceStudio";
+import { canStartFramefieldCinematicPush } from "../framefield-cinematic-push";
 
 /** A read-only rehearsal guide; actual recording remains in VoiceStudio. */
 export function FramefieldGuidedRecording({
   project, onScene, onExportScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera") => void;
   onExportScene: (index: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -138,6 +139,12 @@ export function FramefieldGuidedRecording({
               onClick={() => onScene(position, "preview")}>
               Open this scene with picture and mixed sound
             </button>
+            {canStartFramefieldCinematicPush(project, project.scenes[position]) && (
+              <button type="button" className="button secondary"
+                onClick={() => onScene(position, "camera")}>
+                Give this scene a gentle cinematic push-in
+              </button>
+            )}
             <button type="button" className="button secondary"
               onClick={() => onExportScene(position)}>
               Prepare a real WebM clip for this scene
@@ -167,7 +174,10 @@ export function FramefieldGuidedRecording({
           </div>
           <p className="field-hint">
             Open this scene to inspect the real moving images and the mixed
-            soundtrack, then press Play cartoon. You can also jump to the
+            soundtrack, then press Play cartoon. On an original PNG shot
+            without existing camera work, choose a gentle cinematic push-in:
+            preview it in the normal Camera Director and approve Apply
+            before it changes your movie. You can also jump to the
             existing scene-range exporter, where the selected scene is
             prefilled; rendering starts only after you press Export selected
             scene range. The editor selects this scene,

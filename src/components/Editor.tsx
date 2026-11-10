@@ -148,7 +148,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
-  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string }>();
+  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; preset?: "framefield-push" }>();
   const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
@@ -1780,6 +1780,7 @@ export function Editor({
           <p role="status">Opening camera director…</p>
         </Modal>}>
           <ShotDirector key={scene.id} project={project} scene={scene} id={shotEditor.id} lineId={shotEditor.lineId}
+            initialPreset={shotEditor.preset}
             time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
             onScene={next => { selectScene(next); setShotEditor({}); }}
             onClose={() => setShotEditor(undefined)} onApply={changeScene} />
@@ -1880,6 +1881,12 @@ export function Editor({
                   document.querySelector(".stage-panel")
                     ?.scrollIntoView({ block: "start" }),
                 );
+                return;
+              }
+              if (reviewPanel === "camera") {
+                setShotEditor({ preset: "framefield-push" });
+                setMobilePanel("stage");
+                // The existing camera director previews before any Apply.
                 return;
               }
               setMobilePanel("properties");
