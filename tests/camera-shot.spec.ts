@@ -37,6 +37,15 @@ test("reviews the existing camera, applies and undoes a shot, and reopens it wit
   const proposed = preview.locator("g[data-camera-transform]");
   await expect(proposed).toHaveAttribute("data-camera-zoom", "1.6");
   await expect(preview.locator("[data-shot-guides]")).toBeVisible();
+  // PR #83: the live camera preview scrubs actual animation frames without applying.
+  const scrub=preview.getByRole("slider",{name:"Camera motion scrubber"});
+  await expect(scrub).toBeVisible();
+  await scrub.focus();
+  await scrub.press("Home");
+  await expect(preview.getByRole("spinbutton",{name:"Preview time (seconds)"})).toHaveValue("1.2");
+  await scrub.press("End");
+  expect(Number(await preview.getByRole("spinbutton",{name:"Preview time (seconds)"}).inputValue()))
+    .toBeGreaterThan(3.15);
   await form.getByRole("checkbox", {
     name: "Show beginning, middle and end frames",
   }).check();
@@ -50,6 +59,8 @@ test("reviews the existing camera, applies and undoes a shot, and reopens it wit
   const moveScan=contact.getByRole("region",{name:"Full camera move safety scan"});
   await expect(moveScan).toContainText("Full-move scan:");
   await expect(moveScan).toContainText("21 sampled moments");
+  await expect(preview.getByRole("group",{name:"Camera motion scrubber controls"}))
+    .toBeVisible();
   await expect(contact.getByText(/canvas-boundary scan, not a pixel-level test/))
     .toBeVisible();
   await expect(form.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
