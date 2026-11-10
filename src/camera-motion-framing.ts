@@ -2,7 +2,7 @@ import type { CameraValues } from "./animation-model";
 import { cameraMotionSamples } from "./camera-motion-samples";
 import type { CameraShot } from "./camera-shots";
 import type { Project, Scene } from "./model";
-import { stageCameraAt } from "./timeline";
+import { sceneFramesAt, sceneStart, stageCameraAt } from "./timeline";
 
 export type CameraArtworkEdge = "left" | "right" | "top" | "bottom";
 export type CameraArtworkCheck = {
@@ -74,4 +74,19 @@ export function cameraMotionArtworkSweep(
     undefined,
   );
   return {checks,flaggedCount,worst};
+}
+
+
+/** Match Stage.tsx's exact scene time, calm-mode frames, voice offset and
+ * camera evaluator. Read-only: called only while the director is previewed. */
+export function liveCameraFraming(
+  project: Project, scene: Scene, time: number, calm = false,
+) {
+  const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
+  const safeTime = Math.max(0, Math.min(scene.duration, time));
+  const voiceStart = scene.elements.some(element => element.voiceMouth?.length)
+    ? sceneStart(project, sceneIndex) : 0;
+  const frames = sceneFramesAt(project, scene, safeTime, voiceStart, calm);
+  const camera = stageCameraAt(project, scene, safeTime, calm, frames, voiceStart);
+  return { camera, coverage: inspectCameraArtworkCoverage(camera, safeTime) };
 }

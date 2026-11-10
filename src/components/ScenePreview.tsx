@@ -1,4 +1,5 @@
 import { sceneCaptionText } from "../production";
+import { liveCameraFraming } from "../camera-motion-framing";
 import {
   adjacentCameraRiskTime, cameraRiskMarkerOffset,
   cameraScrubWindow, inCameraScrubWindow,
@@ -40,6 +41,8 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
     ? adjacentCameraRiskTime(riskTimes,frame.seconds,"previous",scrubWindow) : undefined;
   const nextRisk = scrubWindow
     ? adjacentCameraRiskTime(riskTimes,frame.seconds,"next",scrubWindow) : undefined;
+  const liveFraming = scrubWindow
+    ? liveCameraFraming(project, scene, frame.seconds, calm) : undefined;
   useEffect(() => {
     clock.configure(0, playTo, false);
     return () => clock.pause();
@@ -131,6 +134,21 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
           <strong>Scrub camera motion</strong>
           <output>{frame.seconds.toFixed(2)}s</output>
         </div>
+        {liveFraming && <div className="camera-live-framing-meter"
+          role="group" aria-label="Live camera framing meter">
+          <span>Live camera zoom: <output aria-label="Live camera zoom">
+            {liveFraming.camera.zoom.toFixed(2)}×
+          </output></span>
+          <span>
+            {liveFraming.coverage.edges.length
+              ? "Original canvas edges outside view: " + liveFraming.coverage.edges.join(", ")
+              : "Inside original canvas"}
+          </span>
+          {liveFraming.coverage.edges.length > 0 && <span>
+            Approximately {(liveFraming.coverage.outsideFraction * 100).toFixed(1)}%
+            of the visible camera area is beyond the original canvas
+          </span>}
+        </div>}
         <div className="camera-motion-scrubber-track">
           <input type="range" aria-label="Camera motion scrubber"
             min={scrubWindow.start} max={scrubWindow.end} step={.005}
