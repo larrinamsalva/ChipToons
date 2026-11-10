@@ -68,8 +68,16 @@ export function FramefieldCaptionVoiceReview({
                 voice clip. Review whether these are deliberately silent text.
               </p>
             )}
+            {!!scene.partiallyCoveredCues && (
+              <p className="framefield-voice-warning">
+                {scene.partiallyCoveredCues} caption(s) overlap assigned voice
+                intervals for only part of their duration. Inspect the
+                uncovered time below and listen to the actual recording.
+              </p>
+            )}
             {!scene.missingVoice && !scene.missingCaptions &&
-              scene.unmatchedCues === 0 && (
+              scene.unmatchedCues === 0 &&
+              scene.partiallyCoveredCues === 0 && (
                 <p className="field-hint">
                   No timing-coverage gaps detected. Listen and verify the actual
                   words and synchronization before publishing.
@@ -84,6 +92,13 @@ export function FramefieldCaptionVoiceReview({
                     <span> · {cue.overlapsVoice
                       ? "Voice clip overlaps; listen to confirm"
                       : "No assigned voice overlaps"}</span>
+                    <span>{" · " + Math.round(cue.coverageFraction * 100) +
+                      "% of cue interval overlaps voice"}</span>
+                    {cue.uncovered.length > 0 && (
+                      <span>{" · Uncovered: " + cue.uncovered.map(gap =>
+                        gap.start.toFixed(2) + "–" + gap.end.toFixed(2) + "s"
+                      ).join(", ")}</span>
+                    )}
                   </li>
                 ))}
               </ul>

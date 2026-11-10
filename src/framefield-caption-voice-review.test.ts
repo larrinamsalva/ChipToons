@@ -53,6 +53,11 @@ describe("Framefield caption-to-assigned voice interval review", () => {
     expect(board.scenesWithAssignedVoice).toBe(1);
     expect(board.captionsWithoutOverlappingVoice).toBe(2);
     expect(board.scenes[0].cues.map(c=>c.overlapsVoice)).toEqual([true,false]);
+    expect(board.scenes[0].cues[0].coverageFraction).toBeCloseTo(0.8);
+    expect(board.scenes[0].cues[0].uncovered)
+      .toEqual([{ start: 0.8, end: 1 }]);
+    expect(board.scenes[0].partiallyCoveredCues).toBe(1);
+    expect(board.partiallyCoveredCues).toBe(1);
     expect(board.scenes[1].missingVoice).toBe(true);
     const music=newAudioClip(p,sound,"music",1,0);
     p.audioClips.push(music);
