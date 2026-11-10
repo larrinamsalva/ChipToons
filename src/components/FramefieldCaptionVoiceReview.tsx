@@ -10,7 +10,7 @@ export function FramefieldCaptionVoiceReview({
   project, onScene, onExportScene,
 }: {
   project: Project;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-pan" | "camera-reveal") => void;
   onExportScene: (index: number) => void;
 }) {
   const review = framefieldCaptionVoiceReview(project);
@@ -120,6 +120,10 @@ export function FramefieldCaptionVoiceReview({
                   <button type="button" className="button secondary small"
                     onClick={() => onScene(scene.sceneIndex, "camera-pan")}>
                     Try gentle side-pan for scene {scene.sceneIndex + 1}
+                  </button>
+                  <button type="button" className="button secondary small"
+                    onClick={() => onScene(scene.sceneIndex, "camera-reveal")}>
+                    Try pull-back reveal for scene {scene.sceneIndex + 1}
                   </button>
                 </>
               )}
