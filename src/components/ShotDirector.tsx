@@ -22,6 +22,7 @@ import { Modal } from "./Modal";
 import { ScenePreview } from "./ScenePreview";
 import { Stage } from "./Stage";
 import { CameraMotionContactSheet } from "./CameraMotionContactSheet";
+import { CameraHoldReview } from "./CameraHoldReview";
 
 export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
@@ -415,6 +416,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
           {contactSheet && <CameraMotionContactSheet project={project}
             scene={previewScene} shot={draft}
             onInspectTime={time => { setInspectTime(time); setReview(value => value + 1); }} />}
+          {contactSheet && !issue && previewShot?.style === "move" && previewShot.move > 0 &&
+            <CameraHoldReview project={project} scene={previewScene} shot={previewShot}
+              onInspectTime={time => { setInspectTime(time); setReview(value => value + 1); }} />}
           {subjectsOutside(project, planned, draft) && <p className="interaction-empty" role="status">
             A selected subject may be near the edge or out of view. Check it at the start, during movement, and near the end.
           </p>}

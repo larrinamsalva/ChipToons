@@ -48,3 +48,19 @@ export function cameraSettleTiming(
     seekAt:inCameraScrubWindow(settleAt,window),
   };
 }
+
+
+/** Two real, in-shot frames for comparing the start/end of an authored
+ * final-view hold. Does not assume PNG artwork or captions stay static. */
+export function cameraHoldReviewTimes(
+  shot: { start:number; move:number; end:number },
+) {
+  const window=cameraScrubWindow(shot.start,shot.end);
+  if(!window)return;
+  const settle=cameraSettleTiming(shot,window);
+  if(!settle||settle.holdSeconds<=.01)return;
+  const finishTime=settle.settleAt;
+  const lastTime=window.end;
+  if(lastTime<=finishTime)return;
+  return {finishTime,lastTime,holdSeconds:settle.holdSeconds};
+}
