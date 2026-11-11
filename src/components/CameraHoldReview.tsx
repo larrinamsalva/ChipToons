@@ -20,7 +20,7 @@ export function CameraHoldReview({project,scene,shot,onInspectTime}:{
   const firstCaption=sceneCaptionText(project,scene,hold.finishTime);
   const lastCaption=sceneCaptionText(project,scene,hold.lastTime);
   return (
-    <details className="camera-hold-review" aria-label="Camera hold frame review">
+    <details role="group" className="camera-hold-review" aria-label="Camera hold frame review">
       <summary>Review final-view hold frames ({hold.holdSeconds.toFixed(2)}s)</summary>
       <p className="field-hint">
         Compare two actual Stage frames: when camera movement ends and near the
