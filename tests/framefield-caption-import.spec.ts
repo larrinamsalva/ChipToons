@@ -428,6 +428,14 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
   const preview=camera.getByRole("region",{name:"Proposed scene preview"});
   await expect(preview).toBeVisible();
+  // PR #89: verify the real move/hold boundary and live seek.
+  const guide=preview.getByRole("group",{name:"Camera move timing guide"});
+  await expect(guide).toContainText("1.50s");
+  await expect(guide).toContainText("holds for 0.50s");
+  await guide.getByRole("button",{name:"Jump to camera move finish"}).click();
+  await expect(preview.getByRole("spinbutton",{name:"Preview time (seconds)"}))
+    .toHaveValue("1.5");
+  await expect(guide).toContainText("final camera view is held");
   await camera.getByRole("checkbox",{name:"Show beginning, middle and end frames"}).check();
   const contact=camera.getByRole("region",{name:"Camera motion contact sheet"});
   await expect(contact.getByRole("figure")).toHaveCount(3);
@@ -444,7 +452,9 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).check();
   await expect(halfway.locator("[data-camera-transform]"))
     .not.toHaveAttribute("data-camera-shot",/.+/);
+  await expect(guide).toHaveCount(0);
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
+  await expect(guide).toBeVisible();
   await expect(halfway.locator("[data-camera-transform]"))
     .toHaveAttribute("data-camera-shot",/.+/);
   await camera.getByRole("button",{name:"Apply"}).click();

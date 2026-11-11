@@ -26,3 +26,25 @@ export function adjacentCameraRiskTime(
 export function cameraRiskMarkerOffset(time:number,window:CameraScrubWindow) {
   return 100*(inCameraScrubWindow(time,window)-window.start)/(window.end-window.start||1);
 }
+
+
+/** The real CameraShot's existing move field controls when a camera arrives
+ * at its final view. Read-only guide: it does not write timeline data. */
+export function cameraSettleTiming(
+  shot: { start:number; move:number; end:number },
+  window:CameraScrubWindow,
+) {
+  const {start,end,move}=shot;
+  if (!Number.isFinite(start)||!Number.isFinite(end)||!Number.isFinite(move) ||
+      end<=start||move<=0||move>end-start+1e-6 ||
+      end<window.start || start>window.end) return;
+  const settleAt=Math.min(end,start+move);
+  const hold=Math.max(0,end-settleAt);
+  const markerPercent=cameraRiskMarkerOffset(settleAt,window);
+  return {
+    settleAt,
+    holdSeconds:hold,
+    markerPercent,
+    seekAt:inCameraScrubWindow(settleAt,window),
+  };
+}

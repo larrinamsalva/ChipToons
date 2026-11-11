@@ -2,7 +2,7 @@ import { sceneCaptionText } from "../production";
 import { liveCameraFraming } from "../camera-motion-framing";
 import {
   adjacentCameraRiskTime, cameraRiskMarkerOffset,
-  cameraScrubWindow, inCameraScrubWindow,
+  cameraScrubWindow, inCameraScrubWindow, cameraSettleTiming,
 } from "../camera-motion-scrub";
 import { CaptionOverlay } from "./CaptionOverlay";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -17,7 +17,10 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
   project: Project; scene: Scene; markers?: { actorId: string; grip: Grip }[]; initialTime?: number; releaseMarker?: Point; precision?: 1 | 2 | 3;
   soundPreview?: boolean; initialSound?: boolean; playFrom?: number; playTo?: number; shotGuides?: { ids: string[]; offset: Point }; captionGuide?: boolean; showCaptions?: boolean; onFocusPosition?: (point: Point) => void;
   /** Opt-in review-only motion timeline; risk moments come from real camera scans. */
-  scrubTimeline?: { start: number; end: number; riskyTimes?: number[] };
+  scrubTimeline?: {
+    start: number; end: number; riskyTimes?: number[];
+    settle?: { start: number; move: number; end: number };
+  };
 }) {
   const [clock] = useState(() => {
     const playback = new PlaybackClock();
@@ -37,6 +40,8 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
   const scrubWindow = scrubTimeline
     ? cameraScrubWindow(scrubTimeline.start, scrubTimeline.end) : undefined;
   const riskTimes = scrubTimeline?.riskyTimes ?? [];
+  const settle = scrubWindow && scrubTimeline?.settle
+    ? cameraSettleTiming(scrubTimeline.settle,scrubWindow) : undefined;
   const previousRisk = scrubWindow
     ? adjacentCameraRiskTime(riskTimes,frame.seconds,"previous",scrubWindow) : undefined;
   const nextRisk = scrubWindow
@@ -154,12 +159,34 @@ export function ScenePreview({ project, scene, markers, releaseMarker, initialTi
             min={scrubWindow.start} max={scrubWindow.end} step={.005}
             value={inCameraScrubWindow(frame.seconds,scrubWindow)}
             onChange={event=>seekPreview(Number(event.target.value))} />
+          {settle && <div className="camera-motion-settle-tick" aria-hidden="true"
+            style={{left:settle.markerPercent+"%"}} />}
           <div className="camera-motion-risk-ticks" aria-hidden="true">
             {riskTimes.filter(t=>t>=scrubWindow.start&&t<=scrubWindow.end).map((time,i)=>(
               <span key={i} style={{left:cameraRiskMarkerOffset(time,scrubWindow)+"%"}} />
             ))}
           </div>
         </div>
+        {settle && <div className="camera-motion-settle-guide" role="group"
+          aria-label="Camera move timing guide">
+          <p>
+            Camera reaches final view at <strong>{settle.settleAt.toFixed(2)}s</strong>.
+            {settle.holdSeconds > 0.001
+              ? " Then holds for " + settle.holdSeconds.toFixed(2) + "s."
+              : " Continues moving until the shot ends."}
+          </p>
+          <p className="field-hint">
+            {frame.seconds < settle.settleAt - .005
+              ? "At current preview: camera is moving."
+              : settle.holdSeconds > .001
+                ? "At current preview: final camera view is held."
+                : "At current preview: camera is arriving at its final view."}
+          </p>
+          <button type="button" className="button secondary small"
+            onClick={()=>seekPreview(settle.seekAt)}>
+            Jump to camera move finish
+          </button>
+        </div>}
         <p className="field-hint">
           Drag the slider or use arrow keys to inspect the real animated
           preview and timed captions. Nothing is saved by scrubbing.

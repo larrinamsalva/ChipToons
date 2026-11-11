@@ -63,6 +63,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   const cues = useMemo(() => shotCueChoices(project, scene), [project, scene]);
   const cue = cues.find(item => draft.cue && shotAnchorKey(item.anchor) === shotAnchorKey(draft.cue.anchor));
   const previewScene = compare ? scene : planned;
+  const previewShot = compare ? saved.find(shot => shot.id === draft.id) : draft;
   const risks = contactSheet && review && !issue
     ? cameraMotionArtworkSweep(project,previewScene,draft).checks
         .filter(check=>check.edges.length>0).map(check=>check.time)
@@ -425,6 +426,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
               start: mode==="shot" ? draft.start : 0,
               end: mode==="shot" ? draft.end : scene.duration,
               riskyTimes: risks,
+              settle: previewShot?.style === "move" && previewShot.move > 0
+                ? {start:previewShot.start,move:previewShot.move,end:previewShot.end}
+                : undefined,
             }}
             soundPreview={project.audioClips.length > 0} />
         </>}
