@@ -413,11 +413,17 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   const intensity=camera.getByRole("combobox",{name:"Diagonal glide intensity"});
   await expect(intensity).toHaveValue("balanced");
   await intensity.selectOption("expressive");
+  const pacing=camera.getByRole("combobox",{name:"Diagonal glide pacing"});
+  await expect(pacing).toHaveValue("continuous");
+  await pacing.selectOption("settle-early");
+  await expect(camera.getByRole("spinbutton",{name:"Move duration (seconds)"}))
+    .toHaveValue("1.5");
   await expect(direction).toHaveValue("down-right");
   // Changing direction retains the selected intensity.
   await direction.selectOption("up-right");
   await expect(intensity).toHaveValue("expressive");
   await direction.selectOption("down-right");
+  await expect(pacing).toHaveValue("settle-early");
   await expect(camera.getByRole("button",{name:"Apply"})).toBeDisabled();
   await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
   const preview=camera.getByRole("region",{name:"Proposed scene preview"});
@@ -446,7 +452,7 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   if ((page.viewportSize()?.width??0)>=1200) {
     const {data}=await backup(page);
     expect(data.scenes[0].cameraShots?.[0]).toMatchObject({
-      style:"move",start:0,end:2,move:2,
+      style:"move",start:0,end:2,move:1.5,
       frame:{x:480,y:270,zoom:1.4},targets:[],follow:false,
     });
     expect(data.scenes[1].cameraShots).toBeUndefined();

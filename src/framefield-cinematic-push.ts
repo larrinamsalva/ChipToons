@@ -188,3 +188,37 @@ export function framefieldGentleCinematicGlide(
   if (issue) throw new Error(issue);
   return shot;
 }
+
+
+/** Optional finishing hold for a reviewed diagonal PNG glide.
+ * Pure timing presets over the existing CameraShot.move duration. */
+export type FramefieldGlidePacing = "continuous" | "settle-early" | "quick-reveal";
+const glidePacingFractions = {
+  continuous: 1,
+  "settle-early": .75,
+  "quick-reveal": .5,
+} as const;
+
+export function framefieldGlideMoveDuration(
+  duration: number, pacing: FramefieldGlidePacing,
+) {
+  if (!Number.isFinite(duration) || duration <= 0)
+    throw new Error("Choose a positive cinematic scene duration.");
+  const ratio = glidePacingFractions[pacing];
+  if (!ratio) throw new Error("Choose a valid diagonal glide pacing.");
+  // Keep sub-second shots valid; normal scenes are at least two seconds.
+  return Math.min(duration, Math.max(Math.min(duration,.01),
+    Math.round(duration*ratio*1000)/1000));
+}
+
+export function framefieldGlidePacingOf(
+  move: number, duration: number,
+): FramefieldGlidePacing | "custom" {
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(move))
+    return "custom";
+  for (const key of ["continuous","settle-early","quick-reveal"] as const) {
+    if (Math.abs(move-framefieldGlideMoveDuration(duration,key)) < .001)
+      return key;
+  }
+  return "custom";
+}
