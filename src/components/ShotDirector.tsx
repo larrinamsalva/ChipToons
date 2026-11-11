@@ -10,10 +10,11 @@ import {
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
   framefieldGentleCinematicTilt, framefieldCinematicTiltFrame,
   framefieldGentleCinematicGlide, framefieldCinematicGlideFrame, framefieldGlideIntensityOf,
+  framefieldGlideMoveDuration, framefieldGlidePacingOf,
   framefieldGentleCinematicReveal, framefieldRevealStartingView, framefieldRevealFocusOf,
 } from "../framefield-cinematic-push";
 import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
-import type { FramefieldPanDirection, FramefieldTiltDirection, FramefieldGlideDirection } from "../framefield-cinematic-push";
+import type { FramefieldPanDirection, FramefieldTiltDirection, FramefieldGlideDirection, FramefieldGlidePacing } from "../framefield-cinematic-push";
 import { clamp, roundTime, sceneFramesAt, shotFraming } from "../timeline";
 import { cameraMotionArtworkSweep } from "../camera-motion-framing";
 import { MediaNumber } from "./MediaNumber";
@@ -215,7 +216,8 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         <p className="field-hint">
           Add a soft diagonal glide across the original artwork,
           from the wide view to a chosen gentle close-up (1.2×–1.4×).
-          Choose the direction and motion intensity; the canvas stays in frame.
+          Choose direction, intensity and how soon the camera finishes
+          its move. The canvas stays in frame.
           Preview before Apply. Cancel leaves your cartoon unchanged.
         </p>
         <label>
@@ -259,6 +261,27 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             <option value="expressive">Expressive — 1.4× zoom</option>
           </select>
         </label>
+        <label>
+          Diagonal glide pacing
+          <select aria-label="Diagonal glide pacing"
+            value={framefieldGlidePacingOf(draft.move,span)}
+            onChange={event => {
+              patch({move:framefieldGlideMoveDuration(
+                span,event.target.value as FramefieldGlidePacing,
+              )});
+            }}>
+            <option value="continuous">Travel throughout the scene</option>
+            <option value="settle-early">Finish at 75%, then hold</option>
+            <option value="quick-reveal">Finish halfway, then hold</option>
+            {framefieldGlidePacingOf(draft.move,span)==="custom" &&
+              <option value="custom" disabled>Custom move duration</option>}
+          </select>
+        </label>
+        <p className="field-hint">
+          The camera keeps its final view after moving; the original
+          scene, narration, captions and duration stay unchanged.
+          You can also fine-tune Move duration below.
+        </p>
       </section>
     )}
     <div className="interaction-layout shot-director">
