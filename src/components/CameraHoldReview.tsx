@@ -1,4 +1,5 @@
 import { cameraHoldReviewTimes } from "../camera-motion-scrub";
+import { cameraHoldContinuity } from "../camera-hold-continuity";
 import type { CameraShot } from "../camera-shots";
 import type { Project, Scene } from "../model";
 import { sceneCaptionText } from "../production";
@@ -13,6 +14,7 @@ export function CameraHoldReview({project,scene,shot,onInspectTime}:{
 }){
   const hold=cameraHoldReviewTimes(shot);
   if(!hold)return null;
+  const continuity=cameraHoldContinuity(project,scene,shot);
   const moments=[
     {id:"finish",label:"Camera settles",time:hold.finishTime},
     {id:"last",label:"Near shot end",time:hold.lastTime},
@@ -45,6 +47,47 @@ export function CameraHoldReview({project,scene,shot,onInspectTime}:{
           </figure>
         ))}
       </div>
+      {continuity && <div className="camera-hold-continuity" role="group"
+        aria-label="Camera hold continuity checkpoints">
+        <h4>Five-point camera hold check</h4>
+        <p className={continuity.summary.changedFramingCount
+          ? "camera-motion-edge-warning" : "camera-motion-edge-ok"}>
+          {continuity.summary.changedFramingCount
+            ? "Camera framing changes at " + continuity.summary.changedFramingCount +
+              " of 5 sampled moments. This may be intentional for a following camera."
+            : "Camera framing stays steady at all 5 sampled moments."}
+        </p>
+        <p>
+          {continuity.summary.captionTransitions
+            ? "Caption text changes between " + continuity.summary.captionTransitions +
+              " of 4 sampled intervals."
+            : "Caption text does not change between the 5 sampled moments."}
+        </p>
+        <p className={continuity.summary.boundaryWarnings
+          ? "camera-motion-edge-warning" : "camera-motion-edge-ok"}>
+          {continuity.summary.boundaryWarnings
+            ? continuity.summary.boundaryWarnings +
+              " sample(s) may show beyond the original canvas."
+            : "No sampled camera view exceeds the original canvas."}
+        </p>
+        {continuity.summary.inactiveShotCount > 0 && <p className="camera-motion-edge-warning">
+          The selected camera shot is inactive at {continuity.summary.inactiveShotCount}
+          {" "}sample(s); check the timeline.
+        </p>}
+        {onInspectTime && <div className="camera-hold-checkpoint-actions">
+          {continuity.samples.map((sample,index)=>(
+            <button type="button" className="button secondary small"
+              key={index} onClick={()=>onInspectTime(sample.time)}>
+              Inspect hold checkpoint {index+1} ({sample.time.toFixed(2)}s)
+            </button>
+          ))}
+        </div>}
+        <p className="field-hint">
+          Five checkpoints are an advisory, not continuous proof. A steady
+          camera does not mean the PNG animation, characters or captions
+          have stopped changing.
+        </p>
+      </div>}
       <p className="field-hint">
         {firstCaption===lastCaption
           ? "The displayed caption is the same at both sampled moments."
