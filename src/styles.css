@@ -6025,3 +6025,33 @@ fieldset.interaction-fields {
   color: var(--text);
 }
 .camera-live-framing-meter span { min-width: 0; }
+
+
+/* PR #89: distinguish actual camera-motion finish from sampled safety ticks. */
+.camera-motion-scrubber-track .camera-motion-settle-tick {
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--text);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.camera-motion-settle-guide {
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  padding: .45rem .65rem;
+  display: grid;
+  gap: .3rem;
+  color: var(--text);
+  background: var(--surface);
+}
+.camera-motion-settle-guide p {margin:0;}
+.camera-motion-settle-guide .button {
+  justify-self: start;
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
