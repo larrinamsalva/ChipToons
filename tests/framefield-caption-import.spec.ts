@@ -437,6 +437,22 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
     .toHaveValue("1.5");
   await expect(settleGuide).toContainText("final camera view is held");
   await camera.getByRole("checkbox",{name:"Show beginning, middle and end frames"}).check();
+  // PR #90: two real Stage views at camera settle and shot end,
+  // without changing the number of existing three-frame contact pictures.
+  const holdReview=camera.getByText("Review final-view hold frames (0.50s)");
+  await expect(holdReview).toBeVisible();
+  await holdReview.click();
+  const holdFrames=camera.getByRole("group",{name:"Camera hold frame review"});
+  await expect(holdFrames.getByRole("figure")).toHaveCount(2);
+  const settled=holdFrames.getByRole("figure",{name:"Camera settles frame"});
+  const lastHeld=holdFrames.getByRole("figure",{name:"Near shot end frame"});
+  await expect(settled).toContainText("1.50s into scene");
+  await expect(lastHeld).toContainText("2.00s into scene");
+  await expect(settled.locator("[data-camera-transform]")).toHaveAttribute("data-camera-zoom","1.4");
+  await expect(lastHeld.locator("[data-camera-transform]")).toHaveAttribute("data-camera-zoom","1.4");
+  await settled.getByRole("button",{name:"Inspect camera settles in preview"}).click();
+  await expect(camera.getByRole("region",{name:"Proposed scene preview"})
+    .getByRole("spinbutton",{name:"Preview time (seconds)"})).toHaveValue("1.5");
   const contact=camera.getByRole("region",{name:"Camera motion contact sheet"});
   await expect(contact.getByRole("figure")).toHaveCount(3);
   await expect(contact.getByRole("region",{name:"Full camera move safety scan"}))
@@ -453,6 +469,7 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   await expect(halfway.locator("[data-camera-transform]"))
     .not.toHaveAttribute("data-camera-shot",/.+/);
   await expect(settleGuide).toHaveCount(0);
+  await expect(camera.getByText("Review final-view hold frames (0.50s)")).toHaveCount(0);
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
   await expect(settleGuide).toBeVisible();
   await expect(halfway.locator("[data-camera-transform]"))

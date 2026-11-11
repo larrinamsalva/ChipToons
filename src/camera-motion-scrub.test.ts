@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { adjacentCameraRiskTime, cameraRiskMarkerOffset,
-  cameraScrubWindow, inCameraScrubWindow, cameraSettleTiming } from "./camera-motion-scrub";
+  cameraScrubWindow, inCameraScrubWindow, cameraSettleTiming, cameraHoldReviewTimes } from "./camera-motion-scrub";
 
 describe("review-only camera motion scrubber",()=>{
  it("keeps the slider in the half-open shot and supports tiny scenes",()=>{
@@ -60,5 +60,22 @@ describe("camera finish and hold guide",()=>{
   expect(cameraSettleTiming({start:0,end:2,move:3},win)).toBeUndefined();
   expect(cameraSettleTiming({start:2,end:2,move:1},win)).toBeUndefined();
   expect(cameraSettleTiming({start:5,end:6,move:1},win)).toBeUndefined();
+ });
+});
+
+
+describe("real final camera hold frame sampling",()=>{
+ it("chooses true settle and the last half-open frame",()=>{
+  expect(cameraHoldReviewTimes({start:0,move:1.5,end:2}))
+    .toEqual({finishTime:1.5,lastTime:1.995,holdSeconds:.5});
+  expect(cameraHoldReviewTimes({start:2,move:.75,end:4}))
+    .toEqual({finishTime:2.75,lastTime:3.995,holdSeconds:1.25});
+ });
+ it("does not claim a hold for continuous, invalid, or tiny shot movement",()=>{
+  expect(cameraHoldReviewTimes({start:0,move:2,end:2})).toBeUndefined();
+  expect(cameraHoldReviewTimes({start:0,move:0,end:2})).toBeUndefined();
+  expect(cameraHoldReviewTimes({start:0,move:2.5,end:2})).toBeUndefined();
+  expect(cameraHoldReviewTimes({start:0,move:.996,end:1})).toBeUndefined();
+  expect(cameraHoldReviewTimes({start:0,move:Number.NaN,end:2})).toBeUndefined();
  });
 });
