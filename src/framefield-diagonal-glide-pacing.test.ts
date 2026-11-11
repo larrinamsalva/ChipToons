@@ -33,12 +33,18 @@ describe("real diagonal PNG camera pacing with end-frame hold",()=>{
     expect(validateProject(changed)).toEqual(changed);
     const staged=changed.scenes[0];
     const beforeFinish=stageCameraAt(changed,staged,move/2);
-    const finished=stageCameraAt(changed,staged,move);
     const nearEnd=stageCameraAt(changed,staged,scene.duration-.001);
     expect(beforeFinish.zoom).toBeGreaterThan(1);
     expect(beforeFinish.zoom).toBeLessThan(1.4);
-    expect(finished).toMatchObject({x:480,y:270,zoom:1.4});
-    expect(nearEnd).toMatchObject({x:480,y:270,zoom:1.4});
+    // CameraShot uses [start,end); at the exact last boundary the next
+    // shot begins, so inspect just inside a full-duration move instead.
+    if(move<scene.duration) {
+      const finished=stageCameraAt(changed,staged,move);
+      expect(finished).toMatchObject({x:480,y:270,zoom:1.4});
+    }
+    expect(nearEnd.x).toBeCloseTo(480,3);
+    expect(nearEnd.y).toBeCloseTo(270,3);
+    expect(nearEnd.zoom).toBeCloseTo(1.4,4);
     expect(cameraMotionArtworkSweep(changed,staged,shot).flaggedCount).toBe(0);
     for(const t of [0,.25,.5,1,1.5,1.999]){
       expect(inspectCameraArtworkCoverage(stageCameraAt(changed,staged,t)).edges).toEqual([]);
