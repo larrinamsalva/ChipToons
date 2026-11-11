@@ -9,7 +9,7 @@ import {
   canStartFramefieldCinematicPush, framefieldGentleCinematicPush,
   framefieldGentleCinematicPan, framefieldCinematicPanFrame,
   framefieldGentleCinematicTilt, framefieldCinematicTiltFrame,
-  framefieldGentleCinematicGlide, framefieldCinematicGlideFrame,
+  framefieldGentleCinematicGlide, framefieldCinematicGlideFrame, framefieldGlideIntensityOf,
   framefieldGentleCinematicReveal, framefieldRevealStartingView, framefieldRevealFocusOf,
 } from "../framefield-cinematic-push";
 import type { FramefieldRevealFocus } from "../framefield-cinematic-push";
@@ -214,8 +214,8 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
       <section className="interaction-controls" aria-label="Cinematic diagonal glide options">
         <p className="field-hint">
           Add a soft diagonal glide across the original artwork,
-          from the wide view to a gentle 1.3× close-up.
-          Choose one of four directions; the canvas stays in frame.
+          from the wide view to a chosen gentle close-up (1.2×–1.4×).
+          Choose the direction and motion intensity; the canvas stays in frame.
           Preview before Apply. Cancel leaves your cartoon unchanged.
         </p>
         <label>
@@ -226,7 +226,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             onChange={event => {
               const direction = event.target.value as FramefieldGlideDirection;
               patch({
-                frame: { ...draft.frame, ...framefieldCinematicGlideFrame(direction) },
+                frame: framefieldCinematicGlideFrame(
+                  direction, framefieldGlideIntensityOf(draft.frame.zoom),
+                ),
                 note: "Gentle diagonal cinematic glide " + direction +
                   " with a mild original PNG zoom",
               });
@@ -235,6 +237,26 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             <option value="up-right">Look up and right</option>
             <option value="down-left">Look down and left</option>
             <option value="down-right">Look down and right</option>
+          </select>
+        </label>
+        <label>
+          Diagonal glide intensity
+          <select aria-label="Diagonal glide intensity"
+            value={framefieldGlideIntensityOf(draft.frame.zoom)}
+            onChange={event => {
+              const intensity = event.target.value as
+                "subtle" | "balanced" | "expressive";
+              const direction = ((draft.frame.y < 225 ? "up-" : "down-") +
+                (draft.frame.x < 400 ? "left" : "right")) as FramefieldGlideDirection;
+              patch({
+                frame: framefieldCinematicGlideFrame(direction, intensity),
+                note: "Gentle diagonal cinematic glide " + direction +
+                  " (" + intensity + " intensity) over original PNG frames",
+              });
+            }}>
+            <option value="subtle">Subtle — 1.2× zoom</option>
+            <option value="balanced">Balanced — 1.3× zoom</option>
+            <option value="expressive">Expressive — 1.4× zoom</option>
           </select>
         </label>
       </section>

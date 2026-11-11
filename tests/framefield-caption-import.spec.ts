@@ -410,6 +410,14 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   const direction=camera.getByRole("combobox",{name:"Diagonal glide direction"});
   await expect(direction).toHaveValue("up-left");
   await direction.selectOption("down-right");
+  const intensity=camera.getByRole("combobox",{name:"Diagonal glide intensity"});
+  await expect(intensity).toHaveValue("balanced");
+  await intensity.selectOption("expressive");
+  await expect(direction).toHaveValue("down-right");
+  // Changing direction retains the selected intensity.
+  await direction.selectOption("up-right");
+  await expect(intensity).toHaveValue("expressive");
+  await direction.selectOption("down-right");
   await expect(camera.getByRole("button",{name:"Apply"})).toBeDisabled();
   await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
   const preview=camera.getByRole("region",{name:"Proposed scene preview"});
@@ -422,10 +430,10 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   const halfway=contact.getByRole("figure",{name:"Middle frame"});
   const zoom=Number(await halfway.locator("[data-camera-transform]").getAttribute("data-camera-zoom"));
   expect(zoom).toBeGreaterThan(1);
-  expect(zoom).toBeLessThan(1.3);
+  expect(zoom).toBeLessThan(1.4);
   const last=contact.getByRole("figure",{name:"End frame"});
   expect(Number(await last.locator("[data-camera-transform]").getAttribute("data-camera-zoom")))
-    .toBeGreaterThan(1.299);
+    .toBeGreaterThan(1.399);
   // The compare toggle replaces proposal with saved wide view in the actual Stage.
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).check();
   await expect(halfway.locator("[data-camera-transform]"))
@@ -439,7 +447,7 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
     const {data}=await backup(page);
     expect(data.scenes[0].cameraShots?.[0]).toMatchObject({
       style:"move",start:0,end:2,move:2,
-      frame:{x:465,y:260,zoom:1.3},targets:[],follow:false,
+      frame:{x:480,y:270,zoom:1.4},targets:[],follow:false,
     });
     expect(data.scenes[1].cameraShots).toBeUndefined();
     expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);

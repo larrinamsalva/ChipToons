@@ -145,13 +145,30 @@ export function framefieldGentleCinematicTilt(
  * offsets of 65/35 leave margin on every side and along the eased path. */
 export type FramefieldGlideDirection =
   "up-left" | "up-right" | "down-left" | "down-right";
-export function framefieldCinematicGlideFrame(direction: FramefieldGlideDirection) {
+/** Exactly three tested, canvas-safe positions for all four diagonals. */
+export type FramefieldGlideIntensity = "subtle" | "balanced" | "expressive";
+export function framefieldGlideIntensityOf(zoom: number): FramefieldGlideIntensity {
+  if (zoom < 1.25) return "subtle";
+  if (zoom < 1.35) return "balanced";
+  return "expressive";
+}
+export function framefieldCinematicGlideFrame(
+  direction: FramefieldGlideDirection,
+  intensity: FramefieldGlideIntensity = "balanced",
+) {
   if (!["up-left", "up-right", "down-left", "down-right"].includes(direction))
     throw new Error("Choose a valid diagonal cinematic glide direction.");
+  const strengths = {
+    subtle: { zoom: 1.2, horizontal: 45, vertical: 24 },
+    balanced: { zoom: 1.3, horizontal: 65, vertical: 35 },
+    expressive: { zoom: 1.4, horizontal: 80, vertical: 45 },
+  } as const;
+  const amount = strengths[intensity];
+  if (!amount) throw new Error("Choose a valid diagonal camera glide intensity.");
   return {
-    x: direction.endsWith("left") ? 335 : 465,
-    y: direction.startsWith("up") ? 190 : 260,
-    zoom: 1.3,
+    x: 400 + (direction.endsWith("left") ? -amount.horizontal : amount.horizontal),
+    y: 225 + (direction.startsWith("up") ? -amount.vertical : amount.vertical),
+    zoom: amount.zoom,
   };
 }
 export function framefieldGentleCinematicGlide(
