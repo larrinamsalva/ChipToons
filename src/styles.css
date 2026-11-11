@@ -6101,3 +6101,30 @@ fieldset.interaction-fields {
 @media (max-width:740px) {
   .camera-hold-frames { grid-template-columns:minmax(0,1fr); }
 }
+
+
+/* PR #91: readable optional Stage/caption checkpoints inside hold review. */
+.camera-hold-continuity {
+  margin-top: .65rem;
+  padding: .6rem;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  background: var(--surface);
+  color: var(--text);
+  display: grid;
+  gap: .4rem;
+  overflow-wrap: anywhere;
+}
+.camera-hold-continuity h4,
+.camera-hold-continuity p { margin: 0; }
+.camera-hold-continuity h4 {font-size: .95rem;}
+.camera-hold-checkpoint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+.camera-hold-checkpoint-actions .button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}

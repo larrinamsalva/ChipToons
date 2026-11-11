@@ -450,6 +450,16 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
   await expect(lastHeld).toContainText("2.00s into scene");
   await expect(settled.locator("[data-camera-transform]")).toHaveAttribute("data-camera-zoom","1.4");
   await expect(lastHeld.locator("[data-camera-transform]")).toHaveAttribute("data-camera-zoom","1.4");
+  // PR #91: sample additional real Stage frames and timed captions between
+  // the two large hold preview pictures, without altering saved scene data.
+  const continuity=holdFrames.getByRole("group",{name:"Camera hold continuity checkpoints"});
+  await expect(continuity).toContainText("Camera framing stays steady at all 5 sampled moments.");
+  await expect(continuity).toContainText("Caption text does not change");
+  await expect(continuity).toContainText("No sampled camera view exceeds the original canvas.");
+  await expect(continuity.getByRole("button",{name:/^Inspect hold checkpoint/})).toHaveCount(5);
+  await continuity.getByRole("button",{name:/^Inspect hold checkpoint 3/}).click();
+  await expect(camera.getByRole("region",{name:"Proposed scene preview"})
+    .getByRole("spinbutton",{name:"Preview time (seconds)"})).toHaveValue("1.75");
   await settled.getByRole("button",{name:"Inspect camera settles in preview"}).click();
   await expect(camera.getByRole("region",{name:"Proposed scene preview"})
     .getByRole("spinbutton",{name:"Preview time (seconds)"})).toHaveValue("1.5");
@@ -470,6 +480,7 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
     .not.toHaveAttribute("data-camera-shot",/.+/);
   await expect(settleGuide).toHaveCount(0);
   await expect(camera.getByText("Review final-view hold frames (0.50s)")).toHaveCount(0);
+  await expect(camera.getByRole("group",{name:"Camera hold continuity checkpoints"})).toHaveCount(0);
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
   await expect(settleGuide).toBeVisible();
   await expect(halfway.locator("[data-camera-transform]"))
