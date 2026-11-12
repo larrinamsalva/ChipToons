@@ -34,6 +34,14 @@ function Face({
   const sad = emotion === "sad" || emotion === "worried";
   const excited = emotion === "excited";
   const worried = emotion === "worried";
+  const brows = worried
+    ? ["M-23 -9l12 -7","M11 -11q6 -5 12 -1"]
+    : sad
+      ? ["M-23 -9l12 -5","M11 -14l12 5"]
+      : excited
+        ? ["M-24 -16q7 -7 14 -1","M10 -17q7 -6 14 1"]
+        : ["M-23 -13q6 -4 12 0","M11 -13q6 -4 12 0"];
+  const squint = premium ? Math.max(0,Math.min(1,gaze?.squint??0)) : 0;
   return (
     <g stroke="#382c34" strokeWidth="2.8" strokeLinecap="round" fill="none">
       {eyes && (
@@ -42,18 +50,14 @@ function Face({
             <ellipse key={`eye-white-${x}`} cx={x} cy="-2" rx="8" ry="10"
               fill="#fffdf8" stroke="#8e5f56" strokeWidth="1.4" />
           )))}
-          <path
-            transform={premium && gaze ? `translate(0 ${-gaze.brow})` : undefined}
-            d={
-              worried
-                ? "M-23 -9l12 -7M11 -11q6 -5 12 -1"
-                : sad
-                  ? "M-23 -9l12 -5M11 -14l12 5"
-                  : excited
-                    ? "M-24 -16q7 -7 14 -1M10 -17q7 -6 14 1"
-                    : "M-23 -13q6 -4 12 0M11 -13q6 -4 12 0"
-            }
-          />
+          {brows.map((d,i)=><path key={i}
+            data-cinematic-reaction-brow={premium && gaze && Math.abs(gaze.browAsymmetry??0)>0.01
+              ? "true" : undefined}
+            transform={premium && gaze
+              ? `translate(0 ${-gaze.brow + (i===0?-1:1)*(gaze.browAsymmetry??0)})`
+              : undefined}
+            d={d}
+          />)}
           {[-15, 15].map((x) =>
             blink ? (
               <path key={x} d={`M${x - 4} -2h8`} />
@@ -64,11 +68,17 @@ function Face({
                 cx={x + (premium ? gaze?.x ?? 0 : 0)}
                 cy={-2 + (premium ? gaze?.y ?? 0 : 0)}
                 rx={emotion === "surprised" ? 5.5 : premium ? 4.6 : 3.5}
-                ry={premium ? 6.7 : 5}
+                ry={premium ? 6.7*(1-0.22*squint) : 5}
                 fill="#382c34"
               />
             ),
           )}
+          {premium && !blink && squint>0.02 && [-15,15].map(x=>(
+            <path key={`reaction-lid-${x}`} data-cinematic-reaction-lid="true"
+              d={`M${x-7} ${-10+4*squint}q7 ${-2+3*squint} 14 0`}
+              stroke="#7e5856" strokeWidth="1.7" fill="none"
+              pointerEvents="none"/>
+          ))}
           {premium && !blink && [-15, 15].map(x => (
             <circle key={`catchlight-${x}`} data-eye-highlight="premium" cx={x + 1.8 + (gaze?.x ?? 0)} cy={-4.6 + (gaze?.y ?? 0)} r="1.7"
               fill="#ffffff" stroke="none" />
