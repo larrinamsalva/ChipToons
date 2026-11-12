@@ -74,7 +74,7 @@ describe("Local silent playable Shot Director reel", () => {
     expect(storyReelFrameAt(defaultPlan, 2).frame.name)
       .toBe("shot02_frame_0001.png");
     expect(() => planStoryReel(shots, 30)).toThrow(/supported/);
-    expect(() => planStoryReel(shots.slice(0, 1), 2)).toThrow(/2–3/);
+    expect(() => planStoryReel(shots.slice(0, 1), 2)).toThrow(/2–8/);
     expect(() => planStoryReel(shots, 2, [
       { prefix: "shot01_frame_", holdSeconds: 0 },
       { prefix: "shot01_frame_", holdSeconds: 0 },
