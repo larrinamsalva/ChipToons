@@ -2,6 +2,7 @@ import type { Project, Scene, SceneElement } from "./model";
 import type { ElementFrame } from "./timeline";
 import { handoffAcknowledgementAt } from "./cinematic-handoff-acknowledgement";
 import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
+import { cinematicEyelidClosureAt } from "./cinematic-eyelid-motion";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -11,6 +12,8 @@ export interface CinematicFace {
   brow: number;
   /** A short anticipatory blink as attention changes. */
   blink: boolean;
+  /** Animated eye closure (0=open, 1=closed) on a deterministic blink clock. */
+  eyelidClosure?: number;
   /** Optional authored-emotion accent; classic art ignores both values. */
   browAsymmetry?:number;
   squint?:number;
@@ -130,9 +133,11 @@ export function cinematicFaceAt(
       (reaction?.browLift ?? 0),
     0, 2.8,
   );
-  const allowsBlink = element.animation?.blink ?? true;
-  const blink = frame.blink || (allowsBlink && phase >= 1.98 && phase < 2.095);
-  return { x, y, brow, blink,
+  // The same original blink cycles now have smooth closing/opening
+  // transitions instead of a one-frame pop; no wall-clock animation.
+  const eyelidClosure = cinematicEyelidClosureAt(element, localTime);
+  const blink = eyelidClosure >= 0.985;
+  return { x, y, brow, blink, eyelidClosure,
     browAsymmetry: reaction?.browAsymmetry ?? 0,
     squint: reaction?.squint ?? 0,
     cheekLift: reaction?.cheekLift ?? 0,
