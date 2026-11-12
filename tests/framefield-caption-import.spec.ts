@@ -515,8 +515,9 @@ test("Exact caption cue navigator seeks real imported subtitle change during cam
     .fill("Now inspect the tire.");
   const timing=cueEditor.getByRole("slider",{name:"Second subtitle timing for shot01_frame_"});
   await timing.focus();
-  await timing.press("Home");
-  for(let i=0;i<8;i++)await timing.press("ArrowRight");
+  // Range is min=20, max=80 in 5-point steps. End selects the true
+  // 80% boundary deterministically across desktop, phone and tablet.
+  await timing.press("End");
   await expect(timing).toHaveValue("80");
   await include.check();
   await picker.getByRole("button",{name:"Create multi-shot cartoon"}).click();
