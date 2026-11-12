@@ -192,7 +192,7 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
     name: "Guided scene voice recording",
   });
   await exportGuide.getByRole("button", { name: "Start guided voice recording" }).click();
-  await exportGuide.getByRole("button", { name: "Next scene" }).click();
+  await exportGuide.getByRole("button", { name: "Next scene", exact: true }).click();
   await exportGuide.getByRole("button", {
     name: "Prepare a real WebM clip for this scene",
   }).click();
@@ -244,7 +244,7 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   await page.getByRole("button", { name: "Finish My Cartoon", exact: true }).click();
   const panGuide = page.getByRole("region", { name: "Guided scene voice recording" });
   await panGuide.getByRole("button", { name: "Start guided voice recording" }).click();
-  await panGuide.getByRole("button", { name: "Next scene" }).click();
+  await panGuide.getByRole("button", { name: "Next scene", exact: true }).click();
   await panGuide.getByRole("button", { name: "Try a gentle cinematic side-pan" }).click();
   const panDirector = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
   await expect(panDirector.getByRole("combobox", { name: "Shot style" }))
