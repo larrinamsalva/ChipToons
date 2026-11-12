@@ -1,6 +1,7 @@
-import type { Project, SceneElement } from "./model";
+import type { Project, Scene, SceneElement } from "./model";
 import { neutralJoint } from "./puppet-model";
 import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
+import { cinematicFreeArmReactionAt } from "./cinematic-free-arm-reaction";
 import type { ElementFrame } from "./timeline";
 
 const clamp = (value: number, low: number, high: number) =>
@@ -24,6 +25,7 @@ export function cinematicMotionAt(
   sceneDuration: number,
   calm: boolean,
   sample: (time: number) => ElementFrame,
+  scene?: Pick<Scene, "interactions">,
 ): ElementFrame {
   if (project.visualStyle !== "storybook-cinematic" || calm || !element.characterId)
     return frame;
@@ -64,13 +66,15 @@ export function cinematicMotionAt(
   // Leave motion paths, keys, mouth shapes and all timed voice data alone.
   const reaction = cinematicEmotionReactionAt(element,localTime);
 
-  const joints = head ? {
+  const freeArms = cinematicFreeArmReactionAt(scene, element, rig, frame, localTime);
+  const joints = head || freeArms ? {
     ...frame.joints,
-    [head.id]: {
+    ...freeArms,
+    ...(head ? { [head.id]: {
       ...(frame.joints?.[head.id] ?? neutralJoint),
       angle: (frame.joints?.[head.id]?.angle ?? 0) +
         headFollow + (reaction?.headTilt ?? 0),
-    },
+    } } : {}),
   } : frame.joints;
 
   return {
