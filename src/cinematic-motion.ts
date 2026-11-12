@@ -1,5 +1,6 @@
 import type { Project, SceneElement } from "./model";
 import { neutralJoint } from "./puppet-model";
+import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
 import type { ElementFrame } from "./timeline";
 
 const clamp = (value: number, low: number, high: number) =>
@@ -59,19 +60,23 @@ export function cinematicMotionAt(
   const bounce = travel * 1.75 * Math.abs(Math.sin(stride));
   const headFollow = restHead + travel * (-1.45 * Math.sin(stride) - 1.15 * forward);
   const head = rig.parts.find(p => p.role === "head");
+  // Optional subtle response to the AUTHOR'S actual emotion change.
+  // Leave motion paths, keys, mouth shapes and all timed voice data alone.
+  const reaction = cinematicEmotionReactionAt(element,localTime);
 
   const joints = head ? {
     ...frame.joints,
     [head.id]: {
       ...(frame.joints?.[head.id] ?? neutralJoint),
-      angle: (frame.joints?.[head.id]?.angle ?? 0) + headFollow,
+      angle: (frame.joints?.[head.id]?.angle ?? 0) +
+        headFollow + (reaction?.headTilt ?? 0),
     },
   } : frame.joints;
 
   return {
     ...frame,
     y: frame.y - bounce,
-    rotation: frame.rotation + roll,
+    rotation: frame.rotation + roll + (reaction?.torsoTilt ?? 0),
     scale: frame.scale * (1 + travel * 0.0028 * Math.cos(stride * 2)),
     joints,
   };

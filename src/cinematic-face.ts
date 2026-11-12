@@ -1,6 +1,7 @@
 import type { Project, Scene, SceneElement } from "./model";
 import type { ElementFrame } from "./timeline";
 import { handoffAcknowledgementAt } from "./cinematic-handoff-acknowledgement";
+import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -10,6 +11,9 @@ export interface CinematicFace {
   brow: number;
   /** A short anticipatory blink as attention changes. */
   blink: boolean;
+  /** Optional authored-emotion accent; classic art ignores both values. */
+  browAsymmetry?:number;
+  squint?:number;
 }
 
 const clamp = (value: number, low: number, high: number) =>
@@ -113,15 +117,20 @@ export function cinematicFaceAt(
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);
   const y = clamp(1.35 * targetY * focus +
     0.12 * Math.sin(localTime * 0.86 + seed * 0.4) * (1 - focus), -1.6, 1.6);
+  const reaction=cinematicEmotionReactionAt(element,localTime);
   const brow = clamp(
     (frame.emotion === "surprised" ? 1.55 :
       frame.emotion === "worried" ? 0.95 :
       frame.emotion === "excited" ? 0.75 : 0.2) +
       (frame.voiceOpening ?? 0) * 0.32 +
-      0.25 * Math.sin(localTime * 1.1 + seed * 0.19),
-    0, 1.9,
+      0.25 * Math.sin(localTime * 1.1 + seed * 0.19) +
+      (reaction?.browLift ?? 0),
+    0, 2.8,
   );
   const allowsBlink = element.animation?.blink ?? true;
   const blink = frame.blink || (allowsBlink && phase >= 1.98 && phase < 2.095);
-  return { x, y, brow, blink };
+  return { x, y, brow, blink,
+    browAsymmetry: reaction?.browAsymmetry ?? 0,
+    squint: reaction?.squint ?? 0,
+  };
 }
