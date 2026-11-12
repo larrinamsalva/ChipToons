@@ -9,8 +9,9 @@ import type { ShotBeat } from "./studio-shot-beats";
 import { emptyShotBeat } from "./studio-shot-beats";
 import { attachStoryboardCaptionDrafts, verifiedImportCaptionCues } from "./studio-caption-import";
 import type { SubtitleDraftAdjustment, SubtitleTimingPlan } from "./studio-subtitle-drafts";
+import { MIN_STORYBOARD_SHOTS, MAX_STORYBOARD_SHOTS } from "./studio-storyboard-limits";
+export { MAX_STORYBOARD_SHOTS } from "./studio-storyboard-limits";
 
-export const MAX_STORYBOARD_SHOTS = 3;
 export const MAX_STORYBOARD_ASSETS = 40;
 
 export interface NumberedShot {
@@ -25,7 +26,7 @@ export interface NumberedShot {
  */
 export function groupNumberedShots(files: readonly File[]): NumberedShot[] {
   if (files.length < 4 || files.length > MAX_STORYBOARD_ASSETS)
-    throw new Error("Select 4–40 PNG files arranged into 2–3 complete numbered shots.");
+    throw new Error("Select 4–40 PNG files arranged into 2–8 complete numbered shots.");
   const sum = files.reduce((bytes, file) => bytes + file.size, 0);
   if (sum > MAX_FRAME_SEQUENCE_BYTES)
     throw new Error("All shots together must be 24 MB or smaller.");
@@ -40,8 +41,8 @@ export function groupNumberedShots(files: readonly File[]): NumberedShot[] {
     current.push(file);
     groups.set(prefix, current);
   }
-  if (groups.size < 2 || groups.size > MAX_STORYBOARD_SHOTS)
-    throw new Error("Use 2–3 distinct shot prefixes, each with at least two numbered PNGs.");
+  if (groups.size < MIN_STORYBOARD_SHOTS || groups.size > MAX_STORYBOARD_SHOTS)
+    throw new Error("Use 2–8 distinct shot prefixes, each with at least two numbered PNGs.");
 
   return [...groups].sort(([left], [right]) =>
     left.localeCompare(right, undefined, { numeric: true })).map(([prefix, group]) => ({
@@ -100,9 +101,9 @@ export function projectFromFrameAssetShots(
   direction?: readonly ShotDirection[],
   beats?: readonly ShotBeat[],
 ): Project {
-  if (shots.length < 2 || shots.length > MAX_STORYBOARD_SHOTS ||
+  if (shots.length < MIN_STORYBOARD_SHOTS || shots.length > MAX_STORYBOARD_SHOTS ||
       !FRAME_SEQUENCE_RATES.includes(fps))
-    throw new Error("Choose 2–3 numbered shots and a supported frame rate.");
+    throw new Error("Choose 2–8 numbered shots and a supported frame rate.");
   const allAssets = shots.flatMap(shot => shot.assets);
   if (allAssets.length > MAX_STORYBOARD_ASSETS ||
       allAssets.length < shots.length * 2)

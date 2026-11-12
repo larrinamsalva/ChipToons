@@ -1,7 +1,7 @@
 # PR #58 — Multiple Framefield PNG shots in one ChipToons cartoon
 
 After the original numbered-PNG animation bridge (#57), creators can now
-assemble **two or three separately rendered animation shots** into a new
+assemble **two to eight separately rendered animation shots** into a new
 multi-scene ChipToons cartoon.
 
 ## Creator workflow
@@ -26,7 +26,7 @@ multi-scene ChipToons cartoon.
 
 ## Safety and actual limits
 
-- **Two or three shots**, each with **2–24** consecutively numbered PNGs.
+- **Two to eight shots**, each with **2–24** consecutively numbered PNGs.
 - **No more than 40 PNG assets total** and **24 MiB total original file size**.
 - **Up to 1280 × 720**, with identical dimensions *within each shot*.
   Different shots can have different dimensions within those limits.
@@ -70,3 +70,9 @@ until manual review. No automatic merge or release.
 ## PR #59 — Optional Shot Director
 
 After selecting the local PNG frames, you may now manually move shots earlier/later and hold each final PNG for 0–3 additional seconds. The original numeric ordering and zero extra hold remain the default. This creates a **new** cartoon with ordinary editable scene durations and exact original frame assets. See [Shot Director](FRAMEFIELD_SHOT_DIRECTOR.md) for controls, limits and recorded-WebM verification.
+
+## PR #93 — More story scenes, same PNG budget
+
+The multi-shot source adapter now accepts **2–8** independent numbered PNG shot sequences instead of 2–3. The creator's existing Shot Director, story-reel preview, editable scene narration, subtitle drafts and optional caption import all use the same shared shot limit. Scenes still play in their chosen order in the genuine Stage and WebM output.
+
+**No increase to original media budget:** still up to 40 images total, 24 MiB across selected PNGs, 2–24 frames per shot, 1280×720 maximum image resolution and 64 MiB portable backup limit. An eight-shot project with two source images per shot has 16 original images; larger shots must still share the 40-frame cap. A ninth distinct shot or a stale or duplicated shot plan is rejected before decoding. No in-place mutation, generated frames, fake 3D geometry, automatic login, publishing or release.

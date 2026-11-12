@@ -4,6 +4,7 @@ import type { Caption } from "./media-model";
 import { draftSubtitleCues } from "./studio-subtitle-drafts";
 import type { SubtitleDraftAdjustment, SubtitleTimingPlan } from "./studio-subtitle-drafts";
 import type { ShotBeat } from "./studio-shot-beats";
+import { MIN_STORYBOARD_SHOTS, MAX_STORYBOARD_SHOTS } from "./studio-storyboard-limits";
 
 export const EDITABLE_CAPTION_TEXT_LIMIT = 280;
 
@@ -43,7 +44,8 @@ export function attachStoryboardCaptionDrafts(
   adjustments?: readonly SubtitleDraftAdjustment[],
 ): Project {
   if (orderedShotPrefixes.length !== project.scenes.length ||
-      orderedShotPrefixes.length < 2 || orderedShotPrefixes.length > 3 ||
+      orderedShotPrefixes.length < MIN_STORYBOARD_SHOTS ||
+      orderedShotPrefixes.length > MAX_STORYBOARD_SHOTS ||
       new Set(orderedShotPrefixes.map(prefix => prefix.toLowerCase())).size !==
         orderedShotPrefixes.length)
     throw new Error("Caption shots no longer match the new cartoon scenes.");

@@ -1,5 +1,6 @@
 import { FRAME_SEQUENCE_RATES } from "./frame-sequence-model";
 import { arrangeShotDirections } from "./studio-multishot";
+import { MIN_STORYBOARD_SHOTS, MAX_STORYBOARD_SHOTS } from "./studio-storyboard-limits";
 import type { NumberedShot, ShotDirection } from "./studio-multishot";
 
 export interface ReelShot {
@@ -33,10 +34,10 @@ export function planStoryReel(
   if (!FRAME_SEQUENCE_RATES.some(rate => rate === fps))
     throw new Error("Choose a supported frame rate.");
   const ordered = arrangeShotDirections(shots, direction);
-  if (ordered.length < 2 || ordered.length > 3 ||
+  if (ordered.length < MIN_STORYBOARD_SHOTS || ordered.length > MAX_STORYBOARD_SHOTS ||
       ordered.some(item => item.shot.files.length < 2 ||
         item.shot.files.length > 24))
-    throw new Error("Choose 2–3 validated shots with 2–24 numbered PNG frames each.");
+    throw new Error("Choose 2–8 validated shots with 2–24 numbered PNG frames each.");
   let offset = 0;
   const entries = ordered.map(({ shot, holdSeconds }) => {
     const duration = Math.max(2, Math.ceil(shot.files.length / fps)) + holdSeconds;

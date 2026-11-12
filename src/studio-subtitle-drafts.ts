@@ -2,6 +2,7 @@ import { formatSrt } from "./production";
 import { validateShotBeats } from "./studio-shot-beats";
 import type { ShotBeat } from "./studio-shot-beats";
 import type { ReelPlan } from "./studio-story-reel";
+import { MIN_STORYBOARD_SHOTS, MAX_STORYBOARD_SHOTS } from "./studio-storyboard-limits";
 
 export interface DraftSubtitleCue {
   start: number;
@@ -84,9 +85,9 @@ export function draftSubtitleCues(
   beats: readonly ShotBeat[],
   adjustments?: readonly SubtitleDraftAdjustment[],
 ): DraftSubtitleCue[] {
-  if (plan.shots.length < 2 || plan.shots.length > 3 ||
+  if (plan.shots.length < MIN_STORYBOARD_SHOTS || plan.shots.length > MAX_STORYBOARD_SHOTS ||
       !Number.isFinite(plan.duration) || plan.duration <= 0)
-    throw new Error("Select a complete 2–3 shot storyboard before preparing subtitles.");
+    throw new Error("Select a complete 2–8 shot storyboard before preparing subtitles.");
   const notes = validateShotBeats(plan.shots, beats);
   const overrides = validateSubtitleAdjustments(plan, adjustments);
   return plan.shots.flatMap(shot => {

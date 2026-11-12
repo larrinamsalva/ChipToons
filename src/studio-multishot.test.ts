@@ -58,7 +58,7 @@ describe("Framefield multi-shot storyboard", () => {
       .toEqual(shots.map(s => s.files.map(f => f.name)));
   });
 
-  it("rejects gaps, duplicate names, non-PNG, a fourth shot and overbudget collections", () => {
+  it("rejects gaps, duplicate names, non-PNG, a ninth shot and overbudget collections", () => {
     const file = (name: string, type = "image/png") =>
       new File([new Uint8Array(15)], name, { type });
     const valid = ["a_0001.png", "a_0002.png", "b_0001.png", "b_0002.png"].map(n => file(n));
@@ -70,9 +70,9 @@ describe("Framefield multi-shot storyboard", () => {
       ...valid.slice(2)])).toThrow(/missing or duplicate/);
     expect(() => groupNumberedShots([file("a_0001.png"), file("a_0002.jpg", "image/jpeg"),
       ...valid.slice(2)])).toThrow(/Name each shot/);
-    expect(() => groupNumberedShots([...valid, ...["c", "d"].flatMap(prefix =>
+    expect(() => groupNumberedShots([...valid, ...["c", "d", "e", "f", "g", "h", "i"].flatMap(prefix =>
       [file(`${prefix}_0001.png`), file(`${prefix}_0002.png`)])]))
-      .toThrow(/2–3 distinct shot/);
+      .toThrow(/2–8 distinct shot/);
     const overflowing = Array.from({ length: 41 }, (_, i) =>
       file(`shot${i < 21 ? "01" : "02"}_frame_${String(i + 1).padStart(4, "0")}.png`));
     expect(() => groupNumberedShots(overflowing)).toThrow(/4–40/);
@@ -206,6 +206,6 @@ describe("Framefield multi-shot storyboard", () => {
     bad(v => { v[1].assets[0].id = v[0].assets[0].id; });
     bad(v => { v[1].assets[1].mime = "image/jpeg"; });
     expect(() => projectFromFrameAssetShots(shots, 24 as never)).toThrow(/supported/);
-    expect(() => projectFromFrameAssetShots([shots[0]], 2)).toThrow(/2–3/);
+    expect(() => projectFromFrameAssetShots([shots[0]], 2)).toThrow(/2–8/);
   });
 });

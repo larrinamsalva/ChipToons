@@ -11,7 +11,7 @@ import { StoryReelPlayer } from "./StoryReelPlayer";
 import { planStoryReel } from "../studio-story-reel";
 import { FRAME_SEQUENCE_RATES, MAX_FRAME_SEQUENCE_FILES, MAX_FRAME_SEQUENCE_BYTES } from "../frame-sequence-model";
 import { numberedPngFrames } from "../studio-frame-sequence";
-import { groupNumberedShots } from "../studio-multishot";
+import { groupNumberedShots, MAX_STORYBOARD_SHOTS } from "../studio-multishot";
 import type { NumberedShot, ShotDirection } from "../studio-multishot";
 
 /** Manual-only, local and explicit: no connection to Framefield accounts. */
@@ -175,7 +175,7 @@ export function FrameSequencePicker({
         frame_0001.png, frame_0002.png, and frame_0003.png. All frames must have the
         same dimensions, up to 1280 × 720, and total no more than {MAX_FRAME_SEQUENCE_BYTES / (1024 * 1024)} MB.
         This creates a <strong>new</strong> editable cartoon; your existing work is never replaced.
-        Select the multi-shot option below to combine up to 3 separate shots (40 PNG frames total).
+        Select the multi-shot option below to combine up to {MAX_STORYBOARD_SHOTS} separate shots (40 PNG frames total).
       </p>
       <label className="studio-shot-mode">
         <input type="checkbox" checked={multiShot} disabled={busy}
@@ -188,7 +188,7 @@ export function FrameSequencePicker({
             setSelectionEpoch(value => value + 1);
             setError("");
           }} />
-        Build a multi-shot cartoon (2–3 numbered sequences)
+        Build a multi-shot cartoon (2–8 numbered sequences)
       </label>
       <p className="field-hint">
         Multiple shots use distinct names such as shot01_frame_0001.png and
@@ -350,7 +350,7 @@ export function FrameSequencePicker({
       <p className="field-hint">
         Original PNGs become individual portable artwork assets. They are fixed rendered
         images, not editable 3D meshes, characters, or Framefield rig/keyframe files.
-        Multi-shot projects contain up to three independent timed scenes, each with its original
+        Multi-shot projects contain up to eight independent timed scenes, each with its original
         PNG files. Large sequences are best split into shorter scenes.
       </p>
     </section>
