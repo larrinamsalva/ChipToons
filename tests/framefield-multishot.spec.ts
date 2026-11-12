@@ -158,3 +158,47 @@ test("Framefield multi-shot importer rejects incomplete shots before creating or
   await expect(picker.getByRole("button", { name: "Create multi-shot cartoon" })).toBeDisabled();
   await expect(page.locator(".editor")).toHaveCount(0);
 });
+
+
+test("Eight-shot storyboard imports 16 original PNGs as 8 editable scenes with exact cuts", async ({page}) => {
+  test.setTimeout(120_000);
+  await page.goto("./");
+  await page.getByText(/More ways to create.*3D/).click();
+  const picker=page.getByRole("region",{name:"Import numbered PNG animation"});
+  await picker.getByRole("checkbox",{
+    name:"Build a multi-shot cartoon (2–8 numbered sequences)",
+  }).check();
+  const originals=Array.from({length:8},(_,i)=>
+    [0,1].map(j=>({
+      name:"shot"+String(i+1).padStart(2,"0")+"_frame_"+
+        String(j+1).padStart(4,"0")+".png",
+      mimeType:"image/png",
+      buffer:Buffer.from(samples[(i*2+j)%4],"base64"),
+    }))).flat().reverse();
+  await picker.getByLabel("Choose numbered PNG files").setInputFiles(originals);
+  await picker.getByLabel("Animation playback speed").selectOption("2");
+  await expect(picker.getByRole("status")).toContainText("8 shots in order");
+  await expect(picker.getByRole("status")).toContainText("Total 16 seconds");
+  const order=picker.getByRole("list",{name:"Shot playback order"});
+  await expect(order.locator("li")).toHaveCount(8);
+  await expect(order.locator("li").first()).toContainText("shot01_frame_");
+  await picker.getByRole("button",{name:"Create multi-shot cartoon"}).click();
+  await expect(page.locator(".editor")).toBeVisible({timeout:30_000});
+  await expect(page.getByText(/new multi-shot cartoon is ready/i)).toBeVisible();
+  if((page.viewportSize()?.width??0)>=1200){
+    const {data}=await backup(page);
+    expect(data.scenes).toHaveLength(8);
+    expect(data.assets).toHaveLength(16);
+    expect(data.scenes.map(s=>s.duration)).toEqual(Array(8).fill(2));
+    expect(data.scenes.every(s=>s.transition==="cut")).toBe(true);
+    expect(data.audioClips).toHaveLength(0);
+    expect(data.captions).toHaveLength(0);
+    for(let i=0;i<8;i++){
+      const seq=data.scenes[i].elements[0].frameSequence;
+      expect(seq?.fps).toBe(2);
+      expect(seq?.assetIds).toEqual(data.assets.slice(i*2,i*2+2).map(a=>a.id));
+      expect(data.assets[i*2].name).toBe(
+        "shot"+String(i+1).padStart(2,"0")+"_frame_0001.png");
+    }
+  }
+});

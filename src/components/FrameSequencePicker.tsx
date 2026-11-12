@@ -350,7 +350,7 @@ export function FrameSequencePicker({
       <p className="field-hint">
         Original PNGs become individual portable artwork assets. They are fixed rendered
         images, not editable 3D meshes, characters, or Framefield rig/keyframe files.
-        Multi-shot projects contain up to three independent timed scenes, each with its original
+        Multi-shot projects contain up to eight independent timed scenes, each with its original
         PNG files. Large sequences are best split into shorter scenes.
       </p>
     </section>
