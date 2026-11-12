@@ -235,7 +235,8 @@ export function sceneElementAt(project: Project, scene: Scene, element: SceneEle
   // Feed the same deterministic polished frame to the stage, camera and
   // hand interactions. The project option is opt-in and never writes keys.
   const motion = cinematicMotionAt(project, element, authored, local,
-    scene.duration, calm, time => elementAt(element, time, scene.duration, true));
+    scene.duration, calm, time => elementAt(element, time, scene.duration, true),
+    scene);
   const frame = cinematicGaitAt(project, element, motion, local,
     scene.duration, calm, time => elementAt(element, time, scene.duration, true));
   if (!element.voiceMouth?.length || calm ||
