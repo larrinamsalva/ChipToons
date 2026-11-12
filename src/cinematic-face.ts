@@ -3,6 +3,7 @@ import type { ElementFrame } from "./timeline";
 import { handoffAcknowledgementAt } from "./cinematic-handoff-acknowledgement";
 import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
 import { cinematicEyelidClosureAt } from "./cinematic-eyelid-motion";
+import { cinematicConversationListeningAt } from "./cinematic-conversation-listening";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -38,8 +39,8 @@ const smooth = (value: number) => {
  * as independent pupils without corrupting the artist's intended expression.
  */
 export function cinematicFaceAt(
-  project: Pick<Project, "visualStyle" | "characters">,
-  scene: Pick<Scene, "elements" | "interactions">,
+  project: Project,
+  scene: Pick<Scene, "elements" | "interactions"> & Partial<Pick<Scene, "id" | "duration">>,
   element: SceneElement,
   frame: ElementFrame,
   frames: ReadonlyMap<string, ElementFrame>,
@@ -114,10 +115,19 @@ export function cinematicFaceAt(
   const shared = acknowledgement && partnerFrame && partnerFrame.opacity >= 0.1
     ? { dx: partnerFrame.x - frame.x, dy: partnerFrame.y - frame.y,
       focus: acknowledgement.attention } : undefined;
-  const direction = shared ?? active ?? target;
+  // Real recorded conversations outrank incidental scanning when the
+  // listener is free; authored actions and safe handoffs still take priority.
+  // Partial synthetic test scenes simply use the previous gaze behavior.
+  const conversation = scene.id && scene.duration !== undefined
+    ? cinematicConversationListeningAt(
+        project, scene as Scene, element, frames, localTime, calm,
+      )
+    : undefined;
+  const direction = shared ?? active ?? conversation ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
-  const focus = shared ? shared.focus : active ? active.focus : target ? attention : 0;
+  const focus = shared ? shared.focus : active ? active.focus
+    : conversation ? conversation.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);

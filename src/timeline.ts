@@ -11,6 +11,7 @@ import { cinematicMotionAt } from "./cinematic-motion";
 import { cinematicGaitAt } from "./cinematic-gait";
 import { cinematicActionHeadAt } from "./cinematic-head-attention";
 import { cinematicHandoffNodAt } from "./cinematic-handoff-acknowledgement";
+import { cinematicConversationHeadAt } from "./cinematic-conversation-listening";
 import { cinematicVoiceHeadAt } from "./cinematic-voice-head";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
@@ -269,6 +270,17 @@ export function sceneFramesAt(project: Project, scene: Scene, time: number, star
         project, scene, item, reaching, time, calm,
       ));
     }
+  }
+  // Sample conversations after the existing action/prop/handoff pass.
+  // Keep listener selection independent of traversal order by reading the
+  // resolved stage frames and writing a separate temporary overlay.
+  const listening = new Map(frames);
+  for (const item of scene.elements) {
+    if (!item.characterId) continue;
+    const frame = frames.get(item.id);
+    if (frame) frames.set(item.id, cinematicConversationHeadAt(
+      project, scene, item, frame, listening, time, calm,
+    ));
   }
   return frames;
 }
