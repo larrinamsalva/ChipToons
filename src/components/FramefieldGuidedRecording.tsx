@@ -4,6 +4,10 @@ import { framefieldGuidedSession } from "../framefield-guided-session";
 import { framefieldSceneVoiceSources } from "../framefield-voice-listenback";
 import { OriginalAudio } from "./VoiceStudio";
 import { canStartFramefieldCinematicPush } from "../framefield-cinematic-push";
+import {
+  framefieldSceneReviewCounts, nextFramefieldSceneToReview,
+} from "../framefield-scene-review-navigation";
+import type { SceneReviewKind } from "../framefield-scene-review-navigation";
 
 /** A read-only rehearsal guide; actual recording remains in VoiceStudio. */
 export function FramefieldGuidedRecording({
@@ -17,7 +21,15 @@ export function FramefieldGuidedRecording({
   const [selected, setSelected] = useState(0);
   const [selectedClipId, setSelectedClipId] = useState("");
   const session = framefieldGuidedSession(project);
-  const position = Math.min(selected, session.scenes.length - 1);
+  const position = Math.max(0, Math.min(selected, session.scenes.length - 1));
+  const reviewCounts = framefieldSceneReviewCounts(session.scenes);
+  function jumpToReview(kind: SceneReviewKind) {
+    const next = nextFramefieldSceneToReview(session.scenes, position, kind);
+    if (next !== undefined) {
+      setSelected(next);
+      setSelectedClipId("");
+    }
+  }
   const scene = session.scenes[position];
   const sources = framefieldSceneVoiceSources(project, position);
   const preview = sources.find(source => source.clip.id === selectedClipId)
@@ -40,6 +52,54 @@ export function FramefieldGuidedRecording({
               " · " + session.scenesWithAssignedVoice +
               " scene(s) with assigned voice intervals"}
           </p>
+          <div className="framefield-scene-work-queue"
+            role="group" aria-label="Storyboard production navigator">
+            <h4>Jump to a scene that needs review</h4>
+            <label>
+              Jump to storyboard scene
+              <select aria-label="Jump to storyboard scene"
+                value={position}
+                onChange={event => {
+                  setSelected(Number(event.target.value));
+                  setSelectedClipId("");
+                }}>
+                {session.scenes.map((entry,index)=>(
+                  <option value={index} key={entry.sceneId}>
+                    Scene {index+1} · {entry.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="field-hint">
+              {reviewCounts.voice} scene(s) with written words but no assigned
+              audible voice · {reviewCounts.captions} scene(s) without timed
+              captions · {reviewCounts.timing} scene(s) with caption/voice
+              interval gaps.
+            </p>
+            <div className="animation-actions">
+              <button type="button" className="button secondary small"
+                disabled={!reviewCounts.voice}
+                onClick={()=>jumpToReview("voice")}>
+                Next scene without assigned voice
+              </button>
+              <button type="button" className="button secondary small"
+                disabled={!reviewCounts.captions}
+                onClick={()=>jumpToReview("captions")}>
+                Next scene without timed captions
+              </button>
+              <button type="button" className="button secondary small"
+                disabled={!reviewCounts.timing}
+                onClick={()=>jumpToReview("timing")}>
+                Next scene with caption timing gaps
+              </button>
+            </div>
+            <p className="field-hint">
+              These are only written-text and clip-timing hints. Silent scenes
+              may be intentional. Listen to the real recording to confirm
+              spoken words and synchronization; navigation never saves,
+              records, edits or approves a scene.
+            </p>
+          </div>
           <h4>{scene.title}</h4>
           <p>{"Episode time: " + scene.episodeStart.toFixed(2) +
             "s–" + scene.episodeEnd.toFixed(2) + "s"}</p>
@@ -180,13 +240,18 @@ export function FramefieldGuidedRecording({
             className="animation-actions">
             <button type="button" className="button secondary small"
               disabled={position === 0}
-              onClick={() => setSelected(i => Math.max(0, i - 1))}>
+              onClick={() => {
+                setSelected(i => Math.max(0, i - 1));
+                setSelectedClipId("");
+              }}>
               Previous scene
             </button>
             <button type="button" className="button secondary small"
               disabled={position >= session.scenes.length - 1}
-              onClick={() => setSelected(i =>
-                Math.min(session.scenes.length - 1, i + 1))}>
+              onClick={() => {
+                setSelected(i => Math.min(session.scenes.length - 1, i + 1));
+                setSelectedClipId("");
+              }}>
               Next scene
             </button>
           </div>
