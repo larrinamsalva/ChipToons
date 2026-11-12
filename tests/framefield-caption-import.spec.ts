@@ -545,6 +545,8 @@ test("Exact caption cue navigator seeks real imported subtitle change during cam
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).check();
   await expect(cues).toHaveCount(0);
   await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
+  // Saved/proposed comparison remounts the review in its collapsed state.
+  await camera.getByText("Review final-view hold frames (0.50s)").click();
   await expect(camera.getByRole("group",{name:"Exact caption changes during hold"}))
     .toBeVisible();
   // Read-only navigation: cancel the draft and verify original camera untouched.
