@@ -17,7 +17,7 @@ test("Framefield multi-shot importer builds two real scenes and exports matching
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
 
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
@@ -83,7 +83,7 @@ test("Shot Director reorders shots and holds a real frame across the recorded We
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
     { name: "shot02_frame_0002.png", mimeType: "image/png", buffer: Buffer.from(samples[3], "base64") },
@@ -146,7 +146,7 @@ test("Framefield multi-shot importer rejects incomplete shots before creating or
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
     { name: "shot01_frame_0001.png", mimeType: "image/png", buffer: Buffer.from(samples[0], "base64") },

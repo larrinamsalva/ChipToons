@@ -17,7 +17,7 @@ async function prepare(page: import("@playwright/test").Page) {
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
     png("shot02_frame_0002.png", 3), png("shot01_frame_0002.png", 1),

@@ -12,7 +12,7 @@ test("Playable Shot Director shows real original PNG frames across cut, pause, r
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
     { name: "shot02_frame_0002.png", mimeType: "image/png", buffer: Buffer.from(images[3], "base64") },
@@ -50,7 +50,7 @@ test("Reordering shots and adding a hold updates the playable reel before import
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
     { name: "shot02_frame_0002.png", mimeType: "image/png", buffer: Buffer.from(images[3], "base64") },
@@ -79,7 +79,7 @@ test("Invalid or incomplete PNG sequences never start a playable storyboard", as
   await page.getByText(/More ways to create.*3D/).click();
   const picker = page.getByRole("region", { name: "Import numbered PNG animation" });
   await picker.getByRole("checkbox", {
-    name: "Build a multi-shot cartoon (2–3 numbered sequences)",
+    name: "Build a multi-shot cartoon (2–8 numbered sequences)",
   }).check();
   await picker.getByLabel("Choose numbered PNG files").setInputFiles([
     { name: "shot01_frame_0001.png", mimeType: "image/png", buffer: Buffer.from(images[0], "base64") },
