@@ -78,7 +78,7 @@ describe("PR #96 free-arm emotional acting",()=>{
     const key=actor.animation!.keyframes[1];
     key.joints={leftArm:{...neutralJoint,angle:20}};
     let raw=elementAt(actor,2.28,scene.duration);
-    let response=cinematicFreeArmReactionAt(scene,actor,rig,raw,2.28)!;
+    const response=cinematicFreeArmReactionAt(scene,actor,rig,raw,2.28)!;
     expect(response.leftArm?.angle).toBe(raw.joints?.leftArm?.angle);
     expect(response.rightArm.angle).toBeCloseTo(-2.5);
     // A performed interaction anywhere in the scene disables automatic
