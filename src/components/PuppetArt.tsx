@@ -42,6 +42,8 @@ function Face({
         ? ["M-24 -16q7 -7 14 -1","M10 -17q7 -6 14 1"]
         : ["M-23 -13q6 -4 12 0","M11 -13q6 -4 12 0"];
   const squint = premium ? Math.max(0,Math.min(1,gaze?.squint??0)) : 0;
+  const cheekLift = premium ? Math.max(-0.8,Math.min(1.8,gaze?.cheekLift??0)) : 0;
+  const cheekWarmth = premium ? Math.max(-0.12,Math.min(0.28,gaze?.cheekWarmth??0)) : 0;
   return (
     <g stroke="#382c34" strokeWidth="2.8" strokeLinecap="round" fill="none">
       {eyes && (
@@ -86,8 +88,22 @@ function Face({
           {premium && <>
             <path data-facial-detail="nose" d="M-1 1q-2 4 2 6q2 1 4-1"
               stroke="#8d625f" strokeWidth="1.4" strokeLinecap="round" opacity=".52" />
-            <ellipse cx="-30" cy="13" rx="8" ry="4.2" fill="#f6a0a0" opacity=".34" stroke="none" />
-            <ellipse cx="30" cy="13" rx="8" ry="4.2" fill="#f6a0a0" opacity=".34" stroke="none" />
+            {[-30, 30].map(x => (
+              <ellipse key={x}
+                data-cinematic-cheek={Math.abs(cheekLift) > .06 ? "animated" : undefined}
+                cx={x} cy={13 - cheekLift}
+                rx={8 + Math.max(0,cheekLift) * .35}
+                ry={4.2 + Math.max(0,cheekLift) * .2}
+                fill="#f6a0a0" opacity={.34 + cheekWarmth} stroke="none" />
+            ))}
+            {lips && !open && cheekLift > .35 &&
+              (emotion === "happy" || emotion === "excited") && (
+                <path data-cinematic-smile-crease="true"
+                  d="M-38 10q-3 2-1 5M38 10q3 2 1 5"
+                  stroke="#8d625f" strokeWidth="1.2"
+                  strokeLinecap="round" opacity={Math.min(.45,cheekLift*.2)}
+                  fill="none" pointerEvents="none"/>
+              )}
           </>}
         </>
       )}
