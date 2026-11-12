@@ -103,7 +103,7 @@ describe("PR #99 genuine voice-paced cinematic head acting",()=>{
     }]};
     const time=1.4;
     expect(sceneElementAt(project,scene,actor,time,0).joints?.head)
-      .toEqual(sceneElementAt(project,scene,withoutVoice,time,0).joints?.head);
+      .toEqual(sceneElementAt(project,scene,{...actor,voiceMouth:undefined},time,0).joints?.head);
     actor.animation=undefined;
     const interaction={id:"prop-action",kind:"point" as const,
       actorId:actor.id,objectId:"prop",start:4,attach:4.1,finish:5,
@@ -123,7 +123,7 @@ describe("PR #99 genuine voice-paced cinematic head acting",()=>{
       ...elementBase(actor),id:"wave",time:0,easing:"linear",gesture:"wave",
     }]};
     expect(sceneElementAt(project,scene,actor,time,0).joints?.head)
-      .toEqual(sceneElementAt(project,scene,withoutVoice,time,0).joints?.head);
+      .toEqual(sceneElementAt(project,scene,{...actor,voiceMouth:undefined},time,0).joints?.head);
   });
   it("leaves Classic, calm previews, painted heads and non-rigged characters unchanged",()=>{
     const {project,scene,actor,character,withoutVoice}=fixture();
