@@ -14,6 +14,9 @@ export interface CinematicFace {
   /** Optional authored-emotion accent; classic art ignores both values. */
   browAsymmetry?:number;
   squint?:number;
+  /** Cheek pose/accent only when an authored emotion changes. */
+  cheekLift?:number;
+  cheekWarmth?:number;
 }
 
 const clamp = (value: number, low: number, high: number) =>
@@ -132,5 +135,7 @@ export function cinematicFaceAt(
   return { x, y, brow, blink,
     browAsymmetry: reaction?.browAsymmetry ?? 0,
     squint: reaction?.squint ?? 0,
+    cheekLift: reaction?.cheekLift ?? 0,
+    cheekWarmth: reaction?.cheekWarmth ?? 0,
   };
 }
