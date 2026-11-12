@@ -11,6 +11,7 @@ import { cinematicMotionAt } from "./cinematic-motion";
 import { cinematicGaitAt } from "./cinematic-gait";
 import { cinematicActionHeadAt } from "./cinematic-head-attention";
 import { cinematicHandoffNodAt } from "./cinematic-handoff-acknowledgement";
+import { cinematicVoiceHeadAt } from "./cinematic-voice-head";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
 
@@ -242,8 +243,15 @@ export function sceneElementAt(project: Project, scene: Scene, element: SceneEle
   if (!element.voiceMouth?.length || calm ||
       !supportsVoiceMouth(project.characters.find(character => character.id === element.characterId), element)) return frame;
   const voice = voiceMouthAt(project, scene, element, start + local, frame.authoredMouth !== "auto");
-  return voice ? { ...frame, mouth: voice.opening ? "open" : "closed", voiceOpening: voice.opening,
-    emotion: voice.expression === "keep" ? frame.emotion : voice.expression } : frame;
+  const synced = voice ? {
+    ...frame,
+    mouth: voice.opening ? "open" as const : "closed" as const,
+    voiceOpening: voice.opening,
+    emotion: voice.expression === "keep" ? frame.emotion : voice.expression,
+  } : frame;
+  // Speaking performance is layered only after the approved original
+  // voice-to-mouth timing has been applied, so speech stays synchronized.
+  return cinematicVoiceHeadAt(project, scene, element, synced, local, start, calm);
 }
 export function sceneFramesAt(project: Project, scene: Scene, time: number, start = 0, calm = false) {
   const frames = sampleInteractions(project, scene, time,
