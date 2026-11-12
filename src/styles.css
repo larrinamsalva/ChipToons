@@ -6153,3 +6153,27 @@ fieldset.interaction-fields {
   background:var(--surface); border:1px solid var(--line);
   border-radius:.4rem; padding:.3rem;
 }
+
+/* PR #94: keep the eight-scene production navigator usable on phones,
+ * high-contrast themes and keyboard-only workflows. */
+.framefield-scene-work-queue {
+  display:grid;
+  gap:.55rem;
+  padding:.7rem;
+  margin:.6rem 0;
+  color:var(--text);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:.6rem;
+  min-width:0;
+}
+.framefield-scene-work-queue h4,.framefield-scene-work-queue p{margin:0;}
+.framefield-scene-work-queue label{display:grid;gap:.3rem;min-width:0;}
+.framefield-scene-work-queue select{
+  width:100%;max-width:100%;min-height:44px;
+  border:1px solid var(--line);border-radius:.45rem;
+  color:var(--text);background:var(--surface);font:inherit;
+}
+.framefield-scene-work-queue .button{
+  min-height:44px;max-width:100%;white-space:normal;
+}

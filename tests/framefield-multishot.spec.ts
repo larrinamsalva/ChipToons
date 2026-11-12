@@ -182,6 +182,13 @@ test("Eight-shot storyboard imports 16 original PNGs as 8 editable scenes with e
   const order=picker.getByRole("list",{name:"Shot playback order"});
   await expect(order.locator("li")).toHaveCount(8);
   await expect(order.locator("li").first()).toContainText("shot01_frame_");
+  // Two distant real scenes have authored words but no assigned voice.
+  // Navigation must wrap from scene 7 to scene 2 instead of hiding work.
+  const director=picker.getByRole("region",{name:"Shot Director"});
+  await director.getByRole("textbox",{name:"Written narration for shot02_frame_"})
+    .fill("Scout checks that the tools are ready.");
+  await director.getByRole("textbox",{name:"Written narration for shot07_frame_"})
+    .fill("Helper Jo explains the next safe repair step.");
   await picker.getByRole("button",{name:"Create multi-shot cartoon"}).click();
   await expect(page.locator(".editor")).toBeVisible({timeout:30_000});
   await expect(page.getByText(/new multi-shot cartoon is ready/i)).toBeVisible();
@@ -200,5 +207,40 @@ test("Eight-shot storyboard imports 16 original PNGs as 8 editable scenes with e
       expect(data.assets[i*2].name).toBe(
         "shot"+String(i+1).padStart(2,"0")+"_frame_0001.png");
     }
+    expect(data.scenes[1].narration).toContain("Scout");
+    expect(data.scenes[6].narration).toContain("Helper Jo");
+  }
+  // PR #94: the existing Guided Voice Recording flow can jump directly
+  // between distant missing-voice/caption review tasks on all devices.
+  await page.getByRole("button",{name:"Finish My Cartoon",exact:true}).click();
+  const guided=page.getByRole("region",{name:"Guided scene voice recording"});
+  await guided.getByRole("button",{name:"Start guided voice recording"}).click();
+  const navigator=guided.getByRole("group",{name:"Storyboard production navigator"});
+  const select=navigator.getByRole("combobox",{name:"Jump to storyboard scene"});
+  await expect(select.locator("option")).toHaveCount(8);
+  await select.selectOption("6");
+  const current=guided.getByRole("group",{name:"Current guided recording step"});
+  await expect(current).toContainText("Scene 7 of 8");
+  await navigator.getByRole("button",{name:"Next scene without assigned voice"}).click();
+  await expect(select).toHaveValue("1");
+  await expect(current).toContainText("Scene 2 of 8");
+  await navigator.getByRole("button",{name:"Next scene without timed captions"}).click();
+  await expect(select).toHaveValue("6");
+  await expect(navigator.getByRole("button",{name:"Next scene with caption timing gaps"}))
+    .toBeDisabled();
+  await select.selectOption("7");
+  await expect(current).toContainText("Scene 8 of 8");
+  await expect(navigator).toContainText("2 scene(s) with written words but no assigned");
+  await expect(navigator).toContainText("2 scene(s) without timed");
+  // Close the actual Finish My Cartoon modal before accessing the editor's
+  // Project backup control; modal focus trapping intentionally blocks it.
+  await page.getByRole("dialog").getByRole("button",{name:"Close dialog"}).click();
+  await expect(guided).toBeHidden();
+  if((page.viewportSize()?.width??0)>=1200){
+    const {data}=await backup(page);
+    expect(data.scenes).toHaveLength(8);
+    expect(data.scenes.map(s=>s.cameraShots)).toEqual(Array(8).fill(undefined));
+    expect(data.audioClips).toHaveLength(0);
+    expect(data.captions).toHaveLength(0);
   }
 });
