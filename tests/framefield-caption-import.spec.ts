@@ -497,3 +497,66 @@ test("Diagonal cinematic glide previews and applies original PNGs only after app
     expect(data.scenes[0].elements[0].frameSequence?.assetIds).toHaveLength(2);
   }
 });
+
+
+test("Exact caption cue navigator seeks real imported subtitle change during camera hold", async ({ page }) => {
+  const {picker,director}=await prepare(page);
+  await director.getByRole("textbox",{name:"Written narration for shot01_frame_"})
+    .fill("Hold the wheel steady. Now inspect the tire.");
+  const include=director.getByRole("checkbox",{
+    name:"Include drafted subtitles as editable captions in the NEW cartoon",
+  });
+  await expect(include).toBeEnabled();
+  const cueEditor=director.getByRole("group",{name:"Subtitle cues for shot01_frame_"});
+  await cueEditor.getByRole("button",{name:"Customize subtitles for shot01_frame_"}).click();
+  await cueEditor.getByRole("textbox",{name:"First subtitle for shot01_frame_"})
+    .fill("Hold the wheel steady.");
+  await cueEditor.getByRole("textbox",{name:"Second subtitle for shot01_frame_"})
+    .fill("Now inspect the tire.");
+  const timing=cueEditor.getByRole("slider",{name:"Second subtitle timing for shot01_frame_"});
+  await timing.focus();
+  // Range is min=20, max=80 in 5-point steps. End selects the true
+  // 80% boundary deterministically across desktop, phone and tablet.
+  await timing.press("End");
+  await expect(timing).toHaveValue("80");
+  await include.check();
+  await picker.getByRole("button",{name:"Create multi-shot cartoon"}).click();
+  await expect(page.locator(".editor")).toBeVisible({timeout:30_000});
+  await page.getByRole("button",{name:"Finish My Cartoon",exact:true}).click();
+  const guide=page.getByRole("region",{name:"Guided scene voice recording"});
+  await guide.getByRole("button",{name:"Start guided voice recording"}).click();
+  await guide.getByRole("button",{name:"Try a gentle diagonal cinematic glide"}).click();
+  const camera=page.getByRole("dialog",{name:"Direct My Cartoon Camera"});
+  await camera.getByRole("combobox",{name:"Diagonal glide pacing"})
+    .selectOption("settle-early");
+  await camera.getByRole("button",{name:"Preview Full Sequence"}).click();
+  await camera.getByRole("checkbox",{name:"Show beginning, middle and end frames"}).check();
+  await camera.getByText("Review final-view hold frames (0.50s)").click();
+  const hold=camera.getByRole("group",{name:"Camera hold frame review"});
+  const cues=hold.getByRole("group",{name:"Exact caption changes during hold"});
+  await expect(cues).toContainText("1 actual caption change(s) detected");
+  await expect(cues).toContainText("Now inspect the tire.");
+  await cues.getByRole("combobox",{name:"Jump to exact caption change"})
+    .selectOption("1.6");
+  const preview=camera.getByRole("region",{name:"Proposed scene preview"});
+  await expect(preview.getByRole("spinbutton",{name:"Preview time (seconds)"}))
+    .toHaveValue("1.6");
+  await expect(preview).toContainText("Now inspect the tire.");
+  await expect(camera.getByRole("button",{name:"Apply"})).toBeEnabled();
+  await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).check();
+  await expect(cues).toHaveCount(0);
+  await camera.getByRole("checkbox",{name:"Compare with the saved camera"}).uncheck();
+  // Saved/proposed comparison remounts the review in its collapsed state.
+  await camera.getByText("Review final-view hold frames (0.50s)").click();
+  await expect(camera.getByRole("group",{name:"Exact caption changes during hold"}))
+    .toBeVisible();
+  // Read-only navigation: cancel the draft and verify original camera untouched.
+  await camera.getByRole("button",{name:"Cancel"}).click();
+  await expect(camera).toBeHidden();
+  if((page.viewportSize()?.width??0)>=1200){
+    const {data}=await backup(page);
+    expect(data.scenes[0].cameraShots).toBeUndefined();
+    expect(data.captions.some(c=>c.sceneId===data.scenes[0].id &&
+      c.text==="Now inspect the tire." && Math.abs(c.start-1.6)<.01)).toBe(true);
+  }
+});

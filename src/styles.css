@@ -6128,3 +6128,28 @@ fieldset.interaction-fields {
   max-width: 100%;
   white-space: normal;
 }
+
+
+/* PR #92: exact caption cue navigation during an otherwise stationary camera. */
+.camera-hold-caption-cues {
+  display: grid;
+  gap: .5rem;
+  padding: .65rem;
+  margin-top: .65rem;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  color: var(--text);
+  background: var(--surface);
+  min-width: 0;
+}
+.camera-hold-caption-cues h4,
+.camera-hold-caption-cues p { margin: 0; }
+.camera-hold-caption-cues h4 { font-size: .95rem; }
+.camera-hold-caption-cues-list { margin:0; padding-inline-start:1.5rem; }
+.camera-hold-caption-cues-list li { margin: .25rem 0; overflow-wrap: anywhere; }
+.camera-hold-caption-cues select {
+  display: block; width: 100%; max-width:100%; min-height:44px;
+  font: inherit; color: var(--text);
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:.4rem; padding:.3rem;
+}

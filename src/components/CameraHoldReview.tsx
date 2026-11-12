@@ -1,5 +1,6 @@
 import { cameraHoldReviewTimes } from "../camera-motion-scrub";
 import { cameraHoldContinuity } from "../camera-hold-continuity";
+import { cameraHoldCaptionChanges } from "../camera-hold-caption-changes";
 import type { CameraShot } from "../camera-shots";
 import type { Project, Scene } from "../model";
 import { sceneCaptionText } from "../production";
@@ -15,6 +16,7 @@ export function CameraHoldReview({project,scene,shot,onInspectTime}:{
   const hold=cameraHoldReviewTimes(shot);
   if(!hold)return null;
   const continuity=cameraHoldContinuity(project,scene,shot);
+  const captionChanges=cameraHoldCaptionChanges(project,scene,shot);
   const moments=[
     {id:"finish",label:"Camera settles",time:hold.finishTime},
     {id:"last",label:"Near shot end",time:hold.lastTime},
@@ -86,6 +88,49 @@ export function CameraHoldReview({project,scene,shot,onInspectTime}:{
           Five checkpoints are an advisory, not continuous proof. A steady
           camera does not mean the PNG animation, characters or captions
           have stopped changing.
+        </p>
+      </div>}
+      {captionChanges && <div className="camera-hold-caption-cues" role="group"
+        aria-label="Exact caption changes during hold">
+        <h4>Exact caption changes during hold</h4>
+        <p>
+          {captionChanges.changes.length
+            ? captionChanges.changes.length +
+              " actual caption change(s) detected from timed subtitle boundaries."
+            : "No timed caption changes occur during this camera hold."}
+        </p>
+        {!!captionChanges.changes.length && <>
+          <ol className="camera-hold-caption-cues-list">
+            {captionChanges.changes.slice(0,8).map((change,i)=>(
+              <li key={i}>
+                <strong>{change.time.toFixed(2)}s:</strong>
+                {" "}{change.after.trim().replace(/\s+/g," ").slice(0,90) || "Caption clears"}
+              </li>
+            ))}
+          </ol>
+          {captionChanges.changes.length>8 && <p className="field-hint">
+            Showing the first 8 of {captionChanges.changes.length} changes below.
+            All are available through the jump selector.
+          </p>}
+          {onInspectTime && <label>
+            Jump to exact caption change
+            <select aria-label="Jump to exact caption change" defaultValue=""
+              onChange={event=>{
+                const chosen=event.currentTarget.value;
+                if(chosen!=="")onInspectTime(Number(chosen));
+              }}>
+              <option value="" disabled>Choose a subtitle change</option>
+              {captionChanges.changes.map((change,i)=>(
+                <option key={i} value={change.time}>
+                  {change.time.toFixed(2)}s — {change.after.trim().replace(/\s+/g," ").slice(0,80) || "Caption clears"}
+                </option>
+              ))}
+            </select>
+          </label>}
+        </>}
+        <p className="field-hint">
+          These are exact timed-caption boundaries, not a check that the
+          words match the recorded voice. Original artwork and audio remain unchanged.
         </p>
       </div>}
       <p className="field-hint">
