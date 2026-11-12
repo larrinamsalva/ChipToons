@@ -232,6 +232,10 @@ test("Eight-shot storyboard imports 16 original PNGs as 8 editable scenes with e
   await expect(current).toContainText("Scene 8 of 8");
   await expect(navigator).toContainText("2 scene(s) with written words but no assigned");
   await expect(navigator).toContainText("2 scene(s) without timed");
+  // Close the actual Finish My Cartoon modal before accessing the editor's
+  // Project backup control; modal focus trapping intentionally blocks it.
+  await page.getByRole("dialog").getByRole("button",{name:"Close dialog"}).click();
+  await expect(guided).toBeHidden();
   if((page.viewportSize()?.width??0)>=1200){
     const {data}=await backup(page);
     expect(data.scenes).toHaveLength(8);

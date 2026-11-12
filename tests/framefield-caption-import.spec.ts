@@ -89,7 +89,7 @@ test("Creator explicitly imports edited storyboard captions into a new portable 
   await guide.getByRole("button", { name: "Start guided voice recording" }).click();
   await expect(guide).toContainText("Original Jo narration.");
   await expect(guide).toContainText("Episode time: 0.00s–3.00s");
-  await guide.getByRole("button", { name: "Next scene" }).click();
+  await guide.getByRole("button", { name: "Next scene", exact: true }).click();
   await expect(guide).toContainText("Episode time: 3.00s–5.00s");
   await expect(guide).toContainText("Scout checks the wheel.");
   await guide.getByRole("button", { name: "Previous scene" }).click();
