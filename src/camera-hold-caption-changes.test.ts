@@ -62,7 +62,7 @@ describe("exact timed captions during a real Stage camera hold",()=>{
     const result=cameraHoldCaptionChanges(project,scene,shot)!;
     expect(result.startingCaption).toBe("A");
     expect(result.changes.map(c=>[c.time,c.after])).toEqual([
-      [1.6,"A\\nB"],[1.9,"A\\nD"],
+      [1.6,"A\nB"],[1.75,"A"],[1.9,"A\nD"],
     ]);
     expect(result.changes.some(c=>c.time===2)).toBe(false);
   });
