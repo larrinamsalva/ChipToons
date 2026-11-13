@@ -5,6 +5,7 @@ import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
 import { cinematicEyelidClosureAt } from "./cinematic-eyelid-motion";
 import { cinematicConversationListeningAt } from "./cinematic-conversation-listening";
 import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
+import { cinematicPairAttentionAt } from "./cinematic-pair-attention";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -129,12 +130,20 @@ export function cinematicFaceAt(
         project, scene as Scene, element, frames, localTime, calm,
       )
     : undefined;
-  const direction = shared ?? active ?? conversation ?? speaking ?? target;
+  // During an explicitly authored two-performer camera shot, hold a gentle
+  // mutual eyeline between recorded speech and reaction close-ups. Real
+  // voice focus, scene actions and handoff acknowledgements still win.
+  const pair = scene.id && scene.duration !== undefined
+    ? cinematicPairAttentionAt(
+        project, scene as Scene, element, frames, localTime, calm,
+      )
+    : undefined;
+  const direction = shared ?? active ?? conversation ?? speaking ?? pair ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
   const focus = shared ? shared.focus : active ? active.focus
     : conversation ? conversation.focus : speaking ? speaking.focus
-    : target ? attention : 0;
+    : pair ? pair.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);
