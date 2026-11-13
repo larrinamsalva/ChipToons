@@ -7,6 +7,7 @@ import { cinematicFaceAt } from "./cinematic-face";
 import { littleFixersArticulatedWorkshop } from "./little-fixers-articulated-workshop";
 import { builtInSound } from "./sounds";
 import { newAudioClip } from "./production";
+import { blankLine, withScript } from "./script";
 import { neutralJoint } from "./puppet-model";
 import { elementBase, sceneElementAt, sceneFramesAt } from "./timeline";
 import { Stage } from "./components/Stage";
@@ -236,6 +237,11 @@ describe("PR #100 genuine recorded-conversation listening", () => {
   });
   it("keeps Scout looking toward Jo only during an actual approved speaking close-up", () => {
     const { project, scene, scout, jo, track, clip } = fixture();
+    scene.script = withScript(scene, {
+      acting: "Scout speaks to Helper Jo", emotion: "Friendly",
+      lines: [{ ...blankLine("dialogue", "Scout speaks."),
+        speakerId: scout.characterId }],
+    }).script;
     scene.cameraShots = [{
       id: "scout-recorded-close", style: "close", start: 0, end: 3.8,
       move: 0, note: "Scout speaks to Jo", targets: [scout.id],
