@@ -46,6 +46,13 @@ workshop ending.
   an intact real recording link and never modify a voice, mouth, head rig,
   manual action, camera or saved keyframe. Calm editor and Classic remain
   unaffected, as do separately authored/painted eyes.
+- **PR #107:** in the two quiet shared-pair shots, Scout and Helper Jo
+  keep gentle mutual pupil eye contact with soft entrances and exits,
+  instead of the incidental room-scanning cycle interrupting their
+  conversation. Requires an existing, explicitly authored two-actor
+  "pair" camera record and actually visible performers; no new voices,
+  additional camera cuts or edited keyframes. Speaking/listening cues,
+  original prop interactions, Classic and calm editing retain priority.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.

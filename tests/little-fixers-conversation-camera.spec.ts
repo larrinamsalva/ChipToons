@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { shotAt, shotIssue } from "../src/camera-shots";
 import { cinematicConversationListeningAt } from "../src/cinematic-conversation-listening";
 import { cinematicSpeakingEyelineAt } from "../src/cinematic-conversation-speaking";
+import { cinematicPairAttentionAt } from "../src/cinematic-pair-attention";
 import { cinematicFaceAt } from "../src/cinematic-face";
 import { projectFocusPoint } from "../src/focus-motion";
 import { sceneFramesAt, stageCameraAt } from "../src/timeline";
@@ -133,6 +134,27 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
   }
   expect([shots[0], shots[2], shots[5], shots[8]]
     .every(shot => shot.placement === "center")).toBe(true);
+  // PR #107: the two quiet shared shots include original mutual gazes,
+  // using saved Stage frames without adding a recorded line or a new shot.
+  for (const index of [2, 5]) {
+    const shot = shots[index];
+    const time = (shot.start + shot.end) / 2;
+    const frames = sceneFramesAt(data, scene, time);
+    const scoutCue = cinematicPairAttentionAt(data, scene, scout, frames, time, false);
+    const joCue = cinematicPairAttentionAt(data, scene, jo, frames, time, false);
+    expect(scoutCue?.partnerId).toBe(jo.id);
+    expect(joCue?.partnerId).toBe(scout.id);
+    expect(scoutCue?.focus).toBeGreaterThan(.7);
+    expect(joCue?.focus).toBeGreaterThan(.7);
+    const scoutFace = cinematicFaceAt(data, scene, scout, frames.get(scout.id)!,
+      frames, time, false);
+    const joFace = cinematicFaceAt(data, scene, jo, frames.get(jo.id)!,
+      frames, time, false);
+    expect(scoutFace?.x).toBeGreaterThan(1);
+    expect(joFace?.x).toBeLessThan(-1);
+    expect(cinematicPairAttentionAt(data, scene, scout, frames, time, true))
+      .toBeUndefined();
+  }
   // PR #105: the actual saved character and the actual Stage/export frame
   // keep Jo attending to Scout during both genuine SILENT reaction shots.
   for (const index of [1, 3, 6]) {
