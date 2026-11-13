@@ -1,6 +1,7 @@
 import type { Project, Scene, SceneElement } from "./model";
 import type { ElementFrame } from "./timeline";
 import { mouthTrackIsCurrent } from "./voice-mouth";
+import { clipStart } from "./production";
 
 const clamp = (x: number) => Math.max(0, Math.min(1, x));
 const ease = (x: number) => {
@@ -50,7 +51,7 @@ export function cinematicSpeakingEyelineAt(
     mouthTrackIsCurrent(project, scene, speaker, track) &&
     project.audioClips.some(clip => clip.id === track.clipId &&
       !clip.muted && clip.volume > 0 &&
-      Math.abs(clip.start - start - shot.start) < .03))) return;
+      Math.abs(clipStart(project, clip) - start - shot.start) < .03))) return;
 
   const frame = frames.get(speaker.id);
   if (!frame || frame.opacity < .1 || frame.gesture !== "none") return;
