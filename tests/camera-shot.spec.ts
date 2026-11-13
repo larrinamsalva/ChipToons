@@ -2,6 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { cameraShotDemo } from "../src/camera-shot-demo";
+import { builtInSound } from "../src/sounds";
+import { newAudioClip } from "../src/production";
 import { SHOT_TITLE, shotCueTime } from "../src/camera-shots";
 import { shotAnchorKey } from "../src/shot-director";
 import { backup, number, restore, saved } from "./production-helpers";
@@ -145,4 +147,42 @@ test("previews an event-linked detail, rejects overlap, moves and duplicates sho
   await form.getByRole("button", { name: "Preview Shot", exact: true }).click();
   await form.getByRole("button", { name: "Cancel", exact: true }).click();
   expect((await backup(page)).data.scenes[0].cameraShots).toEqual([wide, savedShot]);
+});
+
+
+test("jumps from camera coverage findings to the unsaved full-sequence preview without editing the scene", async ({ page }) => {
+  test.setTimeout(80_000);
+  const project = cameraShotDemo();
+  const scene = project.scenes[0];
+  // Two existing, creator-authored shots with a real default-camera gap.
+  scene.cameraShots = [scene.cameraShots![0], scene.cameraShots![4]];
+  const source = builtInSound("melody");
+  project.audioAssets.push(source);
+  const voice = newAudioClip(project, source, "dialogue", 0, 2.2);
+  project.audioClips.push({ ...voice, duration: 1, volume: 1 });
+  await restore(page, project);
+  const original = (await backup(page)).data;
+  const form = await open(page);
+  await form.getByRole("button", { name: /1\. Wide Shot/ }).click();
+  const coverage = form.getByRole("group", { name: "Camera coverage review" });
+  await coverage.locator("summary").click();
+  await expect(coverage).toContainText("Default camera 1.20–3.50s");
+  await expect(coverage).toContainText("Voice 1 (dialogue) at 2.20s");
+  await coverage.getByRole("button", {
+    name: "Inspect default camera interval 1 at 2.35 seconds",
+  }).click();
+  let preview = form.getByRole("region", { name: "Proposed scene preview" });
+  await expect(preview.getByRole("spinbutton", { name: "Preview time (seconds)" }))
+    .toHaveValue("2.35");
+  await expect(coverage.getByRole("status")).toContainText("2.35s");
+  await coverage.getByRole("button", {
+    name: "Inspect recorded voice 1 at 2.20 seconds",
+  }).click();
+  preview = form.getByRole("region", { name: "Proposed scene preview" });
+  await expect(preview.getByRole("spinbutton", { name: "Preview time (seconds)" }))
+    .toHaveValue("2.2");
+  await expect(coverage.getByRole("status")).toContainText("2.20s");
+  expect((await backup(page)).data).toEqual(original);
+  await form.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect((await backup(page)).data).toEqual(original);
 });
