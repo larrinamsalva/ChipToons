@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { cinematicConversationListeningAt } from "./cinematic-conversation-listening";
+import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
 import { cinematicFaceAt } from "./cinematic-face";
 import { littleFixersArticulatedWorkshop } from "./little-fixers-articulated-workshop";
 import { builtInSound } from "./sounds";
@@ -232,5 +233,50 @@ describe("PR #100 genuine recorded-conversation listening", () => {
     expect(cinematicConversationListeningAt(
       project, scene, jo, frames, time, false,
     )).toBeUndefined();
+  });
+  it("keeps Scout looking toward Jo only during an actual approved speaking close-up", () => {
+    const { project, scene, scout, jo, track, clip } = fixture();
+    scene.cameraShots = [{
+      id: "scout-recorded-close", style: "close", start: 0, end: 3.8,
+      move: 0, note: "Scout speaks to Jo", targets: [scout.id],
+      lineId: scene.script!.lines[0].id,
+      frame: { x: 400, y: 225, zoom: 2 },
+      follow: false, offset: { x: 0, y: 0 }, placement: "left",
+    }];
+    const snapshot = JSON.stringify(project);
+    const t = 1.4;
+    const frames = sceneFramesAt(project, scene, t);
+    const cue = cinematicSpeakingEyelineAt(project, scene, scout, frames, t, false)!;
+    expect(cue.partnerId).toBe(jo.id);
+    expect(cue.dx).toBeGreaterThan(0);
+    expect(cue.focus).toBeGreaterThan(.8);
+    const face = cinematicFaceAt(project, scene, scout,
+      frames.get(scout.id)!, frames, t, false)!;
+    expect(face.x).toBeGreaterThan(1);
+    expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, false))
+      .toEqual(cue);
+    expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, true))
+      .toBeUndefined();
+    expect(cinematicSpeakingEyelineAt(project, scene, scout,
+      sceneFramesAt(project, scene, 0), 0, false)).toBeUndefined();
+    expect(cinematicSpeakingEyelineAt(project, scene, scout,
+      sceneFramesAt(project, scene, 3.8), 3.8, false)).toBeUndefined();
+    expect(JSON.stringify(project)).toBe(snapshot);
+
+    project.mixer.muted = true;
+    expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, false))
+      .toBeUndefined();
+    project.mixer.muted = false;
+    project.audioClips = [{ ...clip, trimStart: .2 }];
+    expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, false))
+      .toBeUndefined();
+    project.audioClips = [clip];
+    scout.voiceMouth = [{ ...track, sourceId: "changed-source" }];
+    expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, false))
+      .toBeUndefined();
+    scout.voiceMouth = [track];
+    scene.cameraShots![0].lineId = undefined;
+    expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, false))
+      .toBeUndefined();
   });
 });
