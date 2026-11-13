@@ -33,6 +33,12 @@ workshop ending.
   camera positions: Scout sits left of center and Jo right of center,
   without modifying their characters, recordings, shot starts or
   transition timing.
+- **PR #105:** while Jo is the explicit subject of an editable "reaction"
+  shot, Jo's generated eyes, brows, cheeks and small head tilt hold toward
+  the other visible performer, then ease back at shot boundaries. This
+  uses the actual sampled positions, creates no Jo audio or lip-sync,
+  and leaves manual poses, prop actions, painted eyes, Classic and calm
+  editor previews untouched. Stage and WebM use the same frames.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.

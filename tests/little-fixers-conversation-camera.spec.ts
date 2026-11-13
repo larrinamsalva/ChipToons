@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { shotAt, shotIssue } from "../src/camera-shots";
+import { cinematicConversationListeningAt } from "../src/cinematic-conversation-listening";
+import { cinematicFaceAt } from "../src/cinematic-face";
 import { projectFocusPoint } from "../src/focus-motion";
 import { sceneFramesAt, stageCameraAt } from "../src/timeline";
 import { mouthTrackIsCurrent } from "../src/voice-mouth";
@@ -130,6 +132,22 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
   }
   expect([shots[0], shots[2], shots[5], shots[8]]
     .every(shot => shot.placement === "center")).toBe(true);
+  // PR #105: the actual saved character and the actual Stage/export frame
+  // keep Jo attending to Scout during both genuine SILENT reaction shots.
+  for (const index of [4, 7]) {
+    const shot = shots[index];
+    const time = (shot.start + shot.end) / 2;
+    const frames = sceneFramesAt(data, scene, time);
+    const cue = cinematicConversationListeningAt(data, scene, jo, frames, time, false);
+    expect(cue?.speakerId).toBe(scout.id);
+    expect(cue?.reaction).toBeGreaterThan(.7);
+    expect(cue?.dx).toBeLessThan(0);
+    const gaze = cinematicFaceAt(data, scene, jo, frames.get(jo.id)!, frames, time, false);
+    expect(gaze?.x).toBeLessThan(-1);
+    expect(gaze?.squint).toBeGreaterThan(.08);
+    expect(cinematicConversationListeningAt(data, scene, jo, frames, time, true))
+      .toBeUndefined();
+  }
   expect((await backup(page)).data).toEqual(data);
 
   await page.getByRole("button", { name: "Save and return to my cartoons" }).click();

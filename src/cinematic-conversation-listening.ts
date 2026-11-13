@@ -11,9 +11,10 @@ const smooth = (value: number) => {
 };
 
 /**
- * Focus on the OTHER original character when their valid, approved
- * recorded voice is audible. This is a read-only sampled-time accent:
- * no invented speech, listener state, new keyframes or audio edits.
+ * Focus on the OTHER original character when their approved recorded
+ * voice is audible, or when the creator explicitly directs a silent
+ * reaction close-up. This is read-only sampled-time acting: never invent
+ * speech, rewrite voices, store keyframes or change the camera.
  */
 export interface ConversationListening {
   speakerId: string;
@@ -21,8 +22,10 @@ export interface ConversationListening {
   dy: number;
   /** Gently fades through small gaps between real spoken syllables. */
   focus: number;
-  /** Very small 2D head tilt toward the actual speaker. */
+  /** Very small 2D head tilt toward the other performer. */
   headTilt: number;
+  /** Only nonzero for an explicitly authored silent reaction shot. */
+  reaction?: number;
 }
 
 export function cinematicConversationListeningAt(
@@ -89,7 +92,40 @@ export function cinematicConversationListeningAt(
   });
   const best = candidates.sort((a, b) => b.signal - a.signal ||
     a.distance - b.distance || a.speakerId.localeCompare(b.speakerId))[0];
-  if (!best) return;
+  if (!best) {
+    // A camera "reaction" is an explicit creator decision to watch the
+    // OTHER performer even after their last recorded syllable has ended.
+    // Otherwise the old periodic gaze scan can send Jo back to the viewer
+    // in the middle of a silent reaction close-up. No new voice is assumed.
+    const shot = scene.cameraShots?.find(item =>
+      item.style === "reaction" && item.targets.includes(listener.id) &&
+      localTime >= item.start && localTime < item.end);
+    if (!shot) return;
+    const partner = scene.elements.flatMap(other => {
+      if (!other.characterId || other.id === listener.id ||
+          other.characterId === listener.characterId) return [];
+      const otherFrame = frames.get(other.id);
+      if (!otherFrame || otherFrame.opacity < .1) return [];
+      const dx = otherFrame.x - listenerFrame.x;
+      const dy = otherFrame.y - listenerFrame.y;
+      const distance = Math.hypot(dx, dy);
+      if (!Number.isFinite(distance) || distance < 20 || distance > 370)
+        return [];
+      return [{ id: other.id, dx, dy, distance }];
+    }).sort((a, b) => a.distance - b.distance ||
+      a.id.localeCompare(b.id))[0];
+    if (!partner) return;
+    // Ease in as the existing real camera moves, then soften the gaze
+    // before the shot ends. Sampling is seekable and shared with WebM.
+    const focus = .88 * smooth((localTime - shot.start) / .42) *
+      smooth((shot.end - localTime) / .58);
+    if (focus < .035) return;
+    return {
+      speakerId: partner.id, dx: partner.dx, dy: partner.dy, focus,
+      headTilt: clamp(partner.dx / 130, -1, 1) * 1.35 * focus,
+      reaction: focus,
+    };
+  }
 
   return {
     speakerId: best.speakerId,
