@@ -176,4 +176,61 @@ describe("PR #100 genuine recorded-conversation listening", () => {
     joCharacter.puppet=rig;
     expect(original.x).toBe(classic.x);
   });
+  it("follows the creator's silent reaction close-up with real eyelines and a gentle response", () => {
+    const { project, scene, scout, jo } = fixture();
+    // A reaction shot deliberately remains meaningful even with NO voice:
+    // do not synthesize spoken syllables, lip-sync, or audio.
+    project.audioClips = [];
+    scout.voiceMouth = [];
+    scene.cameraShots = [{
+      id: "jo-silent-reaction", style: "reaction",
+      start: 5, end: 9, move: 0, note: "Jo listens to Scout",
+      frame: { x: 400, y: 225, zoom: 1.85 },
+      targets: [jo.id], follow: false,
+      offset: { x: 0, y: 0 }, placement: "right",
+    }];
+    const snapshot = JSON.stringify(project);
+    const time = 7;
+    const frames = sceneFramesAt(project, scene, time);
+    const cue = cinematicConversationListeningAt(project, scene, jo, frames, time, false)!;
+    expect(cue.speakerId).toBe(scout.id);
+    expect(cue.dx).toBeLessThan(0);
+    expect(cue.focus).toBeGreaterThan(.85);
+    expect(cue.reaction).toBeGreaterThan(.85);
+    expect(cue.headTilt).toBeLessThan(0);
+    const rendered = frames.get(jo.id)!;
+    const original = sceneElementAt(project, scene, jo, time, 0);
+    expect((rendered.joints?.head?.angle ?? 0) -
+      (original.joints?.head?.angle ?? 0)).toBeCloseTo(cue.headTilt);
+    const face = cinematicFaceAt(project, scene, jo, rendered, frames, time, false)!;
+    expect(face.x).toBeLessThan(-1);
+    expect(face.squint).toBeGreaterThan(.1);
+    expect(face.cheekLift).toBeGreaterThan(.1);
+    expect(rendered.voiceOpening).toBeUndefined();
+    expect(cinematicConversationListeningAt(
+      project, scene, jo, sceneFramesAt(project, scene, 5), 5, false,
+    )).toBeUndefined();
+    expect(cinematicConversationListeningAt(
+      project, scene, jo, sceneFramesAt(project, scene, 9), 9, false,
+    )).toBeUndefined();
+    const early = cinematicConversationListeningAt(
+      project, scene, jo, sceneFramesAt(project, scene, 5.15), 5.15, false,
+    )!;
+    const late = cinematicConversationListeningAt(
+      project, scene, jo, sceneFramesAt(project, scene, 8.8), 8.8, false,
+    )!;
+    expect(early.focus).toBeLessThan(cue.focus);
+    expect(late.focus).toBeLessThan(cue.focus);
+    expect(cinematicConversationListeningAt(
+      project, scene, jo, frames, time, true,
+    )).toBeUndefined();
+    expect(JSON.stringify(project)).toBe(snapshot);
+    // Authored head performances still have unconditional priority.
+    jo.animation!.keyframes[0].joints = {
+      head: { ...neutralJoint, angle: 15 },
+    };
+    expect(cinematicConversationListeningAt(
+      project, scene, jo, frames, time, false,
+    )).toBeUndefined();
+  });
 });
