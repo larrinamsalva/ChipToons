@@ -6,6 +6,7 @@ import { cinematicEyelidClosureAt } from "./cinematic-eyelid-motion";
 import { cinematicConversationListeningAt } from "./cinematic-conversation-listening";
 import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
 import { cinematicPairAttentionAt } from "./cinematic-pair-attention";
+import { cinematicFinaleAttentionAt } from "./cinematic-finale-attention";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -138,12 +139,20 @@ export function cinematicFaceAt(
         project, scene as Scene, element, frames, localTime, calm,
       )
     : undefined;
-  const direction = shared ?? active ?? conversation ?? speaking ?? pair ?? target;
+  // A gentle audience-facing closing beat is allowed only in an explicit
+  // final wide shot, after the authored camera has settled. It never
+  // overrides handoffs, real speaker/listener cues or shared-pair looks.
+  const finale = scene.id && scene.duration !== undefined
+    ? cinematicFinaleAttentionAt(
+        project, scene as Scene, element, frames, localTime, calm,
+      )
+    : undefined;
+  const direction = shared ?? active ?? conversation ?? speaking ?? pair ?? finale ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
   const focus = shared ? shared.focus : active ? active.focus
     : conversation ? conversation.focus : speaking ? speaking.focus
-    : pair ? pair.focus : target ? attention : 0;
+    : pair ? pair.focus : finale ? finale.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);
@@ -157,7 +166,8 @@ export function cinematicFaceAt(
       (frame.voiceOpening ?? 0) * 0.32 +
       0.25 * Math.sin(localTime * 1.1 + seed * 0.19) +
       (reaction?.browLift ?? 0) +
-      (conversation?.reaction ?? 0) * .24,
+      (conversation?.reaction ?? 0) * .24 +
+      (finale?.focus ?? 0) * .18,
     0, 2.8,
   );
   // The same original blink cycles now have smooth closing/opening
@@ -169,7 +179,8 @@ export function cinematicFaceAt(
     squint: clamp((reaction?.squint ?? 0) +
       (conversation?.reaction ?? 0) * .12, 0, .8),
     cheekLift: (reaction?.cheekLift ?? 0) +
-      (conversation?.reaction ?? 0) * .15,
+      (conversation?.reaction ?? 0) * .15 +
+      (finale?.focus ?? 0) * .16,
     cheekWarmth: reaction?.cheekWarmth ?? 0,
   };
 }
