@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { cameraCoverageReview } from "../camera-coverage-review";
 import { hasCameraTrack, MAX_CAMERA_SHOTS, SHOT_STYLES, SHOT_TITLE, shotIssue, shotNeedsReview } from "../camera-shots";
 import type { CameraShot, ShotStyle } from "../camera-shots";
 import { elementName } from "../library";
@@ -59,6 +60,9 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   const list = [...saved].sort((a, b) => a.start - b.start);
   const planned = { ...scene, cameraShots: [...others, draft].sort((a, b) => a.start - b.start) };
   const issue = shotIssue(planned.cameraShots, planned);
+  // Draft-inclusive, read-only preview: the default camera remains valid
+  // during uncovered spans. Never modify a shot to "fix" intentional gaps.
+  const coverage = cameraCoverageReview(project, scene, planned.cameraShots);
   const warning = shotNeedsReview(scene, draft);
   const conflict = hasCameraTrack(scene);
   const cues = useMemo(() => shotCueChoices(project, scene), [project, scene]);
@@ -312,6 +316,32 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             {thumbnails && <Stage project={project} scene={scene} time={(shot.start + shot.end) / 2} calmPreview labelled={false} />}
           </li>)}</ol>
         </section>}
+        <details aria-label="Camera coverage review" className="interaction-review">
+          <summary>Review camera coverage · {coverage.coveredSeconds.toFixed(1)}/{coverage.totalSeconds.toFixed(1)} seconds in custom shots</summary>
+          <p className="field-hint">
+            Preview includes your current draft. Uncovered time still plays
+            through the scene's default camera; gaps are not a failed export.
+          </p>
+          {issue ? <p role="status">Check the draft shot's framing or timing before applying it.</p> : <>
+            {coverage.gaps.length
+              ? <p className="field-hint">Default camera at: {coverage.gaps.map(gap =>
+                  `${gap.start.toFixed(2)}–${gap.end.toFixed(2)}s`
+                ).join(", ")}</p>
+              : <p className="field-hint">All scene time has custom camera coverage.</p>}
+            {coverage.voices.length ? (
+              <ol aria-label="Recorded voice camera starts">
+                {coverage.voices.map((voice, index) =>
+                  <li key={voice.clipId}>
+                    Voice {index + 1} ({voice.category}) at {voice.start.toFixed(2)}s ·{" "}
+                    {voice.shotId
+                      ? `Custom shot ${planned.cameraShots.findIndex(shot => shot.id === voice.shotId) + 1}`
+                      : "Default camera"}
+                  </li>
+                )}
+              </ol>
+            ) : <p className="field-hint">No assigned recorded voice starts in this scene.</p>}
+          </>}
+        </details>
         {warning && <p className="interaction-empty" role="status">A subject or linked event changed. Review the saved timing and framing before applying.</p>}
         {draft.missingTarget && <button className="button secondary small" onClick={() => patch({ targets: [], missingTarget: undefined, follow: false })}>
           Keep the saved fixed frame</button>}
