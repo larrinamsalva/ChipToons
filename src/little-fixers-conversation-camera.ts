@@ -10,6 +10,8 @@ export const SCOUT_JO_CAMERA_TITLE =
  * Standalone, editable real-cartoon camera coverage of the already-approved
  * Scout/Jo listening scene. Camera cuts are authored from ORIGINAL three
  * recorded take positions, not fabricated dialogue or frame-time heuristics.
+ * Shot boundaries stay locked to the original recording start times, while
+ * the existing Stage camera sampler eases briefly between compositions.
  * Never change the existing Scout-only or #101 voiced-listening examples.
  */
 export async function littleFixersCinematicConversation() {
@@ -33,7 +35,15 @@ export async function littleFixersCinematicConversation() {
   const shot = (style: ShotStyle, start: number, end: number, note: string,
     targets: string[] = [], zoom = 1, offsetY = 0,
     extra: Partial<CameraShot> = {}): CameraShot => ({
-    id: uid(), style, start, end, note, targets, move: 0,
+    id: uid(), style, start, end, note, targets,
+    // The first establishing shot is steady. Each later, fully editable
+    // camera record briefly eases out of its predecessor's real framing,
+    // instead of snapping between faces. This uses the existing native
+    // Shot Director `move` field, shared by preview and WebM.
+    move: start === 0 ? 0 : Math.min(end - start,
+      style === "wide" ? .82 :
+      style === "pair" ? .68 :
+      style === "reaction" ? .60 : .48),
     frame: { x: 400, y: 225, zoom },
     follow: false, offset: { x: 0, y: offsetY },
     placement: "center", overlays: true, ...extra,

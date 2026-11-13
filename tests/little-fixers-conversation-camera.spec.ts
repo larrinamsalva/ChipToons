@@ -39,6 +39,28 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
   ]);
   expect(shots[0].start).toBe(0);
   expect(shots.at(-1)!.end).toBe(34);
+  expect(shots[0].move).toBe(0);
+  // True editable Stage-camera movement on all eight succeeding shots.
+  // The camera should be continuous at the cut, halfway eased, then
+  // settled on the new composition without moving any voice clip or actor.
+  for (const shot of shots.slice(1)) {
+    expect(shot.move).toBeGreaterThanOrEqual(.4);
+    expect(shot.move).toBeLessThanOrEqual(.82);
+    const before = stageCameraAt(data, scene, shot.start - .000001);
+    const start = stageCameraAt(data, scene, shot.start);
+    const midway = stageCameraAt(data, scene, shot.start + shot.move / 2);
+    const settled = stageCameraAt(data, scene, shot.start + shot.move);
+    expect(start.shotId).toBe(shot.id);
+    expect(midway.shotId).toBe(shot.id);
+    expect(settled.shotId).toBe(shot.id);
+    for (const key of ["x", "y", "zoom"] as const) {
+      expect(start[key]).toBeCloseTo(before[key], 3);
+      expect(midway[key]).toBeCloseTo((start[key] + settled[key]) / 2, 3);
+      expect(Number.isFinite(settled[key])).toBe(true);
+    }
+    expect(stageCameraAt(data, scene, shot.start + shot.move / 2))
+      .toEqual(midway);
+  }
   expect(new Set(shots.map(shot => shot.id)).size).toBe(shots.length);
   for (const [i, shot] of shots.entries()) {
     expect(shot.end).toBeGreaterThan(shot.start);

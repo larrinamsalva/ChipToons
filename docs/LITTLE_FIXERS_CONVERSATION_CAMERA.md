@@ -18,6 +18,13 @@ workshop ending.
 - All nine shots are ordinary **editable Camera & Shot Director
   records** with verified unique IDs, contiguous half-open timing,
   legal zoom, existing character targets and original script links.
+- **PR #103:** the first establishing shot stays steady; the following
+  eight shots use short, saved Camera Director move intervals (0.48–0.82s).
+  At each shot boundary, the rendered camera eases from the prior real
+  composition into the next shot rather than hard-snapping. These are
+  native, separately editable camera settings—not fake CSS transitions
+  or new animation tracks. The original voice-timed cut boundaries stay
+  fixed, and editor/preview/genuine video export share the same sampler.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.
