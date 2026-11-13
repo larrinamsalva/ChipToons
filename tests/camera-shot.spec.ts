@@ -182,7 +182,11 @@ test("jumps from camera coverage findings to the unsaved full-sequence preview w
   await expect(preview.getByRole("spinbutton", { name: "Preview time (seconds)" }))
     .toHaveValue("2.2");
   await expect(coverage.getByRole("status")).toContainText("2.20s");
-  expect((await backup(page)).data).toEqual(original);
+  // Backups are launched from the editor outside this modal. The modal
+  // must be closed before using Project backup; otherwise the browser
+  // correctly blocks interaction with the covered page and QA times out.
+  // Cancel also proves both preview jumps left saved data untouched.
   await form.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(form).toBeHidden();
   expect((await backup(page)).data).toEqual(original);
 });
