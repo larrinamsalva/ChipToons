@@ -4,6 +4,7 @@ import { handoffAcknowledgementAt } from "./cinematic-handoff-acknowledgement";
 import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
 import { cinematicEyelidClosureAt } from "./cinematic-eyelid-motion";
 import { cinematicConversationListeningAt } from "./cinematic-conversation-listening";
+import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -123,11 +124,17 @@ export function cinematicFaceAt(
         project, scene as Scene, element, frames, localTime, calm,
       )
     : undefined;
-  const direction = shared ?? active ?? conversation ?? target;
+  const speaking = scene.id && scene.duration !== undefined
+    ? cinematicSpeakingEyelineAt(
+        project, scene as Scene, element, frames, localTime, calm,
+      )
+    : undefined;
+  const direction = shared ?? active ?? conversation ?? speaking ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
   const focus = shared ? shared.focus : active ? active.focus
-    : conversation ? conversation.focus : target ? attention : 0;
+    : conversation ? conversation.focus : speaking ? speaking.focus
+    : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);

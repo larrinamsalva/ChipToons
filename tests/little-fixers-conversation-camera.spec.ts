@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { shotAt, shotIssue } from "../src/camera-shots";
 import { cinematicConversationListeningAt } from "../src/cinematic-conversation-listening";
+import { cinematicSpeakingEyelineAt } from "../src/cinematic-conversation-speaking";
 import { cinematicFaceAt } from "../src/cinematic-face";
 import { projectFocusPoint } from "../src/focus-motion";
 import { sceneFramesAt, stageCameraAt } from "../src/timeline";
@@ -134,6 +135,18 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
     .every(shot => shot.placement === "center")).toBe(true);
   // PR #105: the actual saved character and the actual Stage/export frame
   // keep Jo attending to Scout during both genuine SILENT reaction shots.
+  for (const index of [1, 3, 6]) {
+    const shot = shots[index];
+    const time = shot.start + 1.45;
+    const frames = sceneFramesAt(data, scene, time);
+    const cue = cinematicSpeakingEyelineAt(data, scene, scout, frames, time, false);
+    expect(cue?.partnerId).toBe(jo.id);
+    expect(cue?.dx).toBeGreaterThan(0);
+    expect(cue?.focus).toBeGreaterThan(.75);
+    const face = cinematicFaceAt(data, scene, scout,
+      frames.get(scout.id)!, frames, time, false);
+    expect(face?.x).toBeGreaterThan(1);
+  }
   for (const index of [4, 7]) {
     const shot = shots[index];
     const time = (shot.start + shot.end) / 2;
