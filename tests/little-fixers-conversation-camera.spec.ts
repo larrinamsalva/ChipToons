@@ -100,6 +100,36 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
   expect(shots[4].targets).toEqual([jo.id]);
   expect(shots[7].targets).toEqual([jo.id]);
   expect(shots[8].targets).toEqual([]);
+
+  // Real, deterministic visual eyelines: place Scout on the left with
+  // look room toward Jo, and Jo on the right looking back toward Scout.
+  // This is a real Stage camera property, not a changed character pose.
+  for (const index of [1, 3, 6]) {
+    const shot = shots[index];
+    expect(shot.placement).toBe("left");
+    const t = shot.start + shot.move + .12;
+    const frames = sceneFramesAt(data, scene, t);
+    const camera = stageCameraAt(data, scene, t, false, frames);
+    const point = projectFocusPoint(scene, scout,
+      frames.get(scout.id)!, camera, shot.offset);
+    expect(point.x).toBeGreaterThan(225);
+    expect(point.x).toBeLessThan(370);
+    expect(stageCameraAt(data, scene, t, false, frames)).toEqual(camera);
+  }
+  for (const index of [4, 7]) {
+    const shot = shots[index];
+    expect(shot.placement).toBe("right");
+    const t = shot.start + shot.move + .12;
+    const frames = sceneFramesAt(data, scene, t);
+    const camera = stageCameraAt(data, scene, t, false, frames);
+    const point = projectFocusPoint(scene, jo,
+      frames.get(jo.id)!, camera, shot.offset);
+    expect(point.x).toBeGreaterThan(430);
+    expect(point.x).toBeLessThan(575);
+    expect(stageCameraAt(data, scene, t, false, frames)).toEqual(camera);
+  }
+  expect([shots[0], shots[2], shots[5], shots[8]]
+    .every(shot => shot.placement === "center")).toBe(true);
   expect((await backup(page)).data).toEqual(data);
 
   await page.getByRole("button", { name: "Save and return to my cartoons" }).click();
