@@ -13,6 +13,7 @@ import { cinematicActionHeadAt } from "./cinematic-head-attention";
 import { cinematicHandoffNodAt } from "./cinematic-handoff-acknowledgement";
 import { cinematicConversationHeadAt } from "./cinematic-conversation-listening";
 import { cinematicVoiceHeadAt } from "./cinematic-voice-head";
+import { cinematicVoiceBodyAt } from "./cinematic-voice-body";
 import { totalDuration } from "./model";
 import type { Project, SceneElement } from "./model";
 
@@ -252,7 +253,15 @@ export function sceneElementAt(project: Project, scene: Scene, element: SceneEle
   } : frame;
   // Speaking performance is layered only after the approved original
   // voice-to-mouth timing has been applied, so speech stays synchronized.
-  return cinematicVoiceHeadAt(project, scene, element, synced, local, start, calm);
+  const speaking = cinematicVoiceHeadAt(
+    project, scene, element, synced, local, start, calm,
+  );
+  // Voice dynamics may make a tiny temporary change to whole-body
+  // breathing/roll in its actual recorded close-up, but never override the
+  // hand-authored shoulder, hand, head, camera or original media tracks.
+  return cinematicVoiceBodyAt(
+    project, scene, element, speaking, local, start, calm,
+  );
 }
 export function sceneFramesAt(project: Project, scene: Scene, time: number, start = 0, calm = false) {
   const frames = sampleInteractions(project, scene, time,
