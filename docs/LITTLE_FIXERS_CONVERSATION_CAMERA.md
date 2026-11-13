@@ -25,6 +25,14 @@ workshop ending.
   native, separately editable camera settings—not fake CSS transitions
   or new animation tracks. The original voice-timed cut boundaries stay
   fixed, and editor/preview/genuine video export share the same sampler.
+- **PR #104:** the three Scout close-ups use the editable Camera
+  Director "left" placement, while the two Jo reactions use "right".
+  This maintains the characters' established left-to-right relationship
+  and opens natural look room toward each other. Paired and wide views
+  remain centered. New browser assertions sample ACTUAL rendered
+  camera positions: Scout sits left of center and Jo right of center,
+  without modifying their characters, recordings, shot starts or
+  transition timing.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.

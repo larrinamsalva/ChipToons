@@ -48,23 +48,29 @@ export async function littleFixersCinematicConversation() {
     follow: false, offset: { x: 0, y: offsetY },
     placement: "center", overlays: true, ...extra,
   });
+  // Preserve conversation screen direction in the ORIGINAL authored
+  // camera records: Scout stays to frame-left (looking toward Jo), and Jo
+  // stays to frame-right (toward Scout). The space between them is the
+  // visual "look room" that makes a shot/reverse-shot feel connected.
+  // Pair/wide views stay centered; timing and actor animation are untouched.
   const shots: CameraShot[] = [
     shot("pair", 0, one, "Establish Scout and Helper Jo together.", [scout.id, jo.id], 1.4, -90),
     shot("close", one, one + 3.8, "Scout speaks the first approved greeting.", [scout.id], 2.05, -125,
-      { lineId: scene.script?.lines[0]?.id }),
+      { lineId: scene.script?.lines[0]?.id, placement: "left" }),
     shot("pair", one + 3.8, two, "Return to both original characters in the pause.", [scout.id, jo.id], 1.4, -95),
     shot("close", two, two + 3.8, "Stay with Scout for his second original recorded line.", [scout.id], 2.05, -125,
-      { lineId: scene.script?.lines[1]?.id }),
+      { lineId: scene.script?.lines[1]?.id, placement: "left" }),
     shot("reaction", two + 3.8, two + 8.3,
       "Show Helper Jo's actual eye/head listening reaction, without creating a Jo voice.",
-      [jo.id], 1.85, -115),
+      [jo.id], 1.85, -115, { placement: "right" }),
     shot("pair", two + 8.3, three,
       "Let the real silent pause and the workshop setting breathe.", [scout.id, jo.id], 1.4, -92),
     shot("close", three, three + 3.8,
       "Scout shares the third and final approved recording.", [scout.id], 2, -125,
-      { lineId: scene.script?.lines[2]?.id }),
+      { lineId: scene.script?.lines[2]?.id, placement: "left" }),
     shot("reaction", three + 3.8, three + 7.8,
-      "Hold on Helper Jo responding gently to the closing message.", [jo.id], 1.85, -115),
+      "Hold on Helper Jo responding gently to the closing message.", [jo.id], 1.85, -115,
+      { placement: "right" }),
     shot("wide", three + 7.8, scene.duration,
       "Close with the full, safe workshop and both performers."),
   ];
