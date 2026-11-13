@@ -106,6 +106,17 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
         (draft.style === "close" || draft.style === "reaction" ? -145 : -95) : -24 } } : {}) });
   }
 
+  /** Jump the UNSAVED full-sequence preview to one review finding.
+   * This reuses the existing preview clock without modifying camera keys,
+   * saved scenes, approved voice tracks, or editor playback state. */
+  function inspectCoverageTime(at: number) {
+    if (issue || !Number.isFinite(at)) return;
+    setMode("sequence");
+    setCompare(false);
+    setInspectTime(clamp(at, 0, scene.duration));
+    setReview(value => value + 1);
+  }
+
   function loadDraft(shot: CameraShot) {
     setDraft(shot); setReview(0); setInspectTime(undefined); setCompare(false); setDirty(false); setRemove(false); setError("");
   }
@@ -323,11 +334,21 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             through the scene's default camera; gaps are not a failed export.
           </p>
           {issue ? <p role="status">Check the draft shot's framing or timing before applying it.</p> : <>
-            {coverage.gaps.length
-              ? <p className="field-hint">Default camera at: {coverage.gaps.map(gap =>
-                  `${gap.start.toFixed(2)}–${gap.end.toFixed(2)}s`
-                ).join(", ")}</p>
-              : <p className="field-hint">All scene time has custom camera coverage.</p>}
+            {coverage.gaps.length ? (
+              <ol aria-label="Default camera intervals">
+                {coverage.gaps.map((gap, index) => {
+                  const middle = (gap.start + gap.end) / 2;
+                  return <li key={`${gap.start}-${gap.end}`}>
+                    Default camera {gap.start.toFixed(2)}–{gap.end.toFixed(2)}s{" "}
+                    <button type="button" className="button secondary small"
+                      onClick={() => inspectCoverageTime(middle)}
+                      aria-label={`Inspect default camera interval ${index + 1} at ${middle.toFixed(2)} seconds`}>
+                      Inspect gap
+                    </button>
+                  </li>;
+                })}
+              </ol>
+            ) : <p className="field-hint">All scene time has custom camera coverage.</p>}
             {coverage.voices.length ? (
               <ol aria-label="Recorded voice camera starts">
                 {coverage.voices.map((voice, index) =>
@@ -336,11 +357,23 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
                     {voice.shotId
                       ? `Custom shot ${planned.cameraShots.findIndex(shot => shot.id === voice.shotId) + 1}`
                       : "Default camera"}
+                    {" "}
+                    <button type="button" className="button secondary small"
+                      aria-label={`Inspect recorded voice ${index + 1} at ${voice.start.toFixed(2)} seconds`}
+                      onClick={() => inspectCoverageTime(voice.start)}>
+                      Inspect voice
+                    </button>
                   </li>
                 )}
               </ol>
             ) : <p className="field-hint">No assigned recorded voice starts in this scene.</p>}
           </>}
+          {review > 0 && !issue && inspectTime !== undefined && (
+            <p role="status" className="field-hint">
+              Previewing full scene at {inspectTime.toFixed(2)}s.
+              No changes have been saved.
+            </p>
+          )}
         </details>
         {warning && <p className="interaction-empty" role="status">A subject or linked event changed. Review the saved timing and framing before applying.</p>}
         {draft.missingTarget && <button className="button secondary small" onClick={() => patch({ targets: [], missingTarget: undefined, follow: false })}>
