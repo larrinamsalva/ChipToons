@@ -63,10 +63,20 @@ export function cinematicPairAttentionAt(
   const distance = Math.hypot(dx, dy);
   if (!Number.isFinite(distance) || distance < 20 || distance > 370) return;
 
-  // Move gently into and out of every editor-authored pair shot.
-  // Scene-time-only sampling makes seeking, Stage and WebM identical.
-  const focus = .76 * ease((time - shot.start) / .35) *
-    ease((shot.end - time) / .42);
+  // In longer shared shots, the first authored performer catches the
+  // other's attention, then the second follows 160ms later and holds it
+  // just a little longer. This avoids a synchronized puppet stare without
+  // changing saved poses, shot durations or any audio. Very short
+  // establishing shots keep the existing symmetric easing.
+  const canStagger = shot.end - shot.start >= 1.5;
+  const first = canStagger && shot.targets[0] === element.id;
+  const second = canStagger && shot.targets[1] === element.id;
+  const enterDelay = second ? .16 : 0;
+  const exitDuration = first ? .52 : second ? .32 : .42;
+  // Sampling depends only on saved shot order and scene time, so seeking,
+  // editor Stage and genuine WebM exports receive the same gaze.
+  const focus = .76 * ease((time - shot.start - enterDelay) / .35) *
+    ease((shot.end - time) / exitDuration);
   if (focus < .035) return;
   return { partnerId: partner.id, dx, dy, focus };
 }

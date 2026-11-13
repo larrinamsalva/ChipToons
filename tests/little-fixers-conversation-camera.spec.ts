@@ -146,6 +146,22 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
     expect(joCue?.partnerId).toBe(scout.id);
     expect(scoutCue?.focus).toBeGreaterThan(.7);
     expect(joCue?.focus).toBeGreaterThan(.7);
+    // PR #108: not a synchronized stare. In the actual two saved quiet
+    // camera shots Scout begins the look; Jo responds a beat later.
+    const early = shot.start + .22;
+    const late = shot.end - .25;
+    const framesEarly = sceneFramesAt(data, scene, early);
+    const framesLate = sceneFramesAt(data, scene, late);
+    const earlyScout = cinematicPairAttentionAt(
+      data, scene, scout, framesEarly, early, false)?.focus ?? 0;
+    const earlyJo = cinematicPairAttentionAt(
+      data, scene, jo, framesEarly, early, false)?.focus ?? 0;
+    const lateScout = cinematicPairAttentionAt(
+      data, scene, scout, framesLate, late, false)?.focus ?? 0;
+    const lateJo = cinematicPairAttentionAt(
+      data, scene, jo, framesLate, late, false)?.focus ?? 0;
+    expect(earlyScout).toBeGreaterThan(earlyJo);
+    expect(lateJo).toBeGreaterThan(lateScout);
     const scoutFace = cinematicFaceAt(data, scene, scout, frames.get(scout.id)!,
       frames, time, false);
     const joFace = cinematicFaceAt(data, scene, jo, frames.get(jo.id)!,
