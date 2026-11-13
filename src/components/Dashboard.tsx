@@ -30,6 +30,7 @@ export function Dashboard({
   onFullBodyDemo,
   onScoutVoicedDemo,
   onScoutListeningDemo,
+  onScoutCameraDemo,
   onScoutActingDemo,
   onScoutWobblyChairDemo,
   onScoutHelperJoDemo,
@@ -66,6 +67,7 @@ export function Dashboard({
   onFullBodyDemo: () => void;
   onScoutVoicedDemo: () => void;
   onScoutListeningDemo: () => void;
+  onScoutCameraDemo: () => void;
   onScoutActingDemo: () => void;
   onScoutWobblyChairDemo: () => void;
   onScoutHelperJoDemo: () => void;
@@ -146,6 +148,7 @@ export function Dashboard({
           <button className="button secondary small" onClick={onFullBodyDemo}>Try the full-body cartoon workshop</button>
           <button className="button secondary small" onClick={onScoutVoicedDemo}>Watch Scout walk and talk</button>
           <button className="button secondary small" onClick={onScoutListeningDemo}>Watch Helper Jo listen to Scout (0:34)</button>
+          <button className="button secondary small" onClick={onScoutCameraDemo}>Watch cinematic Scout and Jo camera cuts (0:34)</button>
           <button className="button secondary small" onClick={onScoutActingDemo}>Watch Scout pick up a checklist (1:00)</button>
           <button className="button secondary small" onClick={onScoutWobblyChairDemo}>Watch Scout and the wobbly chair (1:30)</button>
           <button className="button secondary small" onClick={onScoutHelperJoDemo}>Watch Scout meet Helper Jo (2:00)</button>

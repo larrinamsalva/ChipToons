@@ -394,7 +394,7 @@ export default function App() {
     }
   }
 
-  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | "camera-wagon" | "story-cards" | "full-body" | "scout-voiced" | "scout-listening" | "scout-acting" | "scout-wobbly-chair" | "scout-helper-jo" | "scout-mark-it-safe" | "scout-wagon-wheel" | "scout-tidy-workshop" | "scout-articulated-workshop" | TransformExample = "friendship", variant?: "focus" | "participation") {
+  async function openDemo(example: "friendship" | "talking" | "garden" | "sound-garden" | "camera-wagon" | "story-cards" | "full-body" | "scout-voiced" | "scout-listening" | "scout-camera" | "scout-acting" | "scout-wobbly-chair" | "scout-helper-jo" | "scout-mark-it-safe" | "scout-wagon-wheel" | "scout-tidy-workshop" | "scout-articulated-workshop" | TransformExample = "friendship", variant?: "focus" | "participation") {
     if (working) return;
     setWorking(true);
     setNotice("Opening your cartoon example…");
@@ -427,6 +427,10 @@ export default function App() {
         const { littleFixersVoicedListeningShowcase } =
           await import("./little-fixers-voiced-listening-showcase");
         await open(await littleFixersVoicedListeningShowcase());
+      } else if (example === "scout-camera") {
+        const { littleFixersCinematicConversation } =
+          await import("./little-fixers-conversation-camera");
+        await open(await littleFixersCinematicConversation());
       } else if (example === "full-body") {
         const { littleFixersFullBodyPilot } = await import("./little-fixers-full-body-pilot");
         await open(littleFixersFullBodyPilot());
@@ -777,6 +781,7 @@ export default function App() {
           onFullBodyDemo={() => void openDemo("full-body")}
           onScoutVoicedDemo={() => void openDemo("scout-voiced")}
           onScoutListeningDemo={() => void openDemo("scout-listening")}
+          onScoutCameraDemo={() => void openDemo("scout-camera")}
           onScoutActingDemo={() => void openDemo("scout-acting")}
           onScoutWobblyChairDemo={() => void openDemo("scout-wobbly-chair")}
           onScoutHelperJoDemo={() => void openDemo("scout-helper-jo")}
