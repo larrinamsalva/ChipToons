@@ -205,6 +205,22 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
     const face = cinematicFaceAt(data, scene, scout,
       frames.get(scout.id)!, frames, time, false);
     expect(face?.x).toBeGreaterThan(1);
+    // PR #110: only the genuine approved voice adds subtle body energy.
+    // Mute it in a temporary copy, never the saved/public project.
+    const sampleTimes = Array.from({ length: 21 }, (_, i) =>
+      shot.start + .15 + i * .15).filter(t => t < shot.end - .18);
+    const silentProject = {
+      ...data, mixer: { ...data.mixer, muted: true },
+    };
+    const accents = sampleTimes.map(at => {
+      const voiced = sceneFramesAt(data, scene, at).get(scout.id)!;
+      const muted = sceneFramesAt(silentProject, scene, at).get(scout.id)!;
+      expect(voiced.x).toBeCloseTo(muted.x);
+      expect(voiced.joints?.leftArm).toEqual(muted.joints?.leftArm);
+      expect(voiced.joints?.rightArm).toEqual(muted.joints?.rightArm);
+      return voiced.scale - muted.scale;
+    });
+    expect(Math.max(...accents)).toBeGreaterThan(.002);
   }
   for (const index of [4, 7]) {
     const shot = shots[index];
