@@ -140,7 +140,8 @@ export function cinematicFaceAt(
       frame.emotion === "excited" ? 0.75 : 0.2) +
       (frame.voiceOpening ?? 0) * 0.32 +
       0.25 * Math.sin(localTime * 1.1 + seed * 0.19) +
-      (reaction?.browLift ?? 0),
+      (reaction?.browLift ?? 0) +
+      (conversation?.reaction ?? 0) * .24,
     0, 2.8,
   );
   // The same original blink cycles now have smooth closing/opening
@@ -149,8 +150,10 @@ export function cinematicFaceAt(
   const blink = eyelidClosure >= 0.985;
   return { x, y, brow, blink, eyelidClosure,
     browAsymmetry: reaction?.browAsymmetry ?? 0,
-    squint: reaction?.squint ?? 0,
-    cheekLift: reaction?.cheekLift ?? 0,
+    squint: clamp((reaction?.squint ?? 0) +
+      (conversation?.reaction ?? 0) * .12, 0, .8),
+    cheekLift: (reaction?.cheekLift ?? 0) +
+      (conversation?.reaction ?? 0) * .15,
     cheekWarmth: reaction?.cheekWarmth ?? 0,
   };
 }
