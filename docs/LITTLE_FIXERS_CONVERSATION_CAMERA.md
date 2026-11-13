@@ -59,6 +59,12 @@ workshop ending.
   The original short establishing view retains its simultaneous gaze.
   All actual eye positions still use saved actor frames; no edited
   audio, new keyframes, camera changes or invented dialogue.
+- **PR #109:** the existing final wide shot closes with a friendly
+  audience-facing look from both performers, after the real Camera Director
+  move has settled. Scout gently leads and Jo follows. This read-only
+  vector-pupil/cheek accent is skipped during voice, hand actions,
+  manually painted faces and calm editing. No wave is fabricated; no
+  new recordings, animation keys or shot edits are made.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.

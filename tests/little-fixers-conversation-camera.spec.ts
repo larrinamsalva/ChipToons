@@ -3,6 +3,7 @@ import { shotAt, shotIssue } from "../src/camera-shots";
 import { cinematicConversationListeningAt } from "../src/cinematic-conversation-listening";
 import { cinematicSpeakingEyelineAt } from "../src/cinematic-conversation-speaking";
 import { cinematicPairAttentionAt } from "../src/cinematic-pair-attention";
+import { cinematicFinaleAttentionAt } from "../src/cinematic-finale-attention";
 import { cinematicFaceAt } from "../src/cinematic-face";
 import { projectFocusPoint } from "../src/focus-motion";
 import { sceneFramesAt, stageCameraAt } from "../src/timeline";
@@ -104,6 +105,26 @@ test("public Scout and Jo cartoon cuts camera on the three real original voice t
   expect(shots[4].targets).toEqual([jo.id]);
   expect(shots[7].targets).toEqual([jo.id]);
   expect(shots[8].targets).toEqual([]);
+  // PR #109: the real final wide shot gently invites the audience back
+  // after the existing camera settles. The original scene, sources, and
+  // characters remain untouched by the read-only sampled facial pass.
+  const last = shots[8];
+  const closingTime = Math.min(last.end - .15, last.start + 2.2);
+  const closingFrames = sceneFramesAt(data, scene, closingTime);
+  for (const actor of [scout, jo]) {
+    const cue = cinematicFinaleAttentionAt(
+      data, scene, actor, closingFrames, closingTime, false);
+    expect(cue?.focus).toBeGreaterThan(.8);
+    expect(cue?.dx).toBe(0);
+    const face = cinematicFaceAt(
+      data, scene, actor, closingFrames.get(actor.id)!, closingFrames,
+      closingTime, false);
+    expect(Math.abs(face!.x)).toBeLessThan(.25);
+    expect(face?.cheekLift).toBeGreaterThan(.1);
+    expect(cinematicFinaleAttentionAt(
+      data, scene, actor, closingFrames, closingTime, true))
+      .toBeUndefined();
+  }
 
   // Real, deterministic visual eyelines: place Scout on the left with
   // look room toward Jo, and Jo on the right looking back toward Scout.
