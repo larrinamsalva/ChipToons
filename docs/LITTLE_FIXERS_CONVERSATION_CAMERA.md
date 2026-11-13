@@ -65,6 +65,12 @@ workshop ending.
   vector-pupil/cheek accent is skipped during voice, hand actions,
   manually painted faces and calm editing. No wave is fabricated; no
   new recordings, animation keys or shot edits are made.
+- **PR #110:** Scout's three authentic recorded close-ups gain a small
+  voice-paced body breathing / lean accent, sampled from the same approved
+  lip-sync envelope as his existing speech. The original hand-animated
+  arms, legs, lips and head pose remain intact; no fake recording, added
+  motion keyframe, new scene or camera timing edit. The accent vanishes
+  for silence, edited/muted voice, manual gestures or active prop work.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.
