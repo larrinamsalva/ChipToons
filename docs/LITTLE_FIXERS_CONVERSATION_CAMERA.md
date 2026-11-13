@@ -39,6 +39,13 @@ workshop ending.
   uses the actual sampled positions, creates no Jo audio or lip-sync,
   and leaves manual poses, prop actions, painted eyes, Classic and calm
   editor previews untouched. Stage and WebM use the same frames.
+- **PR #106:** Scout now directs his generated eye gaze toward actual
+  Helper Jo during each of the three original, script-linked and recorded
+  speaking close-ups. A smooth, seek-deterministic gaze hold starts and
+  ends with the authored shot, including gaps between syllables. Require
+  an intact real recording link and never modify a voice, mouth, head rig,
+  manual action, camera or saved keyframe. Calm editor and Classic remain
+  unaffected, as do separately authored/painted eyes.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.
