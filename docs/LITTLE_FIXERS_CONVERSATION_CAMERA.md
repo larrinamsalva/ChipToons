@@ -78,6 +78,13 @@ workshop ending.
   lip-sync correction, character animation keyframe, prop contact,
   browser backup, exported source and project ID graph.
 
+- **PR #111:** the creator's Camera & Shot Director includes a read-only,
+  draft-inclusive coverage review. It displays exactly which seconds use
+  custom shots, which intervals use the safe default camera, and where
+  actual assigned voice clips start relative to both. The review changes
+  no saved camera, animation, voice, caption, media or export data.
+  Gaps are informational, not automatically errors.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
