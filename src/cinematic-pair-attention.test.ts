@@ -44,6 +44,33 @@ describe("PR #107 cinematic pair-shot attention", () => {
     expect(JSON.stringify(project)).toBe(before);
   });
 
+  it("staggered paired glances enter and exit in a natural order without saving new keys", () => {
+    const { project, scene, scout, jo } = fixture();
+    const snapshot = JSON.stringify(project);
+    const sample = (t: number) => {
+      const frames = sceneFramesAt(project, scene, t);
+      return {
+        scout: cinematicPairAttentionAt(project, scene, scout, frames, t, false)?.focus ?? 0,
+        jo: cinematicPairAttentionAt(project, scene, jo, frames, t, false)?.focus ?? 0,
+      };
+    };
+    const early = sample(2.2);
+    const middle = sample(4);
+    const late = sample(5.75);
+    expect(early.scout).toBeGreaterThan(early.jo + .2);
+    expect(middle.scout).toBeCloseTo(middle.jo);
+    expect(middle.scout).toBeGreaterThan(.7);
+    expect(late.jo).toBeGreaterThan(late.scout + .15);
+    expect(sample(4)).toEqual(middle);
+    expect(JSON.stringify(project)).toBe(snapshot);
+    // Short establishing shots must retain the prior simultaneous cue.
+    scene.cameraShots![0].end = 3;
+    const shortFrames = sceneFramesAt(project, scene, 2.5);
+    const a = cinematicPairAttentionAt(project, scene, scout, shortFrames, 2.5, false);
+    const b = cinematicPairAttentionAt(project, scene, jo, shortFrames, 2.5, false);
+    expect(a?.focus).toBeCloseTo(b!.focus);
+  });
+
   it("fades at shot boundaries and respects calm mode, Classic and painted eyes", () => {
     const { project, scene, scout, jo } = fixture();
     const sample = (t: number) => cinematicPairAttentionAt(project, scene, scout,
