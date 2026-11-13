@@ -53,6 +53,12 @@ workshop ending.
   "pair" camera record and actually visible performers; no new voices,
   additional camera cuts or edited keyframes. Speaking/listening cues,
   original prop interactions, Classic and calm editing retain priority.
+- **PR #108:** the two longer shared-pair views use a small, deterministic
+  stagger: Scout turns his generated pupils toward Jo first, Jo follows
+  160 ms later and holds slightly longer at the end of the camera shot.
+  The original short establishing view retains its simultaneous gaze.
+  All actual eye positions still use saved actor frames; no edited
+  audio, new keyframes, camera changes or invented dialogue.
 - Stage and genuine WebM playback use the SAME existing camera-shot
   time sampler. No new engine, generated image frames or CSS-only
   animation claims.
