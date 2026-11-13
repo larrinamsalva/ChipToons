@@ -243,7 +243,7 @@ describe("PR #100 genuine recorded-conversation listening", () => {
         speakerId: scout.characterId }],
     }).script;
     scene.cameraShots = [{
-      id: "scout-recorded-close", style: "close", start: 0, end: 3.8,
+      id: "scout-recorded-close", style: "close", start: clip.start, end: clip.start + 3.8,
       move: 0, note: "Scout speaks to Jo", targets: [scout.id],
       lineId: scene.script!.lines[0].id,
       frame: { x: 400, y: 225, zoom: 2 },
@@ -264,9 +264,9 @@ describe("PR #100 genuine recorded-conversation listening", () => {
     expect(cinematicSpeakingEyelineAt(project, scene, scout, frames, t, true))
       .toBeUndefined();
     expect(cinematicSpeakingEyelineAt(project, scene, scout,
-      sceneFramesAt(project, scene, 0), 0, false)).toBeUndefined();
+      sceneFramesAt(project, scene, clip.start), clip.start, false)).toBeUndefined();
     expect(cinematicSpeakingEyelineAt(project, scene, scout,
-      sceneFramesAt(project, scene, 3.8), 3.8, false)).toBeUndefined();
+      sceneFramesAt(project, scene, clip.start + 3.8), clip.start + 3.8, false)).toBeUndefined();
     expect(JSON.stringify(project)).toBe(snapshot);
 
     project.mixer.muted = true;
