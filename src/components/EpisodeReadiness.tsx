@@ -15,7 +15,7 @@ export function EpisodeReadiness({
 }: {
   project: Project;
   onReady: (ready: boolean) => void;
-  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number) => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number, inspectKind?: "voice" | "gap") => void;
 }) {
   const [missing, setMissing] = useState<string[]>([]),
     [checked, setChecked] = useState(!project.audioAssets.some((a) => a.file)),
@@ -127,7 +127,7 @@ export function EpisodeReadiness({
                       {" "}
                       <button type="button" className="button secondary small"
                         aria-label={`Inspect default camera interval ${index + 1} in scene ${item.sceneIndex + 1}`}
-                        onClick={() => onScene(item.sceneIndex, "camera-review", (gap.start + gap.end) / 2)}>
+                        onClick={() => onScene(item.sceneIndex, "camera-review", (gap.start + gap.end) / 2, "gap")}>
                         Inspect gap
                       </button>
                     </li>
@@ -141,7 +141,7 @@ export function EpisodeReadiness({
                       {" "}
                       <button type="button" className="button secondary small"
                         aria-label={`Inspect assigned voice ${index + 1} in scene ${item.sceneIndex + 1}`}
-                        onClick={() => onScene(item.sceneIndex, "camera-review", voice.start)}>
+                        onClick={() => onScene(item.sceneIndex, "camera-review", voice.start, "voice")}>
                         Inspect voice
                       </button>
                     </li>
