@@ -148,7 +148,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
-  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; preset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal" }>();
+  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; inspectAt?: number; preset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal" }>();
   const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
@@ -1780,7 +1780,7 @@ export function Editor({
           <p role="status">Opening camera director…</p>
         </Modal>}>
           <ShotDirector key={scene.id} project={project} scene={scene} id={shotEditor.id} lineId={shotEditor.lineId}
-            initialPreset={shotEditor.preset}
+            initialPreset={shotEditor.preset} initialInspectTime={shotEditor.inspectAt}
             time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
             onScene={next => { selectScene(next); setShotEditor({}); }}
             onClose={() => setShotEditor(undefined)} onApply={changeScene} />
@@ -1869,7 +1869,7 @@ export function Editor({
             project={project}
             onStoryCards={() => { setFinish(false); setStoryCardsOpen(true); }}
             saveStatus={saveStatus}
-            onScene={(i, reviewPanel) => {
+            onScene={(i, reviewPanel, inspectAt) => {
               setFinish(false);
               selectScene(i);
               if (reviewPanel === "preview") {
@@ -1888,7 +1888,12 @@ export function Editor({
                 // Framefield-only preset. Start with the first saved shot
                 // when available or a temporary draft for an empty scene.
                 // The author still previews and explicitly applies edits.
-                setShotEditor({ id: project.scenes[i].cameraShots?.[0]?.id });
+                setShotEditor({
+                  id: project.scenes[i].cameraShots?.[0]?.id,
+                  inspectAt: inspectAt !== undefined && Number.isFinite(inspectAt)
+                    ? clamp(inspectAt, 0, project.scenes[i].duration)
+                    : undefined,
+                });
                 setMobilePanel("stage");
                 return;
               }

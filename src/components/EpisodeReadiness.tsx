@@ -15,7 +15,7 @@ export function EpisodeReadiness({
 }: {
   project: Project;
   onReady: (ready: boolean) => void;
-  onScene: (index: number, panel?: "voices" | "captions" | "camera-review") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number) => void;
 }) {
   const [missing, setMissing] = useState<string[]>([]),
     [checked, setChecked] = useState(!project.audioAssets.some((a) => a.file)),
@@ -124,6 +124,12 @@ export function EpisodeReadiness({
                     <li key={`gap-${index}`}>
                       Default camera: scene {cameraReviewTimecode(gap.start)}–{cameraReviewTimecode(gap.end)}
                       {" "}· episode {cameraReviewTimecode(start + gap.start)}–{cameraReviewTimecode(start + gap.end)}
+                      {" "}
+                      <button type="button" className="button secondary small"
+                        aria-label={`Inspect default camera interval ${index + 1} in scene ${item.sceneIndex + 1}`}
+                        onClick={() => onScene(item.sceneIndex, "camera-review", (gap.start + gap.end) / 2)}>
+                        Inspect gap
+                      </button>
                     </li>
                   )) : <li>No default-camera intervals in this scene.</li>}
                   {timeline.voices.length ? timeline.voices.map((voice, index) => (
@@ -132,6 +138,12 @@ export function EpisodeReadiness({
                       {" "}scene {cameraReviewTimecode(voice.start)}
                       {" "}· episode {cameraReviewTimecode(start + voice.start)}
                       {" "}· {voice.shotId ? "custom camera shot" : "default camera"}
+                      {" "}
+                      <button type="button" className="button secondary small"
+                        aria-label={`Inspect assigned voice ${index + 1} in scene ${item.sceneIndex + 1}`}
+                        onClick={() => onScene(item.sceneIndex, "camera-review", voice.start)}>
+                        Inspect voice
+                      </button>
                     </li>
                   )) : <li>No assigned audible dialogue or narration starts in this scene.</li>}
                 </ul>

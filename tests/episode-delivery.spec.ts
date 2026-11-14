@@ -8,6 +8,8 @@ import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup, restore, saved } from "./production-helpers";
 import { cameraShotDemo } from "../src/camera-shot-demo";
+import { newAudioClip } from "../src/production";
+import { builtInSound } from "../src/sounds";
 
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const dialog = (page: Page) => page.getByRole("dialog");
@@ -256,4 +258,59 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
     .toBeVisible();
   await director.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(director).toBeHidden();
+});
+
+
+test("episode camera timing moments open the exact saved preview without applying edits", async ({ page }) => {
+  test.setTimeout(60_000);
+  const project = cameraShotDemo();
+  const [first, second] = project.scenes;
+  first.cameraShots = [first.cameraShots![0]];
+  second.cameraShots = undefined;
+  const audio = builtInSound("melody");
+  project.audioAssets.push(audio);
+  project.audioClips.push({
+    ...newAudioClip(project, audio, "dialogue", 0, 2.2),
+    duration: 1,
+  });
+  await restore(page, project);
+  const original = (await backup(page)).data;
+  const director = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
+
+  await button(page, "Finish My Cartoon").click();
+  let readiness = dialog(page).locator(".episode-readiness");
+  if ((await readiness.getAttribute("open")) === null)
+    await readiness.locator(":scope > summary").click();
+  let moment = readiness.locator('details[aria-label="Camera timing details for scene 2"]');
+  await moment.locator(":scope > summary").click();
+  await moment.getByRole("button", {
+    name: "Inspect default camera interval 1 in scene 2",
+  }).click();
+  await expect(director).toBeVisible();
+  let preview = director.getByRole("region", { name: "Proposed scene preview" });
+  await expect(preview.getByRole("spinbutton", { name: "Preview time (seconds)" }))
+    .toHaveValue(String(Number((second.duration / 2).toFixed(2))));
+  await expect(director.getByRole("checkbox", { name: "Compare with the saved camera" }))
+    .toBeChecked();
+  await expect(director.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  await director.getByRole("button", { name: "Cancel", exact: true }).click();
+
+  await button(page, "Finish My Cartoon").click();
+  readiness = dialog(page).locator(".episode-readiness");
+  if ((await readiness.getAttribute("open")) === null)
+    await readiness.locator(":scope > summary").click();
+  moment = readiness.locator('details[aria-label="Camera timing details for scene 1"]');
+  await moment.locator(":scope > summary").click();
+  await moment.getByRole("button", {
+    name: "Inspect assigned voice 1 in scene 1",
+  }).click();
+  await expect(director).toBeVisible();
+  preview = director.getByRole("region", { name: "Proposed scene preview" });
+  await expect(preview.getByRole("spinbutton", { name: "Preview time (seconds)" }))
+    .toHaveValue("2.2");
+  await expect(director.getByRole("checkbox", { name: "Compare with the saved camera" }))
+    .toBeChecked();
+  await director.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(director).toBeHidden();
+  expect((await backup(page)).data).toEqual(original);
 });

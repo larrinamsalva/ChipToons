@@ -25,8 +25,10 @@ import { Stage } from "./Stage";
 import { CameraMotionContactSheet } from "./CameraMotionContactSheet";
 import { CameraHoldReview } from "./CameraHoldReview";
 
-export function ShotDirector({ project, scene, time, id, lineId, initialPreset, onScene, onClose, onApply }: {
+export function ShotDirector({ project, scene, time, id, lineId, initialPreset, initialInspectTime, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
+  /** Review-only seek into the SAVED camera, never auto-apply a draft. */
+  initialInspectTime?: number;
   initialPreset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
@@ -44,13 +46,17 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
             : initialPreset === "framefield-reveal" && canStartFramefieldCinematicPush(project, scene)
               ? framefieldGentleCinematicReveal(project, scene)
               : newCameraShot(project, scene, time, lineId)));
-  const [review, setReview] = useState(0);
-  const [mode, setMode] = useState<"shot" | "sequence">("shot");
-  const [compare, setCompare] = useState(false);
+  const reviewingSavedMoment = initialInspectTime !== undefined &&
+    Number.isFinite(initialInspectTime);
+  const [review, setReview] = useState(reviewingSavedMoment ? 1 : 0);
+  const [mode, setMode] = useState<"shot" | "sequence">(reviewingSavedMoment ? "sequence" : "shot");
+  const [compare, setCompare] = useState(reviewingSavedMoment);
   const [guides, setGuides] = useState(true);
   const [thumbnails, setThumbnails] = useState(false);
   const [contactSheet, setContactSheet] = useState(false);
-  const [inspectTime, setInspectTime] = useState<number>();
+  const [inspectTime, setInspectTime] = useState<number | undefined>(
+    reviewingSavedMoment ? clamp(initialInspectTime!, 0, scene.duration) : undefined,
+  );
   const [remove, setRemove] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
@@ -131,6 +137,10 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
 
   return <Modal title={SHOT_TITLE} onClose={onClose} wide>
     <p className="field-hint">Frame what viewers should see. Shots use the same animated scene, dialogue, and sounds.</p>
+    {reviewingSavedMoment && <p role="status" className="field-hint">
+      Inspecting the saved camera at {inspectTime?.toFixed(2)}s.
+      This full-scene preview is read-only until you explicitly edit and apply a shot.
+    </p>}
     {initialPreset === "framefield-push" && !editing && (
       <p className="field-hint">
         Gentle imported-PNG push-in preset: the actual numbered PNG frames
