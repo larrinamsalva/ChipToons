@@ -7,6 +7,7 @@ import type { Page } from "@playwright/test";
 import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
 import { backup, restore, saved } from "./production-helpers";
+import { cameraShotDemo } from "../src/camera-shot-demo";
 
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const dialog = (page: Page) => page.getByRole("dialog");
@@ -175,4 +176,29 @@ test("checks two genuine parts, resumes the existing exporter, watches in order 
   await info.attach("delivery-part-1", { body: first.buffer, contentType: "video/webm" });
   await info.attach("delivery-part-2", { body: second.buffer, contentType: "video/webm" });
   await info.attach("delivery-manifest", { body: JSON.stringify(manifest, null, 2), contentType: "application/json" });
+});
+
+
+test("whole-episode readiness shows actual saved camera gaps without treating them as export failures", async ({ page }) => {
+  test.setTimeout(60_000);
+  const project = cameraShotDemo();
+  const [first, second] = project.scenes;
+  first.cameraShots = [first.cameraShots![0]];
+  second.cameraShots = undefined;
+  await restore(page, project);
+  await button(page, "Finish My Cartoon").click();
+  const readiness = dialog(page).locator(".episode-readiness");
+  if ((await readiness.getAttribute("open")) === null) {
+    await readiness.locator("summary").click();
+  }
+  const review = readiness.getByRole("region", { name: "Episode camera coverage review" });
+  await expect(review).toBeVisible();
+  await expect(review).toContainText("Whole-episode camera coverage:");
+  await expect(review).toContainText("Scene 1:");
+  await expect(review).toContainText("Scene 2:");
+  await expect(review).toContainText("0 shot(s) · 1 default-camera interval(s)");
+  await expect(review).toContainText("Remaining seconds");
+  await expect(review.getByRole("button", {
+    name: "Open scene 2 for camera review",
+  })).toBeEnabled();
 });

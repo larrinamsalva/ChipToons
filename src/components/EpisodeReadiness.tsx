@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Project } from "../model";
 import { missingAudio } from "../audio-vault";
 import { clipStart } from "../production";
+import { episodeCameraSummary } from "../episode-camera-review";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
 export function EpisodeReadiness({
@@ -39,6 +40,7 @@ export function EpisodeReadiness({
     };
   }, [project, onReady]);
   const missingSources = new Set(missing);
+  const camera = episodeCameraSummary(project);
   const rows = project.scenes.map((scene, index) => {
     const start = sceneStart(project, index),
       voice = project.audioClips.filter(
@@ -71,6 +73,34 @@ export function EpisodeReadiness({
         checked separately. Review each scene’s performance before exporting; a
         short assigned clip does not mean the whole narration has been recorded.
       </p>
+      <section role="region" aria-label="Episode camera coverage review"
+        className="episode-camera-review">
+        <p>
+          <strong>Whole-episode camera coverage: {camera.percent}% custom shots</strong>
+          {" "}({camera.customSeconds.toFixed(1)} of {camera.seconds.toFixed(1)} seconds)
+        </p>
+        <p className="field-hint">
+          These are saved camera shots across all scenes. Remaining seconds
+          use the normal default camera, which is valid for preview and
+          export. This report never changes your cartoon.
+        </p>
+        <ol>
+          {camera.scenes.map(item => (
+            <li key={project.scenes[item.sceneIndex].id}>
+              <span>
+                Scene {item.sceneIndex + 1}: {item.customSeconds.toFixed(1)}/{item.seconds.toFixed(1)}s
+                {" "}custom · {item.shotCount} shot(s) · {item.gapCount} default-camera interval(s)
+                {item.voiceStarts > 0 &&
+                  ` · ${item.defaultVoiceStarts} of ${item.voiceStarts} recorded voice starts use default camera`}
+              </span>{" "}
+              <button type="button" className="button secondary small"
+                onClick={() => onScene(item.sceneIndex)}>
+                Open scene {item.sceneIndex + 1} for camera review
+              </button>
+            </li>
+          ))}
+        </ol>
+      </section>
       {!checked && <p role="status">Checking local audio originals…</p>}
       {error && <p role="alert">{error}</p>}
       {!!missing.length && (

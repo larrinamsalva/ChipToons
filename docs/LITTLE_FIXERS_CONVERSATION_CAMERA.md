@@ -93,6 +93,13 @@ workshop ending.
   the original scene unchanged. Repeated jumps reset only the temporary
   preview clock.
 
+- **PR #113:** the final pre-export Episode Narration Review now includes
+  a read-only whole-episode camera summary: saved custom-shot seconds,
+  default-camera intervals and genuine recorded voice starts using the
+  default view, organized by scene. Creators can open any scene for further
+  camera review without silently modifying shots or blocking valid exports.
+  The complete 20-minute media-export gate remains independent.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
