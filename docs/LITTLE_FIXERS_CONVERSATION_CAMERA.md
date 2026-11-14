@@ -148,6 +148,16 @@ workshop ending.
   changes. Sound can be toggled at any time and missing local sources
   continue to surface the existing preview error.
 
+- **PR #120:** each assigned voice start now displays its audio-source
+  status in the expandable scene camera review. Embedded sources are
+  labeled as assigned, indexed local originals are explicitly only
+  identified as present, and missing, pending, or failed local-file
+  checks are called out without claiming speech, audio decoding or
+  integrity was verified. If the original is missing/unverified,
+  **Inspect voice** still permits a read-only camera preview but keeps
+  sound off and explains how to restore the complete episode backup.
+  No project data, recordings or export eligibility are changed.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
