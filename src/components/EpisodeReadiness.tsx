@@ -94,7 +94,9 @@ export function EpisodeReadiness({
         <div className="animation-actions">
           <button type="button" className="button secondary small"
             onClick={() => downloadBlob(
-              new Blob([episodeCameraPunchList(project)], {
+              new Blob([episodeCameraPunchList(project, {
+                missing: missingSources, checked, checkFailed: !!error,
+              })], {
                 type: "text/plain;charset=utf-8",
               }),
               `${safeFilename(project.title)}-camera-review.txt`,
