@@ -57,4 +57,37 @@ describe("PR #115 downloadable camera worksheet", () => {
     expect(text).toContain("Scenes: 0 | Custom camera: 0% (0.00s of 0.00s)");
     expect(text).not.toContain("SCENE 1 —");
   });
+  it("includes accurate device-specific voice source notes only when supplied, without changing the project", () => {
+    const project = cameraShotDemo();
+    const source = builtInSound("melody");
+    const clip = newAudioClip(project, source, "dialogue", 0, 2.2);
+    project.audioAssets.push(source);
+    project.audioClips.push(clip);
+    const before = JSON.stringify(project);
+    const embedded = episodeCameraPunchList(project, {
+      missing: new Set<string>(), checked: true, checkFailed: false,
+    });
+    expect(embedded).toContain("Audio-source notes reflect only the file index");
+    expect(embedded).toContain(`AUDIO SOURCE — Embedded audio source: ${source.name}.`);
+    expect(embedded).toContain("Listen to verify its contents");
+    expect(episodeCameraPunchList(project)).not.toContain("AUDIO SOURCE —");
+    expect(JSON.stringify(project)).toBe(before);
+
+    project.audioAssets[0] = {
+      ...source, dataUrl: "",
+      file: { key: "local-test-file", size: 100, sha256: "a".repeat(64) },
+    };
+    const options = { missing: new Set([source.id]), checked: true, checkFailed: false };
+    const missing = episodeCameraPunchList(project, options);
+    expect(missing).toContain("Original audio missing on this device");
+    expect(missing).not.toContain("Local audio entry found");
+    const pending = episodeCameraPunchList(project, { ...options, missing: new Set(), checked: false });
+    expect(pending).toContain("Checking local audio source");
+    const failed = episodeCameraPunchList(project, { ...options, missing: new Set(), checkFailed: true });
+    expect(failed).toContain("Local audio source not verified");
+    const indexed = episodeCameraPunchList(project, { ...options, missing: new Set() });
+    expect(indexed).toContain("Local audio entry found");
+    expect(indexed).toContain("not necessarily been decoded or heard");
+  });
+
 });
