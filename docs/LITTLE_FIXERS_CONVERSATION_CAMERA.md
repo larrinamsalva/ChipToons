@@ -85,6 +85,14 @@ workshop ending.
   no saved camera, animation, voice, caption, media or export data.
   Gaps are informational, not automatically errors.
 
+- **PR #112:** the read-only Camera Coverage Review now offers
+  accessible "Inspect gap" and "Inspect voice" controls. Each seeks
+  the existing full-sequence Stage preview to the relevant camera gap
+  midpoint or exact recorded voice start. It never applies or edits a
+  shot, original audio, captions or project data, and Cancel leaves
+  the original scene unchanged. Repeated jumps reset only the temporary
+  preview clock.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
