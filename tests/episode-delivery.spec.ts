@@ -201,4 +201,34 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await expect(review.getByRole("button", {
     name: "Open scene 2 for camera review",
   })).toBeEnabled();
+
+  // #114: This must open the real Camera & Shot Director, NOT only switch
+  // to scene properties. No saved shots in scene 2: a fresh unsaved draft.
+  await review.getByRole("button", {
+    name: "Open scene 2 for camera review",
+  }).click();
+  const director = page.getByRole("dialog", { name: "Direct My Cartoon Camera" });
+  await expect(director).toBeVisible();
+  await expect(director.getByRole("combobox", { name: "Choose a scene" }))
+    .toHaveValue(second.id);
+  await expect(director.getByRole("combobox", { name: "Shot style" }))
+    .toBeVisible();
+  await director.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(director).toBeHidden();
+
+  // The existing creator-authored shot should open for review too.
+  await button(page, "Finish My Cartoon").click();
+  const again = dialog(page).locator(".episode-readiness");
+  if ((await again.getAttribute("open")) === null)
+    await again.locator("summary").click();
+  await again.getByRole("button", {
+    name: "Open scene 1 for camera review",
+  }).click();
+  await expect(director).toBeVisible();
+  await expect(director.getByRole("combobox", { name: "Choose a scene" }))
+    .toHaveValue(first.id);
+  await expect(director.getByRole("region", { name: "Shot list" }))
+    .toBeVisible();
+  await director.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(director).toBeHidden();
 });
