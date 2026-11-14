@@ -498,9 +498,6 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
           <ScenePreview key={review} project={project} scene={previewScene} showCaptions precision={2}
             captionGuide={guides} shotGuides={guides ? { ids: draft.targets, offset: draft.offset } : undefined}
             initialTime={inspectTime ?? (mode === "shot" ? previewTime : 0)}
-            // An Inspect gap/voice jump must be playable from that precise
-            // scene moment. The ordinary Full Sequence button clears
-            // inspectTime and still starts playback at the beginning.
             playFrom={mode === "shot" ? draft.start : inspectTime ?? 0}
             playTo={mode === "shot" ? draft.end : scene.duration}
             scrubTimeline={{
