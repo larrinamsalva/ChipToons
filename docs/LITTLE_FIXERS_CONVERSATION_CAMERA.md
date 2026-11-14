@@ -131,6 +131,15 @@ workshop ending.
   voices, animation, captions or export settings are changed, and
   Apply stays disabled until the creator deliberately exits comparison.
 
+- **PR #118:** after Inspect gap/voice opens a saved camera preview
+  at a real timestamp, pressing **Preview this scene** starts playing
+  from that inspected time instead of jumping back to zero.
+  Deliberately selecting **Preview Full Sequence** still plays from
+  the scene beginning, and an ordinary shot preview still begins at
+  its shot start. All preview audio uses the same exact playback
+  window, with no changes to saved camera, original recordings or
+  exported timeline.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their

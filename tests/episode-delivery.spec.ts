@@ -310,6 +310,13 @@ test("episode camera timing moments open the exact saved preview without applyin
     .toHaveValue("2.2");
   await expect(director.getByRole("checkbox", { name: "Compare with the saved camera" }))
     .toBeChecked();
+  // #118: Play must continue FROM this real recorded voice cue. It
+  // must not silently restart at 0s after the creator inspected 2.20s.
+  await preview.getByRole("button", { name: "Preview this scene" }).click();
+  await expect.poll(async () => Number(await preview.getByRole("spinbutton", {
+    name: "Preview time (seconds)",
+  }).inputValue()), { timeout: 1200 }).toBeGreaterThanOrEqual(2.2);
+  await preview.getByRole("button", { name: "Pause preview" }).click();
   await director.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(director).toBeHidden();
   expect((await backup(page)).data).toEqual(original);
