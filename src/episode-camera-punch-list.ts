@@ -1,6 +1,7 @@
 import type { Project } from "./model";
 import { cameraCoverageReview } from "./camera-coverage-review";
 import { episodeCameraSummary } from "./episode-camera-review";
+import { cameraVoiceSourceStatus } from "./episode-camera-voice-source";
 
 /** Timecode with hundredth-second precision, including long episodes.
  * Convert once to integer centiseconds so rounding cannot emit 60.00s. */
@@ -23,7 +24,20 @@ const tidy = (text: string) => text.replace(/\s+/gu, " ").trim();
  * This report is optional: default-camera intervals are valid, and
  * a clip assignment is not proof the spoken performance is approved.
  */
-export function episodeCameraPunchList(project: Project): string {
+/** Optional snapshot of the original-file index in the current browser.
+ * This is not a guarantee that an audio file is decodable or that the
+ * performance matches the script, and it is not a portable health report.
+ */
+export interface CameraWorksheetSourceCheck {
+  missing: ReadonlySet<string>;
+  checked: boolean;
+  checkFailed: boolean;
+}
+
+export function episodeCameraPunchList(
+  project: Project,
+  sourceCheck?: CameraWorksheetSourceCheck,
+): string {
   const report = episodeCameraSummary(project);
   const lines: string[] = [
     "CHIPTOONS — WHOLE-EPISODE CAMERA REVIEW CHECKLIST",
@@ -33,6 +47,12 @@ export function episodeCameraPunchList(project: Project): string {
     "Voice markers come from assigned, unmuted dialogue/narration clip timing; they do not verify recorded words or audio files.",
     "",
   ];
+  if (sourceCheck) lines.push(
+    "Audio-source notes reflect only the file index of the device used for this download.",
+    "An entry marked available has not necessarily been decoded or heard. Review the actual recording before publishing.",
+    "Restoring an episode or changing browsers/devices may change availability. Download a fresh checklist after changes.",
+    "",
+  );
   let episodeStart = 0;
   for (const row of report.scenes) {
     const scene = project.scenes[row.sceneIndex];
@@ -58,6 +78,13 @@ export function episodeCameraPunchList(project: Project): string {
       lines.push(
         `  [ ] ${voice.category.toUpperCase()} START scene ${cameraReviewTimecode(voice.start)} | episode ${cameraReviewTimecode(episodeStart + voice.start)} | ${view}`,
       );
+      if (sourceCheck) {
+        const status = cameraVoiceSourceStatus(
+          project, voice.clipId, sourceCheck.missing,
+          sourceCheck.checked, sourceCheck.checkFailed,
+        );
+        lines.push(`      AUDIO SOURCE — ${tidy(status.text)}`);
+      }
     }
     lines.push("");
     episodeStart += row.seconds;
