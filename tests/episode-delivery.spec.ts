@@ -362,6 +362,17 @@ test("exact voice source review selects the intended second clip without changin
   const detail = readiness.locator('details[aria-label="Camera timing details for scene 1"]');
   await detail.locator(":scope > summary").click();
   await expect(detail).toContainText("Embedded audio source:");
+  // #122: the downloaded camera worksheet preserves the source notes
+  // shown on this device, aligned with exact voice start timecodes.
+  const cameraDownload = page.waitForEvent("download");
+  await readiness.getByRole("button", {
+    name: "Download camera review checklist (.txt)",
+  }).click();
+  const worksheet = await cameraDownload;
+  const text = await readFile((await worksheet.path())!, "utf8");
+  expect(text).toContain("Audio-source notes reflect only the file index");
+  expect(text).toContain(`AUDIO SOURCE — Embedded audio source: ${audio.name}.`);
+  expect(text.match(/AUDIO SOURCE — Embedded audio source:/g)).toHaveLength(2);
   await detail.getByRole("button", {
     name: "Review assigned voice 2 in scene 1 in Sound Studio",
   }).click();

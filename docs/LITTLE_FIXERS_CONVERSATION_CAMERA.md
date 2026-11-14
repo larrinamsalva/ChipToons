@@ -166,6 +166,16 @@ workshop ending.
   voice clips when several start in the same scene. No automatic
   recording, playback, replacement or project edits occur.
 
+- **PR #122:** the existing downloadable whole-episode camera checklist
+  now includes each actual voice clip's **audio source status**, aligned
+  under that clip's exact scene/episode timecode. It uses the same
+  current-device local-original check as the on-screen review, including
+  missing, pending and unverified sources. The file explicitly warns
+  that an indexed original has **not** been decoded, listened to, or
+  matched with scripted words, and availability may differ on another
+  device. Existing data-only callers still receive the unchanged
+  generic worksheet; no recording, camera, or export data is modified.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
