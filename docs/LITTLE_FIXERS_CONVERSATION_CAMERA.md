@@ -100,6 +100,12 @@ workshop ending.
   camera review without silently modifying shots or blocking valid exports.
   The complete 20-minute media-export gate remains independent.
 
+- **PR #114:** the whole-episode `Open scene for camera review`
+  buttons now open the real **Direct My Cartoon Camera** editor for the
+  selected scene, rather than only switching scene properties. Existing
+  shots open for review; scenes with no shots open an unsaved new-shot
+  draft. No automatic shot creation, edits, audio changes or publishing.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
