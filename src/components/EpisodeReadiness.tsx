@@ -227,7 +227,7 @@ export function EpisodeReadiness({
                 )}
               </ul>
             </details>
-            {r.lineCount > 0 && <span>{checked ? `${r.approved}/${r.lineCount} script lines approved` : "Checking script recordings"}</span>
+            {r.lineCount > 0 && <span>{checked ? `${r.approved}/${r.lineCount} script lines approved` : "Checking script recordings"}</span>}
             <span>
               {r.missing
                 ? "Missing original — restore its episode package"
