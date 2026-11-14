@@ -498,7 +498,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
           <ScenePreview key={review} project={project} scene={previewScene} showCaptions precision={2}
             captionGuide={guides} shotGuides={guides ? { ids: draft.targets, offset: draft.offset } : undefined}
             initialTime={inspectTime ?? (mode === "shot" ? previewTime : 0)}
-            playFrom={mode === "shot" ? draft.start : inspectTime ?? 0}
+            playFrom={mode === "shot" ? draft.start : (inspectTime ?? 0)}
             playTo={mode === "shot" ? draft.end : scene.duration}
             scrubTimeline={{
               start: mode==="shot" ? draft.start : 0,
