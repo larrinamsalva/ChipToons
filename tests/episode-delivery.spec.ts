@@ -293,6 +293,11 @@ test("episode camera timing moments open the exact saved preview without applyin
   await expect(director.getByRole("checkbox", { name: "Compare with the saved camera" }))
     .toBeChecked();
   await expect(director.getByRole("button", { name: "Apply", exact: true })).toBeDisabled();
+  // #119: A silent camera gap does not enable sound or autoplay.
+  await expect(preview.getByRole("checkbox", { name: "Sound in preview" }))
+    .not.toBeChecked();
+  await expect(preview.getByRole("button", { name: "Preview this scene" }))
+    .toBeVisible();
   await director.getByRole("button", { name: "Cancel", exact: true }).click();
 
   await button(page, "Finish My Cartoon").click();
@@ -310,6 +315,15 @@ test("episode camera timing moments open the exact saved preview without applyin
     .toHaveValue("2.2");
   await expect(director.getByRole("checkbox", { name: "Compare with the saved camera" }))
     .toBeChecked();
+  // #119: Voice inspection prepares the existing local audio for the
+  // explicit Play gesture, without autoplay, adding or editing clips.
+  await expect(preview.getByRole("checkbox", { name: "Sound in preview" }))
+    .toBeChecked();
+  await expect(preview.getByRole("button", { name: "Preview this scene" }))
+    .toBeVisible();
+  // Keep #118's deterministic visual playback assertion independent of
+  // optional device audio decoders.
+  await preview.getByRole("checkbox", { name: "Sound in preview" }).uncheck();
   // #118: Play must continue FROM this real recorded voice cue. It
   // must not silently restart at 0s after the creator inspected 2.20s.
   await preview.getByRole("button", { name: "Preview this scene" }).click();
