@@ -188,7 +188,9 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await restore(page, project);
   await button(page, "Finish My Cartoon").click();
   const readiness = dialog(page).locator(".episode-readiness");
-  if (!(await readiness.getAttribute("open"))) await readiness.locator("summary").click();
+  if ((await readiness.getAttribute("open")) === null) {
+    await readiness.locator("summary").click();
+  }
   const review = readiness.getByRole("region", { name: "Episode camera coverage review" });
   await expect(review).toBeVisible();
   await expect(review).toContainText("Whole-episode camera coverage:");
