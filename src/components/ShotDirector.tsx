@@ -30,7 +30,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   /** Review-only seek into the SAVED camera, never auto-apply a draft. */
   initialInspectTime?: number;
   /** Voice inspection prepares sound; gap inspection stays silent. Neither autoplays. */
-  initialInspectKind?: "voice" | "gap";
+  initialInspectKind?: "voice" | "gap" | "voice-unavailable";
   initialPreset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
@@ -143,6 +143,13 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
       Inspecting the saved camera at {inspectTime?.toFixed(2)}s.
       This full-scene preview is read-only until you explicitly edit and apply a shot.
     </p>}
+    {initialInspectKind === "voice-unavailable" && (
+      <p className="field-hint" role="status">
+        The assigned voice source is missing or not yet verified on this device.
+        You can inspect the saved camera silently; restore a complete episode
+        backup and check the audio source before trying to listen.
+      </p>
+    )}
     {initialPreset === "framefield-push" && !editing && (
       <p className="field-hint">
         Gentle imported-PNG push-in preset: the actual numbered PNG frames
