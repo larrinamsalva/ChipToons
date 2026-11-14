@@ -1870,7 +1870,7 @@ export function Editor({
             project={project}
             onStoryCards={() => { setFinish(false); setStoryCardsOpen(true); }}
             saveStatus={saveStatus}
-            onScene={(i, reviewPanel, inspectAt, inspectKind) => {
+            onScene={(i, reviewPanel, inspectAt, inspectKind, voiceClipId) => {
               setFinish(false);
               selectScene(i);
               if (reviewPanel === "preview") {
@@ -1916,11 +1916,14 @@ export function Editor({
               setMobilePanel("properties");
               if (reviewPanel)
                 openVoice(
-                  project.audioClips.find(
-                    (c) =>
-                      c.sceneId === project.scenes[i].id &&
-                      ["narration", "dialogue"].includes(c.category),
-                  )?.id ?? "",
+                  voiceClipId && project.audioClips.some(c => c.id === voiceClipId &&
+                    (c.category === "narration" || c.category === "dialogue"))
+                    ? voiceClipId
+                    : project.audioClips.find(
+                      (c) =>
+                        c.sceneId === project.scenes[i].id &&
+                        ["narration", "dialogue"].includes(c.category),
+                    )?.id ?? "",
                   undefined,
                   reviewPanel === "captions" ? "captions" : undefined,
                 );

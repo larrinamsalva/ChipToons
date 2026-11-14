@@ -158,6 +158,14 @@ workshop ending.
   sound off and explains how to restore the complete episode backup.
   No project data, recordings or export eligibility are changed.
 
+- **PR #121:** each assigned dialogue/narration start in the
+  whole-episode camera review has a **Review this voice in Sound Studio**
+  button, in addition to Inspect voice. It opens the exact original
+  audio clip by ID, rather than selecting the first recording in that
+  scene. This helps creators repair missing sources or adjust precise
+  voice clips when several start in the same scene. No automatic
+  recording, playback, replacement or project edits occur.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their

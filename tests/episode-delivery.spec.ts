@@ -340,3 +340,36 @@ test("episode camera timing moments open the exact saved preview without applyin
   await expect(director).toBeHidden();
   expect((await backup(page)).data).toEqual(original);
 });
+
+
+test("exact voice source review selects the intended second clip without changing the cartoon", async ({ page }) => {
+  test.setTimeout(60_000);
+  const project = cameraShotDemo();
+  const audio = builtInSound("melody");
+  project.audioAssets.push(audio);
+  const firstClip = newAudioClip(project, audio, "dialogue", 0, 2.2);
+  const secondClip = newAudioClip(project, audio, "narration", 0, 3.2);
+  project.audioClips.push(
+    { ...firstClip, duration: 0.5 },
+    { ...secondClip, duration: 0.5 },
+  );
+  await restore(page, project);
+  const original = (await backup(page)).data;
+  await button(page, "Finish My Cartoon").click();
+  const readiness = dialog(page).locator(".episode-readiness");
+  if ((await readiness.getAttribute("open")) === null)
+    await readiness.locator(":scope > summary").click();
+  const detail = readiness.locator('details[aria-label="Camera timing details for scene 1"]');
+  await detail.locator(":scope > summary").click();
+  await expect(detail).toContainText("Embedded audio source:");
+  await detail.getByRole("button", {
+    name: "Review assigned voice 2 in scene 1 in Sound Studio",
+  }).click();
+  const studio = page.getByRole("dialog", { name: "Voices & Sound Studio" });
+  await expect(studio).toBeVisible();
+  await expect(studio.getByRole("combobox", { name: "Audio clip", exact: true }))
+    .toHaveValue(secondClip.id);
+  await studio.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await expect(studio).toBeHidden();
+  expect((await backup(page)).data).toEqual(original);
+});

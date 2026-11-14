@@ -16,7 +16,7 @@ export function EpisodeReadiness({
 }: {
   project: Project;
   onReady: (ready: boolean) => void;
-  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number, inspectKind?: "voice" | "gap" | "voice-unavailable") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number, inspectKind?: "voice" | "gap" | "voice-unavailable", voiceClipId?: string) => void;
 }) {
   const [missing, setMissing] = useState<string[]>([]),
     [checked, setChecked] = useState(!project.audioAssets.some((a) => a.file)),
@@ -149,6 +149,12 @@ export function EpisodeReadiness({
                         onClick={() => onScene(item.sceneIndex, "camera-review", voice.start,
                           source.soundReady ? "voice" : "voice-unavailable")}>
                         Inspect voice
+                      </button>
+                      {" "}
+                      <button type="button" className="button secondary small"
+                        aria-label={`Review assigned voice ${index + 1} in scene ${item.sceneIndex + 1} in Sound Studio`}
+                        onClick={() => onScene(item.sceneIndex, "voices", undefined, undefined, voice.clipId)}>
+                        Review this voice in Sound Studio
                       </button>
                     </li>;
                   }) : <li>No assigned audible dialogue or narration starts in this scene.</li>}
