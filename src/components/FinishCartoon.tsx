@@ -41,7 +41,7 @@ export function FinishCartoon({
   onCaptions: () => void;
   onPreview: (sound: boolean) => void;
   saveStatus: string;
-  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-review" | "camera-pan" | "camera-tilt" | "camera-glide" | "camera-reveal", inspectAt?: number, inspectKind?: "voice" | "gap") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "preview" | "camera" | "camera-review" | "camera-pan" | "camera-tilt" | "camera-glide" | "camera-reveal", inspectAt?: number, inspectKind?: "voice" | "gap" | "voice-unavailable") => void;
 }) {
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;

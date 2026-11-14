@@ -148,7 +148,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
-  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; inspectAt?: number; inspectKind?: "voice" | "gap"; preset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal" }>();
+  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; inspectAt?: number; inspectKind?: "voice" | "gap" | "voice-unavailable"; preset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal" }>();
   const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();

@@ -5,6 +5,7 @@ import { clipStart } from "../production";
 import { episodeCameraSummary } from "../episode-camera-review";
 import { episodeCameraPunchList, cameraReviewTimecode } from "../episode-camera-punch-list";
 import { cameraCoverageReview } from "../camera-coverage-review";
+import { cameraVoiceSourceStatus } from "../episode-camera-voice-source";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
@@ -15,7 +16,7 @@ export function EpisodeReadiness({
 }: {
   project: Project;
   onReady: (ready: boolean) => void;
-  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number, inspectKind?: "voice" | "gap") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "camera-review", inspectAt?: number, inspectKind?: "voice" | "gap" | "voice-unavailable") => void;
 }) {
   const [missing, setMissing] = useState<string[]>([]),
     [checked, setChecked] = useState(!project.audioAssets.some((a) => a.file)),
@@ -132,20 +133,25 @@ export function EpisodeReadiness({
                       </button>
                     </li>
                   )) : <li>No default-camera intervals in this scene.</li>}
-                  {timeline.voices.length ? timeline.voices.map((voice, index) => (
-                    <li key={`voice-${voice.clipId}`}>
+                  {timeline.voices.length ? timeline.voices.map((voice, index) => {
+                    const source = cameraVoiceSourceStatus(
+                      project, voice.clipId, missingSources, checked, !!error,
+                    );
+                    return <li key={`voice-${voice.clipId}`}>
                       {voice.category === "dialogue" ? "Dialogue" : "Narration"} start {index + 1}:
                       {" "}scene {cameraReviewTimecode(voice.start)}
                       {" "}· episode {cameraReviewTimecode(start + voice.start)}
                       {" "}· {voice.shotId ? "custom camera shot" : "default camera"}
+                      {" "}· <span className="field-hint">{source.text}</span>
                       {" "}
                       <button type="button" className="button secondary small"
                         aria-label={`Inspect assigned voice ${index + 1} in scene ${item.sceneIndex + 1}`}
-                        onClick={() => onScene(item.sceneIndex, "camera-review", voice.start, "voice")}>
+                        onClick={() => onScene(item.sceneIndex, "camera-review", voice.start,
+                          source.soundReady ? "voice" : "voice-unavailable")}>
                         Inspect voice
                       </button>
-                    </li>
-                  )) : <li>No assigned audible dialogue or narration starts in this scene.</li>}
+                    </li>;
+                  }) : <li>No assigned audible dialogue or narration starts in this scene.</li>}
                 </ul>
               </details>
               <button type="button" className="button secondary small"

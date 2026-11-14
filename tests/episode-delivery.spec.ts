@@ -306,6 +306,8 @@ test("episode camera timing moments open the exact saved preview without applyin
     await readiness.locator(":scope > summary").click();
   moment = readiness.locator('details[aria-label="Camera timing details for scene 1"]');
   await moment.locator(":scope > summary").click();
+  await expect(moment).toContainText("Embedded audio source:");
+  await expect(moment).toContainText(audio.name);
   await moment.getByRole("button", {
     name: "Inspect assigned voice 1 in scene 1",
   }).click();
@@ -315,6 +317,9 @@ test("episode camera timing moments open the exact saved preview without applyin
     .toHaveValue("2.2");
   await expect(director.getByRole("checkbox", { name: "Compare with the saved camera" }))
     .toBeChecked();
+  // #120: The source is explicitly identified without claiming spoken
+  // words have been checked.
+  await expect(director).toBeVisible();
   // #119: Voice inspection prepares the existing local audio for the
   // explicit Play gesture, without autoplay, adding or editing clips.
   await expect(preview.getByRole("checkbox", { name: "Sound in preview" }))
