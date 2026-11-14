@@ -359,6 +359,15 @@ test("exact voice source review selects the intended second clip without changin
   const readiness = dialog(page).locator(".episode-readiness");
   if ((await readiness.getAttribute("open")) === null)
     await readiness.locator(":scope > summary").click();
+  // #123: Check exact clip durations, overlaps and unassigned spans
+  // without suggesting these unassigned intervals are silent or failed.
+  const coverage = readiness.locator('details[aria-label="Assigned voice coverage for scene 1"]');
+  await expect(coverage).not.toHaveAttribute("open", "");
+  await coverage.locator(":scope > summary").click();
+  await expect(coverage).toContainText("Assigned dialogue: scene 00:00:02.20–00:00:02.70");
+  await expect(coverage).toContainText("Assigned narration: scene 00:00:03.20–00:00:03.70");
+  await expect(coverage).toContainText("No assigned voice: scene 00:00:02.70–00:00:03.20");
+  await expect(coverage).toContainText("An unassigned interval is not necessarily silent");
   const detail = readiness.locator('details[aria-label="Camera timing details for scene 1"]');
   await detail.locator(":scope > summary").click();
   await expect(detail).toContainText("Embedded audio source:");

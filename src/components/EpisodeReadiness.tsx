@@ -6,6 +6,7 @@ import { episodeCameraSummary } from "../episode-camera-review";
 import { episodeCameraPunchList, cameraReviewTimecode } from "../episode-camera-punch-list";
 import { cameraCoverageReview } from "../camera-coverage-review";
 import { cameraVoiceSourceStatus } from "../episode-camera-voice-source";
+import { sceneAssignedVoiceCoverage } from "../episode-voice-coverage";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
@@ -61,7 +62,9 @@ export function EpisodeReadiness({
     return {
       scene,
       index,
+      start,
       voice,
+      voiceCoverage: sceneAssignedVoiceCoverage(project, index),
       missing: voice.some((c) => missing.includes(c.assetId)),
       lineCount: scene.script?.lines.filter(line => line.text.trim()).length ?? 0,
       approved: scene.script?.lines.filter(line => line.text.trim() && lineStatus(project, line, missingSources) === "Approved").length ?? 0,
@@ -192,6 +195,38 @@ export function EpisodeReadiness({
               {r.scene.duration}s · {r.voice.length} voice clip(s) ·{" "}
               {r.captions} captions
             </span>
+            <details aria-label={`Assigned voice coverage for scene ${r.index + 1}`}>
+              <summary>
+                Assigned voice coverage · {r.voiceCoverage.assignedSeconds.toFixed(1)}/{r.voiceCoverage.totalSeconds.toFixed(1)}s
+                {" "}· {r.voiceCoverage.gaps.length} interval(s) without assigned voice
+              </summary>
+              <p className="field-hint">
+                This shows only assigned, unmuted dialogue/narration clip timing.
+                An unassigned interval is not necessarily silent (music or effects
+                may play). An assignment does not prove recorded speech is audible,
+                accurate or approved. This review does not affect exports.
+              </p>
+              <ul aria-label={`Assigned voice intervals for scene ${r.index + 1}`}>
+                {r.voiceCoverage.spans.map(clip => (
+                  <li key={clip.clipId}>
+                    Assigned {clip.category}: scene {cameraReviewTimecode(clip.start)}–{cameraReviewTimecode(clip.end)}
+                    {" "}· episode {cameraReviewTimecode(r.start + clip.start)}–{cameraReviewTimecode(r.start + clip.end)}
+                  </li>
+                ))}
+                {r.voiceCoverage.spans.length === 0 && (
+                  <li>No dialogue or narration clips assigned within this scene.</li>
+                )}
+                {r.voiceCoverage.gaps.map((gap, i) => (
+                  <li key={`unassigned-${i}`}>
+                    No assigned voice: scene {cameraReviewTimecode(gap.start)}–{cameraReviewTimecode(gap.end)}
+                    {" "}· episode {cameraReviewTimecode(r.start + gap.start)}–{cameraReviewTimecode(r.start + gap.end)}
+                  </li>
+                ))}
+                {r.voiceCoverage.gaps.length === 0 && (
+                  <li>Assigned voice clip timing covers this scene; listen to verify the content.</li>
+                )}
+              </ul>
+            </details>
             {r.lineCount > 0 && <span>{checked ? `${r.approved}/${r.lineCount} script lines approved` : "Checking script recordings"}</span>}
             <span>
               {r.missing

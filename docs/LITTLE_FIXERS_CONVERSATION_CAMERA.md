@@ -176,6 +176,16 @@ workshop ending.
   device. Existing data-only callers still receive the unchanged
   generic worksheet; no recording, camera, or export data is modified.
 
+- **PR #123:** the expandable **Assigned voice coverage** section for
+  each scene now shows exact scene-local and episode timecodes for the
+  full duration of every assigned, unmuted dialogue/narration clip,
+  plus intervals with no voice clip assigned. Overlapping clips are
+  counted only once toward assigned seconds; clips crossing scene
+  boundaries are clipped correctly for each scene. This is a timing
+  map only, never a detector of silence, intelligible speech, approval
+  or missing voice originals. It does not change export eligibility,
+  recorded audio, saved projects or original camera shots.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
