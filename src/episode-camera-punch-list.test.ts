@@ -73,10 +73,10 @@ describe("PR #115 downloadable camera worksheet", () => {
     expect(episodeCameraPunchList(project)).not.toContain("AUDIO SOURCE —");
     expect(JSON.stringify(project)).toBe(before);
 
-    project.audioAssets[0] = {
-      ...source, dataUrl: "",
+    project.audioAssets = project.audioAssets.map(asset => asset.id === source.id ? {
+      ...asset, dataUrl: "",
       file: { key: "local-test-file", size: 100, sha256: "a".repeat(64) },
-    };
+    } : asset);
     const options = { missing: new Set([source.id]), checked: true, checkFailed: false };
     const missing = episodeCameraPunchList(project, options);
     expect(missing).toContain("Original audio missing on this device");
