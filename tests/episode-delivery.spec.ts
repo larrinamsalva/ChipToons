@@ -367,7 +367,7 @@ test("exact voice source review selects the intended second clip without changin
   }).click();
   const studio = page.getByRole("dialog", { name: "Voices & Sound Studio" });
   await expect(studio).toBeVisible();
-  await expect(studio.getByRole("combobox", { name: "Audio clip" }))
+  await expect(studio.getByRole("combobox", { name: "Audio clip", exact: true }))
     .toHaveValue(secondClip.id);
   await studio.getByRole("button", { name: "Close dialog", exact: true }).click();
   await expect(studio).toBeHidden();
