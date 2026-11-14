@@ -12,7 +12,7 @@ export function EpisodeReadiness({
 }: {
   project: Project;
   onReady: (ready: boolean) => void;
-  onScene: (index: number, panel?: "voices" | "captions") => void;
+  onScene: (index: number, panel?: "voices" | "captions" | "camera-review") => void;
 }) {
   const [missing, setMissing] = useState<string[]>([]),
     [checked, setChecked] = useState(!project.audioAssets.some((a) => a.file)),
@@ -94,7 +94,7 @@ export function EpisodeReadiness({
                   ` · ${item.defaultVoiceStarts} of ${item.voiceStarts} recorded voice starts use default camera`}
               </span>{" "}
               <button type="button" className="button secondary small"
-                onClick={() => onScene(item.sceneIndex)}>
+                onClick={() => onScene(item.sceneIndex, "camera-review")}>
                 Open scene {item.sceneIndex + 1} for camera review
               </button>
             </li>

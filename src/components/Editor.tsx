@@ -1883,6 +1883,15 @@ export function Editor({
                 );
                 return;
               }
+              if (reviewPanel === "camera-review") {
+                // Open the exact scene's existing camera-shot editor, not a
+                // Framefield-only preset. Start with the first saved shot
+                // when available or a temporary draft for an empty scene.
+                // The author still previews and explicitly applies edits.
+                setShotEditor({ id: project.scenes[i].cameraShots?.[0]?.id });
+                setMobilePanel("stage");
+                return;
+              }
               if (reviewPanel === "camera" || reviewPanel === "camera-pan" ||
                   reviewPanel === "camera-tilt" || reviewPanel === "camera-glide" ||
                   reviewPanel === "camera-reveal") {
