@@ -17,8 +17,11 @@ describe("PR #113 saved whole-episode camera overview", () => {
     expect(summary.seconds).toBe(30);
     expect(summary.customSeconds).toBeCloseTo(1.8);
     expect(summary.percent).toBe(6);
+    // The duration is derived from floating-point shot intervals;
+    // compare seconds with tolerance, not exact object equality.
+    expect(summary.scenes[0].customSeconds).toBeCloseTo(1.8);
     expect(summary.scenes[0]).toMatchObject({
-      sceneIndex: 0, seconds: 20, customSeconds: 1.8,
+      sceneIndex: 0, seconds: 20,
       shotCount: 2, gapCount: 1, voiceStarts: 0,
     });
     expect(summary.scenes[1]).toMatchObject({
