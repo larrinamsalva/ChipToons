@@ -198,6 +198,17 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await expect(review).toContainText("Scene 2:");
   await expect(review).toContainText("0 shot(s) · 1 default-camera interval(s)");
   await expect(review).toContainText("Remaining seconds");
+  // #116: use precise timing inside the studio without a text download.
+  const sceneOneTimes = review.locator('details[aria-label="Camera timing details for scene 1"]');
+  const sceneTwoTimes = review.locator('details[aria-label="Camera timing details for scene 2"]');
+  await expect(sceneOneTimes).not.toHaveAttribute("open", /.+/);
+  await sceneOneTimes.locator("summary").click();
+  await expect(sceneOneTimes).toContainText("Default camera: scene 00:00:01.20");
+  await expect(sceneOneTimes).toContainText("episode 00:00:01.20");
+  await expect(sceneOneTimes).toContainText("No assigned audible dialogue or narration starts");
+  await sceneTwoTimes.locator("summary").click();
+  await expect(sceneTwoTimes).toContainText("Default camera: scene 00:00:00.00");
+  await expect(sceneTwoTimes).toContainText("episode 00:00:");
   const cameraDownload = page.waitForEvent("download");
   await review.getByRole("button", {
     name: "Download camera review checklist (.txt)",
