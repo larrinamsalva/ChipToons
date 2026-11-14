@@ -2,6 +2,7 @@ import type { Project } from "./model";
 import { cameraCoverageReview } from "./camera-coverage-review";
 import { episodeCameraSummary } from "./episode-camera-review";
 import { cameraVoiceSourceStatus } from "./episode-camera-voice-source";
+import { sceneAssignedVoiceCoverage } from "./episode-voice-coverage";
 
 /** Timecode with hundredth-second precision, including long episodes.
  * Convert once to integer centiseconds so rounding cannot emit 60.00s. */
@@ -84,6 +85,32 @@ export function episodeCameraPunchList(
           sourceCheck.checked, sourceCheck.checkFailed,
         );
         lines.push(`      AUDIO SOURCE — ${tidy(status.text)}`);
+      }
+    }
+    // The download invoked from Finish My Cartoon passes sourceCheck.
+    // Mirror #123's full duration coverage while keeping the existing
+    // data-only worksheet API unchanged for older callers.
+    if (sourceCheck) {
+      const voiceCoverage = sceneAssignedVoiceCoverage(project, row.sceneIndex);
+      lines.push(
+        `  ASSIGNED VOICE COVERAGE — ${voiceCoverage.assignedSeconds.toFixed(2)}s / ${voiceCoverage.totalSeconds.toFixed(2)}s from clip timing`,
+        "  No assigned voice does not prove silence; assigned clips do not prove audible or approved speech.",
+      );
+      if (!voiceCoverage.spans.length) {
+        lines.push("    No dialogue/narration clips assigned during this scene.");
+      }
+      for (const span of voiceCoverage.spans) {
+        lines.push(
+          `    [ ] ASSIGNED ${span.category.toUpperCase()} scene ${cameraReviewTimecode(span.start)}–${cameraReviewTimecode(span.end)} | episode ${cameraReviewTimecode(episodeStart + span.start)}–${cameraReviewTimecode(episodeStart + span.end)}`,
+        );
+      }
+      for (const gap of voiceCoverage.gaps) {
+        lines.push(
+          `    [ ] NO ASSIGNED VOICE scene ${cameraReviewTimecode(gap.start)}–${cameraReviewTimecode(gap.end)} | episode ${cameraReviewTimecode(episodeStart + gap.start)}–${cameraReviewTimecode(episodeStart + gap.end)}`,
+        );
+      }
+      if (!voiceCoverage.gaps.length) {
+        lines.push("    Voice clip timing covers the scene; listen to verify the content.");
       }
     }
     lines.push("");
