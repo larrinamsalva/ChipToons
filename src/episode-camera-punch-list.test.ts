@@ -70,7 +70,11 @@ describe("PR #115 downloadable camera worksheet", () => {
     expect(embedded).toContain("Audio-source notes reflect only the file index");
     expect(embedded).toContain(`AUDIO SOURCE — Embedded audio source: ${source.name}.`);
     expect(embedded).toContain("Listen to verify its contents");
+    expect(embedded).toContain("ASSIGNED VOICE COVERAGE —");
+    expect(embedded).toContain("ASSIGNED DIALOGUE scene 00:00:02.20");
+    expect(embedded).toContain("NO ASSIGNED VOICE scene 00:00:00.00–00:00:02.20");
     expect(episodeCameraPunchList(project)).not.toContain("AUDIO SOURCE —");
+    expect(episodeCameraPunchList(project)).not.toContain("ASSIGNED VOICE COVERAGE —");
     expect(JSON.stringify(project)).toBe(before);
 
     project.audioAssets = project.audioAssets.map(asset => asset.id === source.id ? {
@@ -88,6 +92,36 @@ describe("PR #115 downloadable camera worksheet", () => {
     const indexed = episodeCameraPunchList(project, { ...options, missing: new Set() });
     expect(indexed).toContain("Local audio entry found");
     expect(indexed).toContain("not necessarily been decoded or heard");
+  });
+
+  it("exports exact overlapping voice spans and cross-scene carryover without double counting", () => {
+    const project = cameraShotDemo();
+    project.scenes[0].duration = 10;
+    project.scenes[1].duration = 5;
+    const source = builtInSound("melody");
+    project.audioAssets.push(source);
+    const first = newAudioClip(project, source, "dialogue", 0, 1);
+    const overlap = newAudioClip(project, source, "narration", 0, 3);
+    const crossing = newAudioClip(project, source, "dialogue", 0, 9);
+    project.audioClips.push(
+      { ...first, duration: 3 },
+      { ...overlap, duration: 3 },
+      { ...crossing, duration: 1.5 },
+    );
+    const original = JSON.stringify(project);
+    const content = episodeCameraPunchList(project, {
+      missing: new Set<string>(), checked: true, checkFailed: false,
+    });
+    expect(content).toContain("ASSIGNED VOICE COVERAGE — 6.00s / 10.00s from clip timing");
+    expect(content).toContain("ASSIGNED VOICE COVERAGE — 0.50s / 5.00s from clip timing");
+    expect(content).toContain("ASSIGNED DIALOGUE scene 00:00:01.00–00:00:04.00 | episode 00:00:01.00–00:00:04.00");
+    expect(content).toContain("ASSIGNED NARRATION scene 00:00:03.00–00:00:06.00 | episode 00:00:03.00–00:00:06.00");
+    expect(content).toContain("NO ASSIGNED VOICE scene 00:00:06.00–00:00:09.00 | episode 00:00:06.00–00:00:09.00");
+    expect(content).toContain("ASSIGNED DIALOGUE scene 00:00:00.00–00:00:00.50 | episode 00:00:10.00–00:00:10.50");
+    expect(content).toContain("NO ASSIGNED VOICE scene 00:00:00.50–00:00:05.00 | episode 00:00:10.50–00:00:15.00");
+    expect(content).toContain("No assigned voice does not prove silence");
+    expect(JSON.stringify(project)).toBe(original);
+    expect(episodeCameraPunchList(project)).not.toContain("ASSIGNED VOICE COVERAGE");
   });
 
 });
