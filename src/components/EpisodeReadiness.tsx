@@ -3,7 +3,8 @@ import type { Project } from "../model";
 import { missingAudio } from "../audio-vault";
 import { clipStart } from "../production";
 import { episodeCameraSummary } from "../episode-camera-review";
-import { episodeCameraPunchList } from "../episode-camera-punch-list";
+import { episodeCameraPunchList, cameraReviewTimecode } from "../episode-camera-punch-list";
+import { cameraCoverageReview } from "../camera-coverage-review";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
@@ -43,6 +44,9 @@ export function EpisodeReadiness({
   }, [project, onReady]);
   const missingSources = new Set(missing);
   const camera = episodeCameraSummary(project);
+  // All timing comes from the same saved records used in the downloaded
+  // worksheet. Disclosures stay collapsed by default in long episodes.
+  const cameraDetails = project.scenes.map(scene => cameraCoverageReview(project, scene));
   const rows = project.scenes.map((scene, index) => {
     const start = sceneStart(project, index),
       voice = project.audioClips.filter(
@@ -98,20 +102,46 @@ export function EpisodeReadiness({
           </button>
         </div>
         <ol>
-          {camera.scenes.map(item => (
-            <li key={project.scenes[item.sceneIndex].id}>
+          {camera.scenes.map(item => {
+            const timeline = cameraDetails[item.sceneIndex];
+            const start = sceneStart(project, item.sceneIndex);
+            return <li key={project.scenes[item.sceneIndex].id}>
               <span>
                 Scene {item.sceneIndex + 1}: {item.customSeconds.toFixed(1)}/{item.seconds.toFixed(1)}s
                 {" "}custom · {item.shotCount} shot(s) · {item.gapCount} default-camera interval(s)
                 {item.voiceStarts > 0 &&
                   ` · ${item.defaultVoiceStarts} of ${item.voiceStarts} recorded voice starts use default camera`}
               </span>{" "}
+              <details aria-label={`Camera timing details for scene ${item.sceneIndex + 1}`}>
+                <summary>Show exact camera and voice times for scene {item.sceneIndex + 1}</summary>
+                <p className="field-hint">
+                  These are existing scene-local and episode timecodes.
+                  The default camera is valid; recorded clip starts do not
+                  confirm what was spoken or whether the file is available.
+                </p>
+                <ul aria-label={`Camera timeline moments for scene ${item.sceneIndex + 1}`}>
+                  {timeline.gaps.length ? timeline.gaps.map((gap, index) => (
+                    <li key={`gap-${index}`}>
+                      Default camera: scene {cameraReviewTimecode(gap.start)}–{cameraReviewTimecode(gap.end)}
+                      {" "}· episode {cameraReviewTimecode(start + gap.start)}–{cameraReviewTimecode(start + gap.end)}
+                    </li>
+                  )) : <li>No default-camera intervals in this scene.</li>}
+                  {timeline.voices.length ? timeline.voices.map((voice, index) => (
+                    <li key={`voice-${voice.clipId}`}>
+                      {voice.category === "dialogue" ? "Dialogue" : "Narration"} start {index + 1}:
+                      {" "}scene {cameraReviewTimecode(voice.start)}
+                      {" "}· episode {cameraReviewTimecode(start + voice.start)}
+                      {" "}· {voice.shotId ? "custom camera shot" : "default camera"}
+                    </li>
+                  )) : <li>No assigned audible dialogue or narration starts in this scene.</li>}
+                </ul>
+              </details>
               <button type="button" className="button secondary small"
                 onClick={() => onScene(item.sceneIndex, "camera-review")}>
                 Open scene {item.sceneIndex + 1} for camera review
               </button>
-            </li>
-          ))}
+            </li>;
+          })}
         </ol>
       </section>
       {!checked && <p role="status">Checking local audio originals…</p>}
