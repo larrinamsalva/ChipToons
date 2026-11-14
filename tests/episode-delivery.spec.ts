@@ -198,6 +198,17 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await expect(review).toContainText("Scene 2:");
   await expect(review).toContainText("0 shot(s) · 1 default-camera interval(s)");
   await expect(review).toContainText("Remaining seconds");
+  const cameraDownload = page.waitForEvent("download");
+  await review.getByRole("button", {
+    name: "Download camera review checklist (.txt)",
+  }).click();
+  const worksheet = await cameraDownload;
+  expect(worksheet.suggestedFilename()).toMatch(/-camera-review\.txt$/);
+  const worksheetText = await readFile((await worksheet.path())!, "utf8");
+  expect(worksheetText).toContain("WHOLE-EPISODE CAMERA REVIEW CHECKLIST");
+  expect(worksheetText).toContain("SCENE 1 — " + first.title);
+  expect(worksheetText).toContain("SCENE 2 — " + second.title);
+  expect(worksheetText).toContain("DEFAULT CAMERA scene 00:00:00.00");
   await expect(review.getByRole("button", {
     name: "Open scene 2 for camera review",
   })).toBeEnabled();

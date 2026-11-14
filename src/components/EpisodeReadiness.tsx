@@ -3,6 +3,8 @@ import type { Project } from "../model";
 import { missingAudio } from "../audio-vault";
 import { clipStart } from "../production";
 import { episodeCameraSummary } from "../episode-camera-review";
+import { episodeCameraPunchList } from "../episode-camera-punch-list";
+import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
 export function EpisodeReadiness({
@@ -84,6 +86,17 @@ export function EpisodeReadiness({
           use the normal default camera, which is valid for preview and
           export. This report never changes your cartoon.
         </p>
+        <div className="animation-actions">
+          <button type="button" className="button secondary small"
+            onClick={() => downloadBlob(
+              new Blob([episodeCameraPunchList(project)], {
+                type: "text/plain;charset=utf-8",
+              }),
+              `${safeFilename(project.title)}-camera-review.txt`,
+            )}>
+            Download camera review checklist (.txt)
+          </button>
+        </div>
         <ol>
           {camera.scenes.map(item => (
             <li key={project.scenes[item.sceneIndex].id}>

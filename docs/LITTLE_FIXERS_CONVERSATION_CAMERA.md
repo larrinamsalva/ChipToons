@@ -106,6 +106,15 @@ workshop ending.
   shots open for review; scenes with no shots open an unsaved new-shot
   draft. No automatic shot creation, edits, audio changes or publishing.
 
+- **PR #115:** the whole-episode pre-export camera review can download
+  a human-readable, read-only .txt checklist. It lists each scene's
+  actual saved camera coverage and precise default-camera intervals,
+  with both scene-local and episode-absolute timecodes. Actual assigned
+  voice clip starts are labeled as custom/default-camera locations,
+  with an explicit reminder that clip metadata does not prove the
+  spoken words or availability of original recordings. The export
+  does not change or submit project data.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
