@@ -122,6 +122,15 @@ workshop ending.
   the same helper as the downloadable checklist. This is purely
   informational and does not alter scenes, audio or export eligibility.
 
+- **PR #117:** each actual default-camera gap and assigned voice start in
+  the per-scene episode review has an **Inspect gap / Inspect voice**
+  action. It jumps directly to the precise moment in the saved camera
+  using the existing Shot Director and actual animated Stage preview.
+  Review mode opens with **Compare with the saved camera** checked,
+  keeping an unsaved draft from disguising a gap. No saved camera,
+  voices, animation, captions or export settings are changed, and
+  Apply stays disabled until the creator deliberately exits comparison.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
