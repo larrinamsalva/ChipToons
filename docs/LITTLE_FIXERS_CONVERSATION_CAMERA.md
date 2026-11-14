@@ -115,6 +115,13 @@ workshop ending.
   spoken words or availability of original recordings. The export
   does not change or submit project data.
 
+- **PR #116:** the pre-export whole-episode camera review includes a
+  collapsed-by-default, per-scene **Show exact camera and voice times**
+  disclosure. It displays actual saved default-camera gaps and assigned
+  voice starts, both scene-local and absolute episode timecodes, using
+  the same helper as the downloadable checklist. This is purely
+  informational and does not alter scenes, audio or export eligibility.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their

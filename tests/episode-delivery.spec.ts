@@ -189,7 +189,9 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await button(page, "Finish My Cartoon").click();
   const readiness = dialog(page).locator(".episode-readiness");
   if ((await readiness.getAttribute("open")) === null) {
-    await readiness.locator("summary").click();
+    // Only open the parent narration panel. Scene timing disclosures
+    // also contain <summary> nodes and must not match this selector.
+    await readiness.locator(":scope > summary").click();
   }
   const review = readiness.getByRole("region", { name: "Episode camera coverage review" });
   await expect(review).toBeVisible();
@@ -198,6 +200,18 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await expect(review).toContainText("Scene 2:");
   await expect(review).toContainText("0 shot(s) · 1 default-camera interval(s)");
   await expect(review).toContainText("Remaining seconds");
+  // #116: use precise timing inside the studio without a text download.
+  const sceneOneTimes = review.locator('details[aria-label="Camera timing details for scene 1"]');
+  const sceneTwoTimes = review.locator('details[aria-label="Camera timing details for scene 2"]');
+  // A closed <details> element has no open attribute.
+  await expect(sceneOneTimes).not.toHaveAttribute("open", "");
+  await sceneOneTimes.locator("summary").click();
+  await expect(sceneOneTimes).toContainText("Default camera: scene 00:00:01.20");
+  await expect(sceneOneTimes).toContainText("episode 00:00:01.20");
+  await expect(sceneOneTimes).toContainText("No assigned audible dialogue or narration starts");
+  await sceneTwoTimes.locator("summary").click();
+  await expect(sceneTwoTimes).toContainText("Default camera: scene 00:00:00.00");
+  await expect(sceneTwoTimes).toContainText("episode 00:00:");
   const cameraDownload = page.waitForEvent("download");
   await review.getByRole("button", {
     name: "Download camera review checklist (.txt)",
@@ -231,7 +245,7 @@ test("whole-episode readiness shows actual saved camera gaps without treating th
   await button(page, "Finish My Cartoon").click();
   const again = dialog(page).locator(".episode-readiness");
   if ((await again.getAttribute("open")) === null)
-    await again.locator("summary").click();
+    await again.locator(":scope > summary").click();
   await again.getByRole("button", {
     name: "Open scene 1 for camera review",
   }).click();
