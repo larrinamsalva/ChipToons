@@ -148,7 +148,7 @@ export function Editor({
   const [loop, setLoop] = useState(false);
   const [editError, setEditError] = useState("");
   const [interactionNotice, setInteractionNotice] = useState("");
-  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; inspectAt?: number; preset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal" }>();
+  const [shotEditor, setShotEditor] = useState<{ id?: string; lineId?: string; inspectAt?: number; inspectKind?: "voice" | "gap"; preset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal" }>();
   const [soundDirector, setSoundDirector] = useState<SoundDirectorSeed>();
   const [participationEditor, setParticipationEditor] = useState<{ id?: string; stepId?: string }>();
   const [focusEditor, setFocusEditor] = useState<{ graphicId?: string; seed?: FocusSeed }>();
@@ -1781,6 +1781,7 @@ export function Editor({
         </Modal>}>
           <ShotDirector key={scene.id} project={project} scene={scene} id={shotEditor.id} lineId={shotEditor.lineId}
             initialPreset={shotEditor.preset} initialInspectTime={shotEditor.inspectAt}
+            initialInspectKind={shotEditor.inspectKind}
             time={clamp(clock.getSnapshot().seconds - sceneStart(project, index), 0, scene.duration)}
             onScene={next => { selectScene(next); setShotEditor({}); }}
             onClose={() => setShotEditor(undefined)} onApply={changeScene} />
@@ -1869,7 +1870,7 @@ export function Editor({
             project={project}
             onStoryCards={() => { setFinish(false); setStoryCardsOpen(true); }}
             saveStatus={saveStatus}
-            onScene={(i, reviewPanel, inspectAt) => {
+            onScene={(i, reviewPanel, inspectAt, inspectKind) => {
               setFinish(false);
               selectScene(i);
               if (reviewPanel === "preview") {
@@ -1893,6 +1894,8 @@ export function Editor({
                   inspectAt: inspectAt !== undefined && Number.isFinite(inspectAt)
                     ? clamp(inspectAt, 0, project.scenes[i].duration)
                     : undefined,
+                  inspectKind: inspectAt !== undefined && Number.isFinite(inspectAt)
+                    ? inspectKind : undefined,
                 });
                 setMobilePanel("stage");
                 return;

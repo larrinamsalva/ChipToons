@@ -140,6 +140,14 @@ workshop ending.
   window, with no changes to saved camera, original recordings or
   exported timeline.
 
+- **PR #119:** **Inspect voice** now opens the existing saved-camera
+  preview with **Sound in preview** checked, so the creator can hear
+  their already-assigned voice from the inspected timestamp after
+  explicitly pressing Play. **Inspect gap** stays silent by default.
+  No autoplay, new audio, invented dialogue, file upload or project
+  changes. Sound can be toggled at any time and missing local sources
+  continue to surface the existing preview error.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their

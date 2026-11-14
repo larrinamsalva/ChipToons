@@ -25,10 +25,12 @@ import { Stage } from "./Stage";
 import { CameraMotionContactSheet } from "./CameraMotionContactSheet";
 import { CameraHoldReview } from "./CameraHoldReview";
 
-export function ShotDirector({ project, scene, time, id, lineId, initialPreset, initialInspectTime, onScene, onClose, onApply }: {
+export function ShotDirector({ project, scene, time, id, lineId, initialPreset, initialInspectTime, initialInspectKind, onScene, onClose, onApply }: {
   project: Project; scene: Scene; time: number; id?: string; lineId?: string;
   /** Review-only seek into the SAVED camera, never auto-apply a draft. */
   initialInspectTime?: number;
+  /** Voice inspection prepares sound; gap inspection stays silent. Neither autoplays. */
+  initialInspectKind?: "voice" | "gap";
   initialPreset?: "framefield-push" | "framefield-pan" | "framefield-tilt" | "framefield-glide" | "framefield-reveal";
   onScene: (index: number) => void; onClose: () => void; onApply: (patch: Partial<Scene>) => boolean;
 }) {
@@ -508,7 +510,8 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
                 ? {start:previewShot.start,move:previewShot.move,end:previewShot.end}
                 : undefined,
             }}
-            soundPreview={project.audioClips.length > 0} />
+            soundPreview={project.audioClips.length > 0}
+            initialSound={reviewingSavedMoment && initialInspectKind === "voice"} />
         </>}
       </div>
     </div>
