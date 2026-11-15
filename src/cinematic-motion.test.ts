@@ -95,6 +95,38 @@ describe("Cinematic Storybook secondary movement", () => {
     expect(JSON.stringify(project)).toBe(snapshot);
   });
 
+  it("makes a real authored direction reversal feel less abrupt without moving the character off its track", () => {
+    const { project, scene, actor } = walkingFixture();
+    actor.animation!.keyframes = [
+      { ...elementBase(actor), id: uid(), time: 0, easing: "linear", x: 170,
+        joints: { head: { ...neutralJoint, angle: 5 } } },
+      { ...elementBase(actor), id: uid(), time: 2, easing: "linear", x: 290,
+        joints: { head: { ...neutralJoint, angle: 5 } } },
+      { ...elementBase(actor), id: uid(), time: 4, easing: "linear", x: 170,
+        joints: { head: { ...neutralJoint, angle: 5 } } },
+    ];
+    const snapshot = JSON.stringify(project);
+    const regular = sceneFramesAt(project, scene, 2).get(actor.id)!;
+    project.visualStyle = "storybook-cinematic";
+    const turned = sceneFramesAt(project, scene, 2).get(actor.id)!;
+    // The new head lead and torso counterbalance are additive to the
+    // already-tested stop-settle impulse; the author's position is exact.
+    expect(turned.x).toBeCloseTo(regular.x, 6);
+    expect(turned.y).toBeCloseTo(regular.y, 6);
+    expect(turned.rotation).toBeGreaterThan(regular.rotation + 1.7);
+    expect(turned.joints?.head?.angle).toBeLessThan(
+      (regular.joints?.head?.angle ?? 0) - 2,
+    );
+    expect(turned.mouth).toBe(regular.mouth);
+    expect(turned.emotion).toBe(regular.emotion);
+    expect(turned.blink).toBe(regular.blink);
+    expect(sceneFramesAt(project, scene, 2).get(actor.id)).toEqual(turned);
+    expect(sceneElementAt(project, scene, actor, 2, 0, true))
+      .toEqual(elementAt(actor, 2, scene.duration, true));
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toEqual(snapshot);
+  });
+
   it("keeps old projects and calm authoring/keyframe snapshots exactly unchanged", () => {
     const { project, scene, actor } = walkingFixture();
     const classic = sceneElementAt(project, scene, actor, 1.13, 0);
