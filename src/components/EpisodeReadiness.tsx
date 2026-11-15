@@ -8,6 +8,7 @@ import { cameraCoverageReview } from "../camera-coverage-review";
 import { cameraVoiceSourceStatus } from "../episode-camera-voice-source";
 import { sceneAssignedVoiceCoverage } from "../episode-voice-coverage";
 import { episodeAssignedVoiceSummary } from "../episode-voice-summary";
+import { episodeVoiceOriginalSummary } from "../episode-voice-original-summary";
 import { voiceTimingBands } from "../voice-timing-strip";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
@@ -49,6 +50,9 @@ export function EpisodeReadiness({
   const missingSources = new Set(missing);
   const camera = episodeCameraSummary(project);
   const voiceSummary = episodeAssignedVoiceSummary(project);
+  const originalSummary = episodeVoiceOriginalSummary(
+    project, missingSources, checked, !!error,
+  );
   // All timing comes from the same saved records used in the downloaded
   // worksheet. Disclosures stay collapsed by default in long episodes.
   const cameraDetails = project.scenes.map(scene => cameraCoverageReview(project, scene));
@@ -98,6 +102,46 @@ export function EpisodeReadiness({
           No assigned voice does not prove silence, and an unassigned interval
           is not an export error or a required recording.
         </p>
+        <p>
+          <strong>Voice clips with indexed originals: {originalSummary.indexed}/{originalSummary.total}</strong>
+          {" "}· {originalSummary.missing} missing · {originalSummary.unverified} unverified
+        </p>
+        <p className="field-hint">
+          Each unique assigned recording counts once, including clips crossing
+          scene boundaries. An indexed source is not proof of playable audio,
+          spoken words or approval. Missing and unverified are distinct.
+        </p>
+        {(originalSummary.missing > 0 || originalSummary.unverified > 0) && (
+          <details aria-label="Voice recordings needing original-source review">
+            <summary>
+              Review recordings needing original-source attention
+              {" "}({originalSummary.missing + originalSummary.unverified})
+            </summary>
+            <ol>
+              {originalSummary.issues.map((issue) => (
+                <li key={issue.clipId}>
+                  Scene {issue.sceneIndex + 1} · {issue.category}
+                  {" "}· {issue.status === "missing" ? "Missing original" : "Original not verified"}
+                  {" "}· <span className="field-hint">{issue.detail}</span>
+                  {" "}
+                  <button type="button" className="button secondary small"
+                    aria-label={`Review original-source issue for ${issue.category} clip in scene ${issue.sceneIndex + 1}`}
+                    onClick={() => onScene(
+                      issue.sceneIndex, "voices", undefined, undefined, issue.clipId,
+                    )}>
+                    Review this recording in Sound Studio
+                  </button>
+                </li>
+              ))}
+            </ol>
+            {originalSummary.missing + originalSummary.unverified > originalSummary.issues.length && (
+              <p className="field-hint">
+                Showing the first five recordings requiring attention.
+                Review scene voice intervals for the remaining recordings.
+              </p>
+            )}
+          </details>
+        )}
         <details aria-label="Longest unassigned voice intervals">
           <summary>Review up to five longest intervals without assigned voice</summary>
           <ol>

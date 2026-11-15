@@ -252,6 +252,17 @@ workshop ending.
   genuine spoken words, script accuracy or approval. The review is
   read-only and makes no export, recording or camera edits.
 
+- **PR #130:** the whole-episode narration review now summarizes
+  **unique active voice clips whose originals are indexed on this
+  device**, separately counting missing and unverified originals.
+  Duplicated scene-spanning voices count once; music, muted clips and
+  out-of-scene audio do not enter the review. A collapsed issue list
+  links up to five problematic clips to their exact existing Sound
+  Studio records, without recording, mutating, removing or marking
+  anything as approved. Counts come from device-local original-file
+  metadata, not decoding or actual spoken-word analysis. The 20-minute
+  export test and its bounded recovery proof stay unchanged.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
