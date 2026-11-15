@@ -382,6 +382,13 @@ test("exact voice source review selects the intended second clip without changin
   expect(text).toContain("Audio-source notes reflect only the file index");
   expect(text).toContain(`AUDIO SOURCE — Embedded audio source: ${audio.name}.`);
   expect(text.match(/AUDIO SOURCE — Embedded audio source:/g)).toHaveLength(2);
+  // #124: the offline checklist includes the full assigned voice timing
+  // intervals from #123, not just the start marker of each clip.
+  expect(text).toContain("ASSIGNED VOICE COVERAGE — 1.00s");
+  expect(text).toContain("ASSIGNED DIALOGUE scene 00:00:02.20–00:00:02.70");
+  expect(text).toContain("ASSIGNED NARRATION scene 00:00:03.20–00:00:03.70");
+  expect(text).toContain("NO ASSIGNED VOICE scene 00:00:02.70–00:00:03.20");
+  expect(text).toContain("No assigned voice does not prove silence");
   await detail.getByRole("button", {
     name: "Review assigned voice 2 in scene 1 in Sound Studio",
   }).click();

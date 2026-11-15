@@ -186,6 +186,18 @@ workshop ending.
   or missing voice originals. It does not change export eligibility,
   recorded audio, saved projects or original camera shots.
 
+- **PR #124:** the existing downloadable camera checklist now carries
+  **Assigned voice coverage** for every scene, just like the #123 in-app
+  review. It includes every unmuted dialogue/narration clip's full
+  scene-local and episode time range, intervals without an assigned
+  voice, the unioned assigned seconds (overlaps are not double-counted),
+  and clips that cross scene boundaries. It is a device-specific review
+  snapshot only when the current app supplies its original-source
+  status; older data-only callers keep their previous output. An
+  unassigned interval is not proof of silence and an assigned clip is
+  not proof of intelligible speech, approval or playable audio.
+  There are no project, recording, camera, or export changes.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
