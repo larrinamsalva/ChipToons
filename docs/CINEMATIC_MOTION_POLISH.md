@@ -57,6 +57,25 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
   steps, scene boundaries, deterministic seeking, unchanged saved
   projects, calm authoring and opt-in style. Not a claim of 3D physics.
 
+## PR #134 — Eyes lead a character's first step
+
+- A very small, **directional eye glance** can lead an explicitly authored
+  walking start before the original body movement begins. It uses #133's
+  same deterministic pre-step velocity samples rather than guessing
+  future dialogue or adding a new walking track.
+- Scene actions, prop handling, actual recorded conversation,
+  mutually framed camera pairs and authored finale attention retain
+  **higher priority** than this incidental walking look. The eyes return
+  to the ordinary existing gaze when the step is underway.
+- Only a generated vector-puppet face in the opt-in Cinematic
+  Storybook mode is eligible; painted eyes, Classic appearance and
+  calm editing remain unchanged. No new saved keyframes, eye assets,
+  camera cuts, audio edits or output format changes.
+- Focused tests verify the left/right direction and flipped puppets,
+  stationary/non-walking fallbacks and integration with the real face
+  renderer. All existing browser and genuine 20-minute media-export
+  checks remain required.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.

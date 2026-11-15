@@ -7,6 +7,7 @@ import { cinematicConversationListeningAt } from "./cinematic-conversation-liste
 import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
 import { cinematicPairAttentionAt } from "./cinematic-pair-attention";
 import { cinematicFinaleAttentionAt } from "./cinematic-finale-attention";
+import { cinematicWalkLeadingEyesAt } from "./cinematic-walk-leading-eyes";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -147,12 +148,20 @@ export function cinematicFaceAt(
         project, scene as Scene, element, frames, localTime, calm,
       )
     : undefined;
-  const direction = shared ?? active ?? conversation ?? speaking ?? pair ?? finale ?? target;
+  // When the animator has deliberately paused before a walking keyframe,
+  // pupils may lead the upcoming step. This is LOW priority: handoffs,
+  // authored interactions, real speech, paired shots and finale cues
+  // continue to control the eyeline before an incidental movement glance.
+  const walk = scene.duration === undefined ? undefined :
+    cinematicWalkLeadingEyesAt(element, localTime, scene.duration);
+  const walkDirection = walk ? { dx: 130 * walk.x, dy: 0, focus: walk.focus } : undefined;
+  const direction = shared ?? active ?? conversation ?? speaking ?? pair ?? finale ?? walkDirection ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
   const focus = shared ? shared.focus : active ? active.focus
     : conversation ? conversation.focus : speaking ? speaking.focus
-    : pair ? pair.focus : finale ? finale.focus : target ? attention : 0;
+    : pair ? pair.focus : finale ? finale.focus
+      : walkDirection ? walkDirection.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);

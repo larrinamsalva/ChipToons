@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import { cinematicFaceAt } from "./cinematic-face";
 import { PuppetArt } from "./components/PuppetArt";
 import { littleFixersFullBodyPilot } from "./little-fixers-full-body-pilot";
-import { elementAt, sceneFramesAt } from "./timeline";
+import { elementAt, elementBase, sceneFramesAt } from "./timeline";
+import { starterProject } from "./demo-starter";
+import { sunnyRig } from "./puppet-model";
+import { uid } from "./model";
 
 function fixture() {
   const project = littleFixersFullBodyPilot();
@@ -67,6 +70,46 @@ describe("Cinematic Storybook facial acting", () => {
         pivotX: 0, pivotY: 0, width: 25, height: 14, assetId: "external-art",
       }] } };
     expect(cinematicFaceAt(project, scene, actor, frame, frames, 2.5, false)).toBeUndefined();
+  });
+
+  it("lets eyes lead an explicitly authored walk without moving saved artwork or overriding Classic", () => {
+    const project = starterProject();
+    const scene = project.scenes[0];
+    scene.duration = 5;
+    const actor = scene.elements[0];
+    scene.elements = [actor];
+    project.characters[0].puppet = sunnyRig();
+    actor.x = 170;
+    actor.y = 365;
+    actor.motion = "still";
+    actor.animation = {
+      blink: true, idle: "none",
+      keyframes: [
+        { ...elementBase(actor), id: uid(), time: 0, easing: "linear", x: 170 },
+        { ...elementBase(actor), id: uid(), time: 1, easing: "linear", x: 170 },
+        { ...elementBase(actor), id: uid(), time: 3, easing: "linear", x: 290 },
+        { ...elementBase(actor), id: uid(), time: 4, easing: "linear", x: 290 },
+      ],
+    };
+    const source = JSON.stringify(project);
+    const classicFrame = sceneFramesAt(project, scene, .85);
+    expect(cinematicFaceAt(project, scene, actor, classicFrame.get(actor.id)!, classicFrame, .85, false))
+      .toBeUndefined();
+    project.visualStyle = "storybook-cinematic";
+    const frames = sceneFramesAt(project, scene, .85);
+    const glance = cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, .85, false)!;
+    expect(glance.x).toBeGreaterThan(1.5);
+    expect(glance.x).toBeLessThanOrEqual(2.6);
+    expect(cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, .85, false))
+      .toEqual(glance);
+    expect(cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, .85, true))
+      .toBeUndefined();
+    const moving = sceneFramesAt(project, scene, 1.5);
+    const during = cinematicFaceAt(project, scene, actor, moving.get(actor.id)!, moving, 1.5, false)!;
+    expect(Math.abs(during.x)).toBeLessThan(.4);
+    expect(sceneFramesAt(project, scene, .85).get(actor.id)!.x).toBeCloseTo(170, 6);
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toEqual(source);
   });
 
   it("renders moving generated pupils without changing Classic faces or authored mouth shapes", () => {
