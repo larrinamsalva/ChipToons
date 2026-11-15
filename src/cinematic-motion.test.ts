@@ -65,6 +65,36 @@ describe("Cinematic Storybook secondary movement", () => {
     expect(JSON.stringify(project)).toBe(before);
   });
 
+  it("adds a tiny pre-step lean before an authored walk without changing original paths, voices or keyframes", () => {
+    const { project, scene, actor } = walkingFixture();
+    actor.animation!.keyframes = [
+      { ...elementBase(actor), id: uid(), time: 0, easing: "linear",
+        x: 170, joints: { head: { ...neutralJoint, angle: 5 } } },
+      { ...elementBase(actor), id: uid(), time: 1, easing: "linear",
+        x: 170, joints: { head: { ...neutralJoint, angle: 5 } } },
+      { ...elementBase(actor), id: uid(), time: 3, easing: "linear",
+        x: 290, joints: { head: { ...neutralJoint, angle: 5 } } },
+      { ...elementBase(actor), id: uid(), time: 4, easing: "linear",
+        x: 290, joints: { head: { ...neutralJoint, angle: 5 } } },
+    ];
+    const snapshot = JSON.stringify(project);
+    const classic = sceneFramesAt(project, scene, .85).get(actor.id)!;
+    project.visualStyle = "storybook-cinematic";
+    const ready = sceneFramesAt(project, scene, .85).get(actor.id)!;
+    expect(ready.x).toBeCloseTo(classic.x, 6);
+    expect(ready.y).toBeCloseTo(classic.y, 6);
+    expect(ready.rotation).toBeLessThan(classic.rotation - .3);
+    expect(ready.joints?.head?.angle).not.toBe(classic.joints?.head?.angle);
+    expect(ready.mouth).toBe(classic.mouth);
+    expect(ready.emotion).toBe(classic.emotion);
+    expect(ready.blink).toBe(classic.blink);
+    expect(sceneFramesAt(project, scene, .85).get(actor.id)).toEqual(ready);
+    const calm = sceneElementAt(project, scene, actor, .85, 0, true);
+    expect(calm).toEqual(elementAt(actor, .85, scene.duration, true));
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toBe(snapshot);
+  });
+
   it("keeps old projects and calm authoring/keyframe snapshots exactly unchanged", () => {
     const { project, scene, actor } = walkingFixture();
     const classic = sceneElementAt(project, scene, actor, 1.13, 0);
