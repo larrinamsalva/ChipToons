@@ -141,6 +141,7 @@ export function Editor({
       lineId?: string;
       category?: AudioCategory;
       tab?: "sound" | "captions";
+      coverageGapTime?: number;
     } | null>(null),
     [finish, setFinish] = useState(false);
   const [clock] = useState(() => new PlaybackClock());
@@ -203,9 +204,10 @@ export function Editor({
     clipId?: string,
     category?: AudioCategory,
     tab?: "sound" | "captions",
+    coverageGapTime?: number,
   ) {
     halt();
-    setVoiceStudio({ clipId, category, tab });
+    setVoiceStudio({ clipId, category, tab, coverageGapTime });
   }
   function updateProduction(next: Project) {
     halt();
@@ -1833,11 +1835,12 @@ export function Editor({
         <VoiceStudio
           project={project}
           sceneIndex={index}
-          localTime={clamp(
+          localTime={voiceStudio.coverageGapTime ?? clamp(
             clock.getSnapshot().seconds - sceneStart(project, index),
             0,
             scene.duration,
           )}
+          coverageGapTime={voiceStudio.coverageGapTime}
           initialClip={voiceStudio.clipId}
           lineTarget={voiceStudio.lineId}
           initialCategory={voiceStudio.category}
@@ -1914,6 +1917,15 @@ export function Editor({
                 return;
               }
               setMobilePanel("properties");
+              if (reviewPanel === "voices" && inspectAt !== undefined &&
+                  Number.isFinite(inspectAt)) {
+                // Preserve the actual scene-local gap start from the review.
+                // Do not preselect an unrelated existing audio clip or
+                // record, upload or mutate the cartoon just by opening.
+                openVoice("", "narration", "sound",
+                  clamp(inspectAt, 0, project.scenes[i].duration));
+                return;
+              }
               if (reviewPanel)
                 openVoice(
                   voiceClipId && project.audioClips.some(c => c.id === voiceClipId &&
