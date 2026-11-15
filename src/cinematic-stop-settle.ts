@@ -41,6 +41,9 @@ export function cinematicStopSettleAt(
   const pastSpeed = Math.hypot(past.x, past.y);
   const nowSpeed = Math.hypot(now.x, now.y);
   const deceleration = clamp((pastSpeed - nowSpeed) / 55, 0, 1);
+  // Ignore subpixel floating-point speed differences in a steady walk,
+  // and avoid adding a sideways lean to purely vertical movement.
+  if (deceleration < 0.01 || Math.abs(past.x) < 1.5) return none;
   const direction = clamp(past.x / 60, -1, 1);
   const torsoTilt = direction * deceleration * 1.1;
   return { torsoTilt, headTilt: -torsoTilt * 1.5 };
