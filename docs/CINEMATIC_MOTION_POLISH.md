@@ -76,6 +76,22 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
   renderer. All existing browser and genuine 20-minute media-export
   checks remain required.
 
+## PR #135 — Eyes settle at the end of a walk
+
+- A small, temporary **eyes-forward arrival glance** follows a character's
+  already-authored horizontal walk as it slows to a stop. It uses #132's
+  deterministic stop-settling samples; no invented travel, new keyframes
+  or re-timing of the story or sound.
+- The gentle eye focus fades as the performer comes to rest. Leftward
+  walks and intentionally mirrored puppets get matching directions.
+- Existing filmed action attention, prop handling, actual recorded
+  conversations, speaking/listening and authored pair/finale framing
+  all outrank this low-priority walk cue. Calm authoring, Classic style,
+  raster eyes and unkeyed/static actors remain unchanged.
+- Unit and real face tests verify deterministic seeking, directional
+  gaze, stillness, opt-out and unchanged saved positions. Full original
+  browser workflows and 20-minute genuine export QA remain required.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.
