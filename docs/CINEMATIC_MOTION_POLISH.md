@@ -39,6 +39,24 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
   unchanged authored movement and classic mode; the existing browser/real
   20-minute export proof remain mandatory.
 
+## PR #133 — Walking anticipation before the first step
+
+- Cinematic Storybook rigged characters now give a **subtle preparatory
+  backward torso lean and counter-rotating head** just *before* an
+  already-authored horizontal walk starts after a pause. The movement
+  is driven by looking briefly ahead on the existing saved position
+  curve; it is not generated movement or a new artist keyframe.
+- Anticipation eases away when the walking translation begins.
+  Constant-speed walks, stationary holds, vertical movement,
+  classic cartoons, and calm authoring previews are unchanged.
+- Original stage x/y coordinates, saved keyframes, approved dialogue
+  and lip-sync, prop handoffs and export timing are untouched. Motion
+  is added to the one shared character frame that all preview,
+  cameras, interactions and WebM exports already sample.
+- Tests cover left/right mirror behavior, no idle/vertical ghost
+  steps, scene boundaries, deterministic seeking, unchanged saved
+  projects, calm authoring and opt-in style. Not a claim of 3D physics.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.
