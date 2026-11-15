@@ -429,6 +429,22 @@ test("exact voice source review selects the intended second clip without changin
     .toHaveValue(secondClip.id);
   await studio.getByRole("button", { name: "Close dialog", exact: true }).click();
   await expect(studio).toBeHidden();
+
+  // #128: Full-duration scene coverage also links to the exact clip,
+  // independent of the earlier camera voice-start list.
+  await button(page, "Finish My Cartoon").click();
+  const recheck = dialog(page).locator(".episode-readiness");
+  if ((await recheck.getAttribute("open")) === null)
+    await recheck.locator(":scope > summary").click();
+  const assigned = recheck.locator('details[aria-label="Assigned voice coverage for scene 1"]');
+  await assigned.locator(":scope > summary").click();
+  await assigned.getByRole("button", {
+    name: "Review assigned narration interval 2 in scene 1 in Sound Studio",
+  }).click();
+  await expect(studio).toBeVisible();
+  await expect(studio.getByRole("combobox", { name: "Audio clip", exact: true }))
+    .toHaveValue(secondClip.id);
+  await studio.getByRole("button", { name: "Close dialog", exact: true }).click();
   expect((await backup(page)).data).toEqual(original);
 });
 
