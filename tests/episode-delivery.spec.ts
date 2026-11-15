@@ -370,6 +370,14 @@ test("exact voice source review selects the intended second clip without changin
   await expect(coverage).toContainText("Assigned narration: scene 00:00:03.20–00:00:03.70");
   await expect(coverage).toContainText("No assigned voice: scene 00:00:02.70–00:00:03.20");
   await expect(coverage).toContainText("An unassigned interval is not necessarily silent");
+  // #127: the same saved clip timing also creates an accessible
+  // visual strip with assigned and unassigned bands, not a waveform.
+  const strip = readiness.getByRole("img", { name: /Voice timing strip for scene 1:/ });
+  await expect(strip).toBeVisible();
+  await expect(strip).toHaveAttribute("aria-label", /1\.0 of .*seconds have assigned dialogue or narration clip timing/);
+  await expect(strip.locator(".voice-timing-assigned")).toHaveCount(2);
+  await expect(strip.locator(".voice-timing-unassigned")).toHaveCount(3);
+  await expect(strip.locator(".voice-timing-assigned").first()).toHaveAttribute("style", /width:/);
   // #125: An unassigned voice interval opens Sound Studio precisely at
   // the saved scene-local gap start, with no unrelated clip selected and
   // no automatic recording, edits or source uploads.

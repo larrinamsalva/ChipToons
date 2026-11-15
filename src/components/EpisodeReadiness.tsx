@@ -8,6 +8,7 @@ import { cameraCoverageReview } from "../camera-coverage-review";
 import { cameraVoiceSourceStatus } from "../episode-camera-voice-source";
 import { sceneAssignedVoiceCoverage } from "../episode-voice-coverage";
 import { episodeAssignedVoiceSummary } from "../episode-voice-summary";
+import { voiceTimingBands } from "../voice-timing-strip";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
@@ -231,6 +232,24 @@ export function EpisodeReadiness({
               {r.scene.duration}s · {r.voice.length} voice clip(s) ·{" "}
               {r.captions} captions
             </span>
+            <div className="voice-timing-map">
+              <div className="voice-timing-strip"
+                role="img"
+                aria-label={`Voice timing strip for scene ${r.index + 1}: ${r.voiceCoverage.assignedSeconds.toFixed(1)} of ${r.voiceCoverage.totalSeconds.toFixed(1)} seconds have assigned dialogue or narration clip timing; other intervals are not necessarily silent`}>
+                {voiceTimingBands(r.voiceCoverage).map((band, i) => (
+                  <span key={i}
+                    className={band.kind === "assigned" ? "voice-timing-assigned" : "voice-timing-unassigned"}
+                    aria-hidden="true"
+                    style={{ width: `${band.widthPercent}%` }}
+                    title={`${band.kind === "assigned" ? "Assigned voice" : "No assigned voice"}: ${cameraReviewTimecode(band.start)}–${cameraReviewTimecode(band.end)}`}
+                  />
+                ))}
+              </div>
+              <div className="voice-timing-legend" aria-hidden="true">
+                <span><i className="voice-timing-key-assigned" />Assigned voice clip timing</span>
+                <span><i className="voice-timing-key-unassigned" />No voice clip assigned</span>
+              </div>
+            </div>
             <details aria-label={`Assigned voice coverage for scene ${r.index + 1}`}>
               <summary>
                 Assigned voice coverage · {r.voiceCoverage.assignedSeconds.toFixed(1)}/{r.voiceCoverage.totalSeconds.toFixed(1)}s
