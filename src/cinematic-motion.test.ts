@@ -46,6 +46,25 @@ describe("Cinematic Storybook secondary movement", () => {
     expect(sameFrame).toEqual(cinematic);
   });
 
+  it("briefly settles the head and torso when the actual walk stops without moving its saved destination", () => {
+    const { project, scene, actor } = walkingFixture();
+    const before = JSON.stringify(project);
+    const classicStop = sceneFramesAt(project, scene, 3.2).get(actor.id)!;
+    project.visualStyle = "storybook-cinematic";
+    const settling = sceneFramesAt(project, scene, 3.2).get(actor.id)!;
+    expect(settling.x).toBeCloseTo(classicStop.x, 6);
+    expect(settling.rotation).toBeGreaterThan(classicStop.rotation + .5);
+    expect(settling.joints?.head?.angle).not.toBe(classicStop.joints?.head?.angle);
+    expect(settling.emotion).toBe(classicStop.emotion);
+    expect(settling.mouth).toBe(classicStop.mouth);
+    expect(settling.blink).toBe(classicStop.blink);
+    const later = sceneFramesAt(project, scene, 4.2).get(actor.id)!;
+    expect(later.x).toBeCloseTo(classicStop.x, 6);
+    expect(sceneFramesAt(project, scene, 3.2).get(actor.id)).toEqual(settling);
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toBe(before);
+  });
+
   it("keeps old projects and calm authoring/keyframe snapshots exactly unchanged", () => {
     const { project, scene, actor } = walkingFixture();
     const classic = sceneElementAt(project, scene, actor, 1.13, 0);
