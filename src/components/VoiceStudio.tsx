@@ -75,6 +75,7 @@ export function VoiceStudio({
   project,
   sceneIndex,
   localTime,
+  coverageGapTime,
   initialClip,
   lineTarget,
   initialCategory,
@@ -90,6 +91,7 @@ export function VoiceStudio({
   project: Project;
   sceneIndex: number;
   localTime: number;
+  coverageGapTime?: number;
   initialClip?: string;
   lineTarget?: string;
   initialCategory?: AudioCategory;
@@ -384,6 +386,15 @@ export function VoiceStudio({
   }
   return (
     <Modal title={target ? "Record This Line" : "Voices & Sound Studio"} onClose={close} wide>
+      {coverageGapTime !== undefined && (
+        <p className="field-hint" role="status" aria-label="Voice gap placement">
+          Reviewing scene {sceneIndex + 1} at {coverageGapTime.toFixed(2)}s:
+          {" "}no dialogue or narration clip is assigned at this point.
+          You may leave this interval without a voice. If you choose to add
+          a recording or sound file, the new clip starts at this scene time
+          after you explicitly add it. Nothing is created automatically.
+        </p>
+      )}
       {!target && project.templateId === "frame-sequence-storyboard" && (
         <section className="director-recording" aria-label="Imported storyboard recording prompt">
           <h3>{"Scene " + (sceneIndex + 1) + " recording prompt"}</h3>

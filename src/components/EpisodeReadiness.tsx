@@ -220,6 +220,12 @@ export function EpisodeReadiness({
                   <li key={`unassigned-${i}`}>
                     No assigned voice: scene {cameraReviewTimecode(gap.start)}–{cameraReviewTimecode(gap.end)}
                     {" "}· episode {cameraReviewTimecode(r.start + gap.start)}–{cameraReviewTimecode(r.start + gap.end)}
+                    {" "}
+                    <button type="button" className="button secondary small"
+                      aria-label={`Open Sound Studio at unassigned voice interval ${i + 1} in scene ${r.index + 1}`}
+                      onClick={() => onScene(r.index, "voices", gap.start)}>
+                      Review or add voice here
+                    </button>
                   </li>
                 ))}
                 {r.voiceCoverage.gaps.length === 0 && (

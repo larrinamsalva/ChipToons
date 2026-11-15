@@ -198,6 +198,17 @@ workshop ending.
   not proof of intelligible speech, approval or playable audio.
   There are no project, recording, camera, or export changes.
 
+- **PR #125:** every unassigned voice interval in the new #123
+  **Assigned voice coverage** disclosure now has a **Review or add
+  voice here** action. It opens the existing Voices & Sound Studio
+  at that exact scene-local time with narration selected as the default
+  new-clip category and with no unrelated existing clip selected.
+  An informational note explains that the gap may intentionally have
+  no voice, and the creator must explicitly add a recording or file
+  before any new clip is placed. It does **not** record, upload, save,
+  alter playback, or affect export eligibility merely by opening.
+  QA verifies an exact nonzero gap (2.70s) and unchanged saved project.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their

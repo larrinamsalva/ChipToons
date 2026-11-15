@@ -368,13 +368,34 @@ test("exact voice source review selects the intended second clip without changin
   await expect(coverage).toContainText("Assigned narration: scene 00:00:03.20–00:00:03.70");
   await expect(coverage).toContainText("No assigned voice: scene 00:00:02.70–00:00:03.20");
   await expect(coverage).toContainText("An unassigned interval is not necessarily silent");
-  const detail = readiness.locator('details[aria-label="Camera timing details for scene 1"]');
+  // #125: An unassigned voice interval opens Sound Studio precisely at
+  // the saved scene-local gap start, with no unrelated clip selected and
+  // no automatic recording, edits or source uploads.
+  await coverage.getByRole("button", {
+    name: "Open Sound Studio at unassigned voice interval 2 in scene 1",
+  }).click();
+  const gapStudio = page.getByRole("dialog", { name: "Voices & Sound Studio" });
+  await expect(gapStudio).toBeVisible();
+  await expect(gapStudio.getByRole("status", { name: "Voice gap placement" })).toContainText("Reviewing scene 1 at 2.70s");
+  await expect(gapStudio.getByRole("status", { name: "Voice gap placement" })).toContainText("Nothing is created automatically");
+  await expect(gapStudio.getByRole("combobox", { name: "Audio clip", exact: true }))
+    .toHaveValue("");
+  await expect(gapStudio.getByRole("combobox", { name: "New audio category" }))
+    .toHaveValue("narration");
+  await gapStudio.getByRole("button", { name: "Close dialog", exact: true }).click();
+  expect((await backup(page)).data).toEqual(original);
+
+  await button(page, "Finish My Cartoon").click();
+  const resumed = dialog(page).locator(".episode-readiness");
+  if ((await resumed.getAttribute("open")) === null)
+    await resumed.locator(":scope > summary").click();
+  const detail = resumed.locator('details[aria-label="Camera timing details for scene 1"]');
   await detail.locator(":scope > summary").click();
   await expect(detail).toContainText("Embedded audio source:");
   // #122: the downloaded camera worksheet preserves the source notes
   // shown on this device, aligned with exact voice start timecodes.
   const cameraDownload = page.waitForEvent("download");
-  await readiness.getByRole("button", {
+  await resumed.getByRole("button", {
     name: "Download camera review checklist (.txt)",
   }).click();
   const worksheet = await cameraDownload;
