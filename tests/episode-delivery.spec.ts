@@ -393,7 +393,9 @@ test("exact voice source review selects the intended second clip without changin
   expect(fullReport.match(/\[ \] INDEXED \| Scene /g)).toHaveLength(2);
   expect(fullReport).toContain("Indexed does not mean decoded");
   expect(fullReport).toContain("SOURCE — Embedded audio source:");
-  expect((await backup(page)).data).toEqual(original);
+  // Finish My Cartoon is a modal dialog here. The project's persistent
+  // backup control is intentionally behind it and cannot be clicked.
+  // Verify unchanged project data after Sound Studio closes below.
   // #127: the same saved clip timing also creates an accessible
   // visual strip with assigned and unassigned bands, not a waveform.
   const strip = readiness.getByRole("img", { name: /Voice timing strip for scene 1:/ });
