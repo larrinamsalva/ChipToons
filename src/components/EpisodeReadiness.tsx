@@ -262,10 +262,16 @@ export function EpisodeReadiness({
                 accurate or approved. This review does not affect exports.
               </p>
               <ul aria-label={`Assigned voice intervals for scene ${r.index + 1}`}>
-                {r.voiceCoverage.spans.map(clip => (
+                {r.voiceCoverage.spans.map((clip, i) => (
                   <li key={clip.clipId}>
                     Assigned {clip.category}: scene {cameraReviewTimecode(clip.start)}–{cameraReviewTimecode(clip.end)}
                     {" "}· episode {cameraReviewTimecode(r.start + clip.start)}–{cameraReviewTimecode(r.start + clip.end)}
+                    {" "}
+                    <button type="button" className="button secondary small"
+                      aria-label={`Review assigned ${clip.category} interval ${i + 1} in scene ${r.index + 1} in Sound Studio`}
+                      onClick={() => onScene(r.index, "voices", undefined, undefined, clip.clipId)}>
+                      Review this recording
+                    </button>
                   </li>
                 ))}
                 {r.voiceCoverage.spans.length === 0 && (

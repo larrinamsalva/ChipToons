@@ -56,7 +56,11 @@ jobs:
 
   episode:
     name: Complete 20-minute episode and genuine exports
-    runs-on: ubuntu-latest
+    # Pin the real-time browser encoder to a stable host image.
+    # ubuntu-latest can change OS, compositor and codec versions between runs;
+    # transient >500ms scheduling stalls failed full proof on #128 attempts 1/2.
+    # Retain all 10 two-minute genuine WebM exports and independent decoding.
+    runs-on: ubuntu-24.04
     timeout-minutes: 46
     steps:
       - uses: actions/checkout@v7.0.1
