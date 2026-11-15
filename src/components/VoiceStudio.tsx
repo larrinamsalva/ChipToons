@@ -387,7 +387,7 @@ export function VoiceStudio({
   return (
     <Modal title={target ? "Record This Line" : "Voices & Sound Studio"} onClose={close} wide>
       {coverageGapTime !== undefined && (
-        <p className="field-hint" role="status">
+        <p className="field-hint" role="status" aria-label="Voice gap placement">
           Reviewing scene {sceneIndex + 1} at {coverageGapTime.toFixed(2)}s:
           {" "}no dialogue or narration clip is assigned at this point.
           You may leave this interval without a voice. If you choose to add
