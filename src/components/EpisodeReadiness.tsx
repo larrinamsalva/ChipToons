@@ -259,21 +259,30 @@ export function EpisodeReadiness({
                 This shows only assigned, unmuted dialogue/narration clip timing.
                 An unassigned interval is not necessarily silent (music or effects
                 may play). An assignment does not prove recorded speech is audible,
-                accurate or approved. This review does not affect exports.
+                accurate or approved. Audio-source status reflects the original-file
+                index on this device; available does not mean decoded or listened to.
+                This review does not affect exports.
               </p>
               <ul aria-label={`Assigned voice intervals for scene ${r.index + 1}`}>
-                {r.voiceCoverage.spans.map((clip, i) => (
-                  <li key={clip.clipId}>
+                {r.voiceCoverage.spans.map((clip, i) => {
+                  const source = cameraVoiceSourceStatus(
+                    project, clip.clipId, missingSources, checked, !!error,
+                  );
+                  return <li key={clip.clipId}>
                     Assigned {clip.category}: scene {cameraReviewTimecode(clip.start)}–{cameraReviewTimecode(clip.end)}
                     {" "}· episode {cameraReviewTimecode(r.start + clip.start)}–{cameraReviewTimecode(r.start + clip.end)}
+                    {" "}· <span className="field-hint"
+                      aria-label={`Audio source status for assigned ${clip.category} interval ${i + 1} in scene ${r.index + 1}`}>
+                      {source.text}
+                    </span>
                     {" "}
                     <button type="button" className="button secondary small"
                       aria-label={`Review assigned ${clip.category} interval ${i + 1} in scene ${r.index + 1} in Sound Studio`}
                       onClick={() => onScene(r.index, "voices", undefined, undefined, clip.clipId)}>
                       Review this recording
                     </button>
-                  </li>
-                ))}
+                  </li>;
+                })}
                 {r.voiceCoverage.spans.length === 0 && (
                   <li>No dialogue or narration clips assigned within this scene.</li>
                 )}

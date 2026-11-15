@@ -198,6 +198,12 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
   expect(plan.segments).toHaveLength(10);
   const measures = [];
   const deliveryPaths: string[] = [];
+  // A real-time canvas export may report a transient browser scheduling
+  // interruption on a shared CI runner. Exercise the app's EXISTING
+  // per-part recovery route, but require all ten independently verified
+  // two-minute videos. Never skip or accept an incomplete part.
+  let timingRetriesLeft = 2;
+  const recoveredFrameTimingSegments: number[] = [];
   for (const [index, segment] of plan.segments.entries()) {
     const part = index + 1;
     console.info(
@@ -217,28 +223,61 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
         page.getByRole("button", { name: "Retry segment 1", exact: true }),
       ).toBeEnabled();
     }
-    const button = page.getByRole("button", {
-      name: `${index === 0 ? "Retry" : "Export"} segment ${part}`,
-      exact: true,
-    });
-    await expect(button).toBeEnabled();
-    await button.click();
-    try {
-      await expect(
-        page.getByRole("heading", {
-          name: `Segment ${part} is ready`,
-          exact: true,
-        }),
-      ).toBeVisible({ timeout: 240_000 }); // Real-time 120-second encoding can slow on shared CI runners.
-    } catch (failure) {
-      // A missing heading alone does not explain if video encoding stalled,
-      // media verification failed, or the browser reported a recoverable error.
-      const alerts = await page.locator(".segment-exports [role='alert']")
-        .allTextContents().catch(() => [] as string[]);
-      const progress = await page.locator(".segment-exports .export-progress [role='status']")
-        .allTextContents().catch(() => [] as string[]);
-      console.error(`Segment ${part}/10 not ready. Alerts: ${JSON.stringify(alerts)}; last progress: ${JSON.stringify(progress)}`);
-      throw failure;
+    let action: "Export" | "Retry" = index === 0 ? "Retry" : "Export";
+    for (;;) {
+      const button = page.getByRole("button", {
+        name: `${action} segment ${part}`,
+        exact: true,
+      });
+      await expect(button).toBeEnabled();
+      await button.click();
+      const ready = page.getByRole("heading", {
+        name: `Segment ${part} is ready`, exact: true,
+      });
+      const alert = page.locator(".segment-exports [role='alert']");
+      // Fail promptly when the exporter reports an error instead of waiting
+      // 4 minutes for a heading that cannot appear after that error.
+      await expect.poll(async () => {
+        if (await ready.isVisible()) return "ready";
+        if (await alert.isVisible()) return "failed";
+        return "recording";
+      }, { timeout: 240_000, intervals: [500, 1000, 2000] })
+        .not.toBe("recording");
+      if (await ready.isVisible()) break;
+      const alerts = await alert.allTextContents();
+      const progress = await page.locator(
+        ".segment-exports .export-progress [role='status']",
+      ).allTextContents().catch(() => [] as string[]);
+      console.error(
+        `Segment ${part}/10 not ready. Alerts: ${JSON.stringify(alerts)}; last progress: ${JSON.stringify(progress)}`,
+      );
+      // Do NOT retry unrelated codec, validation or missing-original errors.
+      // Do NOT bypass the 500ms frame-scheduling guard in the real exporter.
+      if (!alerts.some(message => message.includes("Frame timing was interrupted")) ||
+          timingRetriesLeft === 0) {
+        throw new Error(`Segment ${part}/10 did not complete its real video export: ${alerts.join(" | ")}`);
+      }
+      timingRetriesLeft--;
+      recoveredFrameTimingSegments.push(part);
+      await expect(page.getByRole("button", {
+        name: `Retry segment ${part}`, exact: true,
+      })).toBeEnabled();
+      console.info(
+        `Recovering interrupted real-time segment ${part}/10 using the saved project (${timingRetriesLeft} retries left)`,
+      );
+      // Release canvas, audio and browser decoder resources. The same
+      // persisted project is reopened; earlier verified files are kept.
+      await page.reload();
+      await page.getByRole("button", {
+        name: `Continue ${original.title}`, exact: true,
+      }).click();
+      await expect(page.locator(".editor")).toBeVisible({ timeout: 30_000 });
+      await page.getByRole("button", {
+        name: "Finish My Cartoon", exact: true,
+      }).click();
+      await expect(page.getByText("60/60 scenes with assigned voices"))
+        .toBeVisible({ timeout: 30_000 });
+      action = "Retry";
     }
     const pending = page.waitForEvent("download");
     await page
@@ -462,6 +501,7 @@ Part sizes: ${partBytes.join(", ")}; total: ${partBytes.reduce((sum, size) => su
     previewPositions: [0, 600, 1100],
     completePortableRestore: true,
     unchangedSource: true,
+    recoveredFrameTimingSegments,
     parts: measures,
     continuousMovie: movie,
   };

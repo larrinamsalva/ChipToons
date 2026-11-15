@@ -438,6 +438,14 @@ test("exact voice source review selects the intended second clip without changin
     await recheck.locator(":scope > summary").click();
   const assigned = recheck.locator('details[aria-label="Assigned voice coverage for scene 1"]');
   await assigned.locator(":scope > summary").click();
+  // #129: the full-duration entry reports this exact clip's source
+  // availability on the current device, without claiming its speech was heard.
+  await expect(assigned.locator(
+    'span[aria-label="Audio source status for assigned narration interval 2 in scene 1"]',
+  )).toContainText(`Embedded audio source: ${audio.name}. Listen to verify its contents.`);
+  await expect(assigned).toContainText(
+    "available does not mean decoded or listened to",
+  );
   await assigned.getByRole("button", {
     name: "Review assigned narration interval 2 in scene 1 in Sound Studio",
   }).click();
