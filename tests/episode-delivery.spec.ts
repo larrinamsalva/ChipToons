@@ -378,6 +378,22 @@ test("exact voice source review selects the intended second clip without changin
   await expect(sourceOverview).toContainText("Voice clips with indexed originals: 2/2");
   await expect(sourceOverview).toContainText("0 missing · 0 unverified");
   await expect(sourceOverview).toContainText("An indexed source is not proof");
+  // #131: download every distinct clip and its actual device-local source
+  // status, then verify opening this report does not change saved media.
+  const fullDownload = page.waitForEvent("download");
+  await sourceOverview.getByRole("button", {
+    name: "Download full voice originals checklist (.txt)",
+  }).click();
+  const fullFile = await fullDownload;
+  expect(fullFile.suggestedFilename()).toMatch(/-voice-originals-review\.txt$/);
+  const fullReport = await readFile((await fullFile.path())!, "utf8");
+  expect(fullReport).toContain("CHIPTOONS — WHOLE-EPISODE VOICE ORIGINALS CHECKLIST");
+  expect(fullReport).toContain("UNIQUE VOICE CLIPS — 2");
+  expect(fullReport).toContain("Indexed original sources: 2 | Missing: 0 | Unverified: 0");
+  expect(fullReport.match(/\[ \] INDEXED \| Scene /g)).toHaveLength(2);
+  expect(fullReport).toContain("Indexed does not mean decoded");
+  expect(fullReport).toContain("SOURCE — Embedded audio source:");
+  expect((await backup(page)).data).toEqual(original);
   // #127: the same saved clip timing also creates an accessible
   // visual strip with assigned and unassigned bands, not a waveform.
   const strip = readiness.getByRole("img", { name: /Voice timing strip for scene 1:/ });
