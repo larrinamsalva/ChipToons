@@ -209,6 +209,16 @@ workshop ending.
   alter playback, or affect export eligibility merely by opening.
   QA verifies an exact nonzero gap (2.70s) and unchanged saved project.
 
+- **PR #126:** the episode narration review now includes a compact
+  **whole-episode assigned voice timing overview** with unioned seconds
+  across scenes and a ranked list of up to five longest intervals
+  without assigned dialogue/narration. Each ranked item includes real
+  scene and episode timecodes and opens Sound Studio at that interval's
+  scene-local start using the read-only #125 navigation path. It never
+  claims missing speech, silence or a failed recording, and it does
+  not affect exports, edits or stored audio. The per-scene review and
+  downloadable checklist continue to work unchanged.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
