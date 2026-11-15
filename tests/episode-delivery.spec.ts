@@ -376,8 +376,8 @@ test("exact voice source review selects the intended second clip without changin
   }).click();
   const gapStudio = page.getByRole("dialog", { name: "Voices & Sound Studio" });
   await expect(gapStudio).toBeVisible();
-  await expect(gapStudio.getByRole("status")).toContainText("Reviewing scene 1 at 2.70s");
-  await expect(gapStudio.getByRole("status")).toContainText("Nothing is created automatically");
+  await expect(gapStudio.getByRole("status", { name: "Voice gap placement" })).toContainText("Reviewing scene 1 at 2.70s");
+  await expect(gapStudio.getByRole("status", { name: "Voice gap placement" })).toContainText("Nothing is created automatically");
   await expect(gapStudio.getByRole("combobox", { name: "Audio clip", exact: true }))
     .toHaveValue("");
   await expect(gapStudio.getByRole("combobox", { name: "New audio category" }))
