@@ -8,6 +8,7 @@ import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
 import { cinematicPairAttentionAt } from "./cinematic-pair-attention";
 import { cinematicFinaleAttentionAt } from "./cinematic-finale-attention";
 import { cinematicWalkLeadingEyesAt } from "./cinematic-walk-leading-eyes";
+import { cinematicWalkArrivalEyesAt } from "./cinematic-walk-arrival-eyes";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -155,13 +156,22 @@ export function cinematicFaceAt(
   const walk = scene.duration === undefined ? undefined :
     cinematicWalkLeadingEyesAt(element, localTime, scene.duration);
   const walkDirection = walk ? { dx: 130 * walk.x, dy: 0, focus: walk.focus } : undefined;
-  const direction = shared ?? active ?? conversation ?? speaking ?? pair ?? finale ?? walkDirection ?? target;
+  // #135: as the original walk ends, briefly hold an eyes-forward arrival.
+  // Handoffs, genuine dialogue, performed actions and authored shots still
+  // take priority over either incidental walking cue.
+  const arrival = scene.duration === undefined ? undefined :
+    cinematicWalkArrivalEyesAt(element, localTime, scene.duration);
+  const arrivalDirection = arrival
+    ? { dx: 130 * arrival.x, dy: 0, focus: arrival.focus } : undefined;
+  const direction = shared ?? active ?? conversation ?? speaking ?? pair ??
+    finale ?? walkDirection ?? arrivalDirection ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
   const focus = shared ? shared.focus : active ? active.focus
     : conversation ? conversation.focus : speaking ? speaking.focus
     : pair ? pair.focus : finale ? finale.focus
-      : walkDirection ? walkDirection.focus : target ? attention : 0;
+      : walkDirection ? walkDirection.focus
+        : arrivalDirection ? arrivalDirection.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);
