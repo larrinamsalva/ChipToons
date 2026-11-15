@@ -370,6 +370,14 @@ test("exact voice source review selects the intended second clip without changin
   await expect(coverage).toContainText("Assigned narration: scene 00:00:03.20–00:00:03.70");
   await expect(coverage).toContainText("No assigned voice: scene 00:00:02.70–00:00:03.20");
   await expect(coverage).toContainText("An unassigned interval is not necessarily silent");
+  // #130: two saved voice clips share a playable embedded source. The
+  // summary counts *clips* without implying that actual speech is verified.
+  const sourceOverview = readiness.getByRole("region", {
+    name: "Episode voice coverage overview",
+  });
+  await expect(sourceOverview).toContainText("Voice clips with indexed originals: 2/2");
+  await expect(sourceOverview).toContainText("0 missing · 0 unverified");
+  await expect(sourceOverview).toContainText("An indexed source is not proof");
   // #127: the same saved clip timing also creates an accessible
   // visual strip with assigned and unassigned bands, not a waveform.
   const strip = readiness.getByRole("img", { name: /Voice timing strip for scene 1:/ });
