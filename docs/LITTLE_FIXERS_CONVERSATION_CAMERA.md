@@ -219,6 +219,17 @@ workshop ending.
   not affect exports, edits or stored audio. The per-scene review and
   downloadable checklist continue to work unchanged.
 
+- **PR #127:** every scene in Finish My Cartoon's narration review
+  now displays a compact visual **voice timing strip** based only on
+  the saved, unioned voice coverage intervals from #123. Solid segments
+  indicate times with assigned dialogue/narration clips, while striped
+  segments indicate times with none assigned. The strip's accessible
+  description states the real unioned timing seconds and cautions that
+  unassigned intervals are not necessarily silent. No audio decoding,
+  spoken-word detection, playback, recording, saved data or export
+  rules are changed. The expandable exact timecodes and #125 links
+  remain alongside the strip.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
