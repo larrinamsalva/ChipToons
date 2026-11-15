@@ -1,6 +1,7 @@
 import type { Project, Scene, SceneElement } from "./model";
 import { neutralJoint } from "./puppet-model";
 import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
+import { cinematicStopSettleAt } from "./cinematic-stop-settle";
 import { cinematicFreeArmReactionAt } from "./cinematic-free-arm-reaction";
 import type { ElementFrame } from "./timeline";
 
@@ -65,6 +66,9 @@ export function cinematicMotionAt(
   // Optional subtle response to the AUTHOR'S actual emotion change.
   // Leave motion paths, keys, mouth shapes and all timed voice data alone.
   const reaction = cinematicEmotionReactionAt(element,localTime);
+  // A small inertial finish when the artist's existing movement slows.
+  // No new keys or displacement: held props use this shared actor frame.
+  const settle = cinematicStopSettleAt(localTime, sceneDuration, sample);
 
   const freeArms = cinematicFreeArmReactionAt(scene, element, rig, frame, localTime);
   const joints = head || freeArms ? {
@@ -73,14 +77,14 @@ export function cinematicMotionAt(
     ...(head ? { [head.id]: {
       ...(frame.joints?.[head.id] ?? neutralJoint),
       angle: (frame.joints?.[head.id]?.angle ?? 0) +
-        headFollow + (reaction?.headTilt ?? 0),
+        headFollow + (reaction?.headTilt ?? 0) + settle.headTilt,
     } } : {}),
   } : frame.joints;
 
   return {
     ...frame,
     y: frame.y - bounce,
-    rotation: frame.rotation + roll + (reaction?.torsoTilt ?? 0),
+    rotation: frame.rotation + roll + (reaction?.torsoTilt ?? 0) + settle.torsoTilt,
     scale: frame.scale * (1 + travel * 0.0028 * Math.cos(stride * 2)),
     joints,
   };
