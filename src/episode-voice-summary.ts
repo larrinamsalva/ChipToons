@@ -32,7 +32,7 @@ export function episodeAssignedVoiceSummary(
   let totalSeconds = 0;
   let assignedSeconds = 0;
   const gaps: EpisodeUnassignedVoiceInterval[] = [];
-  project.scenes.forEach((scene, sceneIndex) => {
+  project.scenes.forEach((_scene, sceneIndex) => {
     const coverage = sceneAssignedVoiceCoverage(project, sceneIndex);
     const absoluteStart = sceneStart(project, sceneIndex);
     totalSeconds += coverage.totalSeconds;
