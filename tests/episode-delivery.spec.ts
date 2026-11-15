@@ -11,6 +11,7 @@ import { cameraShotDemo } from "../src/camera-shot-demo";
 import { newAudioClip } from "../src/production";
 import { builtInSound } from "../src/sounds";
 import { episodeAssignedVoiceSummary } from "../src/episode-voice-summary";
+import { cameraReviewTimecode } from "../src/episode-camera-punch-list";
 
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const dialog = (page: Page) => page.getByRole("dialog");
@@ -449,7 +450,7 @@ test("whole-episode voice overview opens the longest unassigned interval at its 
   const longest = region.locator('details[aria-label="Longest unassigned voice intervals"]');
   await longest.locator(":scope > summary").click();
   await expect(longest).toContainText(`Scene ${first.sceneIndex + 1}: scene`);
-  await expect(longest).toContainText(`episode ${String(first.episodeStart >= 0 ? "" : "")}`);
+  await expect(longest).toContainText(`episode ${cameraReviewTimecode(first.episodeStart)}–${cameraReviewTimecode(first.episodeEnd)}`);
   await longest.getByRole("button", {
     name: `Review longest unassigned voice interval 1 in scene ${first.sceneIndex + 1}`,
   }).click();
