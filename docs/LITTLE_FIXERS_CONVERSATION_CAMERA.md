@@ -263,6 +263,16 @@ workshop ending.
   metadata, not decoding or actual spoken-word analysis. The 20-minute
   export test and its bounded recovery proof stay unchanged.
 
+- **PR #131:** Finish My Cartoon offers a downloadable **complete voice
+  originals checklist (.txt)**. Unlike the on-screen first-five issue
+  preview, it lists all unique active assigned dialogue and narration
+  clips in episode order, with first visible scene/episode timecodes,
+  recording ID and indexed/missing/unverified device-local original
+  status. Cross-scene voice spans are deduplicated; music and muted
+  clips are excluded. It is a read-only snapshot and does not decode
+  or verify spoken content, change recordings or bypass export checks.
+  Unit and browser QA verify completeness and unchanged project backups.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
