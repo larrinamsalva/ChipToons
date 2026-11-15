@@ -9,6 +9,7 @@ import { cameraVoiceSourceStatus } from "../episode-camera-voice-source";
 import { sceneAssignedVoiceCoverage } from "../episode-voice-coverage";
 import { episodeAssignedVoiceSummary } from "../episode-voice-summary";
 import { episodeVoiceOriginalSummary } from "../episode-voice-original-summary";
+import { episodeVoiceOriginalReport } from "../episode-voice-original-report";
 import { voiceTimingBands } from "../voice-timing-strip";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
@@ -111,6 +112,17 @@ export function EpisodeReadiness({
           scene boundaries. An indexed source is not proof of playable audio,
           spoken words or approval. Missing and unverified are distinct.
         </p>
+        <div className="animation-actions">
+          <button type="button" className="button secondary small"
+            onClick={() => downloadBlob(
+              new Blob([episodeVoiceOriginalReport(
+                project, missingSources, checked, !!error,
+              )], { type: "text/plain;charset=utf-8" }),
+              `${safeFilename(project.title)}-voice-originals-review.txt`,
+            )}>
+            Download full voice originals checklist (.txt)
+          </button>
+        </div>
         {(originalSummary.missing > 0 || originalSummary.unverified > 0) && (
           <details aria-label="Voice recordings needing original-source review">
             <summary>
