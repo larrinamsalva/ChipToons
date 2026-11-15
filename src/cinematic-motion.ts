@@ -2,6 +2,7 @@ import type { Project, Scene, SceneElement } from "./model";
 import { neutralJoint } from "./puppet-model";
 import { cinematicEmotionReactionAt } from "./cinematic-emotion-reaction";
 import { cinematicStopSettleAt } from "./cinematic-stop-settle";
+import { cinematicWalkAnticipationAt } from "./cinematic-walk-anticipation";
 import { cinematicFreeArmReactionAt } from "./cinematic-free-arm-reaction";
 import type { ElementFrame } from "./timeline";
 
@@ -69,6 +70,9 @@ export function cinematicMotionAt(
   // A small inertial finish when the artist's existing movement slows.
   // No new keys or displacement: held props use this shared actor frame.
   const settle = cinematicStopSettleAt(localTime, sceneDuration, sample);
+  // Anticipate an upcoming authored walk with a tiny body/head counter-lean,
+  // fading as translation begins. Shared frame = shared prop/camera anchors.
+  const anticipation = cinematicWalkAnticipationAt(localTime, sceneDuration, sample);
 
   const freeArms = cinematicFreeArmReactionAt(scene, element, rig, frame, localTime);
   const joints = head || freeArms ? {
@@ -77,14 +81,14 @@ export function cinematicMotionAt(
     ...(head ? { [head.id]: {
       ...(frame.joints?.[head.id] ?? neutralJoint),
       angle: (frame.joints?.[head.id]?.angle ?? 0) +
-        headFollow + (reaction?.headTilt ?? 0) + settle.headTilt,
+        headFollow + (reaction?.headTilt ?? 0) + settle.headTilt + anticipation.headTilt,
     } } : {}),
   } : frame.joints;
 
   return {
     ...frame,
     y: frame.y - bounce,
-    rotation: frame.rotation + roll + (reaction?.torsoTilt ?? 0) + settle.torsoTilt,
+    rotation: frame.rotation + roll + (reaction?.torsoTilt ?? 0) + settle.torsoTilt + anticipation.torsoTilt,
     scale: frame.scale * (1 + travel * 0.0028 * Math.cos(stride * 2)),
     joints,
   };
