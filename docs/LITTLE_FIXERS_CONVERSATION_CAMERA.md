@@ -241,6 +241,17 @@ workshop ending.
   Desktop, phone and tablet QA checks selection of the second assigned
   recording independently of the existing camera-start review.
 
+- **PR #129:** every assigned dialogue or narration span in the
+  full-duration voice coverage list now reports the exact clip's
+  device-local original-source status, using the same safe source
+  checker as the camera review and downloadable checklist. It
+  distinguishes embedded audio, found local files, missing originals,
+  pending or failed original-file checks, and invalid assignments.
+  The creator can still open Sound Studio to inspect the selected
+  clip, but availability alone never proves a decodable recording,
+  genuine spoken words, script accuracy or approval. The review is
+  read-only and makes no export, recording or camera edits.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
