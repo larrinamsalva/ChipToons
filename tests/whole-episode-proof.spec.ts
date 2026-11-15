@@ -275,7 +275,7 @@ test("a complete twenty-minute narrated episode survives reload, portable restor
       await page.getByRole("button", {
         name: "Finish My Cartoon", exact: true,
       }).click();
-      await expect(page.getByText(/60\\/60 scenes with assigned voices/))
+      await expect(page.getByText("60/60 scenes with assigned voices"))
         .toBeVisible({ timeout: 30_000 });
       action = "Retry";
     }
