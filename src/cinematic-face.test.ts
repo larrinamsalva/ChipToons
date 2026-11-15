@@ -112,6 +112,46 @@ describe("Cinematic Storybook facial acting", () => {
     expect(JSON.stringify(project)).toEqual(source);
   });
 
+  it("lets eyes finish an authored walk without changing the original position or recording", () => {
+    const project = starterProject();
+    const scene = project.scenes[0];
+    scene.duration = 5;
+    const actor = scene.elements[0];
+    scene.elements = [actor];
+    project.characters[0].puppet = sunnyRig();
+    actor.x = 170;
+    actor.y = 365;
+    actor.motion = "still";
+    actor.animation = {
+      blink: true, idle: "none",
+      keyframes: [
+        { ...elementBase(actor), id: uid(), time: 0, easing: "linear", x: 170 },
+        { ...elementBase(actor), id: uid(), time: 1, easing: "linear", x: 170 },
+        { ...elementBase(actor), id: uid(), time: 3, easing: "linear", x: 290 },
+        { ...elementBase(actor), id: uid(), time: 4, easing: "linear", x: 290 },
+      ],
+    };
+    const original = JSON.stringify(project);
+    const classic = sceneFramesAt(project, scene, 3.2);
+    expect(cinematicFaceAt(project, scene, actor, classic.get(actor.id)!, classic, 3.2, false))
+      .toBeUndefined();
+    project.visualStyle = "storybook-cinematic";
+    const frames = sceneFramesAt(project, scene, 3.2);
+    const finish = cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, 3.2, false)!;
+    expect(finish.x).toBeGreaterThan(.9);
+    expect(finish.x).toBeLessThanOrEqual(2.6);
+    expect(frames.get(actor.id)!.x).toBeCloseTo(290, 6);
+    expect(cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, 3.2, false))
+      .toEqual(finish);
+    const later = sceneFramesAt(project, scene, 4.2);
+    const relaxed = cinematicFaceAt(project, scene, actor, later.get(actor.id)!, later, 4.2, false)!;
+    expect(Math.abs(relaxed.x)).toBeLessThan(.4);
+    expect(cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, 3.2, true))
+      .toBeUndefined();
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toBe(original);
+  });
+
   it("renders moving generated pupils without changing Classic faces or authored mouth shapes", () => {
     const { project } = fixture();
     const character = project.characters[0];
