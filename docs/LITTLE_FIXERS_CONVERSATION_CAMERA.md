@@ -230,6 +230,17 @@ workshop ending.
   rules are changed. The expandable exact timecodes and #125 links
   remain alongside the strip.
 
+- **PR #128:** each assigned dialogue/narration clip in the full-duration
+  **Assigned voice coverage** list now has a **Review this recording**
+  action. It navigates to the existing Sound Studio using the saved
+  clip ID rather than the first recording in the scene. This also
+  permits review of cross-scene clip continuations, because the coverage
+  helper already includes those spans. Overlapping clips each get their
+  own action. Opening is read-only: no playback, uploads, retiming,
+  recording, saved data changes, or export eligibility changes.
+  Desktop, phone and tablet QA checks selection of the second assigned
+  recording independently of the existing camera-start review.
+
 ## Quality gates
 - Browser QA opens this distinct no-login example, verifies nine
   proper shots at the three original audio starts, checks their
