@@ -23,6 +23,22 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
 - The polished `ElementFrame` is produced **inside shared `sceneElementAt`**, before interaction sampling. Camera tracking and hand-anchored props see the exact same actor transformation as the actual SVG puppet. Held checklists, tools and warnings **remain attached** rather than drifting away during the lean/bob.
 - Preview, on-device player, and real WebM frames use the same Stage and scene-frame sampling. Calm authoring/keyframe editing disables the secondary layer; classic/legacy projects have exactly the same movement they had before.
 
+## PR #132 — Walking stop follow-through
+
+- Cinematic Storybook now adds a tiny, automatically fading **torso lean
+  and opposing head correction** when a rigged character's already-authored
+  walking motion decelerates to a stop. It samples the actual saved timeline,
+  so stopping while walking left mirrors stopping while walking right.
+- Constant-speed walking, long stationary holds, calm authoring and classic
+  visual style do not gain the stop reaction. Artist-authored x/y locations,
+  mouth shapes, emotion, voice clips and keyframe timing remain unchanged.
+- Because the motion is added to the shared actor frame, the existing
+  hand-anchored props and camera follow use the exact same pose as Stage.
+  This is a restrained 2.5D animation refinement, not new 3D physics.
+- Unit tests verify direction, bounds, deterministic seeking, stillness,
+  unchanged authored movement and classic mode; the existing browser/real
+  20-minute export proof remain mandatory.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.
