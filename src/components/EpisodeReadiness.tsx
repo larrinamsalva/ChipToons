@@ -7,6 +7,7 @@ import { episodeCameraPunchList, cameraReviewTimecode } from "../episode-camera-
 import { cameraCoverageReview } from "../camera-coverage-review";
 import { cameraVoiceSourceStatus } from "../episode-camera-voice-source";
 import { sceneAssignedVoiceCoverage } from "../episode-voice-coverage";
+import { episodeAssignedVoiceSummary } from "../episode-voice-summary";
 import { downloadBlob, safeFilename } from "../files";
 import { lineStatus } from "../script";
 import { sceneStart } from "../timeline";
@@ -46,6 +47,7 @@ export function EpisodeReadiness({
   }, [project, onReady]);
   const missingSources = new Set(missing);
   const camera = episodeCameraSummary(project);
+  const voiceSummary = episodeAssignedVoiceSummary(project);
   // All timing comes from the same saved records used in the downloaded
   // worksheet. Disclosures stay collapsed by default in long episodes.
   const cameraDetails = project.scenes.map(scene => cameraCoverageReview(project, scene));
@@ -83,6 +85,40 @@ export function EpisodeReadiness({
         checked separately. Review each scene’s performance before exporting; a
         short assigned clip does not mean the whole narration has been recorded.
       </p>
+      <section role="region" aria-label="Episode voice coverage overview"
+        className="episode-voice-overview">
+        <p>
+          <strong>Whole-episode assigned voice timing: {voiceSummary.assignedSeconds.toFixed(1)}/{voiceSummary.totalSeconds.toFixed(1)}s</strong>
+          {" "}· {voiceSummary.intervalCount} interval(s) without assigned voice
+        </p>
+        <p className="field-hint">
+          This overview counts only assigned dialogue and narration clip timing,
+          not verified spoken words. Overlapping clips are counted once.
+          No assigned voice does not prove silence, and an unassigned interval
+          is not an export error or a required recording.
+        </p>
+        <details aria-label="Longest unassigned voice intervals">
+          <summary>Review up to five longest intervals without assigned voice</summary>
+          <ol>
+            {voiceSummary.longestGaps.map((gap, i) => (
+              <li key={`${gap.sceneIndex}-${gap.start}-${gap.end}`}>
+                Scene {gap.sceneIndex + 1}: scene {cameraReviewTimecode(gap.start)}–{cameraReviewTimecode(gap.end)}
+                {" "}· episode {cameraReviewTimecode(gap.episodeStart)}–{cameraReviewTimecode(gap.episodeEnd)}
+                {" "}· {gap.duration.toFixed(1)}s
+                {" "}
+                <button type="button" className="button secondary small"
+                  aria-label={`Review longest unassigned voice interval ${i + 1} in scene ${gap.sceneIndex + 1}`}
+                  onClick={() => onScene(gap.sceneIndex, "voices", gap.start)}>
+                  Open Sound Studio at this interval
+                </button>
+              </li>
+            ))}
+            {voiceSummary.longestGaps.length === 0 && (
+              <li>Every scene has assigned voice clip timing, or the episode is empty. Listen to verify actual speech.</li>
+            )}
+          </ol>
+        </details>
+      </section>
       <section role="region" aria-label="Episode camera coverage review"
         className="episode-camera-review">
         <p>

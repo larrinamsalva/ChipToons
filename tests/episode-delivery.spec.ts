@@ -10,6 +10,8 @@ import { backup, restore, saved } from "./production-helpers";
 import { cameraShotDemo } from "../src/camera-shot-demo";
 import { newAudioClip } from "../src/production";
 import { builtInSound } from "../src/sounds";
+import { episodeAssignedVoiceSummary } from "../src/episode-voice-summary";
+import { cameraReviewTimecode } from "../src/episode-camera-punch-list";
 
 const button = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 const dialog = (page: Page) => page.getByRole("dialog");
@@ -419,5 +421,45 @@ test("exact voice source review selects the intended second clip without changin
     .toHaveValue(secondClip.id);
   await studio.getByRole("button", { name: "Close dialog", exact: true }).click();
   await expect(studio).toBeHidden();
+  expect((await backup(page)).data).toEqual(original);
+});
+
+test("whole-episode voice overview opens the longest unassigned interval at its exact saved scene time", async ({ page }) => {
+  test.setTimeout(60_000);
+  const project = cameraShotDemo();
+  const audio = builtInSound("melody");
+  project.audioAssets.push(audio);
+  for (const sceneIndex of [0, 1]) {
+    const clip = newAudioClip(project, audio, "narration", sceneIndex, 0);
+    project.audioClips.push({ ...clip, duration: .5 });
+  }
+  const overview = episodeAssignedVoiceSummary(project);
+  const first = overview.longestGaps[0];
+  expect(first.start).toBe(.5);
+  expect(overview.intervalCount).toBe(2);
+  await restore(page, project);
+  const original = (await backup(page)).data;
+  await button(page, "Finish My Cartoon").click();
+  const readiness = dialog(page).locator(".episode-readiness");
+  if ((await readiness.getAttribute("open")) === null)
+    await readiness.locator(":scope > summary").click();
+  const region = readiness.getByRole("region", { name: "Episode voice coverage overview" });
+  await expect(region).toBeVisible();
+  await expect(region).toContainText(`Whole-episode assigned voice timing: ${overview.assignedSeconds.toFixed(1)}/${overview.totalSeconds.toFixed(1)}s`);
+  await expect(region).toContainText("No assigned voice does not prove silence");
+  const longest = region.locator('details[aria-label="Longest unassigned voice intervals"]');
+  await longest.locator(":scope > summary").click();
+  await expect(longest).toContainText(`Scene ${first.sceneIndex + 1}: scene`);
+  await expect(longest).toContainText(`episode ${cameraReviewTimecode(first.episodeStart)}–${cameraReviewTimecode(first.episodeEnd)}`);
+  await longest.getByRole("button", {
+    name: `Review longest unassigned voice interval 1 in scene ${first.sceneIndex + 1}`,
+  }).click();
+  const studio = page.getByRole("dialog", { name: "Voices & Sound Studio" });
+  await expect(studio).toBeVisible();
+  await expect(studio.getByRole("status", { name: "Voice gap placement" }))
+    .toContainText(`Reviewing scene ${first.sceneIndex + 1} at ${first.start.toFixed(2)}s`);
+  await expect(studio.getByRole("combobox", { name: "Audio clip", exact: true }))
+    .toHaveValue("");
+  await studio.getByRole("button", { name: "Close dialog", exact: true }).click();
   expect((await backup(page)).data).toEqual(original);
 });
