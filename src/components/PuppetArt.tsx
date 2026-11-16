@@ -155,6 +155,56 @@ function Shape({
   // Opt-in, scalable vector workwear for a full-body cartoon performer.
   // The ordinary and photo-cutout puppet looks are unaffected.
   if (character.puppet?.costume === "workshop") {
+    // The shoulder and elbow are real puppet joints. Draw the short
+    // workshop sleeves *inside* each existing upper-arm shape so their
+    // seam and rolled cuff travel with authored IK and gestures.
+    if (premium && (role === "leftArm" || role === "rightArm")) return (
+      <g data-workshop-shirt-sleeve="cinematic">
+        <rect x={-w / 2} y={-h / 2} width={w} height={h}
+          rx={Math.min(9, w * .36)} fill={character.shirt}
+          stroke="#294758" strokeWidth="1" />
+        <path d={`M${-w / 2 + 2} ${-h * .28}
+          Q${-w / 2 + 2} ${-h * .53} 0 ${-h / 2 + 2}
+          Q${w / 2 - 1} ${-h / 2 + 1} ${w / 2 - 2} ${-h * .24}`}
+          stroke="#d3edf0" strokeWidth="1.5" fill="none" opacity=".75" />
+        <rect data-material-depth="workshop-sleeve" x={-w / 2}
+          y={-h / 2} width={w} height={h}
+          rx={Math.min(9, w * .36)}
+          fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />
+        <path data-workshop-arm-fold="true"
+          d={`M${-w * .34} ${-h * .03}Q0 ${h * .08} ${w * .35} ${-h * .01}
+             M${-w * .25} ${h * .21}Q0 ${h * .12} ${w * .31} ${h * .18}`}
+          stroke="#26526a" strokeWidth="1.3" strokeLinecap="round"
+          opacity=".65" fill="none" />
+        <rect data-workshop-sleeve-cuff="true" x={-w / 2 + .5}
+          y={h / 2 - 11} width={w - 1} height="9" rx="3"
+          fill="#286f83" stroke="#194f60" strokeWidth="1" />
+        <path d={`M${-w / 2 + 3} ${h / 2 - 8}H${w / 2 - 3}`}
+          stroke="#9ad5dd" strokeWidth="1.3" opacity=".85" />
+      </g>
+    );
+    // Distinguish the forearm beneath its real elbow joint from the
+    // shirt sleeve above. The wrist/hand children keep their own pivots.
+    if (premium && (role === "leftForearm" || role === "rightForearm")) return (
+      <g data-workshop-forearm="cinematic">
+        <path
+          d={`M${-w * .42} ${-h / 2 + 2}
+              Q${-w * .58} ${-h * .16} ${-w * .38} ${h / 2 - 3}
+              Q0 ${h / 2 + 2} ${w * .37} ${h / 2 - 3}
+              Q${w * .53} ${-h * .17} ${w * .42} ${-h / 2 + 2}
+              Q0 ${-h / 2 - 4} ${-w * .42} ${-h / 2 + 2}Z`}
+          fill={character.skin} stroke="#986e60" strokeWidth=".85" />
+        <path data-workshop-elbow-crease="true"
+          d={`M${-w * .30} ${-h * .35}Q0 ${-h * .25} ${w * .28} ${-h * .34}`}
+          fill="none" stroke="#986e60" strokeWidth="1.1" opacity=".7" />
+        <path
+          d={`M${-w * .23} ${-h * .13}Q${-w * .31} ${h * .12} ${-w * .16} ${h * .37}`}
+          fill="none" stroke="#fff1d8" strokeWidth="2.4"
+          strokeLinecap="round" opacity=".26" />
+        <path d={`M${-w * .28} ${h / 2 - 4}Q0 ${h / 2 - 1} ${w * .28} ${h / 2 - 4}`}
+          fill="none" stroke="#9b6c5e" strokeWidth="1" opacity=".6" />
+      </g>
+    );
     if (role === "torso") return (
       <g>
         <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="15"
@@ -291,6 +341,32 @@ function Shape({
         stroke="#925e50" strokeWidth="1.9" strokeLinecap="round" fill="none" />
     </g>;
   }
+  // Relaxed hands get a palm/thumb silhouette with finger creases,
+  // while the existing GRIPPING hand renderer above remains the only
+  // owner of an animated prop grip and authored wrist motion.
+  if (premium && character.puppet?.costume === "workshop" &&
+      (role === "leftHand" || role === "rightHand")) return (
+    <g data-workshop-open-hand="cinematic">
+      <rect x={-w / 2 + 1} y={-h / 2} width={w - 2} height={h - 1}
+        rx={Math.min(w * .38, h * .36)}
+        fill={character.skin} stroke="#936a5e" strokeWidth=".85" />
+      <rect x={-w / 2 + 1} y={-h / 2} width={w - 2} height={h - 1}
+        rx={Math.min(w * .38, h * .36)}
+        fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />
+      <path data-workshop-palm-thumb="true"
+        d={`M${-w * .31} ${-h * .15}
+             Q${-w * .62} ${-h * .04} ${-w * .43} ${h * .20}
+             Q${-w * .17} ${h * .12} ${-w * .09} ${-h * .04}`}
+        fill="none" stroke="#94685d" strokeWidth="1.3"
+        strokeLinecap="round" />
+      {[-.23, 0, .23].map((x, i) => (
+        <path key={i} data-workshop-finger-line="true"
+          d={`M${w * x} ${h * .11}Q${w * (x + .04)} ${h * .24} ${w * x} ${h * .36}`}
+          fill="none" stroke="#9e7667" strokeWidth="1"
+          strokeLinecap="round" opacity=".8" />
+      ))}
+    </g>
+  );
   if (role === "head")
     return <g>
       <ellipse rx={w / 2} ry={h / 2}
