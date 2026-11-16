@@ -12,24 +12,38 @@ export const CARTOON_PILOT_TITLE =
   "Little Fixers Club — Full-Body Cartoon Workshop (34-second acting pilot; no narration)";
 
 /** Standalone rigged cartoon performer: no uploaded picture, tracing, or poster. */
-export function fullBodyWorkshopCharacter(): Character {
+export function fullBodyWorkshopCharacter(articulatedKnees = false): Character {
   const rig = sunnyRig();
   const torso = rig.parts.find(part => part.id === "torso")!;
   const leftLeg = rig.parts.find(part => part.id === "leftLeg")!;
   const rightLeg = rig.parts.find(part => part.id === "rightLeg")!;
-  const leftFoot = { ...newPart("leftFoot", "leftFoot", leftLeg),
-    x: 0, y: 38, pivotX: 0, pivotY: 0, width: 38, height: 21 };
-  const rightFoot = { ...newPart("rightFoot", "rightFoot", rightLeg),
-    x: 0, y: 38, pivotX: 0, pivotY: 0, width: 38, height: 21 };
+  // Only NEW copies of the original walking pilot opt into two-bone knees.
+  // Every pre-existing serialized character, and callers of this preset
+  // without the flag, retain the original one-piece legs and foot pivots.
+  const leftShin = articulatedKnees
+    ? { ...newPart("leftShin", "leftShin", leftLeg),
+        x: 0, y: 21, pivotX: 0, pivotY: 0, width: 22, height: 31 }
+    : undefined;
+  const rightShin = articulatedKnees
+    ? { ...newPart("rightShin", "rightShin", rightLeg),
+        x: 0, y: 21, pivotX: 0, pivotY: 0, width: 22, height: 31 }
+    : undefined;
+  const leftFoot = { ...newPart("leftFoot", "leftFoot", leftShin ?? leftLeg),
+    x: 0, y: articulatedKnees ? 17 : 38, pivotX: 0, pivotY: 0, width: 38, height: 21 };
+  const rightFoot = { ...newPart("rightFoot", "rightFoot", rightShin ?? rightLeg),
+    x: 0, y: articulatedKnees ? 17 : 38, pivotX: 0, pivotY: 0, width: 38, height: 21 };
   const toolBelt = { ...newPart("accessory", "toolBelt", torso),
     x: 0, y: 26, pivotX: 0, pivotY: 0, width: 79, height: 24 };
   const find = (id: string) => rig.parts.find(part => part.id === id)!;
   rig.parts = [
-    find("leftLeg"), find("rightLeg"), leftFoot, rightFoot,
+    find("leftLeg"), ...(leftShin ? [leftShin] : []), leftFoot,
+    find("rightLeg"), ...(rightShin ? [rightShin] : []), rightFoot,
     find("leftArm"), find("rightArm"), torso, toolBelt, find("head"),
   ];
   rig.costume = "workshop";
-  rig.description = "Original, fully rigged workshop cartoon host in cargo pants, toolbelt and dark boots; not a picture cutout.";
+  rig.description = articulatedKnees
+    ? "Original workshop cartoon host with real, parented knee/shin joints, cargo pants, toolbelt and dark work boots."
+    : "Original, fully rigged workshop cartoon host in cargo pants, toolbelt and dark boots; not a picture cutout.";
   return { id: uid(), name: "Scout — Little Fixers Workshop Guide",
     skin: "#d8a381", hair: "#45382b", shirt: "#277b8b", accessory: "none", puppet: rig };
 }
@@ -55,7 +69,10 @@ function notice(scene: Scene, time: number, duration: number, text: string) {
  */
 export function littleFixersFullBodyPilot(): Project {
   const base = starterProject("safety");
-  const character = fullBodyWorkshopCharacter();
+  // Fresh pilot copies demonstrate actual adjustable knees. This does
+  // not alter existing saved cartoons, imported image rigs or the
+  // separately approved two-actor handoff show.
+  const character = fullBodyWorkshopCharacter(true);
   const scene = makeScene([character], 0);
   const host = scene.elements[0];
   host.x = 171; host.y = 381; host.scale = 1.28; host.motion = "still";

@@ -22,9 +22,27 @@ test("opens an original full-body cartoon with walk-cycle joints and a layered w
   expect(planSegments(data, 60).oversized).toEqual([]);
   const rig = data.characters[0].puppet!;
   expect(rig.costume).toBe("workshop");
-  for (const role of ["torso", "head", "leftArm", "rightArm", "leftLeg", "rightLeg", "leftFoot", "rightFoot", "accessory"]) {
+  for (const role of ["torso", "head", "leftArm", "rightArm", "leftLeg", "rightLeg", "leftShin", "rightShin", "leftFoot", "rightFoot", "accessory"]) {
     expect(rig.parts.some(part => part.role === role)).toBe(true);
   }
+  for (const side of ["left", "right"] as const) {
+    const leg = rig.parts.find(part => part.role === `${side}Leg`)!;
+    const shin = rig.parts.find(part => part.role === `${side}Shin`)!;
+    const shoe = rig.parts.find(part => part.role === `${side}Foot`)!;
+    expect(shin.parentId).toBe(leg.id);
+    expect(shoe.parentId).toBe(shin.id);
+  }
+  // Check the ACTUAL visible editor preview, not a hidden SVG thumbnail.
+  // Downloading the backup can leave phone layouts on a different editor
+  // panel; reselect Preview before testing live artwork on each device.
+  const mobilePanels = page.getByRole("navigation", { name: "Editor panels" });
+  if (await mobilePanels.isVisible()) {
+    await mobilePanels.getByRole("button", { name: "Preview", exact: true }).click();
+  }
+  const stage = page.locator(".stage-panel .live-stage svg[data-visual-style]").first();
+  await expect(stage).toBeVisible();
+  await expect(stage.locator('[data-puppet-part="leftShin"]')).toBeAttached();
+  await expect(stage.locator('[data-puppet-part="rightShin"]')).toBeAttached();
   const scene = data.scenes[0];
   expect(scene.cameraShots).toHaveLength(3);
   expect(scene.focusGraphics).toHaveLength(3);
