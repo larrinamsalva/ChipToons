@@ -152,6 +152,32 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   3D arm, cloth simulation, automatic character redesign or
   change to the recording/animation-authoring pipeline.
 
+## PR #144 — Distinct facial silhouettes for Scout and Helper Jo
+
+- Fresh fully articulated workshop rigs now carry an optional **saved,
+  explicitly chosen headStyle**: Scout uses a short side-part silhouette
+  and Helper Jo has longer soft waves. This choice is intentionally stored
+  on the puppet rig rather than guessed from the editable character name,
+  skin tone or clothing colors.
+- In Cinematic Storybook, these original hair shapes are drawn **inside
+  each existing parented head joint**, alongside a subtle jaw highlight
+  and ear silhouettes. The original eyes, pupil direction, eyelid motion,
+  brows, mouth/lip-sync, voice opening, facial emotion and camera frames
+  retain their approved coordinates and animation behavior.
+- The rig validator accepts only the two known optional styles or no
+  style at all. Previous saved cartoons, unstyled legacy workshop
+  characters, non-workshop puppets, separate hair art, imported photo
+  cutouts and Classic mode retain their prior original look.
+- New tests render actual Scout/Jo Stage frames, assert *two distinct*
+  hairstyles and head contours, preserve the real hand-grip attachment,
+  prove deterministic seeking and unchanged serialized project data,
+  verify Classic/non-workshop/legacy fallbacks, and verify that editing
+  a name or hair color doesn't silently switch head style.
+- The changes are limited to **original editable 2.5D character art**
+  and opt-in head paint metadata, not a new AI face generator, 3D mesh,
+  altered voice recording or completed television animation.
+  Foundation/browser and real 20-minute media-export gates still apply.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
