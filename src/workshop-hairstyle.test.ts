@@ -15,11 +15,11 @@ describe("PR #146 original workshop hairstyle choice", () => {
     expect(validateProject(updated)).toBeTruthy();
     expect(updated).not.toBe(project);
     expect(updated.characters[0].puppet?.headStyle).toBe("soft-waves");
-    expect(updated.characters[1]).toBe(jo);
-    expect(updated.scenes).toBe(project.scenes);
-    expect(updated.audioAssets).toBe(project.audioAssets);
-    expect(updated.audioClips).toBe(project.audioClips);
-    expect(updated.scenes[0].interactions).toBe(project.scenes[0].interactions);
+    // validateProject normalizes/clones returned records; verify unchanged\n    // CONTENT, not shared JS identity, for Jo and the authored timeline.\n    expect(updated.characters[1]).toStrictEqual(jo);
+    expect(updated.scenes).toStrictEqual(project.scenes);
+    expect(updated.audioAssets).toStrictEqual(project.audioAssets);
+    expect(updated.audioClips).toStrictEqual(project.audioClips);
+    expect(updated.scenes[0].interactions).toStrictEqual(project.scenes[0].interactions);
     expect(JSON.stringify(project)).toBe(previous);
     const restored = JSON.parse(JSON.stringify(updated));
     expect(restored.characters[0].puppet.headStyle).toBe("soft-waves");
