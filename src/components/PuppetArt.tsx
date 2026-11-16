@@ -169,6 +169,37 @@ function Shape({
           stroke="#def3e0" strokeWidth="2.5" strokeLinecap="round" opacity=".8" />
       </g>
     );
+    // Real shin parts on newly articulated workshop characters deserve
+    // separate pant folds and a shaped knee, not a duplicate thigh pocket.
+    // These forms travel with the EXISTING knee joint transform: no CSS
+    // motion, new bones, altered poses or foot-contact geometry.
+    if (premium && (role === "leftShin" || role === "rightShin")) return (
+      <g data-workshop-knee-sleeve="cinematic">
+        <rect x={-w / 2} y={-h / 2} width={w} height={h}
+          rx={Math.min(8, w * .35)} fill="#63764f"
+          stroke="#42513b" strokeWidth="1" />
+        <path d={`M${-w / 2 + 2} ${-h / 2 + 7}Q${-w / 2 + 1} 0 ${-w / 2 + 4} ${h / 2 - 4}L${-w / 2 + w * .39} ${h / 2 - 4}Q${-w / 2 + w * .28} 0 ${-w / 2 + w * .39} ${-h / 2 + 7}Z`}
+          fill="#94a872" opacity=".46" />
+        <rect data-material-depth="knee-fabric" x={-w / 2} y={-h / 2}
+          width={w} height={h} rx={Math.min(8, w * .35)}
+          fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />
+        <ellipse data-workshop-knee-panel="true" cx="0" cy={-h / 2 + 8}
+          rx={w * .39} ry={Math.min(6.5, h * .20)}
+          fill="#78895e" stroke="#41533d" strokeWidth="1.2" />
+        <path d={`M${-w * .28} ${-h / 2 + 8}Q0 ${-h / 2 + 3} ${w * .28} ${-h / 2 + 8}`}
+          stroke="#d3dfae" strokeWidth="1.2" opacity=".75" fill="none" />
+        <path data-workshop-knee-folds="true"
+          d={`M${-w * .34} ${-h * .03}Q0 ${h * .07} ${w * .3} ${-h * .07}
+             M${-w * .28} ${h * .17}Q0 ${h * .22} ${w * .36} ${h * .12}`}
+          fill="none" stroke="#3e5137" strokeWidth="1.2"
+          strokeLinecap="round" opacity=".7" />
+        <rect data-workshop-boot-cuff="true" x={-w / 2 + 1}
+          y={h / 2 - 8} width={w - 2} height="7" rx="2.5"
+          fill="#506348" stroke="#374936" strokeWidth=".8" />
+        <path d={`M${-w / 2 + 4} ${h / 2 - 5}H${w / 2 - 4}`}
+          stroke="#b4c49a" strokeWidth="1" opacity=".65" />
+      </g>
+    );
     if (role === "leftLeg" || role === "rightLeg" || role === "leftShin" || role === "rightShin" || role === "lowerBody") return (
       <g>
         <rect x={-w / 2} y={-h / 2} width={w} height={h} rx="9" fill="#64764d" />
@@ -181,6 +212,45 @@ function Shape({
         <path d={`M${-w / 2 + 4} ${h * 0.18}h${w - 8}`} stroke="#9daa82" strokeWidth="1.5" />
       </g>
     );
+    // Shaped boot upper, separate toe cap, laces and outsole. Keep the
+    // exact original sole bottom (h/2 + 2), so existing floor grounding
+    // and authored foot placement do not change when premium art is on.
+    if (premium && (role === "leftFoot" || role === "rightFoot")) {
+      const outline = `M${-w / 2 + 2} ${h / 2 - 6}
+        L${-w / 2 + 2} ${-h / 2 + 1}
+        Q${-w / 2 + 2} ${-h / 2 - 4} ${-w / 2 + 9} ${-h / 2 - 4}
+        L${w / 2 - 12} ${-h / 2 - 4}
+        Q${w / 2 - 7} ${-h / 2 - 3} ${w / 2 - 7} ${-h / 2 + 2}
+        Q${w / 2 + 4} ${-h / 2 + 4} ${w / 2 + 2} ${h / 2 - 6}Z`;
+      return (
+        <g data-workshop-boot-profile="cinematic">
+          <path d={outline} fill="#2b3945" stroke="#172631"
+            strokeWidth="1.1" strokeLinejoin="round" />
+          <path d={outline} data-material-depth="work-boot"
+            fill={`url(#${gradientPrefix}-material)`} pointerEvents="none" />
+          <path data-workshop-boot-toe="true"
+            d={`M${w * .11} ${-h * .15}Q${w * .43} ${-h * .11} ${w / 2} ${h / 2 - 6}
+              L${w * .12} ${h / 2 - 6}Z`}
+            fill="#40505f" stroke="#182630" strokeWidth=".85" />
+          <path d={`M${-w / 2 + 6} ${-h / 2 + 3}V${h / 2 - 8}`}
+            stroke="#7b8d9c" strokeWidth="1.5" opacity=".65" />
+          {[0, 1, 2].map(i => (
+            <path key={i} data-workshop-boot-lace="true"
+              d={`M${-w * .29} ${-h / 2 + 4 + i * 4}
+                L${-w * .02} ${-h / 2 + 6 + i * 4}
+                M${-w * .03} ${-h / 2 + 4 + i * 4}
+                L${-w * .28} ${-h / 2 + 6 + i * 4}`}
+              fill="none" stroke="#c2b8a1" strokeWidth="1.1"
+              strokeLinecap="round" />
+          ))}
+          <rect data-workshop-boot-sole="true" x={-w / 2 - 2}
+            y={h / 2 - 6} width={w + 5} height="8" rx="3"
+            fill="#151c23" stroke="#070e14" strokeWidth=".65" />
+          <path d={`M${-w / 2 + 1} ${h / 2 - 3}H${w / 2 + 1}`}
+            stroke="#71808b" strokeWidth="1" opacity=".7" />
+        </g>
+      );
+    }
     if (role === "leftFoot" || role === "rightFoot") return (
       <g>
         <rect x={-w / 2} y={-h / 2 - 4} width={w} height={h + 4} rx="7" fill="#25313c" />
