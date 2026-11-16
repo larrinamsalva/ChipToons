@@ -2,6 +2,7 @@ import type { Project, SceneElement } from "./model";
 import { neutralJoint, puppetTransforms } from "./puppet-model";
 import type { PuppetPart, PuppetRig } from "./puppet-model";
 import type { ElementFrame } from "./timeline";
+import { cinematicBootSwingRollAt } from "./cinematic-boot-swing-roll";
 
 type Point = { x: number; y: number };
 const clamp = (x: number, low: number, high: number) => Math.min(high, Math.max(low, x));
@@ -107,7 +108,8 @@ function assistShin(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
 }
 
 function plantFoot(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
-  foot: PuppetPart, target: Point, weight: number): ElementFrame {
+  foot: PuppetPart, target: Point, weight: number,
+  swingRoll = 0): ElementFrame {
   const parent = rig.parts.find(part => part.id === foot.parentId);
   if (!parent || !["leftLeg", "rightLeg", "leftShin", "rightShin"].includes(parent.role) ||
       foot.assetId) return frame;
@@ -117,8 +119,12 @@ function plantFoot(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
   const footIndex = rig.parts.indexOf(foot);
   const initial = puppetTransforms(rig, frame.joints)[footIndex];
   const footJoint = frame.joints?.[foot.id] ?? neutralJoint;
+  // After leveling the boot for ground contact, tip it a tiny bit
+  // during the existing swing. The rocker is ZERO at stance/touchdown.
+  // The sole is recalculated after rotation so ground contact follows
+  // the same actual foot pose in Stage, shadow and genuine exports.
   const angle = clamp(normAngle(-initial.angle -
-    frame.rotation * (element.flip ? -1 : 1)), -16, 16) * weight;
+    frame.rotation * (element.flip ? -1 : 1)) + swingRoll, -16, 16) * weight;
   const angledFoot = { ...footJoint, angle: footJoint.angle + angle };
   const angled: ElementFrame = { ...frame, joints: { ...frame.joints, [foot.id]: angledFoot } };
 
@@ -191,7 +197,13 @@ export function cinematicGaitAt(
     const target: Point = { x: stance ? first.x : mix(first.x, last.x, smooth(swing)),
       y: floorY - (stance ? 0 : 7 * Math.sin(swing * Math.PI) * authored.scale) };
     result = assistShin(rig, element, result, foot, target, weight);
-    result = plantFoot(rig, element, result, foot, target, weight);
+    // A boot may tilt during its original authored swing, but not while
+    // its sole is planted. The existing foot solver handles floor
+    // contact and compensates for the change in shoe angle.
+    const rocker = cinematicBootSwingRollAt(
+      progress, (b.x - a.x) * (element.flip ? -1 : 1),
+    );
+    result = plantFoot(rig, element, result, foot, target, weight, rocker);
   }
   return result;
 }
