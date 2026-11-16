@@ -40,6 +40,9 @@ export function articulatedWorkshopCharacter(
     ? "Original workshop performer with parented shoulders, elbows, hands, knees, shins and boots. No external image or voice recording."
     : "Original workshop performer with editable, parented shoulders, elbows and hands. No external image or voice recording.";
   if (role === "jo") {
+    // Preserve the artist's hairstyle as character data, not a
+    // name/color-based heuristic that changes when the creator renames Jo.
+    if (articulatedKnees) rig.headStyle = "soft-waves";
     character.name = "Helper Jo — Trusted Grown-Up";
     character.shirt = "#954c68";
     character.hair = "#3c2947";
