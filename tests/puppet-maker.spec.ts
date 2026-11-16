@@ -237,3 +237,41 @@ test("drawn objects and uploaded artwork are portable and library changes stay s
   await saved(page);
   expect(rigOf((await backup(page)).data)).toEqual(rigOf(first));
 });
+
+
+test("creates and saves a new fully jointed original workshop hero with editable colors and hair", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("./");
+  await button(page, "Create a Puppet Character").click();
+  await dialog(page).getByRole("button", {
+    name: "Start with an Articulated Workshop Character", exact: true,
+  }).click();
+  await expect(dialog(page).locator('[data-puppet-part]')).toHaveCount(15);
+  await expect(dialog(page).locator('[data-puppet-finish="cinematic"]')).toHaveCount(1);
+  await expect(dialog(page).locator('[data-workshop-hairstyle="short-side-part"]'))
+    .toHaveCount(1);
+
+  await dialog(page).getByLabel("Character name").fill("Nova Workshop Hero");
+  await dialog(page).getByLabel("Workshop skin color").fill("#ac785b");
+  await dialog(page).getByLabel("Workshop hair color").fill("#453260");
+  const hairstyle = dialog(page).getByRole("combobox", { name: "Workshop hairstyle" });
+  await hairstyle.selectOption("soft-waves");
+  await expect(dialog(page).locator('[data-workshop-hairstyle="soft-waves"]'))
+    .toHaveCount(1);
+  await audit(page);
+
+  await button(page, "Next").click();
+  await button(page, "Preview").click();
+  await button(page, "Add to Cartoon").click();
+  await saved(page);
+  const project = (await backup(page)).data;
+  const hero = project.characters.find(character => character.name === "Nova Workshop Hero")!;
+  expect(hero).toBeTruthy();
+  expect(hero.puppet?.costume).toBe("workshop");
+  expect(hero.puppet?.parts).toHaveLength(15);
+  expect(hero.puppet?.headStyle).toBe("soft-waves");
+  expect(hero.skin).toBe("#ac785b");
+  expect(hero.hair).toBe("#453260");
+  expect(project.scenes.some(scene =>
+    scene.elements.some(element => element.characterId === hero.id))).toBe(true);
+});
