@@ -5,6 +5,7 @@ import { cinematicStopSettleAt } from "./cinematic-stop-settle";
 import { cinematicTurnAnticipationAt } from "./cinematic-turn-anticipation";
 import { cinematicWalkAnticipationAt } from "./cinematic-walk-anticipation";
 import { cinematicFreeArmReactionAt } from "./cinematic-free-arm-reaction";
+import { cinematicTurnFreeArmsAt } from "./cinematic-turn-free-arms";
 import type { ElementFrame } from "./timeline";
 
 const clamp = (value: number, low: number, high: number) =>
@@ -79,9 +80,13 @@ export function cinematicMotionAt(
   // fading as translation begins. Shared frame = shared prop/camera anchors.
   const anticipation = cinematicWalkAnticipationAt(localTime, sceneDuration, sample);
 
+  // A very small shoulder response makes direction reversals less stiff
+  // only when arms are free. Any explicit emotional gesture outranks it.
+  const turnArms = cinematicTurnFreeArmsAt(scene, element, rig, frame, turn);
   const freeArms = cinematicFreeArmReactionAt(scene, element, rig, frame, localTime);
-  const joints = head || freeArms ? {
+  const joints = head || freeArms || turnArms ? {
     ...frame.joints,
+    ...turnArms,
     ...freeArms,
     ...(head ? { [head.id]: {
       ...(frame.joints?.[head.id] ?? neutralJoint),
