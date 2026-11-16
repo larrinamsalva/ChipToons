@@ -121,6 +121,37 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   not generated 3D anatomy, physically simulated cloth, or an
   overhaul of the entire Character Studio.
 
+## PR #143 — Articulated arm sleeves, forearms and resting hands
+
+- Following #142's cleaner trousers and boots, **Cinematic Storybook**
+  workshop characters now have fitted shirt sleeves with shoulder
+  seams, subtle fabric folds and rolled cuffs on their original
+  upper-arm joints. Their separately jointed forearms show rounded
+  skin, a slight elbow crease and a wrist contour.
+- When the character's original hand is **not holding anything**,
+  it has a more identifiable palm/thumb silhouette and subtle
+  finger creases rather than a featureless rectangle. During
+  actual prop interactions the existing dedicated gripping-hand
+  animator **always takes priority**; finger curls and prop anchors
+  remain completely unchanged.
+- These shapes live inside the existing parented SVG upper-arm,
+  forearm and hand parts, so elbow IK, the safe checklist transfer,
+  shoulder rotations and genuine video exports use the same
+  scene frames and hand positions, without changing any skeleton,
+  rig dimensions, pivot, joint keyframe, authored story or audio.
+- Classic renders and non-workshop costumes retain their existing
+  look. Older single-piece workshop arms gain sleeve detail when
+  premium style is enabled, but are not magically given elbows.
+- Tests render both performers in the real Stage, count distinct
+  sleeve cuffs, elbow creases, open palms and finger lines,
+  preserve the old active hand-curl renderer and verify the
+  held checklist still exactly follows its animated hand. The
+  existing full browser and independent 20-minute export checks
+  remain mandatory.
+- Incremental **2.5D vector character-art polish**, not a true
+  3D arm, cloth simulation, automatic character redesign or
+  change to the recording/animation-authoring pipeline.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
