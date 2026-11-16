@@ -89,6 +89,38 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   restored edits, and the original approved picture-checklist handoff.
   The strict browser and genuine 20-minute export gates remain.
 
+## PR #142 — Sculpted knee sleeves and laced work boots
+
+- The two real shin pieces added in #140–#141 now have **distinct
+  fitted trouser sleeves**, a shaped knee panel, stitched folds and
+  a clean cuff at the top of each boot in Cinematic Storybook mode.
+  They no longer look like duplicated upper-thigh cargo pockets.
+- The original simple rectangular cartoon boot is upgraded in
+  Cinematic Storybook to a **recognizable work-boot silhouette**:
+  curved ankle/upper, shaped toe cap, visible short laces, material
+  highlights and a separate dark outsole. Its original lowest sole
+  coordinate (half the boot height + 2) is preserved, so knee and
+  ground contact calculations keep the same geometry.
+- All new artwork lives inside existing **parented SVG puppet parts**.
+  As the animator's knee, ankle and foot frames move, fabric folds,
+  knee pad, boot laces and toe are drawn at those real transforms;
+  there is no floating overlay, CSS motion or new skeleton.
+- Only eligible `costume: "workshop"` **vector artwork** receives
+  these details, and only with the existing Cinematic Storybook
+  option. Classic, imported artwork and non-workshop costumes keep
+  their old appearance. Earlier unarticulated workshop characters
+  have no new knee sleeve, although their existing boots receive
+  the improved look when Cinematic Storybook is enabled.
+- Tests render the real Scout/Jo Stage and assert four distinct
+  knees and four detailed boots, all parented to the existing
+  two-actor animation. Original saved scenes, motion curves,
+  prop transfers, camera, lip-sync, voice recordings and exported
+  durations remain unchanged; existing full browser and genuine
+  20-minute video-export gates are still required.
+- This is more detailed **editable 2.5D cartoon vector workwear**,
+  not generated 3D anatomy, physically simulated cloth, or an
+  overhaul of the entire Character Studio.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
