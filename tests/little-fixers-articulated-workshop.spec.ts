@@ -72,7 +72,13 @@ test("workshop hairstyles can be edited, saved, undone and restored without chan
 
   // Choose the actual puppet track; the first scene element happens to
   // be background scenery, not the performer whose hair is editable.
-  await page.getByRole("button", { name: /Select Scout.*track/ }).click();
+  // The timeline has TWO Scout labels: the main character track and
+  // its separate face/pose subtrack. Select the main track by its exact
+  // accessible name on desktop, phone and tablet (strict Playwright).
+  await page.getByRole("button", {
+    name: "Select Scout — Little Fixers Workshop Guide track",
+    exact: true,
+  }).click();
   const mobilePanels = page.getByRole("navigation", { name: "Editor panels" });
   if (await mobilePanels.isVisible())
     await mobilePanels.getByRole("button", { name: "Edit scene" }).click();
