@@ -178,6 +178,35 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   altered voice recording or completed television animation.
   Foundation/browser and real 20-minute media-export gates still apply.
 
+## PR #145 — Hair follows the original actor movement
+
+- Fresh opt-in Scout and Helper Jo hair silhouettes now have a **very
+  small deterministic follow-through** when their author-recorded
+  position or head-angle keys change. Hair tips against the movement
+  and lifts slightly; it never drifts when the actor is at rest.
+- The effect is derived from fixed local-time samples of the **existing
+  authored keyframes**. It is clipped to 3.25 degrees of relative
+  rotation and 1 puppet-local pixel of lift. It has no wall-clock
+  physics, interval timers, new animation keys or saved motion state.
+- Only the **hair silhouette** receives this secondary transform. The
+  real head joint, original pupils, eyebrows, mouth, voice/lip sync,
+  eye and prop positions, stage position, and handoff timing remain
+  unchanged. Hair movement is part of the original SVG Stage render
+  shared with previews and genuine video exports, not an independent
+  browser-only CSS animation.
+- Requires original `storybook-cinematic` artwork, an explicitly
+  selected new workshop `headStyle`, and actual authored keyframes.
+  Classic, calm keyframe previews, unstyled legacy puppets, separate
+  illustrated hair assets, invalid samples and still performances
+  retain their existing behavior.
+- Pure tests verify bounded directional sway, a static actor no-op,
+  real head response, repeatable seeking, and invalid input safety.
+  Integrated tests render actual moving Scout/Jo frames and check
+  separate moving hair groups, unaffected face and preserved
+  checklist handoff anchor, and unchanged saved JSON.
+- This is limited **2.5D cartoon follow-through** (not generated
+  hair strands, cloth simulation or full 3D motion).
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

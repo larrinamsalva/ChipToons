@@ -12,6 +12,7 @@ import { frameSequenceAssetIdAt } from "../frame-sequence-model";
 import { cinematicPaperFlexAt } from "../cinematic-paper-flex";
 import { WorkshopDepthDefs, WorkshopDepthLayer, WorkshopGrounding } from "./CinematicWorkshop";
 import { PuppetArt } from "./PuppetArt";
+import { cinematicHairFollowThroughAt } from "../cinematic-hair-follow-through";
 import { stageCameraAt, backgroundAt, elementAt, sceneFramesAt, sceneStart } from "../timeline";
 import { handAt, interactionPaintOrder } from "../interaction-motion";
 import type { InteractionFrame } from "../interaction-motion";
@@ -653,6 +654,11 @@ export const Stage = memo(function Stage({
                       emotion={frame.emotion} mouth={frame.mouth} voiceOpening={frame.voiceOpening}
                       blink={face?.blink ?? frame.blink} gaze={face} gripCurl={frame.gripCurl}
                       heartOpacity={frame.heartOpacity} heartScale={frame.heartScale}
+                      hairFollow={premium && !calmPreview && character?.puppet?.headStyle &&
+                        element.animation?.keyframes?.length
+                        ? cinematicHairFollowThroughAt(t, scene.duration,
+                            at => elementAt(element, at, scene.duration, true))
+                        : undefined}
                       premium={premium} />
                   ) : asset ? (
                     <RasterArt

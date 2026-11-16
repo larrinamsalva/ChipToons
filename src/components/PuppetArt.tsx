@@ -4,6 +4,7 @@ import { puppetTransforms } from "../puppet-model";
 import type { JointSnapshot, PuppetPart } from "../puppet-model";
 import type { Mouth } from "../animation-model";
 import type { CinematicFace } from "../cinematic-face";
+import type { CinematicHairFollowThrough } from "../cinematic-hair-follow-through";
 
 function Face({
   emotion,
@@ -451,6 +452,7 @@ export function PuppetArt({
   premium = false,
   gaze,
   gripCurl,
+  hairFollow,
 }: {
   character: Character;
   assets: Asset[];
@@ -464,6 +466,7 @@ export function PuppetArt({
   premium?: boolean;
   gaze?: CinematicFace;
   gripCurl?: { left?: number; right?: number };
+  hairFollow?: CinematicHairFollowThrough;
 }) {
   const gradientPrefix = useId();
   const rig = character.puppet;
@@ -471,6 +474,11 @@ export function PuppetArt({
   const transforms = puppetTransforms(rig, joints);
   const separateEyes = rig.parts.some((p) => p.role === "eyes");
   const separateMouth = rig.parts.some((p) => p.role === "mouth");
+  const movingHair = premium && !!hairFollow &&
+    (Math.abs(hairFollow.angle) > .01 || hairFollow.lift > .01);
+  const hairTransform = movingHair
+    ? `translate(0 ${-hairFollow!.lift}) rotate(${hairFollow!.angle} 0 -32)`
+    : undefined;
   return (
     <g data-puppet={character.id} data-puppet-finish={premium ? "cinematic" : "classic"}>
       {premium && <defs>
@@ -543,7 +551,9 @@ export function PuppetArt({
                   {!asset && !rig.parts.some((p) => p.role === "hair") && (
                     premium && rig.costume === "workshop" && rig.headStyle ? (
                       rig.headStyle === "soft-waves" ? (
-                        <g data-workshop-hairstyle="soft-waves">
+                        <g data-workshop-hairstyle="soft-waves"
+                          data-cinematic-hair-follow={movingHair ? "true" : undefined}
+                          transform={hairTransform}>
                           <path data-workshop-hair-silhouette="true"
                             d="M-43 -22Q-45 -54 -10 -49Q11 -57 32 -39Q47 -38 46 -14
                                Q53 2 45 21Q43 28 34 27Q40 14 36 -4
@@ -562,7 +572,9 @@ export function PuppetArt({
                             fill="none" strokeLinecap="round" pointerEvents="none" />
                         </g>
                       ) : (
-                        <g data-workshop-hairstyle="short-side-part">
+                        <g data-workshop-hairstyle="short-side-part"
+                          data-cinematic-hair-follow={movingHair ? "true" : undefined}
+                          transform={hairTransform}>
                           <path data-workshop-hair-silhouette="true"
                             d="M-42 -18Q-49 -38 -33 -44Q-19 -54 -1 -48
                                Q22 -53 38 -36Q45 -26 41 -15
