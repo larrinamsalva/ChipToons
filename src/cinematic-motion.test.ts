@@ -105,6 +105,8 @@ describe("Cinematic Storybook secondary movement", () => {
       { ...elementBase(actor), id: uid(), time: 4, easing: "linear", x: 170,
         joints: { head: { ...neutralJoint, angle: 5 } } },
     ];
+    // This fixture explicitly contains no prop handoffs or arm gestures.
+    scene.interactions = [];
     const snapshot = JSON.stringify(project);
     const regular = sceneFramesAt(project, scene, 2).get(actor.id)!;
     project.visualStyle = "storybook-cinematic";
@@ -117,6 +119,11 @@ describe("Cinematic Storybook secondary movement", () => {
     expect(turned.joints?.head?.angle).toBeLessThan(
       (regular.joints?.head?.angle ?? 0) - 2,
     );
+    // #138: Only the free vector upper arms react at this actual
+    // turnaround; no extra recorded keyframes or change to head/face cues.
+    const freeTurn = sceneFramesAt(project, scene, 2).get(actor.id)!;
+    expect(freeTurn.joints?.leftArm?.angle).toBeLessThan(-2);
+    expect(freeTurn.joints?.rightArm?.angle).toBeGreaterThan(2);
     expect(turned.mouth).toBe(regular.mouth);
     expect(turned.emotion).toBe(regular.emotion);
     expect(turned.blink).toBe(regular.blink);
