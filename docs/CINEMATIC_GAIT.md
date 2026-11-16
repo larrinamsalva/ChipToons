@@ -207,6 +207,38 @@ Use existing browser + media-export regressions. Added unit tests check scene im
 - This is limited **2.5D cartoon follow-through** (not generated
   hair strands, cloth simulation or full 3D motion).
 
+## PR #146 — Creator-controlled hairstyle selection
+
+- The **Edit scene → Characters & movement** panel now includes a
+  clearly labeled **Workshop hairstyle** selector for original
+  editable workshop performers: **Original hairstyle**, **Short
+  side part**, and **Soft waves**.
+- The new choice updates the selected character's optional
+  `puppet.headStyle` metadata in the existing project, making the
+  original vector hair silhouette consistent in **every scene where
+  that character appears**. It does not duplicate the performer or
+  modify a scene-local hair color override. The current project's
+  regular undo/redo, autosave, backup and restore flows apply.
+- Unlike the costume color pickers, hair style is a *rig-design*
+  choice; the editor says that it changes all appearances of that
+  character within the cartoon. Other characters, their head styles,
+  shared visual style switch, author-created keyframes, dialogue,
+  audio, camera and all handoff contacts remain intact.
+- Custom/imported photo characters, non-workshop puppets, and rigs
+  with painted head or hair assets **do not show the selector**;
+  their original drawings remain untouched. Choosing Original
+  clears the optional `headStyle` and restores the legacy vector
+  silhouette without damaging the existing head/eye animations.
+- Unit tests verify independent character selection, project
+  validation, serialization and restoration, no mutation, safe
+  handoff positions and rejection of unsupported painted rigs.
+  Desktop/phone/tablet browser acceptance tests edit Scout's style
+  and exercise save, undo, redo and reload while comparing the
+  authored scenes and audio verbatim. All existing full-media export
+  gates remain.
+- A more usable **2.5D character customization feature**; not
+  arbitrary generated 3D hair or new AI assets.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

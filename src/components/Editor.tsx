@@ -62,6 +62,8 @@ import { CompositionTools } from "./CompositionTools";
 import { resolvedCharacter, libraryItemFromElement, libraryItemFromLocation } from "../library";
 import type { LibraryItem, LibraryKind } from "../library";
 import { POSES } from "../art-model";
+import { setWorkshopHairstyle } from "../workshop-hairstyle";
+import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
 const StoryCardStudio = lazy(() => import("./StoryCardStudio").then(module => ({ default: module.StoryCardStudio })));
@@ -462,6 +464,23 @@ export function Editor({
       ...(name !== undefined ? { name } : {}),
       appearance: { ...element.appearance, ...appearance },
     });
+  }
+  // A hairstyle is part of this performer's ORIGINAL puppet rig, unlike
+  // the scene-local outfit/hair colors. Changing it updates every scene
+  // using this character, with the normal project snapshot undo/redo.
+  function changeWorkshopHairstyle(choice: WorkshopHairstyleChoice) {
+    if (!element?.characterId) return;
+    try {
+      const next = setWorkshopHairstyle(project, element.characterId, choice);
+      if (next !== project) {
+        halt();
+        onChange(next);
+      }
+      setEditError("");
+    } catch (error) {
+      setEditError(error instanceof Error
+        ? error.message : "The workshop hairstyle could not be saved.");
+    }
   }
   function addScene(dedicated?: Scene) {
     if (project.scenes.length >= 120) return false;
@@ -1513,6 +1532,26 @@ export function Editor({
                             />
                           </label>
                         </div>
+                        {character.puppet?.costume === "workshop" &&
+                         !character.puppet.parts.some(part =>
+                           (part.role === "head" || part.role === "hair") && !!part.assetId) && (
+                          <label>
+                            Workshop hairstyle
+                            <select
+                              aria-label="Workshop hairstyle"
+                              value={character.puppet.headStyle ?? "original"}
+                              onChange={event => changeWorkshopHairstyle(
+                                event.target.value as WorkshopHairstyleChoice)}
+                            >
+                              <option value="original">Original hairstyle</option>
+                              <option value="short-side-part">Short side part</option>
+                              <option value="soft-waves">Soft waves</option>
+                            </select>
+                            <span className="field-hint">
+                              Changes this character in every scene. Your movements and voice stay the same.
+                            </span>
+                          </label>
+                        )}
                         <label>
                           Accessory
                           <select
