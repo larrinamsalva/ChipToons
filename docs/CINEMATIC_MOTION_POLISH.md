@@ -110,6 +110,25 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
   and deterministic frame seeking. Real browser and verified 20-minute
   export checks remain mandatory.
 
+## PR #137 — Eyes look into an authored turnaround
+
+- Generated vector-puppet eyes briefly **look into the next direction**
+  when the animator's existing horizontal path reverses. This reuses
+  #136's deterministic direction-reversal detection, so no separate
+  trajectory or new keyframe is manufactured.
+- At an actual turnaround, the eye cue outranks #135's old-direction
+  walking-arrival gaze; actual conversations, performed prop gestures,
+  handoffs and intentional pair/finale camera attention still win.
+- Only opt-in Cinematic Storybook faces are eligible. Classic mode,
+  painted eyes, calm editing and stationary/straight-walking characters
+  stay unchanged. Existing lips, narration, shots and original keys
+  remain identical, and the eye cue vanishes outside the turn window.
+- Unit tests verify mirrored direction, no false reversals, deterministic
+  samples; real facial integration checks the *new* direction takes
+  precedence over the older arrival gaze without changing saved state.
+  Full browser and independently verified 20-minute media export QA
+  remain required.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.
