@@ -37,6 +37,33 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   frame seeking, original x position and unchanged project storage.
   The full browser and verified 20-minute export gates remain.
 
+## PR #140 — Actual articulated knees in fresh Scout walking pilots
+
+- New instances of the **34-second original full-body Scout workshop
+  pilot** now have two genuine, separately parented `leftShin` /
+  `rightShin` vector parts. Each shin is attached to the upper leg;
+  the work boot is attached to its shin rather than the old leg.
+  The original resting sole coordinates remain stable through
+  21 + 17 stage-local pixels, replacing the prior 38-pixel boot offset.
+- This exposes real knee bends from the **existing two-bone gait solver**
+  in the shared Cinematic Storybook Stage/preview/export pipeline.
+  The knee response is bounded, deterministic, and follows the
+  creator's original walks rather than generating a new path.
+- Only this **newly generated pilot** opts into the additional knee
+  parts. The general `fullBodyWorkshopCharacter()` preset (called
+  without an opt-in flag), old serialized cartoons, imported art
+  and the separately approved articulated-arm handoff demonstration
+  retain their original rig structure. Classic and calm editing keep
+  authored leg keyframes untouched; no automatic knee positions are
+  saved into the project.
+- Unit and live browser tests verify shins genuinely render as vector
+  parts and are linked leg → shin → boot, that the original boot
+  rest position is preserved, that Cinematic Storybook calculates
+  nonzero knee rotations during walking, and that saved records,
+  scripts, voice audio and position keys remain intact.
+  Full Foundation/browser and real 20-minute media-export checks
+  remain mandatory; inspect foot/ground contact visually.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
