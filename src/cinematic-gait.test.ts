@@ -4,6 +4,10 @@ import { cinematicBootSwingRollAt } from "./cinematic-boot-swing-roll";
 import { littleFixersFullBodyPilot } from "./little-fixers-full-body-pilot";
 import { elementAt, sceneElementAt, sceneFramesAt } from "./timeline";
 import { puppetTransforms } from "./puppet-model";
+import { fullBodyWorkshopCharacter } from "./little-fixers-full-body-pilot";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { Stage } from "./components/Stage";
 
 function fixture() {
   const project = littleFixersFullBodyPilot();
@@ -51,6 +55,52 @@ describe("Cinematic foot planting", () => {
       expect(Number.isFinite(planted[i].x)).toBe(true);
       expect(Number.isFinite(planted[i].y)).toBe(true);
     }
+  });
+
+  it("articulates actual pilot shins under the old legs without migrating saved or handoff rigs", () => {
+    const originalPreset = fullBodyWorkshopCharacter();
+    expect(originalPreset.puppet!.parts.some(p => p.role === "leftShin")).toBe(false);
+    expect(originalPreset.puppet!.parts.some(p => p.role === "rightShin")).toBe(false);
+    const { project, scene, actor } = fixture();
+    const rig = project.characters[0].puppet!;
+    for (const side of ["left", "right"] as const) {
+      const leg = rig.parts.find(p => p.role === `${side}Leg`)!;
+      const shin = rig.parts.find(p => p.role === `${side}Shin`)!;
+      const foot = rig.parts.find(p => p.role === `${side}Foot`)!;
+      expect(shin.parentId).toBe(leg.id);
+      expect(foot.parentId).toBe(shin.id);
+      expect(shin.assetId).toBeUndefined();
+      // The new shin and shortened foot offset preserve the previous
+      // resting shoe location (21 + 17 = 38 parent-local pixels).
+      expect(shin.y + foot.y).toBe(38);
+    }
+    const original = JSON.stringify(project);
+    expect(sceneElementAt(project, scene, actor, 5.2, 0).joints?.leftShin)
+      .toBeUndefined();
+    project.visualStyle = "storybook-cinematic";
+    const snapshot = JSON.stringify(project);
+    const samples = [2.5, 3.2, 4.4, 5.2, 6.2, 7.5, 8.7, 9.8].map(time =>
+      sceneElementAt(project, scene, actor, time, 0));
+    expect(samples.some(frame =>
+      Math.abs(frame.joints?.leftShin?.angle ?? 0) > .05 ||
+      Math.abs(frame.joints?.rightShin?.angle ?? 0) > .05)).toBe(true);
+    expect(samples.every(frame =>
+      Number.isFinite(frame.joints?.leftShin?.angle ?? 0) &&
+      Number.isFinite(frame.joints?.rightShin?.angle ?? 0))).toBe(true);
+    expect(samples[3].x).toBeCloseTo(elementAt(actor, 5.2, scene.duration).x, 8);
+    expect(samples[3].mouth).toBe(elementAt(actor, 5.2, scene.duration).mouth);
+    expect(sceneElementAt(project, scene, actor, 5.2, 0)).toEqual(samples[3]);
+    const calm = sceneElementAt(project, scene, actor, 5.2, 0, true);
+    expect(calm.joints?.leftShin).toBeUndefined();
+    expect(calm.joints?.rightShin).toBeUndefined();
+    const rendered = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: 5.2, labelled: false,
+    }));
+    expect(rendered).toContain('data-puppet-part="leftShin"');
+    expect(rendered).toContain('data-puppet-part="rightShin"');
+    expect(JSON.stringify(project)).toBe(snapshot);
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toBe(original);
   });
 
   it("adds a reversible small boot roll only in the existing swing phase", () => {
