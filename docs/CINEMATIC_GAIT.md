@@ -64,6 +64,31 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   Full Foundation/browser and real 20-minute media-export checks
   remain mandatory; inspect foot/ground contact visually.
 
+## PR #141 — Both Scout and Helper Jo now have working knees in new handoff cartoons
+
+- Fresh copies of the **30-second two-performer Scout-and-Jo
+  articulated workshop** now enable the already proven #140 leg →
+  shin → boot rig on *both* characters, in addition to their original
+  shoulder → forearm → hand chains.
+- The existing original 30-second animation (entrances, head poses,
+  hand and elbow animation, safe picture-checklist transfer, scene
+  duration and independent character colors) is unchanged. Each new
+  shin is genuinely parented; each boot keeps its original resting
+  coordinate (21 + 17 = 38 local pixels).
+- The shared Cinematic Storybook gait solver bends both performers'
+  knees during their authored approach. Classic and calm/keyframe
+  views keep the original saved leg poses; painted and incomplete
+  custom rigs are untouched. The Stage preview and real WebM export
+  sample the same final animated frames.
+- Previous serialized projects and the unopted
+  `articulatedWorkshopCharacter(role)` preset retain their old
+  rig structure. Existing real handoff/IK safety tests stay required.
+- Tests verify each leg/shin/boot chain, both independent bend
+  responses, visible SVG shin artwork twice per side, unchanged
+  x positions, deterministic sampling, immutable project JSON,
+  restored edits, and the original approved picture-checklist handoff.
+  The strict browser and genuine 20-minute export gates remain.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
