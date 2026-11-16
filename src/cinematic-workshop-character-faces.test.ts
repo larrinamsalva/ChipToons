@@ -36,7 +36,15 @@ describe("PR #144 original, distinct workshop character head art", () => {
     // The existing actual lips, eyes, head joint and checklist handoff
     // remain animated independently of these new face outlines.
     expect(count(art, 'data-puppet-part="head"')).toBe(2);
-    expect(art).toContain('data-eye-highlight="premium"');
+    // Natural blinks are offset by each generated actor id. Either actor
+    // may briefly close both eyes at the exact handoff sample, suppressing
+    // eye catchlights by design. Verify a second nearby frame instead of
+    // relying on a randomly phased blink at one instant.
+    const eyesOpenLater = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: 7.5, labelled: false,
+    }));
+    expect([art, eyesOpenLater].some(svg =>
+      svg.includes('data-eye-highlight="premium"'))).toBe(true);
     expect(art).toContain('data-cinematic-hand-grip="true"');
     const action = scene.interactions![0];
     const frames = sceneFramesAt(project, scene, 7);
