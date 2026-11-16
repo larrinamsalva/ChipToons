@@ -19,6 +19,20 @@ test("Scout and Helper Jo's real articulated workshop opens from the home screen
   expect(data.scenes.map(scene => scene.duration)).toEqual([30]);
   expect(data.characters).toHaveLength(2);
   expect(data.assets).toHaveLength(0);
+  // Both new performers use genuine vector knee and shin joints, not
+  // image overlays; the mobile Stage test stays in the unit suite to
+  // avoid selecting hidden responsive thumbnails.
+  for (const character of data.characters) {
+    const parts = character.puppet!.parts;
+    for (const side of ["left", "right"] as const) {
+      const leg = parts.find(part => part.role === `${side}Leg`)!;
+      const shin = parts.find(part => part.role === `${side}Shin`)!;
+      const foot = parts.find(part => part.role === `${side}Foot`)!;
+      expect(shin.parentId).toBe(leg.id);
+      expect(foot.parentId).toBe(shin.id);
+      expect(shin.y + foot.y).toBe(38);
+    }
+  }
   expect(data.scenes[0].interactions?.map(action => action.kind)).toEqual(["give"]);
   const scene = data.scenes[0], handoff = scene.interactions![0];
   const frames = sceneFramesAt(data, scene, 9.5);
