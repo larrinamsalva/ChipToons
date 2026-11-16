@@ -92,6 +92,24 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
   gaze, stillness, opt-out and unchanged saved positions. Full original
   browser workflows and 20-minute genuine export QA remain required.
 
+## PR #136 — Head-leading direction changes
+
+- When a Cinematic Storybook performer **actually reverses** direction
+  along an existing saved horizontal walking path, a small deterministic
+  head lead and opposing torso counter-lean help the switch read as
+  an intentional animated turnaround instead of an abrupt instant pivot.
+- Sampling compares measured pre-turn and post-turn movement to distinguish
+  a real left/right reversal from slowing, standing, traveling vertically
+  or continuing straight. It fades out away from the change.
+- This adds only a maximum 0.9° torso and 1.35° head offset to the shared
+  rigged-character frame, so camera framing and any held props consume
+  the same visible actor motion. Saved keyframes, locations, voices,
+  captions, duration and classic/calm rendering are unaffected.
+- Unit and cinematic frame tests verify both directions, no phantom
+  turnaround when stopping or standing still, unchanged project storage
+  and deterministic frame seeking. Real browser and verified 20-minute
+  export checks remain mandatory.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.
