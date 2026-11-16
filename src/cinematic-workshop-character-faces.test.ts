@@ -28,6 +28,9 @@ describe("PR #144 original, distinct workshop character head art", () => {
     expect(count(art, 'data-workshop-hairstyle="short-side-part"')).toBe(1);
     expect(count(art, 'data-workshop-hairstyle="soft-waves"')).toBe(1);
     expect(count(art, 'data-workshop-hair-silhouette="true"')).toBe(2);
+    // Retain the original Cinematic Storybook material-depth contract.
+    // Each new hairstyle must keep its real highlighted hair sheen.
+    expect(count(art, 'data-material-depth="hair-sheen"')).toBe(2);
     expect(count(art, 'data-workshop-hair-part="true"')).toBe(1);
     expect(count(art, 'data-workshop-hair-lock="true"')).toBe(1);
     // The existing actual lips, eyes, head joint and checklist handoff
