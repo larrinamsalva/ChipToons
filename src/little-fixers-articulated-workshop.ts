@@ -11,11 +11,16 @@ export const ARTICULATED_WORKSHOP_TITLE =
 
 /**
  * Create a fresh, self-contained performer with genuinely parented forearms
- * and hands. Never mutate the previously approved full-body pilot or the
- * four-minute Little Fixers story, whose older scenes rely on simpler rigs.
+ * and hands. An optional knee chain builds on the existing full-body pilot
+ * rig without changing older saved copies or separately authored cartoons.
  */
-export function articulatedWorkshopCharacter(role: "scout" | "jo"): Character {
-  const character = fullBodyWorkshopCharacter();
+export function articulatedWorkshopCharacter(
+  role: "scout" | "jo",
+  articulatedKnees = false,
+): Character {
+  // #141: only NEW two-performer demonstration projects request knees.
+  // Earlier character presets and already saved rigs are not migrated.
+  const character = fullBodyWorkshopCharacter(articulatedKnees);
   const rig = character.puppet!;
   for (const side of ["left", "right"] as const) {
     const arm = rig.parts.find(part => part.role === `${side}Arm`)!;
@@ -31,7 +36,9 @@ export function articulatedWorkshopCharacter(role: "scout" | "jo"): Character {
     // order, so the shirt/torso naturally overlaps the rear arm.
     rig.parts.splice(rig.parts.indexOf(arm) + 1, 0, forearm, hand);
   }
-  rig.description = "Original workshop performer with editable, parented shoulders, elbows and hands. No external image or voice recording.";
+  rig.description = articulatedKnees
+    ? "Original workshop performer with parented shoulders, elbows, hands, knees, shins and boots. No external image or voice recording."
+    : "Original workshop performer with editable, parented shoulders, elbows and hands. No external image or voice recording.";
   if (role === "jo") {
     character.name = "Helper Jo — Trusted Grown-Up";
     character.shirt = "#954c68";
@@ -68,8 +75,10 @@ function act(element: SceneElement, beats: readonly Beat[]) {
  */
 export function littleFixersArticulatedWorkshop(): Project {
   const base = starterProject("safety");
-  const scout = articulatedWorkshopCharacter("scout");
-  const jo = articulatedWorkshopCharacter("jo");
+  // #141: fresh Scout-and-Jo copies demonstrate real leg → shin → boot
+  // chains alongside their already animated elbows and safe prop handoff.
+  const scout = articulatedWorkshopCharacter("scout", true);
+  const jo = articulatedWorkshopCharacter("jo", true);
   const scene = makeScene([scout, jo]);
   scene.duration = 30;
   scene.title = "A tiny handoff — shoulders, elbows and hands work together";
