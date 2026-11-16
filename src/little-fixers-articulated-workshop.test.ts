@@ -3,9 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Stage } from "./components/Stage";
 import { handAt } from "./interaction-motion";
-import { littleFixersArticulatedWorkshop } from "./little-fixers-articulated-workshop";
+import { articulatedWorkshopCharacter, littleFixersArticulatedWorkshop } from "./little-fixers-articulated-workshop";
 import { littleFixersFullBodyPilot } from "./little-fixers-full-body-pilot";
-import { sceneFramesAt } from "./timeline";
+import { elementAt, sceneFramesAt } from "./timeline";
 import { validateProject } from "./model";
 
 describe("Little Fixers articulated workshop showcase", () => {
@@ -20,7 +20,14 @@ describe("Little Fixers articulated workshop showcase", () => {
     for (const character of project.characters) {
       const rig = character.puppet!;
       expect(rig.costume).toBe("workshop");
+      expect(rig.parts).toHaveLength(15);
       for (const side of ["left", "right"] as const) {
+        const leg = rig.parts.find(part => part.role === `${side}Leg`)!;
+        const shin = rig.parts.find(part => part.role === `${side}Shin`)!;
+        const boot = rig.parts.find(part => part.role === `${side}Foot`)!;
+        expect(shin.parentId).toBe(leg.id);
+        expect(boot.parentId).toBe(shin.id);
+        expect(shin.y + boot.y).toBe(38);
         const upper = rig.parts.find(part => part.role === `${side}Arm`)!;
         const elbow = rig.parts.find(part => part.role === `${side}Forearm`)!;
         const hand = rig.parts.find(part => part.role === `${side}Hand`)!;
@@ -30,6 +37,55 @@ describe("Little Fixers articulated workshop showcase", () => {
     }
     expect(project.scenes[0].elements.filter(item => item.characterId)).toHaveLength(2);
     expect(project.scenes[0].elements.some(item => item.name?.includes("adult-only"))).toBe(false);
+  });
+
+  it("visibly bends newly articulated knees during both actors' original entrance, not during classic or calm editing", () => {
+    const originalPreset = articulatedWorkshopCharacter("jo");
+    expect(originalPreset.puppet!.parts.some(part => part.role.includes("Shin"))).toBe(false);
+
+    const project = littleFixersArticulatedWorkshop();
+    const scene = project.scenes[0];
+    const snapshot = JSON.stringify(project);
+    const actors = scene.elements.filter(item => item.characterId);
+    expect(actors).toHaveLength(2);
+
+    // Their original gentle entrance is not a synthetic gait: both
+    // performers have actual movement/leg keys in the authored project.
+    for (const actor of actors) {
+      const walkingTimes = [0.8, 1.2, 1.5, 1.8, 2.2];
+      const movingFrames = walkingTimes.map(time =>
+        sceneFramesAt(project, scene, time).get(actor.id)!);
+      expect(movingFrames.some(frame =>
+        Math.abs(frame.joints?.leftShin?.angle ?? 0) > 0.02 ||
+        Math.abs(frame.joints?.rightShin?.angle ?? 0) > 0.02)).toBe(true);
+      expect(movingFrames.every((frame, index) =>
+        Number.isFinite(frame.joints?.leftShin?.angle ?? 0) &&
+        Number.isFinite(frame.joints?.rightShin?.angle ?? 0) &&
+        Math.abs(frame.x - elementAt(actor, walkingTimes[index], scene.duration).x) < 0.001))
+        .toBe(true);
+      expect(sceneFramesAt(project, scene, 1.5).get(actor.id))
+        .toEqual(movingFrames[2]);
+    }
+    const calm = sceneFramesAt(project, scene, 1.5, 0, true);
+    for (const actor of actors)
+      expect(calm.get(actor.id)?.joints?.leftShin).toBeUndefined();
+
+    project.visualStyle = undefined;
+    const classic = sceneFramesAt(project, scene, 1.5);
+    for (const actor of actors) {
+      expect(classic.get(actor.id)?.joints?.leftShin).toBeUndefined();
+      expect(classic.get(actor.id)?.joints?.rightShin).toBeUndefined();
+    }
+    project.visualStyle = "storybook-cinematic";
+    expect(JSON.stringify(project)).toBe(snapshot);
+
+    const visible = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: 1.5, labelled: false,
+    }));
+    // Two copies of each independent vector-shin part, one per actor.
+    expect(visible.match(/data-puppet-part="leftShin"/g)).toHaveLength(2);
+    expect(visible.match(/data-puppet-part="rightShin"/g)).toHaveLength(2);
+    expect(visible).toContain('data-visual-style="storybook-cinematic"');
   });
 
   it("animates both elbows toward the shared picture plan before the handoff and attaches the object to Jo after", () => {
