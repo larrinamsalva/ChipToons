@@ -30,7 +30,15 @@ describe("PR #145 hair follows authored movements without moving face or props",
     expect(html).toContain('data-cinematic-hair-follow="true"');
     expect(html).toContain(`transform="translate(0 ${-motion.lift}) rotate(${motion.angle} 0 -32)"`);
     expect(html).toContain('data-puppet-part="head"');
-    expect(html).toContain('data-eye-highlight="premium"');
+    // An intentional blink removes the eye catchlight only for a short
+    // interval. Preserve the existing facial rendering contract by
+    // checking a second deterministic time rather than assuming t=5.2
+    // cannot coincide with an ID-phased blink.
+    const otherEyes = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: 5.65, labelled: false,
+    }));
+    expect([html, otherEyes].some(svg =>
+      svg.includes('data-eye-highlight="premium"'))).toBe(true);
     expect(frame.x).toBeCloseTo(initial.x, 8);
     expect(frame.mouth).toBe(initial.mouth);
     expect(renderToStaticMarkup(createElement(Stage, {
