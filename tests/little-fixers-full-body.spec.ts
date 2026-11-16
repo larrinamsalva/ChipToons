@@ -32,10 +32,16 @@ test("opens an original full-body cartoon with walk-cycle joints and a layered w
     expect(shin.parentId).toBe(leg.id);
     expect(shoe.parentId).toBe(shin.id);
   }
-  // The actual UI Stage paints the two distinct original vector shins.
-  // No fake knee labels or invisible configuration-only change.
-  const stage = page.locator("svg").filter({ has: page.locator('[data-puppet-part="leftShin"]') }).first();
+  // Check the ACTUAL visible editor preview, not a hidden SVG thumbnail.
+  // Downloading the backup can leave phone layouts on a different editor
+  // panel; reselect Preview before testing live artwork on each device.
+  const mobilePanels = page.getByRole("navigation", { name: "Editor panels" });
+  if (await mobilePanels.isVisible()) {
+    await mobilePanels.getByRole("button", { name: "Preview", exact: true }).click();
+  }
+  const stage = page.locator(".stage-panel .live-stage svg[data-visual-style]").first();
   await expect(stage).toBeVisible();
+  await expect(stage.locator('[data-puppet-part="leftShin"]')).toBeAttached();
   await expect(stage.locator('[data-puppet-part="rightShin"]')).toBeAttached();
   const scene = data.scenes[0];
   expect(scene.cameraShots).toHaveLength(3);
