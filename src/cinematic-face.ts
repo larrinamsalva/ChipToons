@@ -9,6 +9,7 @@ import { cinematicPairAttentionAt } from "./cinematic-pair-attention";
 import { cinematicFinaleAttentionAt } from "./cinematic-finale-attention";
 import { cinematicWalkLeadingEyesAt } from "./cinematic-walk-leading-eyes";
 import { cinematicWalkArrivalEyesAt } from "./cinematic-walk-arrival-eyes";
+import { cinematicTurnEyelineAt } from "./cinematic-turn-eyeline";
 
 export interface CinematicFace {
   /** Small pupil offsets in the existing authored face coordinate system. */
@@ -163,15 +164,23 @@ export function cinematicFaceAt(
     cinematicWalkArrivalEyesAt(element, localTime, scene.duration);
   const arrivalDirection = arrival
     ? { dx: 130 * arrival.x, dy: 0, focus: arrival.focus } : undefined;
+  // On a REAL reversal, look toward the NEW direction before the old
+  // travel arrival cue. All performed prop, voice and camera-shot looks
+  // still have higher priority than these optional movement reactions.
+  const turnaround = scene.duration === undefined ? undefined :
+    cinematicTurnEyelineAt(element, localTime, scene.duration);
+  const turnDirection = turnaround
+    ? { dx: 130 * turnaround.x, dy: 0, focus: turnaround.focus } : undefined;
   const direction = shared ?? active ?? conversation ?? speaking ?? pair ??
-    finale ?? walkDirection ?? arrivalDirection ?? target;
+    finale ?? turnDirection ?? walkDirection ?? arrivalDirection ?? target;
   const targetX = direction ? clamp(direction.dx / 130, -1, 1) : 0;
   const targetY = direction ? clamp(direction.dy / 150, -1, 1) : 0;
   const focus = shared ? shared.focus : active ? active.focus
     : conversation ? conversation.focus : speaking ? speaking.focus
     : pair ? pair.focus : finale ? finale.focus
-      : walkDirection ? walkDirection.focus
-        : arrivalDirection ? arrivalDirection.focus : target ? attention : 0;
+      : turnDirection ? turnDirection.focus
+        : walkDirection ? walkDirection.focus
+          : arrivalDirection ? arrivalDirection.focus : target ? attention : 0;
 
   const x = clamp(2.35 * targetX * focus +
     0.23 * Math.sin(localTime * 1.12 + seed * 0.3) * (1 - focus), -2.6, 2.6);
