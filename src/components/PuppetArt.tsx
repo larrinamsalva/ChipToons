@@ -367,6 +367,28 @@ function Shape({
       ))}
     </g>
   );
+  // New, explicitly styled workshop heads keep the same original
+  // 86×80 head and unaltered face/eye/mouth anchor coordinates. Their
+  // ears and shaded jaw travel WITH the existing real head joint.
+  if (premium && character.puppet?.costume === "workshop" &&
+      character.puppet.headStyle && role === "head") return (
+    <g data-workshop-head-contour="cinematic">
+      <ellipse cx={-w / 2 - 1} cy="2" rx="6" ry="10"
+        fill={character.skin} stroke="#956963" strokeWidth="1" />
+      <ellipse cx={w / 2 + 1} cy="2" rx="6" ry="10"
+        fill={character.skin} stroke="#956963" strokeWidth="1" />
+      <ellipse rx={w / 2} ry={h / 2}
+        fill={`url(#${gradientPrefix}-skin)`}
+        stroke="#9b7771" strokeWidth="1.2" />
+      <path data-workshop-jaw-highlight="true"
+        d={`M${-w * .31} ${h * .25}
+             Q0 ${h * .53} ${w * .31} ${h * .25}`}
+        fill="none" stroke="#fff5df" strokeWidth="2"
+        opacity=".32" strokeLinecap="round" />
+      <path d={`M${-w * .38} ${-h * .03}Q${-w * .34} ${h * .29} ${-w * .17} ${h * .42}`}
+        fill="none" stroke="#fff5df" strokeWidth="2.5" opacity=".25" />
+    </g>
+  );
   if (role === "head")
     return <g>
       <ellipse rx={w / 2} ry={h / 2}
@@ -519,16 +541,57 @@ export function PuppetArt({
               {part.role === "head" && rig.face && (
                 <>
                   {!asset && !rig.parts.some((p) => p.role === "hair") && (
-                    <g>
-                      <path
-                        d="M-38 -18Q-43 -47 0 -40Q36 -44 42 -15Q20 -20 14 -28Q-10 -10 -38 -18"
-                        fill={character.hair}
-                      />
-                      {premium && <path data-material-depth="hair-sheen"
-                        d="M-30 -21Q-21 -41 -3 -37Q15 -39 27 -30"
-                        stroke="#fff8ec" strokeWidth="3.1" strokeLinecap="round"
-                        opacity=".23" fill="none" pointerEvents="none" />}
-                    </g>
+                    premium && rig.costume === "workshop" && rig.headStyle ? (
+                      rig.headStyle === "soft-waves" ? (
+                        <g data-workshop-hairstyle="soft-waves">
+                          <path data-workshop-hair-silhouette="true"
+                            d="M-43 -22Q-45 -54 -10 -49Q11 -57 32 -39Q47 -38 46 -14
+                               Q53 2 45 21Q43 28 34 27Q40 14 36 -4
+                               Q31 -22 20 -27Q3 -18 -12 -28
+                               Q-34 -17 -36 -3Q-35 14 -33 25Q-46 23 -46 9
+                               Q-52 -3 -43 -22Z"
+                            fill={character.hair} stroke="#261c2f" strokeWidth="1.15" />
+                          <path data-workshop-hair-lock="true"
+                            d="M-29 -32Q-10 -52 7 -36Q19 -45 34 -28
+                               M-40 -14Q-45 -2 -41 13M39 -14Q45 1 39 16"
+                            stroke="#977eaa" strokeWidth="2.4" opacity=".48"
+                            fill="none" strokeLinecap="round" />
+                          <path data-material-depth="hair-sheen"
+                            d="M-27 -36Q-8 -47 4 -36"
+                            stroke="#fff6ed" strokeWidth="2.4" opacity=".23"
+                            fill="none" strokeLinecap="round" pointerEvents="none" />
+                        </g>
+                      ) : (
+                        <g data-workshop-hairstyle="short-side-part">
+                          <path data-workshop-hair-silhouette="true"
+                            d="M-42 -18Q-49 -38 -33 -44Q-19 -54 -1 -48
+                               Q22 -53 38 -36Q45 -26 41 -15
+                               Q33 -19 29 -30Q12 -23 5 -21
+                               Q-10 -17 -25 -24Q-32 -17 -42 -18Z"
+                            fill={character.hair} stroke="#261e1d" strokeWidth="1.1" />
+                          <path data-workshop-hair-part="true"
+                            d="M9 -45Q9 -34 5 -21M-36 -23Q-18 -37 4 -31"
+                            stroke="#a78b76" strokeWidth="2"
+                            opacity=".62" fill="none" strokeLinecap="round" />
+                          <path data-material-depth="hair-sheen"
+                            d="M-30 -39Q-16 -47 -1 -41"
+                            stroke="#fff4e8" strokeWidth="2.5"
+                            opacity=".22" fill="none" strokeLinecap="round"
+                            pointerEvents="none" />
+                        </g>
+                      )
+                    ) : (
+                      <g>
+                        <path
+                          d="M-38 -18Q-43 -47 0 -40Q36 -44 42 -15Q20 -20 14 -28Q-10 -10 -38 -18"
+                          fill={character.hair}
+                        />
+                        {premium && <path data-material-depth="hair-sheen"
+                          d="M-30 -21Q-21 -41 -3 -37Q15 -39 27 -30"
+                          stroke="#fff8ec" strokeWidth="3.1" strokeLinecap="round"
+                          opacity=".23" fill="none" pointerEvents="none" />}
+                      </g>
+                    )
                   )}
                   <Face
                     emotion={emotion}

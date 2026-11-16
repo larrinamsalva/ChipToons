@@ -71,6 +71,8 @@ export interface PuppetRig {
   description: string;
   /** Optional illustrated costume; older cartoon rigs keep their original look. */
   costume?: "workshop";
+  /** Optional original drawn hairstyle for fresh workshop cartoon performers. */
+  headStyle?: "short-side-part" | "soft-waves";
   parts: PuppetPart[];
   poses: PuppetPose[];
   face: boolean;
@@ -109,6 +111,8 @@ export function validPuppet(
     !record(value) ||
     value.version !== 1 ||
     (value.costume !== undefined && value.costume !== "workshop") ||
+    (value.headStyle !== undefined &&
+      value.headStyle !== "short-side-part" && value.headStyle !== "soft-waves") ||
     typeof value.face !== "boolean" ||
     typeof value.description !== "string" ||
     value.description.length > 500 ||

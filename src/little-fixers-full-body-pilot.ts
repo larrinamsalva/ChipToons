@@ -41,6 +41,9 @@ export function fullBodyWorkshopCharacter(articulatedKnees = false): Character {
     find("leftArm"), find("rightArm"), torso, toolBelt, find("head"),
   ];
   rig.costume = "workshop";
+  // The fully articulated, NEW workshop pilot gets a deliberate face
+  // design without changing serialized older Sunny/Scout character rigs.
+  if (articulatedKnees) rig.headStyle = "short-side-part";
   rig.description = articulatedKnees
     ? "Original workshop cartoon host with real, parented knee/shin joints, cargo pants, toolbelt and dark work boots."
     : "Original, fully rigged workshop cartoon host in cargo pants, toolbelt and dark boots; not a picture cutout.";
