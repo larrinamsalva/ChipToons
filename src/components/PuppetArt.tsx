@@ -556,9 +556,10 @@ export function PuppetArt({
                                M-40 -14Q-45 -2 -41 13M39 -14Q45 1 39 16"
                             stroke="#977eaa" strokeWidth="2.4" opacity=".48"
                             fill="none" strokeLinecap="round" />
-                          <path d="M-27 -36Q-8 -47 4 -36"
+                          <path data-material-depth="hair-sheen"
+                            d="M-27 -36Q-8 -47 4 -36"
                             stroke="#fff6ed" strokeWidth="2.4" opacity=".23"
-                            fill="none" strokeLinecap="round" />
+                            fill="none" strokeLinecap="round" pointerEvents="none" />
                         </g>
                       ) : (
                         <g data-workshop-hairstyle="short-side-part">
@@ -572,9 +573,11 @@ export function PuppetArt({
                             d="M9 -45Q9 -34 5 -21M-36 -23Q-18 -37 4 -31"
                             stroke="#a78b76" strokeWidth="2"
                             opacity=".62" fill="none" strokeLinecap="round" />
-                          <path d="M-30 -39Q-16 -47 -1 -41"
+                          <path data-material-depth="hair-sheen"
+                            d="M-30 -39Q-16 -47 -1 -41"
                             stroke="#fff4e8" strokeWidth="2.5"
-                            opacity=".22" fill="none" strokeLinecap="round" />
+                            opacity=".22" fill="none" strokeLinecap="round"
+                            pointerEvents="none" />
                         </g>
                       )
                     ) : (
