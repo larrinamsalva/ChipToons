@@ -152,6 +152,44 @@ describe("Cinematic Storybook facial acting", () => {
     expect(JSON.stringify(project)).toBe(original);
   });
 
+  it("turnaround pupils follow the new authored direction, even when stop-arrival looks still point backward", () => {
+    const project = starterProject();
+    const scene = project.scenes[0];
+    scene.duration = 5;
+    const actor = scene.elements[0];
+    scene.elements = [actor];
+    project.characters[0].puppet = sunnyRig();
+    actor.x = 170;
+    actor.y = 365;
+    actor.motion = "still";
+    actor.animation = {
+      blink: true, idle: "none",
+      keyframes: [
+        { ...elementBase(actor), id: uid(), time: 0, easing: "linear", x: 170 },
+        { ...elementBase(actor), id: uid(), time: 2, easing: "linear", x: 290 },
+        { ...elementBase(actor), id: uid(), time: 4, easing: "linear", x: 170 },
+      ],
+    };
+    const original = JSON.stringify(project);
+    const classic = sceneFramesAt(project, scene, 2);
+    expect(cinematicFaceAt(project, scene, actor, classic.get(actor.id)!, classic, 2, false))
+      .toBeUndefined();
+    project.visualStyle = "storybook-cinematic";
+    const frames = sceneFramesAt(project, scene, 2);
+    const face = cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, 2, false)!;
+    // #135's arrival eye looks right on a rightward stop.
+    // #137's real reversal must instead look left, into the return walk.
+    expect(face.x).toBeLessThan(-1.1);
+    expect(face.x).toBeGreaterThanOrEqual(-2.6);
+    expect(frames.get(actor.id)!.x).toBeCloseTo(290, 6);
+    expect(cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, 2, false))
+      .toEqual(face);
+    expect(cinematicFaceAt(project, scene, actor, frames.get(actor.id)!, frames, 2, true))
+      .toBeUndefined();
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toBe(original);
+  });
+
   it("renders moving generated pupils without changing Classic faces or authored mouth shapes", () => {
     const { project } = fixture();
     const character = project.characters[0];
