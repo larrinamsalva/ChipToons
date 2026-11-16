@@ -55,3 +55,58 @@ test("Scout and Helper Jo's real articulated workshop opens from the home screen
   expect(reopened.scenes).toEqual(data.scenes);
   expect(reopened.characters).toEqual(data.characters);
 });
+
+
+test("workshop hairstyles can be edited, saved, undone and restored without changing animations", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto("./");
+  await page.getByRole("button", {
+    name: "Watch Scout & Jo bend their elbows (0:30)", exact: true,
+  }).click();
+  await saved(page);
+  const original = (await backup(page)).data;
+  const scout = original.characters.find(character => character.name.startsWith("Scout"))!;
+  const jo = original.characters.find(character => character.name.startsWith("Helper Jo"))!;
+  expect(scout.puppet?.headStyle).toBe("short-side-part");
+  expect(jo.puppet?.headStyle).toBe("soft-waves");
+
+  // Choose the actual puppet track; the first scene element happens to
+  // be background scenery, not the performer whose hair is editable.
+  await page.getByRole("button", { name: /Select Scout.*track/ }).click();
+  const mobilePanels = page.getByRole("navigation", { name: "Editor panels" });
+  if (await mobilePanels.isVisible())
+    await mobilePanels.getByRole("button", { name: "Edit scene" }).click();
+  const hairstyles = page.getByRole("combobox", { name: "Workshop hairstyle" });
+  await expect(hairstyles).toBeVisible();
+  await expect(hairstyles).toHaveValue("short-side-part");
+
+  await hairstyles.selectOption("soft-waves");
+  await saved(page);
+  const changed = (await backup(page)).data;
+  expect(changed.characters.find(character => character.id === scout.id)?.puppet?.headStyle)
+    .toBe("soft-waves");
+  expect(changed.characters.find(character => character.id === jo.id)?.puppet)
+    .toEqual(jo.puppet);
+  expect(changed.scenes).toEqual(original.scenes);
+  expect(changed.audioClips).toEqual(original.audioClips);
+
+  await page.getByRole("button", { name: "Undo edit" }).click();
+  await saved(page);
+  expect((await backup(page)).data.characters
+    .find(character => character.id === scout.id)?.puppet?.headStyle)
+    .toBe("short-side-part");
+
+  await page.getByRole("button", { name: "Redo edit" }).click();
+  await saved(page);
+  expect((await backup(page)).data.characters
+    .find(character => character.id === scout.id)?.puppet?.headStyle)
+    .toBe("soft-waves");
+  await page.reload();
+  await page.getByRole("button", {
+    name: `Continue ${ARTICULATED_WORKSHOP_TITLE}`, exact: true,
+  }).click();
+  await saved(page);
+  expect((await backup(page)).data.characters
+    .find(character => character.id === scout.id)?.puppet?.headStyle)
+    .toBe("soft-waves");
+});
