@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cinematicGaitAt, solveTwoBone } from "./cinematic-gait";
+import { cinematicBootSwingRollAt } from "./cinematic-boot-swing-roll";
 import { littleFixersFullBodyPilot } from "./little-fixers-full-body-pilot";
 import { elementAt, sceneElementAt, sceneFramesAt } from "./timeline";
 import { puppetTransforms } from "./puppet-model";
@@ -50,6 +51,27 @@ describe("Cinematic foot planting", () => {
       expect(Number.isFinite(planted[i].x)).toBe(true);
       expect(Number.isFinite(planted[i].y)).toBe(true);
     }
+  });
+
+  it("adds a reversible small boot roll only in the existing swing phase", () => {
+    const { project, scene, actor } = fixture();
+    const before = JSON.stringify(project);
+    project.visualStyle = "storybook-cinematic";
+    // Scene's authored alternating leg keys produce a 4-second gait.
+    // At time 5.2, the right boot is mid-swing, while the left is in stance.
+    const frame = sceneElementAt(project, scene, actor, 5.2, 0);
+    const same = sceneElementAt(project, scene, actor, 5.2, 0);
+    expect(same).toEqual(frame);
+    expect(cinematicBootSwingRollAt(.8, 1)).toBeGreaterThan(4);
+    expect(cinematicBootSwingRollAt(.3, 1)).toBe(0);
+    expect(frame.joints?.rightFoot).toBeDefined();
+    expect(frame.joints?.leftFoot).toBeDefined();
+    const classic = elementAt(actor, 5.2, scene.duration);
+    expect(frame.x).toBeCloseTo(classic.x, 8);
+    expect(frame.mouth).toBe(classic.mouth);
+    expect(frame.emotion).toBe(classic.emotion);
+    project.visualStyle = undefined;
+    expect(JSON.stringify(project)).toBe(before);
   });
 
   it("settles back to the existing pose during stationary listening", () => {
