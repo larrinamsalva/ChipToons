@@ -11,7 +11,10 @@ function fixture() {
   const actor = scene.elements.find(element => element.characterId)!;
   const rig = project.characters.find(c => c.id === actor.characterId)!.puppet!;
   actor.motion = "still";
-  const frame = elementAt(actor, 2, scene.duration, true);
+  // No existing authored arm animation in this baseline. Individual
+  // tests below explicitly add reserved poses and gestures.
+  actor.animation = undefined;
+  const frame = { ...elementAt(actor, 2, scene.duration, true), gesture: "none" as const };
   return { project, scene, actor, rig, frame };
 }
 
