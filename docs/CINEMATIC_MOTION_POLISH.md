@@ -129,6 +129,25 @@ Improve the *actual motion* in existing **Cinematic Storybook** cartoons without
   Full browser and independently verified 20-minute media export QA
   remain required.
 
+## PR #138 — Free-arm follow-through during a direction reversal
+
+- On a **real authored walking turnaround**, Cinematic Storybook's vector
+  puppets can swing **free, unposed upper arms** by up to 2.5 degrees in
+  opposite directions. This is a small secondary reaction, not a new
+  gesture, limb rig or automatically generated walking path.
+- **Hands holding story props, transfers and artist-authored gestures
+  are never automatically moved.** The whole scene is excluded when
+  this actor participates in a held-object interaction; image-backed
+  arm artwork, missing arms and any creator-authored arm joint keys
+  retain their original look.
+- An already-authored emotional arm reaction takes precedence if it
+  overlaps the temporary turnaround reaction. The same sampled
+  character frame feeds Stage, camera following, interaction anchors
+  and real WebM output, with no saved timeline or dialogue changes.
+- Tests cover mirrored turns, still frames, painted art, explicit
+  arm poses, prop interactions and no-mutation behavior; the existing
+  browser suite and full 20-minute genuine export proof remain required.
+
 ## Safety, compatibility and honesty
 
 - A child does not start handling adult tools; Jo's dangerous props stay adult-only.
