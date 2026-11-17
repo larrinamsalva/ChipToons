@@ -57,8 +57,8 @@ export function WorkshopPoseCompare({
           </p>
           <div className="workshop-pose-comparison-grid">
             {([
-              { side: "Before" as const, moment: left, choice: leftChoice, choose: setLeftChoice },
-              { side: "After" as const, moment: right, choice: rightChoice, choose: setRightChoice },
+              { side: "Before" as const, moment: left, choose: setLeftChoice },
+              { side: "After" as const, moment: right, choose: setRightChoice },
             ]).map(({ side, moment, choose }) => (
               <div
                 key={side}
