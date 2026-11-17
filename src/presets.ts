@@ -56,6 +56,17 @@ export function actionsForPuppet(rig: PuppetRig) {
   });
 }
 
+// Full seated transitions need an actual torso and two complete limb chains.
+const SEATED_ROLES = [
+  "torso", "head", "leftArm", "rightArm", "leftForearm", "rightForearm",
+  "leftHand", "rightHand", "leftLeg", "rightLeg",
+  "leftShin", "rightShin", "leftFoot", "rightFoot",
+] as const;
+function canArticulateSeating(rig?: PuppetRig): boolean {
+  return !!rig && rig.costume === "workshop" &&
+    SEATED_ROLES.every(role => rig.parts.some(part => part.role === role));
+}
+
 function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnapshot {
   const joints: JointSnapshot = {};
   const arm = rig.parts.find(p => p.role === "rightArm") ?? rig.parts.find(p => p.role === "leftArm");
@@ -132,8 +143,26 @@ function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnaps
     if (action === "wave" && part.id === arm?.id) angle = -side * (115 + wave * 16) * Math.min(1, envelope * 3);
     if (action === "point" && part.id === arm?.id) angle = -side * 75 * Math.min(1, envelope * 3);
     if (part.role === "head" && (action === "nod" || action === "shake")) angle = wave * (action === "nod" ? 8 : 14);
-    if (/Leg|lowerBody/.test(part.role) && (action === "sit" || action === "stand"))
-      angle = side * 55 * (action === "sit" ? phase : 1 - phase);
+    // #154: New 15-part Workshop Characters actually fold their knees and
+    // bring their hands in as the body sits; standing reverses exactly the
+    // same saved-keyframe motion. Compensating shin and ankle angles keep
+    // the boots close to level while head counters the torso lean.
+    if (action === "sit" || action === "stand") {
+      if (canArticulateSeating(rig)) {
+        const eased = phase * phase * (3 - 2 * phase);
+        const seated = action === "sit" ? eased : 1 - eased;
+        if (part.role === "torso") angle = 7 * seated;
+        if (part.role === "head") angle = -6 * seated;
+        if (/Leg$/.test(part.role)) angle = -55 * seated;
+        if (/Shin$/.test(part.role)) angle = 63 * seated;
+        if (/Foot$/.test(part.role)) angle = -15 * seated;
+        if (/Arm$/.test(part.role)) angle = side * 17 * seated;
+        if (/Forearm$/.test(part.role)) angle = -side * 24 * seated;
+        if (/Hand$/.test(part.role)) angle = side * 6 * seated;
+      } else if (/Leg|lowerBody/.test(part.role)) {
+        angle = side * 55 * (action === "sit" ? phase : 1 - phase);
+      }
+    }
     if (/Arm/.test(part.role) && action === "celebrate" && !fullWorkshop)
       angle = -side * 110 * envelope;
     // #152: New full-body workshop puppets perform a genuine articulated
@@ -211,6 +240,8 @@ export function presetAnimation(
   keys.set(0, { ...base, id: uid(), time: 0, easing: "linear" });
   at(0);
   at(1);
+  const articulatedSeating = (action === "sit" || action === "stand") &&
+    canArticulateSeating(rig);
   switch (action) {
     case "walk": {
       // #150: A newly made complete Workshop Character eases into a walk
@@ -366,11 +397,25 @@ export function presetAnimation(
       at(1, { pose: "pointing" });
       break;
     case "sit":
-      at(1, { pose: "sitting", y: base.y + 20 });
-      break;
     case "stand":
-      at(0, { pose: "sitting", y: base.y + 20 });
-      at(1, { pose: "standing" });
+      if (articulatedSeating) {
+        // Save real, reversible intermediate poses, not just endpoints.
+        // Both motions use the same smooth seating fraction.
+        for (let i = 0; i <= 12; i++) {
+          const phase = i / 12;
+          const eased = phase * phase * (3 - 2 * phase);
+          const seated = action === "sit" ? eased : 1 - eased;
+          at(phase, {
+            y: base.y + 20 * seated,
+            pose: seated >= 0.5 ? "sitting" : "standing",
+          }, "linear");
+        }
+      } else if (action === "sit") {
+        at(1, { pose: "sitting", y: base.y + 20 });
+      } else {
+        at(0, { pose: "sitting", y: base.y + 20 });
+        at(1, { pose: "standing" });
+      }
       break;
     case "door":
       at(0, { openness: 0 });
@@ -389,7 +434,8 @@ export function presetAnimation(
     };
     keys.set(0, { ...hold, id: uid(), time: 0, easing: "linear" });
   }
-  if (rig && ["wave", "nod", "shake", "point", "walk-in-place", "sit", "stand"].includes(action))
+  if (rig && ["wave", "nod", "shake", "point", "walk-in-place", "sit", "stand"].includes(action) &&
+      !articulatedSeating)
     for (let i = 0; i <= 12; i++) at(i / 12);
   const keyframes = [...keys.values()].sort((a, b) => a.time - b.time);
   return {

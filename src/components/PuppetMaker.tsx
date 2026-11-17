@@ -620,6 +620,20 @@ export function PuppetMaker({
                       onClick={() => tryAction("dance")}>
                       Preview Full-Body Dance
                     </button>
+                    {["torso", "head", "leftArm", "rightArm",
+                      "leftLeg", "rightLeg"].every(role =>
+                      rig.parts.some(part => part.role === role)) && (
+                      <>
+                        <button className="button secondary"
+                          onClick={() => tryAction("sit")}>
+                          Preview Sit Down
+                        </button>
+                        <button className="button secondary"
+                          onClick={() => tryAction("stand")}>
+                          Preview Stand Up
+                        </button>
+                      </>
+                    )}
                     <button className="button secondary"
                       onClick={() => tryAction("point")}>
                       Preview Elbow-Bending Reach

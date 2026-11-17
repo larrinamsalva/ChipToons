@@ -447,6 +447,38 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   decoded 20-minute media export. This is original editable **2.5D SVG
   character animation**, not 3D motion capture or a physics simulation.
 
+## PR #154 — Natural sitting and standing for original workshop puppets
+
+- Creators of complete original 15-part Workshop Characters now get
+  **Preview Sit Down** and **Preview Stand Up** in Puppet Maker. Each
+  three-second preview is temporary and uses the same real `Sit down`
+  and `Stand up` presets available for authoring on the cartoon timeline.
+- For these rigs only, the shared presets generate 13 deterministic,
+  smoothly eased frame samples with both upper legs folding, genuine
+  knee/shin articulation, ankle counter-rotation, small torso lean,
+  opposing head stabilization and arm/forearm/hand movements.
+- Sitting lowers the character by up to 20 stage pixels and leaves
+  a saved-keyframe seated pose at the end. Standing starts with precisely
+  the same seated joints and reverses them into the original upright pose.
+  Both actions preserve the character's authored scene x position.
+- The new angles are intentionally bounded, and parented shin/boot angles
+  add up to flat boot orientation in the complete original workshop
+  preset. **This is not chair collision or physical IK**: a creator still
+  places their own seat prop and checks that the actor meets it visually.
+- Only eligible complete original workshop rigs receive the new action
+  keyframes; older Sunny, partial/custom puppets, imported images and
+  historical saved scenes keep the original sit/stand action behavior.
+  Walk, Jump, Dance, Celebration, voice, face, props and saves are unchanged.
+- New unit tests verify middle and end positions, two actual knee chains,
+  forearms/hands, neutral endpoints, flat boot angles, exact sit-to-stand
+  reversibility, deterministic seeking and immutable scene source data.
+  Desktop/phone/tablet browser acceptance covers both new previews.
+- **Before merge:** check the real animation against a chair or bench,
+  ensure legs do not clip into the seat, confirm both feet and hands
+  remain plausible, review face/lip-sync and run Foundation/browser and
+  full independently decoded 20-minute media export checks. This stays
+  editable **2.5D cartoon animation**, not a true 3D character simulator.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
