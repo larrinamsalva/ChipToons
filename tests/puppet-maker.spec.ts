@@ -279,6 +279,16 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
     .toHaveAttribute("data-preview-action", "dance");
   await dialog(page).getByRole("button", {
+    name: "Preview Sit Down", exact: true,
+  }).click();
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
+    .toHaveAttribute("data-preview-action", "sit");
+  await dialog(page).getByRole("button", {
+    name: "Preview Stand Up", exact: true,
+  }).click();
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
+    .toHaveAttribute("data-preview-action", "stand");
+  await dialog(page).getByRole("button", {
     name: "Preview Elbow-Bending Reach", exact: true,
   }).click();
   await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
