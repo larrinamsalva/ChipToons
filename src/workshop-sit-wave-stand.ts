@@ -46,7 +46,26 @@ export function standAfterSeatedGreeting(
   ).elements.find(item => item.id === actor.id)!.animation!.keyframes;
   const stripId = (key: ElementKeyframe) =>
     Object.fromEntries(Object.entries(key).filter(([field]) => field !== "id"));
-  if (JSON.stringify(existing.map(stripId)) !== JSON.stringify(reference.map(stripId)))
+  // Earlier #158 saves used the same authentic wave joint samples, but
+  // ended with standing-neutral arm angles. Recognize those exact original
+  // creator-owned keys too; improved seated settling must not make existing
+  // saved cartoons ineligible to stand up. A user-edited wave remains unsafe.
+  const sitFinish = existing[12];
+  const historicWaves = presetAnimation(actor, scene.duration, "wave", 3, 3, rig)
+    .keyframes.filter(frame => frame.time > 3)
+    .map(frame => ({
+      ...sitFinish,
+      id: frame.id,
+      time: frame.time,
+      easing: "linear" as const,
+      pose: "sitting" as const,
+      gesture: "none" as const,
+      joints: { ...sitFinish.joints, ...frame.joints },
+    }));
+  const historic = [...existing.slice(0, 13), ...historicWaves];
+  const signature = JSON.stringify(existing.map(stripId));
+  if (signature !== JSON.stringify(reference.map(stripId)) &&
+      signature !== JSON.stringify(historic.map(stripId)))
     throw new Error(
       "This seated wave was edited. Keep your customized keyframes and use a new scene for the automatic stand-up.",
     );
