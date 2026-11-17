@@ -40,10 +40,8 @@ export function standWorkshopFromFurniture(
   // The expected track has the SAME actual 13 sitting keyframes as #155;
   // their random IDs are ignored but everything visible must still match.
   const expected = presetAnimation(actor, scene.duration, "sit", 0, 3, rig).keyframes;
-  const withoutId = (key: ElementKeyframe) => {
-    const { id: _id, ...values } = key;
-    return values;
-  };
+  const withoutId = (key: ElementKeyframe) =>
+    Object.fromEntries(Object.entries(key).filter(([field]) => field !== "id"));
   if (!existing || existing.length !== 13 ||
       JSON.stringify(existing.map(withoutId)) !== JSON.stringify(expected.map(withoutId)))
     throw new Error(
