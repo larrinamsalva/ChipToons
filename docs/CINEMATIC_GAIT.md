@@ -332,6 +332,34 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   full Foundation/browser/media-export checks and visually inspect the
   real Puppet Maker walk for floating feet, ankle pops and face drift.
 
+## PR #150 — Walk across the stage and settle naturally
+
+- Complete original Workshop Characters created in Puppet Maker now show
+  **Preview Walk Across Stage** alongside walk-in-place, reach, wave and
+  still. The preview uses the same actual editable **Walk** keyframes
+  available in the cartoon timeline, and moving across the preview does
+  not save a new timeline, replace poses or change character artwork.
+- The shared Walk preset now uses a bounded smoothstep travel curve for
+  complete original 15-part workshop rigs only: it accelerates gently
+  at the beginning and decelerates at the end while arriving at the same
+  destination as before. A continuous 4px-maximum body bob replaces
+  abrupt alternating 5px step jumps, landing at the original height.
+- This builds directly on #148's knee/forearm motion and #149's stance
+  boot compensation, without replacing Cinematic Storybook's existing
+  foot-grounding pass or the project author's handoff, camera or sound.
+- Older Sunny, incomplete workshop rigs, imported art and historical
+  saved cartoons keep the exact previous Walk preset; other actions
+  including Walk in place and Point/Reach are unchanged.
+- Unit tests verify slow approach/departure, identical travel endpoints,
+  smoothed body bob, legacy behavior and deterministic source-preserving
+  frame evaluation. Desktop/phone/tablet browser acceptance now exercises
+  the new preview action and the previous walk/reach/still sequence.
+- This remains a manually editable **2.5D SVG cartoon**. It does not
+  automatically create a photorealistic 3D rig, promise perfect no-slip
+  soles or generate new scene content. Before merging, inspect both
+  preview and genuine exports for feet leaving the floor, clipping,
+  abrupt stop motion, character cropping and face/audio alignment.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
