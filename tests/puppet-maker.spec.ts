@@ -342,6 +342,28 @@ test("creates and saves a new fully jointed original workshop hero with editable
   expect(seatedActor.animation!.keyframes.at(-1)?.pose).toBe("sitting");
   expect(seatedActor.animation!.keyframes.at(-1)?.joints?.leftShin?.angle).toBeGreaterThan(50);
   await shot(page, info, "chair-seated");
+
+  // #156 continues the already saved seated track without touching its
+  // original keyframe IDs or the furniture. Verify Undo returns to sitting.
+  await button(page, "Add Stand Up After Sitting").click();
+  await saved(page);
+  const standingScene = (await backup(page)).data.scenes[0];
+  const standingActor = standingScene.elements.find(element => element.id === actor.id)!;
+  expect(standingActor.animation?.keyframes).toHaveLength(26);
+  expect(standingActor.animation!.keyframes.slice(0, 13))
+    .toEqual(seatedActor.animation!.keyframes);
+  expect(standingActor.animation!.keyframes.find(frame => frame.time === 5)?.pose)
+    .toBe("sitting");
+  expect(standingActor.animation!.keyframes.at(-1)?.pose).toBe("standing");
+  expect(standingScene.elements.find(element => element.id === chair.id)).toEqual(chair);
+  await shot(page, info, "chair-standup");
+
+  await button(page, "Undo edit").click();
+  await saved(page);
+  const backToSit = (await backup(page)).data.scenes[0];
+  expect(backToSit.elements.find(element => element.id === actor.id)?.animation?.keyframes)
+    .toEqual(seatedActor.animation!.keyframes);
+
   await button(page, "Undo edit").click();
   await saved(page);
   const reverted = (await backup(page)).data.scenes[0];
