@@ -151,7 +151,28 @@ function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnaps
       if (part.role === "torso") angle = 3 * envelope * Math.sin(phase * 2 * Math.PI);
       if (part.role === "head") angle = -2 * envelope * Math.sin(phase * 2 * Math.PI);
     }
-    if (/Arm|Leg/.test(part.role) && action === "dance") angle = walk * side * 25;
+    // #153: Complete original workshop rigs get genuine alternating
+    // knees, ankles, shoulders, elbows and wrists while dancing in place.
+    // The torso and head counter-sway; all joints return to neutral.
+    if (action === "dance") {
+      if (fullWorkshop) {
+        const beat = Math.sin(phase * Math.PI * 4);
+        const sway = Math.sin(phase * Math.PI * 2);
+        const flex = Math.max(0, beat * side);
+        if (/Arm$/.test(part.role))
+          angle = -side * envelope * (28 + 10 * Math.max(0, -beat * side));
+        if (/Forearm$/.test(part.role))
+          angle = side * envelope * (12 + 9 * flex);
+        if (/Hand$/.test(part.role)) angle = -side * 10 * envelope * beat;
+        if (/Leg$/.test(part.role)) angle = side * 7 * envelope * beat;
+        if (/Shin$/.test(part.role)) angle = -side * 22 * envelope * flex;
+        if (/Foot$/.test(part.role)) angle = side * 12 * envelope * flex;
+        if (part.role === "torso") angle = 3 * envelope * sway;
+        if (part.role === "head") angle = -2 * envelope * sway;
+      } else if (/Arm|Leg/.test(part.role)) {
+        angle = walk * side * 25;
+      }
+    }
     if (angle) joints[part.id] = { ...neutralJoint, angle };
   }
   return joints;
@@ -311,14 +332,35 @@ export function presetAnimation(
       for (let i = 0; i <= 8; i++)
         at(i / 8, { y: base.y + Math.sin((i * Math.PI) / 2) * 15 });
       break;
-    case "dance":
-      for (let i = 0; i <= 8; i++)
-        at(i / 8, {
-          rotation: base.rotation + (i % 2 ? (i % 4 === 1 ? -8 : 8) : 0),
-          y: base.y - (i % 2 ? 8 : 0),
-          emotion: "excited",
-        });
+    case "dance": {
+      const articulatedDance = rig?.costume === "workshop" &&
+        ["leftForearm", "rightForearm", "leftHand", "rightHand",
+          "leftShin", "rightShin", "leftFoot", "rightFoot"]
+          .every(role => rig.parts.some(part => part.role === role));
+      if (articulatedDance) {
+        // A rhythmic, continuous in-place dance: subtle lift and sway,
+        // actual joint keys at every beat and a neutral finish.
+        for (let i = 0; i <= 12; i++) {
+          const phase = i / 12;
+          const envelope = Math.sin(Math.PI * phase);
+          const sway = Math.sin(Math.PI * 2 * phase);
+          const pulse = (1 + Math.cos(Math.PI * 4 * phase)) / 2;
+          at(phase, {
+            y: base.y - 7 * envelope * pulse,
+            rotation: base.rotation + 3 * envelope * sway,
+            emotion: "excited",
+          }, "linear");
+        }
+      } else {
+        for (let i = 0; i <= 8; i++)
+          at(i / 8, {
+            rotation: base.rotation + (i % 2 ? (i % 4 === 1 ? -8 : 8) : 0),
+            y: base.y - (i % 2 ? 8 : 0),
+            emotion: "excited",
+          });
+      }
       break;
+    }
     case "point":
       at(0, { pose: "pointing" });
       at(1, { pose: "pointing" });
