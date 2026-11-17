@@ -105,19 +105,26 @@ export function seatWorkshopAtFurniture(
   };
 }
 
-export function addWorkshopChair(scene: Scene, actor: SceneElement): {
-  scene: Scene;
-  chairId: string;
-} {
+/** #157: One safely bounded creator tool for both supported seat drawings. */
+export type WorkshopSeatKind = "chair" | "bench";
+
+export function addWorkshopSeat(
+  scene: Scene,
+  actor: SceneElement,
+  kind: WorkshopSeatKind,
+): { scene: Scene; seatId: string } {
   if (scene.elements.length >= 20)
-    throw new Error("This scene already has 20 objects. Remove one before adding a chair.");
-  const chairId = uid();
-  const chair: SceneElement = {
-    id: chairId,
-    name: "Workshop chair",
+    throw new Error("This scene already has 20 objects. Remove one before adding a seat.");
+  if (!scene.elements.some(element => element.id === actor.id &&
+      (element.kind === undefined || element.kind === "character")))
+    throw new Error("Choose a character in this scene before adding a seat.");
+  const seatId = uid();
+  const furniture: SceneElement = {
+    id: seatId,
+    name: kind === "chair" ? "Workshop chair" : "Workshop bench",
     characterId: "",
     kind: "prop",
-    prop: "chair",
+    prop: kind,
     x: actor.x,
     y: Math.min(430, actor.y + 15),
     scale: 1,
@@ -127,5 +134,22 @@ export function addWorkshopChair(scene: Scene, actor: SceneElement): {
     motion: "still",
     sceneryDepth: "behind",
   };
-  return { scene: { ...scene, elements: [...scene.elements, chair] }, chairId };
+  return { scene: { ...scene, elements: [...scene.elements, furniture] }, seatId };
+}
+
+// Keep the #155 helper API available to existing creator workflows.
+export function addWorkshopChair(scene: Scene, actor: SceneElement): {
+  scene: Scene;
+  chairId: string;
+} {
+  const { scene: next, seatId } = addWorkshopSeat(scene, actor, "chair");
+  return { scene: next, chairId: seatId };
+}
+
+export function addWorkshopBench(scene: Scene, actor: SceneElement): {
+  scene: Scene;
+  benchId: string;
+} {
+  const { scene: next, seatId } = addWorkshopSeat(scene, actor, "bench");
+  return { scene: next, benchId: seatId };
 }
