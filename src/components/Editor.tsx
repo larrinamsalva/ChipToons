@@ -71,6 +71,7 @@ import type { WorkshopSeatKind } from "../workshop-seating-stage";
 import { standWorkshopFromFurniture } from "../workshop-seat-stand";
 import { waveWorkshopWhileSeated } from "../workshop-seated-wave";
 import { standAfterSeatedGreeting } from "../workshop-sit-wave-stand";
+import { workshopSeatingReviewMoments } from "../workshop-seating-review";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -1610,6 +1611,30 @@ export function Editor({
                               )}
                           </>
                         )}
+                        {element.animation?.keyframes.length ? (
+                          <div className="assistant-fields" aria-label="Review seated animation moments">
+                            <p className="field-hint">
+                              Jump to saved sitting, waving, rising or standing
+                              poses to inspect joints and furniture contact.
+                              These shortcuts never edit your animation.
+                            </p>
+                            <div className="form-grid compact">
+                              {workshopSeatingReviewMoments(scene, element.id).map(moment => (
+                                <button
+                                  key={moment.id}
+                                  className="button text small"
+                                  type="button"
+                                  onClick={() => {
+                                    seekLocal(moment.seconds);
+                                    setMobilePanel("stage");
+                                  }}
+                                >
+                                  {moment.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
                         <div className="form-grid compact">
                           <button
                             className="button secondary"

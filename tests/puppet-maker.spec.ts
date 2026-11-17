@@ -437,11 +437,32 @@ test("creates and saves a new fully jointed original workshop hero with editable
   const upright = standingAfterHello.animation!.keyframes.at(-1)!;
   expect(upright.time).toBe(10);
   expect(upright.pose).toBe("standing");
-  expect(Math.abs(upright.joints!.leftShin!.angle)).toBeLessThan(.001);
+  // Neutral joints are intentionally omitted from sparse saved keyframes.
+  // A missing shin is zero rotation, not an animation or serialization bug.
+  expect(Math.abs(upright.joints?.leftShin?.angle ?? 0)).toBeLessThan(.001);
+  expect(Object.values(upright.joints ?? {}).every(joint =>
+    Math.abs(joint.angle) < .001)).toBe(true);
   expect(greetingAndStand.elements.find(item => item.id === addedBench.id)).toEqual(addedBench);
   expect(greetingAndStand.elements.find(item => item.id === addedChair.id)).toEqual(addedChair);
   await shot(page, info, "bench-wave-then-stand");
 
+  // #160: review actual stored Stage poses without editing the cartoon.
+  // Review shortcuts share the same seek clock as the timeline.
+  const reviewSteps = [
+    ["Review sitting", "3.00s"],
+    ["Review wave", "4.50s"],
+    ["Review rising", "8.50s"],
+    ["Review standing", "10.00s"],
+  ] as const;
+  for (const [label, expectedTime] of reviewSteps) {
+    if (await editSceneTab.isVisible()) await editSceneTab.click();
+    await button(page, label).click();
+    await expect(page.getByLabel("Scene current time")).toContainText(expectedTime);
+  }
+  expect((await backup(page)).data.scenes[0].elements.find(item => item.id === actor.id)?.animation?.keyframes)
+    .toEqual(standingAfterHello.animation!.keyframes);
+
+  if (await editSceneTab.isVisible()) await editSceneTab.click();
   await button(page, "Undo edit").click();
   await saved(page);
   const backToWave = (await backup(page)).data.scenes[0];
