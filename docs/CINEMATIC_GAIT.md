@@ -622,6 +622,45 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   hand, nearby props and face, chair contact, and audio/lip-sync;
   review real independent 20-minute export before merging.
 
+## PR #159 — Sit, wave hello, then stand up from chair or bench
+
+- After an original 15-part Workshop Character is aligned to a real
+  chair or bench, creators can select **Wave Hello While Seated** from
+  PR #158 and then **Stand Up After Wave** in
+  **Edit scene → Characters & movement**.
+- The new action requires **at least 9 seconds**. It preserves all
+  original **25 sitting and waving keyframes and IDs** unchanged:
+  0–3 seconds is articulated sitting, 3–6 is the seated arm/elbow/wrist
+  greeting. If the scene is longer than nine seconds, a neutral seated
+  hold lasts until the last three seconds. At that point the same
+  full-body `Stand up` preset from PR #154 smoothly bends the knees,
+  torso, arms and boots back to their natural upright pose.
+- For a 9-second scene, the sequence is 3 seconds sitting, 3 seconds
+  waving, and 3 seconds standing with 37 saved frames (no duplicate
+  seam at second 6). A 10-second scene also has a one-second hold
+  at second 7, producing 38 frames. All frames are **real editable
+  timeline keys** and are deterministic under timeline seeking and
+  export; these are not CSS or preview-only transitions.
+- The previously saved sitting/waving frames, illustrated furniture,
+  other actors, camera, props, narration, voice, and character rigs
+  stay intact. The normal project history supports Undo/Redo.
+- The action checks the exact existing 13-frame sit and 25-frame
+  seated greeting (ignoring only generated key IDs), the original
+  chair/bench contact point, the intact full workshop rig, and the
+  absence of handoff conflicts. Edited gestures, relocated furniture,
+  old/imported/partial rigs, duplicate action requests, and scenes
+  shorter than nine seconds are **rejected instead of overwritten**.
+- Unit QA covers chair and bench, frames preserved, full joint motion,
+  seated hold, neutral upright finish, unique and valid keys, mutable
+  authoring compatibility, immutability and unsafe edits. End-to-end
+  tests cover desktop/phone/tablet, saved keyframes and successive
+  Undo steps: stand → wave → sit → unanimated.
+- This remains **editable 2.5D character motion**, not seat collision
+  physics. Before merge, inspect real pelvis/boot contact, arm/wrist
+  overlap, nearby props, voice/lip-sync and background depth; require
+  passing TypeScript, lint, unit, browser and genuine independently
+  decoded 20-minute export checks.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
