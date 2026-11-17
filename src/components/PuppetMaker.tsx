@@ -596,7 +596,8 @@ export function PuppetMaker({
                   </button>
                 )}
                 {rig.costume === "workshop" &&
-                 ["leftForearm", "rightForearm", "leftShin", "rightShin"]
+                 ["leftForearm", "rightForearm", "leftHand", "rightHand",
+                   "leftShin", "rightShin", "leftFoot", "rightFoot"]
                    .every(role => rig.parts.some(part => part.role === role)) && (
                   <>
                     <button className="button secondary"
@@ -606,6 +607,10 @@ export function PuppetMaker({
                     <button className="button secondary"
                       onClick={() => tryAction("walk")}>
                       Preview Walk Across Stage
+                    </button>
+                    <button className="button secondary"
+                      onClick={() => tryAction("jump")}>
+                      Preview Jump & Gentle Landing
                     </button>
                     <button className="button secondary"
                       onClick={() => tryAction("point")}>
