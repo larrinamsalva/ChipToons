@@ -64,9 +64,10 @@ import type { LibraryItem, LibraryKind } from "../library";
 import { POSES } from "../art-model";
 import { setWorkshopHairstyle } from "../workshop-hairstyle";
 import {
-  addWorkshopChair, canSeatWorkshopRig, isSeatFurniture,
+  addWorkshopSeat, canSeatWorkshopRig, isSeatFurniture,
   seatWorkshopAtFurniture,
 } from "../workshop-seating-stage";
+import type { WorkshopSeatKind } from "../workshop-seating-stage";
 import { standWorkshopFromFurniture } from "../workshop-seat-stand";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
@@ -627,6 +628,20 @@ export function Editor({
           ],
     });
     setElementIndex(0);
+  }
+  function addSeatFurniture(kind: WorkshopSeatKind) {
+    if (!element || !character || !canSeatWorkshopRig(character.puppet)) return;
+    try {
+      const result = addWorkshopSeat(scene, element, kind);
+      if (changeScene({ elements: result.scene.elements })) {
+        setSeatTargetId(result.seatId);
+        setInteractionNotice(
+          `Added a ${kind} behind your character. Select Align and Sit on Seat to animate.`,
+        );
+      }
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : "Could not add seat furniture.");
+    }
   }
   return (
     <main className="editor" id="main-content">
@@ -1497,7 +1512,7 @@ export function Editor({
                           This creates editable 3-second sitting keyframes
                           aligned with the selected furniture. Undo is available.
                         </p>
-                        {seatChoices.length ? (
+                        {seatChoices.length > 0 && (
                           <>
                             <label>
                               Seat in this scene
@@ -1552,25 +1567,23 @@ export function Editor({
                                 </button>
                               )}
                           </>
-                        ) : (
+                        )}
+                        <div className="form-grid compact">
                           <button
                             className="button secondary"
                             disabled={scene.elements.length >= 20}
-                            onClick={() => {
-                              try {
-                                const result = addWorkshopChair(scene, element);
-                                if (changeScene({ elements: result.scene.elements })) {
-                                  setSeatTargetId(result.chairId);
-                                  setInteractionNotice("Added a chair behind your character. Choose Align and Sit on Seat to animate.");
-                                }
-                              } catch (error) {
-                                setEditError(error instanceof Error ? error.message : "Could not add a chair.");
-                              }
-                            }}
+                            onClick={() => addSeatFurniture("chair")}
                           >
                             Add Workshop Chair
                           </button>
-                        )}
+                          <button
+                            className="button secondary"
+                            disabled={scene.elements.length >= 20}
+                            onClick={() => addSeatFurniture("bench")}
+                          >
+                            Add Workshop Bench
+                          </button>
+                        </div>
                         {(!!element.animation?.keyframes.length ||
                           element.motion !== "still" || scene.duration < 3) && (
                           <p className="field-hint">
