@@ -330,6 +330,20 @@ test("creates and saves a new fully jointed original workshop hero with editable
   if (await editSceneTab.isVisible()) await editSceneTab.click();
   await page.getByLabel("Edit character").selectOption(actor.id);
   await button(page, "Add Workshop Chair").click();
+  await saved(page);
+  const originalChairScene = (await backup(page)).data.scenes[0];
+  const addedChair = originalChairScene.elements.find(item => item.prop === "chair")!;
+  expect(addedChair).toBeTruthy();
+  await button(page, "Add Workshop Bench").click();
+  await saved(page);
+  const furnished = (await backup(page)).data.scenes[0];
+  const addedBench = furnished.elements.find(item => item.prop === "bench")!;
+  expect(addedBench).toBeTruthy();
+  expect(addedBench.sceneryDepth).toBe("behind");
+  expect(addedBench.id).not.toBe(addedChair.id);
+  // The newly added seat is selected, but creators can choose either.
+  await expect(page.getByLabel("Seat in this scene")).toHaveValue(addedBench.id);
+  await page.getByLabel("Seat in this scene").selectOption(addedChair.id);
   await button(page, "Align and Sit on Seat").click();
   await saved(page);
   const seatedProject = (await backup(page)).data;
@@ -352,8 +366,12 @@ test("creates and saves a new fully jointed original workshop hero with editable
   expect(standingActor.animation?.keyframes).toHaveLength(26);
   expect(standingActor.animation!.keyframes.slice(0, 13))
     .toEqual(seatedActor.animation!.keyframes);
-  expect(standingActor.animation!.keyframes.find(frame => frame.time === 5)?.pose)
-    .toBe("sitting");
+  // Stand-up begins in the final three seconds, so the seated hold
+  // depends on this project's scene duration (which need not be 8s).
+  const riseStart = Math.round((standingScene.duration - 3) * 1000) / 1000;
+  const seatHold = standingActor.animation!.keyframes.find(frame =>
+    Math.abs(frame.time - riseStart) < .001);
+  expect(seatHold?.pose).toBe("sitting");
   expect(standingActor.animation!.keyframes.at(-1)?.pose).toBe("standing");
   expect(standingScene.elements.find(element => element.id === chair.id)).toEqual(chair);
   await shot(page, info, "chair-standup");
@@ -368,4 +386,20 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await saved(page);
   const reverted = (await backup(page)).data.scenes[0];
   expect(reverted.elements.find(element => element.id === actor.id)?.animation).toBeUndefined();
+  expect(reverted.elements.find(element => element.id === addedBench.id)).toBeTruthy();
+
+  // A second scene-local pass can choose the bench without moving or
+  // overwriting the existing chair. The selected seat stays as the prop.
+  await page.getByLabel("Seat in this scene").selectOption(addedBench.id);
+  await button(page, "Align and Sit on Seat").click();
+  await saved(page);
+  const onBench = (await backup(page)).data.scenes[0];
+  expect(onBench.elements.find(item => item.id === actor.id)?.animation?.keyframes)
+    .toHaveLength(13);
+  expect(onBench.elements.find(item => item.id === addedChair.id)).toEqual(addedChair);
+  await shot(page, info, "bench-seated");
+  await button(page, "Undo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].elements
+    .find(item => item.id === actor.id)?.animation).toBeUndefined();
 });
