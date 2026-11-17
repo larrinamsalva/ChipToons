@@ -553,6 +553,35 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   This is editable **2.5D** puppet animation, not automatic collision
   resolution or a physical chair interaction simulator.
 
+## PR #157 — Add chairs or benches and choose the seat
+
+- Complete original 15-part Workshop Characters can now use **Add Workshop
+  Chair** or **Add Workshop Bench** directly inside **Edit scene → Characters
+  & movement**, even when other seat furniture is already present.
+- Both quick-add controls create an *actual original illustrated prop*, not
+  a decorative screenshot. The new furniture is stationary, unrotated,
+  placed behind the character, and selected automatically in the existing
+  **Seat in this scene** chooser. The creator can switch freely between
+  any existing chair and bench and align a new unanimated sit as before.
+- The existing chair helper remains supported. The new shared
+  `addWorkshopSeat` function checks the actor still belongs to the
+  scene, respects its 20-object ceiling, and returns a new immutable scene
+  without rewriting existing seats, character rigs, audio or timelines.
+- Existing **Align and Sit on Seat** and **Add Stand Up After Sitting**
+  actions remain opt-in, preserve any prior animations and refuse unsafe
+  edits. Adding a chair or bench by itself never overwrites a pose.
+- Focused unit tests check chair and bench creation, scene immutability,
+  selecting one of two seats, the object ceiling, invalid actors and the
+  original helper API. The desktop/phone/tablet browser workflow adds
+  both furniture choices, selects the chair for sit-and-stand, verifies
+  Undo, then selects the bench for a separate seated animation.
+- This is **editable 2.5D SVG furniture** with the existing authored seat
+  alignment, not 3D collision detection. Visual quality review should
+  verify the character's pelvis, hands and boots against each furniture
+  drawing, along with existing camera, props, lip-sync and exported video.
+  Merge only when Foundation, browser QA and the independent 20-minute
+  export are successful.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
