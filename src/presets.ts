@@ -134,7 +134,23 @@ function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnaps
     if (part.role === "head" && (action === "nod" || action === "shake")) angle = wave * (action === "nod" ? 8 : 14);
     if (/Leg|lowerBody/.test(part.role) && (action === "sit" || action === "stand"))
       angle = side * 55 * (action === "sit" ? phase : 1 - phase);
-    if (/Arm/.test(part.role) && action === "celebrate") angle = -side * 110 * envelope;
+    if (/Arm/.test(part.role) && action === "celebrate" && !fullWorkshop)
+      angle = -side * 110 * envelope;
+    // #152: New full-body workshop puppets perform a genuine articulated
+    // victory cheer, including both shoulders, elbows, hands, knees and
+    // grounded boots. This uses existing editable keyframe joints.
+    if (fullWorkshop && action === "celebrate") {
+      const cheer = envelope * (0.75 + 0.25 * Math.cos(phase * Math.PI * 4));
+      const kneeBend = envelope * (0.65 + 0.35 * Math.cos(phase * Math.PI * 4));
+      if (/Arm$/.test(part.role)) angle = -side * 82 * cheer;
+      if (/Forearm$/.test(part.role)) angle = side * 27 * cheer;
+      if (/Hand$/.test(part.role)) angle = -side * 13 * cheer;
+      if (/Leg$/.test(part.role)) angle = side * 7 * kneeBend;
+      if (/Shin$/.test(part.role)) angle = -side * 17 * kneeBend;
+      if (/Foot$/.test(part.role)) angle = side * 11 * kneeBend;
+      if (part.role === "torso") angle = 3 * envelope * Math.sin(phase * 2 * Math.PI);
+      if (part.role === "head") angle = -2 * envelope * Math.sin(phase * 2 * Math.PI);
+    }
     if (/Arm|Leg/.test(part.role) && action === "dance") angle = walk * side * 25;
     if (angle) joints[part.id] = { ...neutralJoint, angle };
   }
@@ -223,6 +239,10 @@ export function presetAnimation(
         ["leftForearm", "rightForearm", "leftHand", "rightHand",
           "leftShin", "rightShin", "leftFoot", "rightFoot"]
           .every(role => rig.parts.some(part => part.role === role));
+      const celebrateReady = action === "celebrate" && rig?.costume === "workshop" &&
+        ["leftForearm", "rightForearm", "leftHand", "rightHand",
+          "leftShin", "rightShin", "leftFoot", "rightFoot"]
+          .every(role => rig.parts.some(part => part.role === role));
       if (jumpReady) {
         for (let i = 0; i <= 12; i++) {
           const phase = i / 12;
@@ -234,6 +254,18 @@ export function presetAnimation(
               ? Math.sin(Math.PI * (phase - 0.8) / 0.2)
               : 0;
           at(phase, { y: base.y - 42 * airborne + 4 * crouch }, "linear");
+        }
+      } else if (celebrateReady) {
+        // Twelve short interpolated steps make the double cheer visible
+        // in Puppet Maker, the Stage timeline and exported media.
+        for (let i = 0; i <= 12; i++) {
+          const phase = i / 12;
+          const envelope = Math.sin(Math.PI * phase);
+          const doubleBeat = 0.75 + 0.25 * Math.cos(phase * Math.PI * 4);
+          at(phase, {
+            y: base.y - 15 * envelope * doubleBeat,
+            emotion: "excited",
+          }, "linear");
         }
       } else {
         at(0.5, { y: base.y - (action === "celebrate" || rig ? 32 : 80) }, "ease-out");
