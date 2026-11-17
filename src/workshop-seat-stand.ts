@@ -11,12 +11,13 @@ import { canSeatWorkshopRig, isSeatFurniture } from "./workshop-seating-stage";
  * fully articulated stand. Unlike replacing the track, this retains every
  * already-authored sitting key and makes both actions editable on Stage.
  */
-export function standWorkshopFromFurniture(
+/** Shared non-mutating validation for the original authored sit track and real seat contact. */
+export function validatePristineWorkshopSeating(
   scene: Scene,
   characterElementId: string,
   furnitureElementId: string,
   rig: PuppetRig,
-): Scene {
+): { actor: SceneElement; seat: SceneElement; existing: ElementKeyframe[]; finalSit: ElementKeyframe } {
   const actor = scene.elements.find(element => element.id === characterElementId);
   const seat = scene.elements.find(element => element.id === furnitureElementId);
   if (!actor || (actor.kind !== undefined && actor.kind !== "character"))
@@ -25,8 +26,6 @@ export function standWorkshopFromFurniture(
     throw new Error("Choose the chair or bench this character is sitting on.");
   if (!canSeatWorkshopRig(rig))
     throw new Error("Only complete original workshop characters can stand from their seats.");
-  if (scene.duration < 6)
-    throw new Error("A sit-and-stand scene needs at least six seconds.");
   if (actor.motion !== "still" || actor.rotation !== 0 || actor.flipY ||
       seat.motion !== "still" || seat.animation?.keyframes.length ||
       seat.rotation !== 0 || seat.flip || seat.flipY)
@@ -65,6 +64,20 @@ export function standWorkshopFromFurniture(
   if (Math.abs(hipX - seat.x) > 0.1 || Math.abs(hipY - expectedSeatY) > 0.1)
     throw new Error("The seat or character moved. Restore the original seat alignment first.");
 
+  return { actor, seat, existing, finalSit };
+}
+
+export function standWorkshopFromFurniture(
+  scene: Scene,
+  characterElementId: string,
+  furnitureElementId: string,
+  rig: PuppetRig,
+): Scene {
+  if (scene.duration < 6)
+    throw new Error("A sit-and-stand scene needs at least six seconds.");
+  const { actor, existing, finalSit } = validatePristineWorkshopSeating(
+    scene, characterElementId, furnitureElementId, rig,
+  );
   // The last three seconds stand up; the remaining time is a genuine
   // held seated pose, not a reset to standing or an offscreen preview.
   const standStart = scene.duration - 3;
