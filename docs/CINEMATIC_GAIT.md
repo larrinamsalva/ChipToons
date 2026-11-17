@@ -417,6 +417,36 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   real face/hand/foot artwork, ground contact, non-destructive
   previews and 20-minute independently decoded media export.
 
+## PR #153 — Articulated full-body rhythm and dance
+
+- Creators of complete original 15-part Workshop Characters can now choose
+  **Preview Full-Body Dance** in Puppet Maker alongside walk, jump, reach,
+  wave and victory celebration. The three-second preview shares the real
+  `Dance` preset used by the scene timeline and actual video exports.
+  Previews are temporary; no saved pose or authored animation is overwritten.
+- The `Dance` preset for these rigs now samples **13 deterministic keyframes**
+  instead of an abrupt nine-frame wiggle. Alternating beats bend the
+  left/right thigh, shin and ankle joints while shoulders, elbows and hands
+  move in rhythm. Small opposing torso/head motion creates a readable
+  body sway, and a subtle vertical pulse reaches at most seven stage pixels.
+- All stage movement is **in place**: original x position is unchanged,
+  the y offset and stage rotation ease to their original values at both
+  ends, and all joint angles settle back to neutral.
+- Older Sunny puppets, incomplete custom workshop rigs, imported photos
+  and historical characters retain their previous nine-frame `Dance`
+  behavior. Jump, walk, reach, celebration, prop interactions, voice,
+  lip-sync and existing stored projects remain unchanged.
+- Focused tests cover alternating knees, both elbows/hands, torso/head
+  counter-sway, height, original stage position, deterministic sampling,
+  bounded and valid joint values, unchanged source data, neutral endpoints
+  and exact legacy behavior. The desktop/phone/tablet Puppet Maker flow
+  now previews the dance and still saves the same editable character.
+- **Review before merge:** observe the actual animated knees, foot contact
+  and body sway on screen; check legacy fallbacks, face/lip-sync and
+  held props; run Foundation/browser checks and full independently
+  decoded 20-minute media export. This is original editable **2.5D SVG
+  character animation**, not 3D motion capture or a physics simulation.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
