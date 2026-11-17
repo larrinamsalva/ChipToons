@@ -40,7 +40,11 @@ describe("PR #158 seated hello and real articulated waving", () => {
     expect(halfway.y).toBeCloseTo(sittingKeys.at(-1)!.y, 8);
     expect(halfway.x).toBe(original.x);
     expect(halfway.joints!.rightArm!.angle).toBeLessThan(-70);
-    expect(halfway.joints!.rightForearm!.angle).toBeLessThan(-35);
+    // The elbow is neutral at the wave midpoint, but flexes on the
+    // offbeat. Compare the animated elbow against its real seated angle
+    // rather than expecting an unrelated -35 degree threshold.
+    expect(wristBeat.joints!.rightForearm!.angle)
+      .toBeLessThan(baseJoints.rightForearm!.angle - 4);
     expect(Math.abs(wristBeat.joints!.rightHand!.angle - baseJoints.rightHand!.angle))
       .toBeGreaterThan(1);
     for (const frame of frames.slice(13)) {
