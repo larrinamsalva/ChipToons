@@ -72,6 +72,7 @@ import { standWorkshopFromFurniture } from "../workshop-seat-stand";
 import { waveWorkshopWhileSeated } from "../workshop-seated-wave";
 import { standAfterSeatedGreeting } from "../workshop-sit-wave-stand";
 import { workshopSeatingReviewMoments } from "../workshop-seating-review";
+import { WorkshopPoseCompare } from "./WorkshopPoseCompare";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -1633,6 +1634,11 @@ export function Editor({
                                 </button>
                               ))}
                             </div>
+                            <WorkshopPoseCompare
+                              project={project}
+                              scene={scene}
+                              actorId={element.id}
+                            />
                           </div>
                         ) : null}
                         <div className="form-grid compact">
