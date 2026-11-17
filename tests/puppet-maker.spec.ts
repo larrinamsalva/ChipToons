@@ -437,7 +437,11 @@ test("creates and saves a new fully jointed original workshop hero with editable
   const upright = standingAfterHello.animation!.keyframes.at(-1)!;
   expect(upright.time).toBe(10);
   expect(upright.pose).toBe("standing");
-  expect(Math.abs(upright.joints!.leftShin!.angle)).toBeLessThan(.001);
+  // Neutral joints are intentionally omitted from sparse saved keyframes.
+  // A missing shin is zero rotation, not an animation or serialization bug.
+  expect(Math.abs(upright.joints?.leftShin?.angle ?? 0)).toBeLessThan(.001);
+  expect(Object.values(upright.joints ?? {}).every(joint =>
+    Math.abs(joint.angle) < .001)).toBe(true);
   expect(greetingAndStand.elements.find(item => item.id === addedBench.id)).toEqual(addedBench);
   expect(greetingAndStand.elements.find(item => item.id === addedChair.id)).toEqual(addedChair);
   await shot(page, info, "bench-wave-then-stand");
