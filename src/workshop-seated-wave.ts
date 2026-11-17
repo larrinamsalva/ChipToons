@@ -39,7 +39,13 @@ export function waveWorkshopWhileSeated(
       // Keep seated hip, torso, shin and boot joints unchanged while the
       // animated right shoulder, elbow and wrist wave. The opposite hand
       // can remain resting at the character's side.
-      joints: { ...finalSit.joints, ...frame.joints },
+      // The shared wave preset ends with zero arm angles, which is a
+      // standing neutral pose, not the character's original relaxed
+      // seated arm pose. Restore the actual seated joints at the final
+      // frame so the hand settles naturally before any later stand-up.
+      joints: Math.abs(frame.time - 6) < 0.001
+        ? { ...finalSit.joints }
+        : { ...finalSit.joints, ...frame.joints },
     }));
 
   if (waved.length !== 12)
