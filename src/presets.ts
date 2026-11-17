@@ -80,8 +80,22 @@ function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnaps
     const walking = action === "walk" || action === "walk-in-place";
     if (fullWorkshop && walking && /Shin$/.test(part.role))
       angle = envelope * 30 * Math.max(0, stride);
-    if (fullWorkshop && walking && /Foot$/.test(part.role))
-      angle = envelope * (-18 * Math.max(0, stride) + 6 * Math.max(0, -stride));
+    // #149: Let the whole workshop actor transfer a little weight as the
+    // feet alternate, while the head counter-leans so faces stay readable.
+    // No stage x/y, source rig, or authored motion path is rewritten.
+    if (fullWorkshop && walking && part.role === "torso")
+      angle = -3 * envelope * walk;
+    if (fullWorkshop && walking && part.role === "head")
+      angle = 2 * envelope * walk;
+    if (fullWorkshop && walking && /Foot$/.test(part.role)) {
+      // During stance the leg swings backward: counter-rotate the boot
+      // against the upper leg and tiny torso lean. During swing, lift the
+      // toe gently instead. This improves sole angle, but is not IK or a
+      // guarantee of zero slide on every user-edited rig.
+      const swing = Math.max(0, stride);
+      const stance = Math.min(0, stride);
+      angle = envelope * (-15 * swing + 27 * stance + 3 * walk);
+    }
     if (fullWorkshop && walking && /Forearm$/.test(part.role))
       angle = -side * envelope * (6 + 13 * Math.max(0, -stride));
     if (fullWorkshop && walking && /Hand$/.test(part.role))

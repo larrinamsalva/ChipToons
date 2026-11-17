@@ -306,6 +306,32 @@ Use existing browser + media-export regressions. Added unit tests check scene im
 - This is **keyframed 2.5D articulated cartoon animation**, not GPU
   skeletal mesh motion, motion capture or physically simulated cloth.
 
+## PR #149 — Gentle weight shift and flatter stance boots in Puppet Maker
+
+- Fresh, complete original workshop characters now add a tiny, repeatable
+  torso weight transfer (up to 3 degrees) and opposite head counter-lean
+  (up to 2 degrees) when using the shared **Walk** and **Walk in place**
+  animation presets. This is visible both in Puppet Maker previews and when
+  a creator intentionally applies those presets to an editable cartoon.
+- During the stance half-cycle the articulated boot counter-rotates against
+  its parent upper leg and body lean, bringing the sole closer to level.
+  During swing it keeps a gentle toe lift. The existing alternating
+  knee/shin and forearm poses from #148 remain.
+- All added movement is bounded and eased to neutral at both ends.
+  Authored scene x/y, frame timing, props, handoffs, audio, mouths, existing
+  character artwork and save workflows are unchanged. The original
+  Cinematic Storybook Stage foot-plant/IK solver is not duplicated or
+  replaced; it can still apply its own sampled correction when enabled.
+- This is an incremental **2.5D pose improvement**, not physically
+  simulated ground contact or a guarantee of zero sliding on every custom
+  puppet. Complete workshop rigs only; Sunny, incomplete rigs, imported
+  photos and old saved projects have their previous action behavior.
+- Focused tests verify alternating grounded stance angles, visible
+  counter-lean, valid joint snapshots, neutral ends, deterministic sampling,
+  unchanged stage positions and legacy compatibility. Before merge, run
+  full Foundation/browser/media-export checks and visually inspect the
+  real Puppet Maker walk for floating feet, ankle pops and face drift.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
