@@ -582,6 +582,46 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   Merge only when Foundation, browser QA and the independent 20-minute
   export are successful.
 
+## PR #158 — Wave hello while sitting on real furniture
+
+- Original, complete 15-part Workshop Characters can now select a
+  stationary chair or bench, use **Align and Sit on Seat**, then choose
+  **Wave Hello While Seated** from **Edit scene → Characters & movement**.
+  This is a real editable, three-second seated gesture appended to the
+  existing three-second sitting timeline; it is **not CSS motion**.
+- All 13 original sitting keyframes, their IDs and their values are
+  retained exactly. The added 12 samples use the engine's existing
+  articulated `wave` preset for shoulder, elbow and wrist movement;
+  they merge only those moving joint angles onto the actual seated
+  posture. The pelvis, thighs, shins, boots, root x/y, and pose stay
+  seated the whole time, and the waved arm returns to its original
+  seated position at the end.
+- A six-second scene finishes seated immediately after waving.
+  Longer scenes retain the seated finish for their remaining time.
+  The chair/bench, other actors, camera, narration, voice, props,
+  and character rig are not rewritten. The edit uses the regular
+  authoring history and is fully Undo/Redo-compatible.
+- Wave Hello is an **alternative to standing up** for a pristine
+  13-frame sitting track. A custom-edited sitting animation, already
+  completed sit-and-stand sequence, repeated wave, shifted seat,
+  active timed handoff, partial rig, imported image or scene shorter
+  than six seconds is rejected rather than overwritten. Owners can
+  author other actions manually in the timeline as usual.
+- The shared unchanged-seat validator is reused by Stand Up and the
+  new Wave Hello action, so both verify the exact original sitting
+  track and real stage contact to selected furniture.
+- Unit tests cover 25 uniquely keyed frames, genuine arm/elbow/wrist
+  motion, unchanged seated leg/foot chains, deterministic stage
+  sampling, unchanged source and seat props, six-second completion,
+  and refusal to rewrite modified/misaligned/unsupported scenes.
+  Desktop/phone/tablet browser coverage creates both seats, chooses
+  a bench, waves while seated, checks saved keys, and restores the
+  original sit via Undo.
+- This remains original **editable 2.5D cartoon animation**, not a
+  fully physically simulated gesture. Visually inspect the raised
+  hand, nearby props and face, chair contact, and audio/lip-sync;
+  review real independent 20-minute export before merging.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

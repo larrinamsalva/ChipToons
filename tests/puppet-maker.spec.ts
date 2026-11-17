@@ -398,6 +398,29 @@ test("creates and saves a new fully jointed original workshop hero with editable
     .toHaveLength(13);
   expect(onBench.elements.find(item => item.id === addedChair.id)).toEqual(addedChair);
   await shot(page, info, "bench-seated");
+
+  // #158: wave using actual shoulder, elbow and wrist keys while
+  // staying seated; the original 13 sitting keys survive untouched.
+  await button(page, "Wave Hello While Seated").click();
+  await saved(page);
+  const wavingScene = (await backup(page)).data.scenes[0];
+  const wavingActor = wavingScene.elements.find(item => item.id === actor.id)!;
+  const onBenchActor = onBench.elements.find(item => item.id === actor.id)!;
+  expect(wavingActor.animation?.keyframes).toHaveLength(25);
+  expect(wavingActor.animation!.keyframes.slice(0, 13))
+    .toEqual(onBenchActor.animation!.keyframes);
+  const greeting = wavingActor.animation!.keyframes.find(key => key.time === 4.5)!;
+  expect(greeting.pose).toBe("sitting");
+  expect(greeting.joints!.rightArm!.angle).toBeLessThan(-70);
+  expect(greeting.joints!.leftShin).toEqual(onBenchActor.animation!.keyframes.at(-1)!.joints!.leftShin);
+  expect(wavingScene.elements.find(item => item.id === addedBench.id)).toEqual(addedBench);
+  await shot(page, info, "bench-wave-hello");
+
+  await button(page, "Undo edit").click();
+  await saved(page);
+  const backToBenchSit = (await backup(page)).data.scenes[0];
+  expect(backToBenchSit.elements.find(item => item.id === actor.id)?.animation?.keyframes)
+    .toEqual(onBenchActor.animation!.keyframes);
   await button(page, "Undo edit").click();
   await saved(page);
   expect((await backup(page)).data.scenes[0].elements
