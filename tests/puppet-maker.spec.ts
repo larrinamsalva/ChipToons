@@ -256,15 +256,15 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await dialog(page).getByRole("button", {
     name: "Preview Knee-Bending Walk", exact: true,
   }).click();
-  await expect(dialog(page).getByLabel("Puppet preview"))
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
     .toHaveAttribute("data-preview-action", "walk-in-place");
   await dialog(page).getByRole("button", {
     name: "Preview Elbow-Bending Reach", exact: true,
   }).click();
-  await expect(dialog(page).getByLabel("Puppet preview"))
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
     .toHaveAttribute("data-preview-action", "point");
   await button(page, "Show still puppet").click();
-  await expect(dialog(page).getByLabel("Puppet preview"))
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
     .toHaveAttribute("data-preview-action", "still");
   await expect(dialog(page).locator('[data-puppet-part]')).toHaveCount(15);
 
