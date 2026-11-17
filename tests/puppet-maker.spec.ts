@@ -470,9 +470,9 @@ test("creates and saves a new fully jointed original workshop hero with editable
     .toHaveCount(1);
   await expect(page.getByRole("group", { name: "After pose preview" }).locator("svg"))
     .toHaveCount(1);
-  await expect(page.getByLabel("Before pose")).toHaveValue("seated");
-  await expect(page.getByLabel("After pose")).toHaveValue("standing");
-  await page.getByLabel("After pose").selectOption("wave");
+  await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("seated");
+  await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("standing");
+  await page.getByLabel("After pose", { exact: true }).selectOption("wave");
   await expect(page.getByRole("group", { name: "After pose preview" }))
     .toContainText("wave at 4.50 seconds");
   await shot(page, info, "chair-bench-side-by-side-compare");
