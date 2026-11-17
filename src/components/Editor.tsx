@@ -67,6 +67,7 @@ import {
   addWorkshopChair, canSeatWorkshopRig, isSeatFurniture,
   seatWorkshopAtFurniture,
 } from "../workshop-seating-stage";
+import { standWorkshopFromFurniture } from "../workshop-seat-stand";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -1530,6 +1531,26 @@ export function Editor({
                             >
                               Align and Sit on Seat
                             </button>
+                            {element.animation?.keyframes.length === 13 &&
+                              element.animation.keyframes.at(-1)?.pose === "sitting" && (
+                                <button
+                                  className="button secondary"
+                                  disabled={scene.duration < 6}
+                                  onClick={() => {
+                                    try {
+                                      const updated = standWorkshopFromFurniture(
+                                        scene, element.id, chosenSeatId, character.puppet!,
+                                      );
+                                      if (changeScene({ elements: updated.elements }))
+                                        setInteractionNotice("Added a seated pause and a real stand-up animation. Your sitting keys are preserved; Undo restores the original sit.");
+                                    } catch (error) {
+                                      setEditError(error instanceof Error ? error.message : "Could not add standing movement.");
+                                    }
+                                  }}
+                                >
+                                  Add Stand Up After Sitting
+                                </button>
+                              )}
                           </>
                         ) : (
                           <button
@@ -1556,6 +1577,7 @@ export function Editor({
                             Seat alignment needs a still character in a scene of
                             at least 3 seconds. Existing motion is kept safe;
                             use a new scene if this one is already animated.
+                            A sit-and-stand sequence needs at least 6 seconds.
                           </p>
                         )}
                       </div>

@@ -517,6 +517,42 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   must inspect the actual sitting animation and contact with chair/bench
   in Stage, not only the passing test assertions.
 
+## PR #156 — Stand up naturally after sitting on real furniture
+
+- In **Edit scene → Characters & movement**, after an original 15-part
+  Workshop Character is aligned to an illustrated chair or bench using
+  **Align and Sit on Seat** from PR #155, the new optional
+  **Add Stand Up After Sitting** action extends the same animation track.
+- The existing 13 keyframes (standing → seated in the first three
+  seconds) are preserved **with their original IDs and values**.
+  A stationary seated hold fills the time until the last three seconds;
+  the existing `Stand up` action from PR #154 then adds 12 real
+  articulated movement samples, ending in the original standing pose.
+  A six-second scene plays sit → stand without an extra pause; an
+  eight-second scene plays sit for 3s, rests for 2s and rises for 3s.
+- The chair or bench, other characters, cameras, audio, script,
+  interaction timing and all furniture layers are left intact.
+  Every new keyframe is editable with the normal Stage timeline,
+  Undo and Redo. The puppet rig itself and authored root x position
+  are not rewritten.
+- Safety: this action only accepts an **unaltered PR #155 seating track**
+  on a complete original workshop rig and a still, aligned, upright
+  original furniture prop. Hand-off interactions, custom-edited
+  sitting animations, relocated chairs and scenes shorter than six
+  seconds are rejected instead of having their timelines silently
+  replaced. Other rigs and existing saved projects are unchanged.
+- Focused unit tests cover scene lengths, chair/bench selection,
+  hold duration, original sitting frame retention, neutral final
+  joint positions, valid joints, unchanged source/seat objects and
+  rejection of modified/duplicate motion. The desktop/phone/tablet
+  browser workflow now creates a chair, sits, adds standing, inspects
+  saved frames, and checks two separate Undo actions.
+- **Review gates:** Foundation TypeScript, lint, Vitest and build,
+  cross-device browser QA, full independently decoded 20-minute export
+  and visual checks of hands, knees, feet and furniture contacts.
+  This is editable **2.5D** puppet animation, not automatic collision
+  resolution or a physical chair interaction simulator.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
