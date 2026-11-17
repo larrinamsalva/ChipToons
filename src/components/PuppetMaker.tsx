@@ -604,6 +604,10 @@ export function PuppetMaker({
                       Preview Knee-Bending Walk
                     </button>
                     <button className="button secondary"
+                      onClick={() => tryAction("walk")}>
+                      Preview Walk Across Stage
+                    </button>
+                    <button className="button secondary"
                       onClick={() => tryAction("point")}>
                       Preview Elbow-Bending Reach
                     </button>
