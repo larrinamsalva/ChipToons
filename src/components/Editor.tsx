@@ -69,6 +69,7 @@ import {
 } from "../workshop-seating-stage";
 import type { WorkshopSeatKind } from "../workshop-seating-stage";
 import { standWorkshopFromFurniture } from "../workshop-seat-stand";
+import { waveWorkshopWhileSeated } from "../workshop-seated-wave";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -1564,6 +1565,26 @@ export function Editor({
                                   }}
                                 >
                                   Add Stand Up After Sitting
+                                </button>
+                              )}
+                            {element.animation?.keyframes.length === 13 &&
+                              element.animation.keyframes.at(-1)?.pose === "sitting" && (
+                                <button
+                                  className="button secondary"
+                                  disabled={scene.duration < 6}
+                                  onClick={() => {
+                                    try {
+                                      const updated = waveWorkshopWhileSeated(
+                                        scene, element.id, chosenSeatId, character.puppet!,
+                                      );
+                                      if (changeScene({ elements: updated.elements }))
+                                        setInteractionNotice("Your character waves hello while staying seated. Sitting keys and furniture are unchanged; Undo restores the original sit.");
+                                    } catch (error) {
+                                      setEditError(error instanceof Error ? error.message : "Could not add a seated wave.");
+                                    }
+                                  }}
+                                >
+                                  Wave Hello While Seated
                                 </button>
                               )}
                           </>
