@@ -239,6 +239,41 @@ Use existing browser + media-export regressions. Added unit tests check scene im
 - A more usable **2.5D character customization feature**; not
   arbitrary generated 3D hair or new AI assets.
 
+## PR #147 — Create your own animated workshop character
+
+- **Create a Puppet Character** now offers **Start with an
+  Articulated Workshop Character** alongside existing custom shapes,
+  drawings and uploads. This produces a new creator-owned original
+  puppet instead of copying the saved Scout or Helper Jo scene.
+- The new character uses the proven editable **15-part articulated
+  rig** with independent upper arms, elbows, hands, thighs, knee/shin
+  joints, boots, head, and tool belt. It has its own character ID,
+  name and project/library life cycle; neither demo is changed.
+- Puppet Maker shows a **live Cinematic Storybook preview** for
+  workshop-costumed rigs. Within the assembly step, creators can
+  rename their puppet, change the shirt/skin/hair colors, choose
+  **Original hairstyle**, **Short side part**, or **Soft waves**,
+  inspect the part hierarchy, reposition joints and use Pose Studio.
+  Unlike the read-only pilot, these are editable source rig pieces.
+- **Save Character** and **Add to Cartoon** use the established
+  library validation and persistence flows, with normal per-project
+  snapshots and backup/restore behavior. Saved original artwork,
+  custom photos, existing Sunny rigs and all previously authored
+  cartoons are untouched.
+- New tests validate fresh unique identities, correct parented knee
+  and elbow chains, serialized library-item reuse, unchanged source
+  characters, and actual premium/Classic SVG rendering. Browser
+  tests use the existing creation wizard to build an original
+  character, change skin and hair color and hairstyle, then save
+  it into a cartoon on desktop, phone and tablet.
+- The live Puppet Maker preview uses Cinematic Storybook art, but
+  adding the new character does **not silently switch the entire
+  episode's visual style**: select Cinematic Storybook in the
+  cartoon editor when you want the same cinematic detailing in
+  the finished scene and exported video.
+- This remains a **creator-editable 2.5D SVG puppet**, not a true
+  3D mesh, photorealistic simulation or AI-generated image.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

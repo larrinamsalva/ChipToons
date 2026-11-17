@@ -1,4 +1,5 @@
 import { SUNNY_NAME, sunnyLibraryItem } from "../puppet-project";
+import { newWorkshopPuppetStarter } from "../workshop-puppet-starter";
 import {
   useEffect,
   useMemo,
@@ -205,6 +206,7 @@ function PuppetPreview({
           mouth={animated?.mouth ?? timeMouth}
           heartOpacity={animated?.heartOpacity}
           heartScale={animated?.heartScale}
+          premium={rig.costume === "workshop"}
         />
       </g>
       {selected && marker && !action && (
@@ -528,6 +530,31 @@ export function PuppetMaker({
               </button>
             ))}
           </div>
+          <button className="button primary" onClick={() => {
+            const fresh = newWorkshopPuppetStarter();
+            stop();
+            setCharacter(fresh);
+            setName(fresh.name);
+            setRig(fresh.puppet!);
+            setAssets([]);
+            setMode("shapes");
+            setPartId("head");
+            setJoints({});
+            setPoseId("");
+            setPoseName("");
+            setEmotion("happy");
+            setMouth("auto");
+            setSaved(false);
+            setMessage("");
+            setError("");
+            setStep(1);
+          }}>
+            Start with an Articulated Workshop Character
+          </button>
+          <p className="field-hint">
+            Start your own original 15-part animated character, with real
+            elbows, knees, hands, boots and editable cinematic hairstyle.
+          </p>
           {onDemo && (
             <button className="button primary" onClick={onDemo}>
               Open Sunny’s animated example
@@ -612,6 +639,53 @@ export function PuppetMaker({
                       }}
                     />
                   </label>
+                  {rig.costume === "workshop" && (
+                    <>
+                      <label>
+                        Workshop skin color
+                        <input type="color" value={character.skin}
+                          aria-label="Workshop skin color"
+                          onChange={e => {
+                            setCharacter({ ...character, skin: e.target.value });
+                            setSaved(false);
+                          }} />
+                      </label>
+                      <label>
+                        Workshop hair color
+                        <input type="color" value={character.hair}
+                          aria-label="Workshop hair color"
+                          onChange={e => {
+                            setCharacter({ ...character, hair: e.target.value });
+                            setSaved(false);
+                          }} />
+                      </label>
+                      {!rig.parts.some(p => (p.role === "head" || p.role === "hair") && p.assetId) && (
+                        <label>
+                          Workshop hairstyle
+                          <select
+                            aria-label="Workshop hairstyle"
+                            value={rig.headStyle ?? "original"}
+                            onChange={e => {
+                              const value = e.target.value;
+                              setRig({ ...rig, headStyle:
+                                value === "original" ? undefined :
+                                value as NonNullable<typeof rig.headStyle> });
+                              stop();
+                              setSaved(false);
+                            }}
+                          >
+                            <option value="original">Original hairstyle</option>
+                            <option value="short-side-part">Short side part</option>
+                            <option value="soft-waves">Soft waves</option>
+                          </select>
+                        </label>
+                      )}
+                      <p className="field-hint">
+                        These colors and the hairstyle are saved with your
+                        new puppet; animated joints and voice stay editable.
+                      </p>
+                    </>
+                  )}
                   <label className="assistant-check">
                     <input
                       type="checkbox"
