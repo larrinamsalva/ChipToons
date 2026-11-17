@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Scene } from "./model";
-import { makeScene } from "./model";
+import { makeScene, uid } from "./model";
+import { presetAnimation } from "./presets";
 import { sunnyRig, validJoints } from "./puppet-model";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
 import { addWorkshopSeat, seatWorkshopAtFurniture } from "./workshop-seating-stage";
@@ -77,6 +78,38 @@ describe("PR #159 sit, wave hello, and stand from furniture", () => {
     expect(keys.at(-1)!.pose).toBe("standing");
     expect(output.elements.find(item => item.id === seatId))
       .toEqual(scene.elements.find(item => item.id === seatId));
+  });
+
+  it("can extend the exact original #158 saved wave without rewriting its older arm keys", () => {
+    const { hero, scene, actorId, seatId } = fixture("chair", 10);
+    const actor = scene.elements.find(item => item.id === actorId)!;
+    const originalSit = actor.animation!.keyframes.slice(0, 13);
+    const seatedAt3 = originalSit.at(-1)!;
+    // Recreate #158's original saved behavior: the normal shared wave
+    // ended with neutral standing arms, rather than eased seated arms.
+    const originalWave = presetAnimation(actor, scene.duration, "wave", 3, 3, hero.puppet!)
+      .keyframes.filter(frame => frame.time > 3)
+      .map(frame => ({
+        ...seatedAt3,
+        id: uid(), time: frame.time,
+        easing: "linear" as const, pose: "sitting" as const,
+        gesture: "none" as const,
+        joints: { ...seatedAt3.joints, ...frame.joints },
+      }));
+    expect(originalWave.at(-1)!.joints).not.toEqual(seatedAt3.joints);
+    const legacyScene: Scene = {
+      ...scene,
+      elements: scene.elements.map(item => item.id === actorId
+        ? { ...item, animation: { ...item.animation!, keyframes: [...originalSit, ...originalWave] } }
+        : item),
+    };
+    const saved = JSON.stringify(legacyScene);
+    const combined = standAfterSeatedGreeting(legacyScene, actorId, seatId, hero.puppet!);
+    const result = combined.elements.find(item => item.id === actorId)!.animation!.keyframes;
+    expect(result).toHaveLength(38);
+    expect(result.slice(0, 25)).toEqual([...originalSit, ...originalWave]);
+    expect(result.at(-1)!.pose).toBe("standing");
+    expect(JSON.stringify(legacyScene)).toBe(saved);
   });
 
   it("refuses edited wave, moved furniture, duplicate action, incomplete rigs or short scenes", () => {
