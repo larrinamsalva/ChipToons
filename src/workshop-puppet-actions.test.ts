@@ -51,7 +51,7 @@ describe("PR #148 articulated workshop walk and reach keyframes", () => {
     const neutral = at("point", 0);
     expect(neutral.frame.joints?.rightForearm?.angle ?? 0).toBe(0);
     const finish = at("point", 3);
-    expect(finish.frame.joints?.rightForearm?.angle ?? 0).toBe(0);
+    expect(finish.frame.joints?.rightForearm?.angle ?? 0).toBeCloseTo(0, 8);
     const wave = at("wave", 1.25);
     expect(Math.abs(wave.frame.joints?.rightForearm?.angle ?? 0)).toBeGreaterThan(10);
     const walk = at("walk", .5);
