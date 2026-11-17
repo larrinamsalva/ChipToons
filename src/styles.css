@@ -6226,3 +6226,59 @@ fieldset.interaction-fields {
 .framefield-scene-work-queue .button{
   min-height:44px;max-width:100%;white-space:normal;
 }
+
+
+/* #161: side-by-side real Stage frames, readable in light/dark and compact editors. */
+.workshop-pose-comparison {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.workshop-pose-comparison > .button {
+  width: 100%;
+  white-space: normal;
+}
+.workshop-pose-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.workshop-pose-comparison-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.workshop-pose-comparison-card label {
+  min-width: 0;
+  font-weight: 650;
+  font-size: 12px;
+}
+.workshop-pose-comparison-card select {
+  width: 100%;
+  min-width: 0;
+  margin-top: 5px;
+  border: 1px solid var(--line);
+  background: var(--field);
+  color: var(--text);
+}
+.workshop-pose-comparison-frame {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: var(--hero);
+}
+.workshop-pose-comparison-frame svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+@media (max-width: 680px) {
+  .workshop-pose-comparison-grid { grid-template-columns: minmax(0, 1fr); }
+}
