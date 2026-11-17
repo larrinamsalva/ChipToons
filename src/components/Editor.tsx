@@ -70,6 +70,7 @@ import {
 import type { WorkshopSeatKind } from "../workshop-seating-stage";
 import { standWorkshopFromFurniture } from "../workshop-seat-stand";
 import { waveWorkshopWhileSeated } from "../workshop-seated-wave";
+import { standAfterSeatedGreeting } from "../workshop-sit-wave-stand";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -1587,6 +1588,26 @@ export function Editor({
                                   Wave Hello While Seated
                                 </button>
                               )}
+                            {element.animation?.keyframes.length === 25 &&
+                              element.animation.keyframes.at(-1)?.pose === "sitting" && (
+                                <button
+                                  className="button secondary"
+                                  disabled={scene.duration < 9}
+                                  onClick={() => {
+                                    try {
+                                      const updated = standAfterSeatedGreeting(
+                                        scene, element.id, chosenSeatId, character.puppet!,
+                                      );
+                                      if (changeScene({ elements: updated.elements }))
+                                        setInteractionNotice("Your character sits, waves, then stands up. Original sitting and waving keys are preserved; Undo restores the seated greeting.");
+                                    } catch (error) {
+                                      setEditError(error instanceof Error ? error.message : "Could not extend the seated greeting.");
+                                    }
+                                  }}
+                                >
+                                  Stand Up After Wave
+                                </button>
+                              )}
                           </>
                         )}
                         <div className="form-grid compact">
@@ -1611,7 +1632,8 @@ export function Editor({
                             Seat alignment needs a still character in a scene of
                             at least 3 seconds. Existing motion is kept safe;
                             use a new scene if this one is already animated.
-                            A sit-and-stand sequence needs at least 6 seconds.
+                            A sit-and-stand sequence needs at least 6 seconds;
+                            sit, wave and stand needs at least 9 seconds.
                           </p>
                         )}
                       </div>

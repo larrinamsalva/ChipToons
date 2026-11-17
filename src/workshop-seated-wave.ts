@@ -29,18 +29,35 @@ export function waveWorkshopWhileSeated(
   const wave = presetAnimation(actor, scene.duration, "wave", 3, 3, rig);
   const waved: ElementKeyframe[] = wave.keyframes
     .filter(frame => frame.time > 3)
-    .map(frame => ({
-      ...finalSit,
-      id: uid(),
-      time: frame.time,
-      easing: "linear",
-      pose: "sitting",
-      gesture: "none",
-      // Keep seated hip, torso, shin and boot joints unchanged while the
-      // animated right shoulder, elbow and wrist wave. The opposite hand
-      // can remain resting at the character's side.
-      joints: { ...finalSit.joints, ...frame.joints },
-    }));
+    .map(frame => {
+      // Ease the waving arm back into the *seated* resting angles during
+      // the final second. The generic wave preset ends at standing-neutral
+      // (zero) arm joints, which otherwise creates an abrupt mismatch
+      // with the original relaxed seated pose at second six.
+      const settle = Math.max(0, Math.min(1, frame.time - 5));
+      const eased = settle * settle * (3 - 2 * settle);
+      const joints = { ...finalSit.joints, ...frame.joints };
+      for (const part of rig.parts) {
+        if (!/(Arm|Forearm|Hand)$/.test(part.role)) continue;
+        const resting = finalSit.joints?.[part.id];
+        if (!resting) continue;
+        const wavingAngle = frame.joints?.[part.id]?.angle ?? 0;
+        joints[part.id] = {
+          ...resting,
+          angle: wavingAngle * (1 - eased) + resting.angle * eased,
+        };
+      }
+      return {
+        ...finalSit,
+        id: uid(),
+        time: frame.time,
+        easing: "linear" as const,
+        pose: "sitting" as const,
+        gesture: "none" as const,
+        // Keep the original pelvis, legs, head and boots untouched.
+        joints,
+      };
+    });
 
   if (waved.length !== 12)
     throw new Error("The seated hello could not generate its joint frames.");
