@@ -366,8 +366,12 @@ test("creates and saves a new fully jointed original workshop hero with editable
   expect(standingActor.animation?.keyframes).toHaveLength(26);
   expect(standingActor.animation!.keyframes.slice(0, 13))
     .toEqual(seatedActor.animation!.keyframes);
-  expect(standingActor.animation!.keyframes.find(frame => frame.time === 5)?.pose)
-    .toBe("sitting");
+  // Stand-up begins in the final three seconds, so the seated hold
+  // depends on this project's scene duration (which need not be 8s).
+  const riseStart = Math.round((standingScene.duration - 3) * 1000) / 1000;
+  const seatHold = standingActor.animation!.keyframes.find(frame =>
+    Math.abs(frame.time - riseStart) < .001);
+  expect(seatHold?.pose).toBe("sitting");
   expect(standingActor.animation!.keyframes.at(-1)?.pose).toBe("standing");
   expect(standingScene.elements.find(element => element.id === chair.id)).toEqual(chair);
   await shot(page, info, "chair-standup");
