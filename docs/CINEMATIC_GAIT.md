@@ -479,6 +479,44 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   full independently decoded 20-minute media export checks. This stays
   editable **2.5D cartoon animation**, not a true 3D character simulator.
 
+## PR #155 — Sit on a real chair or bench in the scene
+
+- After making a complete original 15-part Workshop Character, open
+  **Edit scene → Characters & movement** and use **Add Workshop Chair**.
+  Or, when a stationary original chair/bench prop already exists in that
+  scene, choose it from **Seat in this scene**.
+- **Align and Sit on Seat** is a user-triggered authoring action (not a
+  surprise automatic migration). It positions the character so the actual
+  final seated **upper-leg/pelvis pivot** is level with the selected
+  chair/bench's illustrated seat top. It uses the existing prop drawings'
+  seat dimensions and the actual articulated puppet rig transforms;
+  the result is real **Sit down** timeline keyframes, not a static poster.
+  The selected seat is set to the background layer to keep the actor visible.
+- The helper creates the same 13 adjustable joint samples from PR #154,
+  starting in a standing pose and finishing seated after three seconds.
+  The rig, seat artwork, other actors, audio, script, camera and project
+  identifiers are not overwritten. The edit uses the regular scene save
+  and **Undo/Redo** pipeline.
+- Existing animated characters, moving/rotated furniture and characters
+  performing timed handoffs are rejected instead of overwriting work.
+  Complete original Workshop rigs only; old Sunny, partial rigs and
+  imported photos continue using their previous tools.
+- This is **2.5D illustration alignment**, not furniture collision
+  detection, pathfinding or a persistent joint constraint. If you later
+  move the seat, you'll need to realign the authored animation yourself.
+  Artists should visually check unusual sizes, leg/furniture overlap,
+  mirrored characters and nearby props. Unsupported placements near
+  stage edges show a clear error, rather than silently clipping.
+- New pure tests check seat creation, chair and bench pelvis alignment,
+  deterministic seated keyframes, no source mutation, untouched other
+  props, rejection of existing motion, invalid rigs and rotated props.
+  Desktop/phone/tablet browser tests add a real chair to a creator-owned
+  character, align its animation, inspect saved project data and Undo.
+- Before merging, run TypeScript, lint, unit and browser checks and
+  a genuine independently decoded 20-minute video export. The owner
+  must inspect the actual sitting animation and contact with chair/bench
+  in Stage, not only the passing test assertions.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

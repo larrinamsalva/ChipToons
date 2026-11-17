@@ -63,6 +63,10 @@ import { resolvedCharacter, libraryItemFromElement, libraryItemFromLocation } fr
 import type { LibraryItem, LibraryKind } from "../library";
 import { POSES } from "../art-model";
 import { setWorkshopHairstyle } from "../workshop-hairstyle";
+import {
+  addWorkshopChair, canSeatWorkshopRig, isSeatFurniture,
+  seatWorkshopAtFurniture,
+} from "../workshop-seating-stage";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -162,6 +166,7 @@ export function Editor({
   const [worldOpen, setWorldOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState("stage");
   const [elementIndex, setElementIndex] = useState(0);
+  const [seatTargetId, setSeatTargetId] = useState("");
 
   const total = totalDuration(project);
   const index = Math.min(selected, project.scenes.length - 1);
@@ -181,6 +186,9 @@ export function Editor({
       )
     : element;
   const character = resolvedCharacter(project, element);
+  const seatChoices = scene.elements.filter(isSeatFurniture);
+  const chosenSeatId = seatChoices.some(seat => seat.id === seatTargetId)
+    ? seatTargetId : (seatChoices[0]?.id ?? "");
   function halt() {
     playTicket.current++;
     audio.stop();
@@ -1480,6 +1488,77 @@ export function Editor({
                           ))}
                         </select>
                       </label>
+                    )}
+                    {canSeatWorkshopRig(character.puppet) && (
+                      <div className="assistant-fields" aria-label="Workshop chair and bench seating">
+                        <p className="field-hint">
+                          Place a workshop character on a chair or bench.
+                          This creates editable 3-second sitting keyframes
+                          aligned with the selected furniture. Undo is available.
+                        </p>
+                        {seatChoices.length ? (
+                          <>
+                            <label>
+                              Seat in this scene
+                              <select
+                                aria-label="Seat in this scene"
+                                value={chosenSeatId}
+                                onChange={event => setSeatTargetId(event.target.value)}
+                              >
+                                {seatChoices.map(seat => (
+                                  <option key={seat.id} value={seat.id}>
+                                    {seat.name || (seat.prop === "bench" ? "Bench" : "Chair")}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <button
+                              className="button secondary"
+                              disabled={!!element.animation?.keyframes.length ||
+                                element.motion !== "still" || scene.duration < 3}
+                              onClick={() => {
+                                try {
+                                  const updated = seatWorkshopAtFurniture(
+                                    scene, element.id, chosenSeatId, character.puppet!,
+                                  );
+                                  if (changeScene({ elements: updated.elements }))
+                                    setInteractionNotice("Sitting animation aligned with your seat. Press Undo to restore its previous placement.");
+                                } catch (error) {
+                                  setEditError(error instanceof Error ? error.message : "Could not align the seat.");
+                                }
+                              }}
+                            >
+                              Align and Sit on Seat
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="button secondary"
+                            disabled={scene.elements.length >= 20}
+                            onClick={() => {
+                              try {
+                                const result = addWorkshopChair(scene, element);
+                                if (changeScene({ elements: result.scene.elements })) {
+                                  setSeatTargetId(result.chairId);
+                                  setInteractionNotice("Added a chair behind your character. Choose Align and Sit on Seat to animate.");
+                                }
+                              } catch (error) {
+                                setEditError(error instanceof Error ? error.message : "Could not add a chair.");
+                              }
+                            }}
+                          >
+                            Add Workshop Chair
+                          </button>
+                        )}
+                        {(!!element.animation?.keyframes.length ||
+                          element.motion !== "still" || scene.duration < 3) && (
+                          <p className="field-hint">
+                            Seat alignment needs a still character in a scene of
+                            at least 3 seconds. Existing motion is kept safe;
+                            use a new scene if this one is already animated.
+                          </p>
+                        )}
+                      </div>
                     )}
                     <label>
                       Character name

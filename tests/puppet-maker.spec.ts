@@ -239,7 +239,7 @@ test("drawn objects and uploaded artwork are portable and library changes stay s
 });
 
 
-test("creates and saves a new fully jointed original workshop hero with editable colors and hair", async ({ page }) => {
+test("creates and saves a new fully jointed original workshop hero with editable colors and hair", async ({ page }, info) => {
   test.setTimeout(90_000);
   await page.goto("./");
   await button(page, "Create a Puppet Character").click();
@@ -321,4 +321,29 @@ test("creates and saves a new fully jointed original workshop hero with editable
   expect(hero.hair).toBe("#453260");
   expect(project.scenes.some(scene =>
     scene.elements.some(element => element.characterId === hero.id))).toBe(true);
+
+  // #155: Use the actual Editor to add a seat, align the rig's seated
+  // pelvis to it and save the generated real keyframes, then Undo.
+  const actor = project.scenes[0].elements.find(element => element.characterId === hero.id)!;
+  expect(actor).toBeTruthy();
+  const editSceneTab = button(page, "Edit scene");
+  if (await editSceneTab.isVisible()) await editSceneTab.click();
+  await page.getByLabel("Edit character").selectOption(actor.id);
+  await button(page, "Add Workshop Chair").click();
+  await button(page, "Align and Sit on Seat").click();
+  await saved(page);
+  const seatedProject = (await backup(page)).data;
+  const seatedScene = seatedProject.scenes[0];
+  const chair = seatedScene.elements.find(element => element.prop === "chair")!;
+  const seatedActor = seatedScene.elements.find(element => element.id === actor.id)!;
+  expect(chair).toBeTruthy();
+  expect(chair.sceneryDepth).toBe("behind");
+  expect(seatedActor.animation?.keyframes).toHaveLength(13);
+  expect(seatedActor.animation!.keyframes.at(-1)?.pose).toBe("sitting");
+  expect(seatedActor.animation!.keyframes.at(-1)?.joints?.leftShin?.angle).toBeGreaterThan(50);
+  await shot(page, info, "chair-seated");
+  await button(page, "Undo edit").click();
+  await saved(page);
+  const reverted = (await backup(page)).data.scenes[0];
+  expect(reverted.elements.find(element => element.id === actor.id)?.animation).toBeUndefined();
 });
