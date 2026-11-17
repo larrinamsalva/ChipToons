@@ -608,6 +608,10 @@ export function PuppetMaker({
                       Preview Walk Across Stage
                     </button>
                     <button className="button secondary"
+                      onClick={() => tryAction("jump")}>
+                      Preview Jump & Gentle Landing
+                    </button>
+                    <button className="button secondary"
                       onClick={() => tryAction("point")}>
                       Preview Elbow-Bending Reach
                     </button>
