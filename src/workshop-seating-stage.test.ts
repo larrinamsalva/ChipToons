@@ -38,7 +38,16 @@ describe("PR #155 chair and bench seated alignment", () => {
     const last = sit.animation!.keyframes.find(k => k.time === 3)!;
     expect(last.pose).toBe("sitting");
     expect(last.y).toBeCloseTo(sit.y + 20, 8);
-    expect(sit.x).toBeCloseTo(chair.x, 2);
+    // The root origin is not the pelvis center. Verify the *rendered*
+    // seated hip anchor is centered over the furniture, not the actor's
+    // arbitrary origin (which is offset several pixels in this rig).
+    const hipWorld = puppetTransforms(hero.puppet!, last.joints ?? {});
+    const hipPoints = ["leftLeg", "rightLeg"].map(role => {
+      const index = hero.puppet!.parts.findIndex(p => p.role === role);
+      return hipWorld[index];
+    });
+    const stageHipX = sit.x + ((hipPoints[0].x + hipPoints[1].x) / 2) * sit.scale;
+    expect(stageHipX).toBeCloseTo(chair.x, 6);
     expect(chair.sceneryDepth).toBe("behind");
     expect(updated.elements.find(e => e.id === actor.id)?.animation).toBeDefined();
     const transform = puppetTransforms(hero.puppet!, last.joints ?? {});
