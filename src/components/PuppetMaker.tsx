@@ -617,6 +617,10 @@ export function PuppetMaker({
                       Preview Victory Celebration
                     </button>
                     <button className="button secondary"
+                      onClick={() => tryAction("dance")}>
+                      Preview Full-Body Dance
+                    </button>
+                    <button className="button secondary"
                       onClick={() => tryAction("point")}>
                       Preview Elbow-Bending Reach
                     </button>
