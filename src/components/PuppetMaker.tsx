@@ -596,7 +596,8 @@ export function PuppetMaker({
                   </button>
                 )}
                 {rig.costume === "workshop" &&
-                 ["leftForearm", "rightForearm", "leftShin", "rightShin"]
+                 ["leftForearm", "rightForearm", "leftHand", "rightHand",
+                   "leftShin", "rightShin", "leftFoot", "rightFoot"]
                    .every(role => rig.parts.some(part => part.role === role)) && (
                   <>
                     <button className="button secondary"
