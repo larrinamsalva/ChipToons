@@ -62,11 +62,38 @@ function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnaps
   const wave = Math.sin(phase * Math.PI * 6);
   const walk = Math.sin(phase * Math.PI * 4);
   const envelope = Math.sin(phase * Math.PI);
+  const fullWorkshop = rig.costume === "workshop" &&
+    ["leftForearm", "rightForearm", "leftShin", "rightShin",
+      "leftHand", "rightHand", "leftFoot", "rightFoot"]
+      .every(role => rig.parts.some(p => p.role === role));
   for (const part of rig.parts) {
     let angle = 0;
     const side = part.role.startsWith("left") ? -1 : 1;
     if ((action === "walk" || action === "walk-in-place") && /Arm|Leg|lowerBody/.test(part.role))
       angle = walk * side * (/Arm/.test(part.role) ? 16 : -27);
+    // #148: Only completed original 15-part workshop performers get
+    // authored secondary elbow / knee / wrist / ankle poses. Simple Sunny
+    // rigs and separately drawn or incomplete rigs retain their presets.
+    // Keyframe evaluation below shares the SAME joint data with the
+    // actual timeline, Stage and genuine video exporter (not CSS motion).
+    const stride = walk * side;
+    const walking = action === "walk" || action === "walk-in-place";
+    if (fullWorkshop && walking && /Shin$/.test(part.role))
+      angle = envelope * 30 * Math.max(0, stride);
+    if (fullWorkshop && walking && /Foot$/.test(part.role))
+      angle = envelope * (-18 * Math.max(0, stride) + 6 * Math.max(0, -stride));
+    if (fullWorkshop && walking && /Forearm$/.test(part.role))
+      angle = -side * envelope * (6 + 13 * Math.max(0, -stride));
+    if (fullWorkshop && walking && /Hand$/.test(part.role))
+      angle = -side * envelope * 6 * stride;
+    if (fullWorkshop && action === "point" && /Forearm$/.test(part.role))
+      angle = -side * 23 * envelope;
+    if (fullWorkshop && action === "point" && /Hand$/.test(part.role))
+      angle = -side * 8 * envelope;
+    if (fullWorkshop && action === "wave" && /Forearm$/.test(part.role))
+      angle = -side * (24 + 7 * wave) * envelope;
+    if (fullWorkshop && action === "wave" && /Hand$/.test(part.role))
+      angle = -side * 9 * wave * envelope;
     if (action === "wave" && part.id === arm?.id) angle = -side * (115 + wave * 16) * Math.min(1, envelope * 3);
     if (action === "point" && part.id === arm?.id) angle = -side * 75 * Math.min(1, envelope * 3);
     if (part.role === "head" && (action === "nod" || action === "shake")) angle = wave * (action === "nod" ? 8 : 14);
