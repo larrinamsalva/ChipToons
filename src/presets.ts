@@ -154,19 +154,40 @@ export function presetAnimation(
   at(0);
   at(1);
   switch (action) {
-    case "walk":
-      for (let i = 0; i <= 12; i++)
+    case "walk": {
+      // #150: A newly made complete Workshop Character eases into a walk
+      // and settles naturally at the end. Retain the exact historical
+      // travel and bob for old/partial rigs and imported character art.
+      const fullWorkshopWalk = rig?.costume === "workshop" &&
+        ["leftForearm", "rightForearm", "leftHand", "rightHand",
+          "leftShin", "rightShin", "leftFoot", "rightFoot"]
+          .every(role => rig.parts.some(part => part.role === role));
+      const travel = (base.x < 400 ? 720 : 80) - base.x;
+      for (let i = 0; i <= 12; i++) {
+        const phase = i / 12;
+        // Smoothstep slows entry and exit without changing total travel.
+        const arrived = fullWorkshopWalk
+          ? phase * phase * (3 - 2 * phase)
+          : phase;
+        // Continuous, subtly eased body bob replaces 5px step toggles
+        // only for full workshop rigs; start and finish at source height.
+        const bounce = fullWorkshopWalk
+          ? 4 * Math.sin(Math.PI * phase) *
+            Math.sin(4 * Math.PI * phase) ** 2
+          : (i % 2 ? 5 : 0);
         at(
-          i / 12,
+          phase,
           {
-            x: base.x + (((base.x < 400 ? 720 : 80) - base.x) * i) / 12,
-            y: base.y - (i % 2 ? 5 : 0),
+            x: base.x + travel * arrived,
+            y: base.y - bounce,
             pose: "walking",
             gesture: i === 12 ? "none" : "walk",
           },
           "linear",
         );
+      }
       break;
+    }
     case "enter-left":
     case "enter-right":
       at(0, { x: action === "enter-left" ? -140 : 940 });
