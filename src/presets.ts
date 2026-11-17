@@ -108,6 +108,27 @@ function puppetAction(rig: PuppetRig, action: Action, phase: number): JointSnaps
       angle = -side * (24 + 7 * wave) * envelope;
     if (fullWorkshop && action === "wave" && /Hand$/.test(part.role))
       angle = -side * 9 * wave * envelope;
+    // #151: A real crouch -> flight -> soft landing on the existing
+    // parented knees, ankles and arms. Sampling is deterministic and
+    // shared by the Puppet Maker preview, timeline, Stage and export.
+    if (fullWorkshop && action === "jump") {
+      const crouch = phase < 0.2
+        ? Math.sin(Math.PI * phase / 0.2)
+        : phase > 0.8
+          ? Math.sin(Math.PI * (phase - 0.8) / 0.2)
+          : 0;
+      const airborne = phase > 0.2 && phase < 0.8
+        ? Math.sin(Math.PI * (phase - 0.2) / 0.6) : 0;
+      const bend = Math.min(1, 0.9 * crouch + 0.45 * airborne);
+      if (/Leg$/.test(part.role)) angle = side * 9 * bend;
+      if (/Shin$/.test(part.role)) angle = -side * 28 * bend;
+      if (/Foot$/.test(part.role)) angle = side * 17 * bend;
+      if (/Arm$/.test(part.role)) angle = -side * 32 * airborne;
+      if (/Forearm$/.test(part.role)) angle = side * 15 * airborne;
+      if (/Hand$/.test(part.role)) angle = -side * 6 * airborne;
+      if (part.role === "torso") angle = -3 * airborne;
+      if (part.role === "head") angle = 2 * airborne;
+    }
     if (action === "wave" && part.id === arm?.id) angle = -side * (115 + wave * 16) * Math.min(1, envelope * 3);
     if (action === "point" && part.id === arm?.id) angle = -side * 75 * Math.min(1, envelope * 3);
     if (part.role === "head" && (action === "nod" || action === "shake")) angle = wave * (action === "nod" ? 8 : 14);
@@ -194,10 +215,32 @@ export function presetAnimation(
       at(1);
       break;
     case "celebrate":
-    case "jump":
-      at(0.5, { y: base.y - (action === "celebrate" || rig ? 32 : 80) }, "ease-out");
-      at(1, {}, "ease-in");
+    case "jump": {
+      // Fully articulated original workshop characters get anticipation,
+      // an actual arc and a soft compression on landing. All older rigs
+      // preserve the exact historical up/down animation.
+      const jumpReady = action === "jump" && rig?.costume === "workshop" &&
+        ["leftForearm", "rightForearm", "leftHand", "rightHand",
+          "leftShin", "rightShin", "leftFoot", "rightFoot"]
+          .every(role => rig.parts.some(part => part.role === role));
+      if (jumpReady) {
+        for (let i = 0; i <= 12; i++) {
+          const phase = i / 12;
+          const airborne = phase > 0.2 && phase < 0.8
+            ? Math.sin(Math.PI * (phase - 0.2) / 0.6) : 0;
+          const crouch = phase < 0.2
+            ? Math.sin(Math.PI * phase / 0.2)
+            : phase > 0.8
+              ? Math.sin(Math.PI * (phase - 0.8) / 0.2)
+              : 0;
+          at(phase, { y: base.y - 42 * airborne + 4 * crouch }, "linear");
+        }
+      } else {
+        at(0.5, { y: base.y - (action === "celebrate" || rig ? 32 : 80) }, "ease-out");
+        at(1, {}, "ease-in");
+      }
       break;
+    }
     case "bounce":
       for (let i = 0; i <= 8; i++)
         at(
