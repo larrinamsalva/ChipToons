@@ -329,6 +329,12 @@ test("creates and saves a new fully jointed original workshop hero with editable
   const editSceneTab = button(page, "Edit scene");
   if (await editSceneTab.isVisible()) await editSceneTab.click();
   await page.getByLabel("Edit character").selectOption(actor.id);
+  // A 10-second scene demonstrates sit 3s, wave 3s, seated rest 1s,
+  // and real stand-up motion in the final 3 seconds.
+  await page.getByLabel("Duration (seconds)").fill("10");
+  await page.getByLabel("Duration (seconds)").blur();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].duration).toBe(10);
   await button(page, "Add Workshop Chair").click();
   await saved(page);
   const originalChairScene = (await backup(page)).data.scenes[0];
@@ -416,6 +422,31 @@ test("creates and saves a new fully jointed original workshop hero with editable
   expect(wavingScene.elements.find(item => item.id === addedBench.id)).toEqual(addedBench);
   await shot(page, info, "bench-wave-hello");
 
+  // #159: append the natural final stand without losing any of the
+  // 25 sitting + waving keys, and preserve the selected bench.
+  await button(page, "Stand Up After Wave").click();
+  await saved(page);
+  const greetingAndStand = (await backup(page)).data.scenes[0];
+  const standingAfterHello = greetingAndStand.elements.find(item => item.id === actor.id)!;
+  expect(standingAfterHello.animation?.keyframes).toHaveLength(38);
+  expect(standingAfterHello.animation!.keyframes.slice(0, 25))
+    .toEqual(wavingActor.animation!.keyframes);
+  const seatedPause = standingAfterHello.animation!.keyframes.find(key => key.time === 7)!;
+  expect(seatedPause.pose).toBe("sitting");
+  expect(seatedPause.joints).toEqual(wavingActor.animation!.keyframes.at(-1)!.joints);
+  const upright = standingAfterHello.animation!.keyframes.at(-1)!;
+  expect(upright.time).toBe(10);
+  expect(upright.pose).toBe("standing");
+  expect(Math.abs(upright.joints!.leftShin!.angle)).toBeLessThan(.001);
+  expect(greetingAndStand.elements.find(item => item.id === addedBench.id)).toEqual(addedBench);
+  expect(greetingAndStand.elements.find(item => item.id === addedChair.id)).toEqual(addedChair);
+  await shot(page, info, "bench-wave-then-stand");
+
+  await button(page, "Undo edit").click();
+  await saved(page);
+  const backToWave = (await backup(page)).data.scenes[0];
+  expect(backToWave.elements.find(item => item.id === actor.id)?.animation?.keyframes)
+    .toEqual(wavingActor.animation!.keyframes);
   await button(page, "Undo edit").click();
   await saved(page);
   const backToBenchSit = (await backup(page)).data.scenes[0];
