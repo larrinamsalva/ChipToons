@@ -389,6 +389,34 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   20-minute media exports. The result is still original **2.5D vector
   animation**, not true physics or photorealistic 3D.
 
+## PR #152 — Real articulated victory celebrations
+
+- Fresh, creator-owned 15-part Workshop Characters now have a
+  **Preview Victory Celebration** action in Puppet Maker. It previews
+  the SAME shared `Celebrate` preset used by the editable scene
+  timeline and genuine video exporter, rather than a cosmetic CSS loop.
+- A complete original workshop rig receives 13 deterministic samples
+  of a three-second celebration: both upper arms rise, elbows bend,
+  wrists move, knees and boots flex, and the torso/head sway subtly.
+  Small rhythmic body lift is bounded to 15 stage pixels and settles
+  to the original authored height and joint angles at both ends.
+- The preview is temporary and does not automatically record or save
+  a pose, alter characters, rewrite scene x positions, move props,
+  change audio, change lip-sync or duplicate any project content.
+- Old Sunny, partial workshop rigs, imported photos and previously
+  authored cartoons keep the previous three-frame `Celebrate` preset
+  and original joint behavior. The existing walk, jump and reach
+  animations remain unchanged.
+- Unit tests check parented shoulder/elbow/hand and shin movement,
+  stage-height bounce, side-to-side body sway, deterministic seeking,
+  exact neutral endpoints, valid joints, source immutability and
+  legacy fallbacks. Cross-device Puppet Maker browser acceptance
+  exercises celebration alongside walking, jumping and reaching.
+- The result is still original editable **2.5D animation**, not
+  true 3D, collision physics or motion capture. Before merge review
+  real face/hand/foot artwork, ground contact, non-destructive
+  previews and 20-minute independently decoded media export.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
