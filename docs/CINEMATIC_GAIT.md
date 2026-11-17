@@ -661,6 +661,37 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   passing TypeScript, lint, unit, browser and genuine independently
   decoded 20-minute export checks.
 
+## PR #160 — One-click review of real seating moments
+
+- For a complete original workshop puppet with existing authored seat
+  motion, **Edit scene → Characters & movement → Review seated animation
+  moments** now offers direct jumps to keyframes saved on the *real*
+  Stage timeline. There are no new animation layers, exports, or
+  simulated preview-only movements.
+- Buttons appear only for moments confirmed in the selected character's
+  keyframes, using the actual seated knee/shin poses, right-arm wave and
+  mid-rise leg angles:
+  - **Review sitting** seeks to the real seated pose at 3.00s;
+  - **Review wave** seeks to the raised arm at 4.50s when present;
+  - **Review rising** seeks to the actual full-body half-stand at
+    `scene duration - 1.50s` if a stand action exists;
+  - **Review standing** seeks to the recorded upright final keyframe;
+  - a wave-only scene instead offers **Review settled pose** at 6.00s.
+- Every button pauses playback and uses the existing scene-local
+  timeline seek, then brings the stage into view on compact layouts.
+  It does **not** alter keyframe values, camera, sound, characters,
+  furniture, scene duration, Undo history or exported media.
+- Unit tests cover the natural #159 sit → wave → stand timeline,
+  #158 wave-only and #156 sit-stand variants, original sit-only scenes,
+  missing/malformed animation and input immutability. Desktop/phone/
+  tablet browser QA verifies visible scene-time changes at 3.00,
+  4.50, 8.50 and 10.00 seconds and that the saved animation is
+  identical before and after review.
+- These are **editor navigation tools**, not new animation physics.
+  Creators should visually inspect each paused stage pose for seat
+  contact, puppet joints, hand/face overlap, boots, props and backdrop
+  depth before accepting a production render.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
