@@ -7,11 +7,9 @@ import { presetAnimation } from "./presets";
 import { canSeatWorkshopRig, isSeatFurniture } from "./workshop-seating-stage";
 
 /**
- * Extend an untouched #155 chair/bench seated animation with a hold and
- * fully articulated stand. Unlike replacing the track, this retains every
- * already-authored sitting key and makes both actions editable on Stage.
+ * Shared non-mutating validation for the original sitting keys and real
+ * chair/bench stage contact. Both stand-up and seated wave opt-ins use it.
  */
-/** Shared non-mutating validation for the original authored sit track and real seat contact. */
 export function validatePristineWorkshopSeating(
   scene: Scene,
   characterElementId: string,
@@ -67,6 +65,7 @@ export function validatePristineWorkshopSeating(
   return { actor, seat, existing, finalSit };
 }
 
+/** Extend the original seated timeline with a hold and real articulated standing keys. */
 export function standWorkshopFromFurniture(
   scene: Scene,
   characterElementId: string,
