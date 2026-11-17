@@ -274,6 +274,38 @@ Use existing browser + media-export regressions. Added unit tests check scene im
 - This remains a **creator-editable 2.5D SVG puppet**, not a true
   3D mesh, photorealistic simulation or AI-generated image.
 
+## PR #148 — Preview a real walk and reach in Puppet Maker
+
+- A newly created complete 15-part Workshop Character in Puppet Maker
+  now has **Preview Knee-Bending Walk** and **Preview Elbow-Bending
+  Reach**, next to the existing Wave and Show still puppet controls.
+  The SVG preview reports the current action, and every preview is
+  short, repeatable and can be returned to the still puppet.
+- Unlike a cosmetic CSS wobble, the same underlying **presetAnimation
+  keyframes** driving the editable cartoon timeline now produce
+  parented left/right alternating **knee/shin bends, ankle compensation,
+  forearm swing and hand counter-motion** during Walk and Walk in place.
+  The Point/Reach and Wave presets bend the true elbow and wrist.
+  The effect respects each part's existing joint and parent chain,
+  including the user's editable part dimensions and skin/outfit art.
+- Complete workshop rigs opt in only when they already contain both
+  forearms, hands, shins and feet. Pre-existing Sunny/simple five-
+  or six-part rigs, incomplete custom rigs, separate painted assets,
+  imported photos, and older one-piece workshop characters retain
+  their original preset behavior. There is no migration.
+- The preview deliberately **does not overwrite saved poses or
+  keyframes**; select and apply the same Walk in place / Point / Wave
+  actions in the cartoon animation timeline when you want those
+  movements in the actual project and exported media. Saving the
+  character saves its editable rig, not a surprise three-second clip.
+- Focused unit tests prove left and right knee alternation, valid
+  parented shin/ankle/elbow/wrist joint snapshots, determinism, neutral
+  endpoints, preserved author positions and older rig fallbacks.
+  Desktop/phone/tablet browser QA uses the real Puppet Maker wizard to
+  play both actions, return to still and continue the original save.
+- This is **keyframed 2.5D articulated cartoon animation**, not GPU
+  skeletal mesh motion, motion capture or physically simulated cloth.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

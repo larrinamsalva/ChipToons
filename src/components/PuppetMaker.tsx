@@ -180,6 +180,7 @@ function PuppetPreview({
       ref={svg}
       viewBox="-205 -290 410 330"
       aria-label="Puppet preview"
+      data-preview-action={action || "still"}
       className="puppet-preview"
     >
       <rect
@@ -594,10 +595,31 @@ export function PuppetMaker({
                     Make It Wave
                   </button>
                 )}
+                {rig.costume === "workshop" &&
+                 ["leftForearm", "rightForearm", "leftShin", "rightShin"]
+                   .every(role => rig.parts.some(part => part.role === role)) && (
+                  <>
+                    <button className="button secondary"
+                      onClick={() => tryAction("walk-in-place")}>
+                      Preview Knee-Bending Walk
+                    </button>
+                    <button className="button secondary"
+                      onClick={() => tryAction("point")}>
+                      Preview Elbow-Bending Reach
+                    </button>
+                  </>
+                )}
                 <button className="button secondary" onClick={stop}>
                   Show still puppet
                 </button>
               </div>
+              {rig.costume === "workshop" && (
+                <p className="field-hint">
+                  These are 3-second, repeatable samples of the same joint
+                  presets available in the cartoon animation timeline.
+                  Previewing does not save a pose or change the cartoon.
+                </p>
+              )}
             </section>
             <section
               className="assistant-fields"

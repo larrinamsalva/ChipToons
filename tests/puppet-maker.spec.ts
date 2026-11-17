@@ -251,6 +251,23 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(dialog(page).locator('[data-workshop-hairstyle="short-side-part"]'))
     .toHaveCount(1);
 
+  // The actual 15-part character now previews its own authored walk and
+  // reach; these quick 3-second previews do not save any new keyframes.
+  await dialog(page).getByRole("button", {
+    name: "Preview Knee-Bending Walk", exact: true,
+  }).click();
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
+    .toHaveAttribute("data-preview-action", "walk-in-place");
+  await dialog(page).getByRole("button", {
+    name: "Preview Elbow-Bending Reach", exact: true,
+  }).click();
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
+    .toHaveAttribute("data-preview-action", "point");
+  await button(page, "Show still puppet").click();
+  await expect(dialog(page).locator('svg[aria-label="Puppet preview"]'))
+    .toHaveAttribute("data-preview-action", "still");
+  await expect(dialog(page).locator('[data-puppet-part]')).toHaveCount(15);
+
   await dialog(page).getByLabel("Character name").fill("Nova Workshop Hero");
   await dialog(page).getByLabel("Workshop skin color").fill("#ac785b");
   await dialog(page).getByLabel("Workshop hair color").fill("#453260");
