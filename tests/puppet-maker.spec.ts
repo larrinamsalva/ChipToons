@@ -488,7 +488,20 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("seated");
   await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("wave");
   await expect(sitToWave).toHaveAttribute("aria-pressed", "true");
+
+  // #165: all three genuine Stage frames must reflect saved motion, including
+  // the timeline's real half-step pose, not a fabricated saved keyframe.
+  await button(page, "Review Three-Frame Filmstrip").click();
+  const filmstrip = page.getByLabel("Three-frame motion filmstrip");
+  const firstFrame = filmstrip.getByRole("figure", { name: "Start motion filmstrip frame" });
+  const middleFrame = filmstrip.getByRole("figure", { name: "Middle motion filmstrip frame" });
+  const lastFrame = filmstrip.getByRole("figure", { name: "End motion filmstrip frame" });
+  await expect(filmstrip.locator("svg")).toHaveCount(3);
+  await expect(firstFrame).toContainText("3.00s");
+  await expect(middleFrame).toContainText("3.75s");
+  await expect(lastFrame).toContainText("4.50s");
   await waveToRise.click();
+  await expect(middleFrame).toContainText("6.50s");
   await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("wave");
   await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("rise");
   await riseToStand.click();
@@ -496,7 +509,12 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("standing");
   await expect(page.getByRole("group", { name: "Before pose preview" }))
     .toContainText("rising at 8.50 seconds");
+  await expect(middleFrame).toContainText("9.25s");
+  await expect(lastFrame).toContainText("10.00s");
   await sitToWave.click();
+  await expect(middleFrame).toContainText("3.75s");
+  await button(page, "Close Three-Frame Filmstrip");
+  await expect(filmstrip).toHaveCount(0);
   await button(page, "Close Motion Steps").click();
 
   // #162: inspect original named puppet-part angle changes without
