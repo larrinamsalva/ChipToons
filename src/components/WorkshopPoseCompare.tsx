@@ -4,6 +4,7 @@ import { workshopSeatingReviewMoments } from "../workshop-seating-review";
 import { Stage } from "./Stage";
 import { resolvedCharacter } from "../library";
 import { workshopJointDifferences } from "../workshop-joint-differences";
+import { workshopMotionSteps } from "../workshop-motion-steps";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup, WorkshopJointOrder } from "../workshop-joint-review-filter";
 
@@ -24,6 +25,7 @@ export function WorkshopPoseCompare({
   const moments = workshopSeatingReviewMoments(scene, actorId);
   const [opened, setOpened] = useState(false);
   const [inspecting, setInspecting] = useState(false);
+  const [stepsOpened, setStepsOpened] = useState(false);
   const [jointGroup, setJointGroup] = useState<WorkshopJointGroup>("all");
   const [jointOrder, setJointOrder] = useState<WorkshopJointOrder>("rig");
   const [leftChoice, setLeftChoice] = useState("seated");
@@ -40,6 +42,7 @@ export function WorkshopPoseCompare({
   );
   const changed = differences.length;
   const review = workshopJointReview(differences, jointGroup, jointOrder);
+  const steps = opened && stepsOpened ? workshopMotionSteps(scene, actorId, rig) : [];
 
   return (
     <section className="workshop-pose-comparison" aria-label="Side-by-side workshop pose comparison">
@@ -57,6 +60,54 @@ export function WorkshopPoseCompare({
             Compare two actual saved Stage frames from this scene.
             No keyframes, furniture, playback position or project data change.
           </p>
+          <div className="workshop-motion-steps" aria-label="Recorded motion step review">
+            <button
+              className="button secondary small"
+              type="button"
+              aria-expanded={stepsOpened}
+              onClick={() => setStepsOpened(value => !value)}
+            >
+              {stepsOpened ? "Close Motion Steps" : "Review Motion Steps"}
+            </button>
+            {stepsOpened && (
+              <>
+                <p className="field-hint">
+                  Each step compares two adjacent saved poses in their actual
+                  scene order. Rotations are local joint degrees, not a
+                  foot-contact or movement-quality score.
+                </p>
+                <div className="workshop-motion-step-list">
+                  {steps.map(step => {
+                    const before = step.from.label.replace("Review ", "");
+                    const after = step.to.label.replace("Review ", "");
+                    const selected = left.id === step.from.id &&
+                      right.id === step.to.id;
+                    return (
+                      <button
+                        key={step.id}
+                        className="workshop-motion-step-button"
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setLeftChoice(step.from.id);
+                          setRightChoice(step.to.id);
+                        }}
+                      >
+                        <strong>Compare {before} to {after}</strong>
+                        <span>
+                          {step.from.seconds.toFixed(2)}s – {step.to.seconds.toFixed(2)}s
+                          {" · "}{step.changedJoints} changed
+                          {step.changedJoints === 1 ? " joint" : " joints"}
+                          {" · "}largest rotation {step.largestRotation.toFixed(1)}°
+                          {step.largestRotationRole ? ` (${step.largestRotationRole})` : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
           <div className="workshop-pose-comparison-grid">
             {([
               { side: "Before" as const, moment: left, choose: setLeftChoice },
