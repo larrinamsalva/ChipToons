@@ -475,6 +475,23 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await page.getByLabel("After pose", { exact: true }).selectOption("wave");
   await expect(page.getByRole("group", { name: "After pose preview" }))
     .toContainText("wave at 4.50 seconds");
+
+  // #162: inspect original named puppet-part angle changes without
+  // modifying either saved frame or touching the main preview clock.
+  await button(page, "Inspect Joint Differences").click();
+  const changes = page.getByRole("table", { name: "Changed workshop joints" });
+  await expect(changes).toContainText("Right Arm");
+  // At the 4.50s review beat the forearm briefly matches its seated
+  // angle; the inspector correctly omits unchanged joints here.
+  await expect(changes).not.toContainText("Right Forearm");
+  await expect(page.getByText(/articulated joints? differ/)).toBeVisible();
+  await page.getByLabel("After pose", { exact: true }).selectOption("seated");
+  await expect(changes).toHaveCount(0);
+  await expect(page.getByText("No joint angles or offsets differ beyond 0.1 between these frames."))
+    .toBeVisible();
+  await page.getByLabel("After pose", { exact: true }).selectOption("standing");
+  await expect(changes).toContainText("Left Shin");
+  await button(page, "Close Joint Differences").click();
   await shot(page, info, "chair-bench-side-by-side-compare");
   await button(page, "Close Pose Comparison").click();
   expect((await backup(page)).data.scenes[0].elements.find(item => item.id === actor.id)?.animation?.keyframes)

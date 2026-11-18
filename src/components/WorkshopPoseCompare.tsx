@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { Project, Scene } from "../model";
 import { workshopSeatingReviewMoments } from "../workshop-seating-review";
 import { Stage } from "./Stage";
+import { resolvedCharacter } from "../library";
+import { workshopJointDifferences } from "../workshop-joint-differences";
 
 /**
  * Two genuine, independent renderings of the same saved Stage scene.
@@ -19,6 +21,7 @@ export function WorkshopPoseCompare({
 }) {
   const moments = workshopSeatingReviewMoments(scene, actorId);
   const [opened, setOpened] = useState(false);
+  const [inspecting, setInspecting] = useState(false);
   const [leftChoice, setLeftChoice] = useState("seated");
   const [rightChoice, setRightChoice] = useState("standing");
   if (moments.length < 2) return null;
@@ -26,18 +29,12 @@ export function WorkshopPoseCompare({
   const left = moments.find(moment => moment.id === leftChoice) ?? moments[0];
   const right = moments.find(moment => moment.id === rightChoice) ??
     moments[moments.length - 1];
-  const frames = scene.elements.find(element => element.id === actorId)?.animation?.keyframes;
-  const first = frames?.find(key => Math.abs(key.time - left.seconds) < 0.001);
-  const second = frames?.find(key => Math.abs(key.time - right.seconds) < 0.001);
-  const jointIds = new Set([
-    ...Object.keys(first?.joints ?? {}),
-    ...Object.keys(second?.joints ?? {}),
-  ]);
-  // Sparse joint snapshots omit zero rotations. Treat omitted parts as
-  // neutral rather than missing/invalid when comparing poses.
-  const changed = [...jointIds].filter(id =>
-    Math.abs((first?.joints?.[id]?.angle ?? 0) -
-      (second?.joints?.[id]?.angle ?? 0)) > 0.1).length;
+  const actor = scene.elements.find(element => element.id === actorId);
+  const rig = resolvedCharacter(project, actor)?.puppet;
+  const differences = workshopJointDifferences(
+    scene, actorId, rig, left.seconds, right.seconds,
+  );
+  const changed = differences.length;
 
   return (
     <section className="workshop-pose-comparison" aria-label="Side-by-side workshop pose comparison">
@@ -95,9 +92,60 @@ export function WorkshopPoseCompare({
             ))}
           </div>
           <p className="field-hint" role="status">
-            {changed} animated joint {changed === 1 ? "angle differs" : "angles differ"}
-            {" "}between these saved poses. Missing neutral joints count as zero.
+            {changed} articulated {changed === 1 ? "joint differs" : "joints differ"}
+            {" "}between these saved poses. Sparse neutral joints count as zero.
           </p>
+          <div className="workshop-joint-inspector" aria-label="Joint Difference Inspector">
+            <button
+              className="button secondary small"
+              type="button"
+              aria-expanded={inspecting}
+              onClick={() => setInspecting(value => !value)}
+            >
+              {inspecting ? "Close Joint Differences" : "Inspect Joint Differences"}
+            </button>
+            {inspecting && (
+              <>
+                <p className="field-hint">
+                  Original saved angles in degrees. Positive/negative values
+                  reflect local joint rotation, not collision or foot contact.
+                  Offsets are local joint pixels. No values are changed.
+                </p>
+                {differences.length ? (
+                  <div className="workshop-joint-inspector-scroll">
+                    <table aria-label="Changed workshop joints">
+                      <thead>
+                        <tr>
+                          <th scope="col">Joint</th>
+                          <th scope="col">Before °</th>
+                          <th scope="col">After °</th>
+                          <th scope="col">Change °</th>
+                          <th scope="col">Offset Δ px</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {differences.map(diff => (
+                          <tr key={diff.partId}>
+                            <th scope="row">{diff.label}</th>
+                            <td>{diff.beforeAngle.toFixed(1)}</td>
+                            <td>{diff.afterAngle.toFixed(1)}</td>
+                            <td>{diff.angleDelta > 0 ? "+" : ""}{diff.angleDelta.toFixed(1)}</td>
+                            <td>
+                              {diff.xDelta.toFixed(1)}, {diff.yDelta.toFixed(1)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="field-hint" role="status">
+                    No joint angles or offsets differ beyond 0.1 between these frames.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
         </>
       )}
     </section>
