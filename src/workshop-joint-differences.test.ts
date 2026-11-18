@@ -34,7 +34,11 @@ describe("PR #162 original Workshop Character joint difference inspector", () =>
     expect(Math.abs(arm!.angleDelta)).toBeGreaterThan(50);
     expect(diffs.map(diff => diff.partId).length)
       .toBe(new Set(diffs.map(diff => diff.partId)).size);
-    expect(diffs.some(diff => diff.role === "rightForearm")).toBe(true);
+    // At the 4.50s wave checkpoint the elbow happens to pass through
+    // its seated rest angle. At 4.25s, another saved quarter-second
+    // frame, the elbow genuinely bends while the hand waves.
+    const elbowBeat = workshopJointDifferences(scene, actorId, hero.puppet, 3, 4.25);
+    expect(elbowBeat.some(diff => diff.role === "rightForearm")).toBe(true);
     expect(JSON.stringify(scene)).toBe(before);
   });
 
@@ -59,7 +63,7 @@ describe("PR #162 original Workshop Character joint difference inspector", () =>
     const { hero, actorId, scene } = fixture();
     expect(workshopJointDifferences(scene, actorId, undefined, 3, 4.5)).toEqual([]);
     expect(workshopJointDifferences(scene, "not-an-actor", hero.puppet, 3, 4.5)).toEqual([]);
-    expect(workshopJointDifferences(scene, actorId, hero.puppet, 3.25, 4.5)).toEqual([]);
+    expect(workshopJointDifferences(scene, actorId, hero.puppet, 3.125, 4.5)).toEqual([]);
     expect(workshopJointDifferences(scene, actorId, hero.puppet, Number.NaN, 4.5)).toEqual([]);
     expect(workshopJointDifferences(scene, actorId, hero.puppet, 3, Infinity)).toEqual([]);
   });
