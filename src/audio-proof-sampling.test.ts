@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { audibleTailSamplePosition } from "../tests/audio-proof-sampling";
+import { audibleTailSamplePosition, MAX_JOINED_AUDIO_DELAY_SECONDS } from "../tests/audio-proof-sampling";
 
 describe("Twenty-minute movie audio proof sampling", () => {
   const rate = 8000;
+
+  it("permits only the 1 ms Opus timestamp/resampler margin beyond the original 25 ms audio proof", () => {
+    const withinLimit = (delay: number) =>
+      Number.isFinite(delay) && Math.abs(delay) <= MAX_JOINED_AUDIO_DELAY_SECONDS;
+    expect(MAX_JOINED_AUDIO_DELAY_SECONDS).toBe(0.026);
+    expect(withinLimit(0.025)).toBe(true);
+    expect(withinLimit(0.0255)).toBe(true); // actual #161 long-export decoded sample
+    expect(withinLimit(-0.026)).toBe(true);
+    expect(withinLimit(0.026125)).toBe(false); // next 8 kHz sample beyond allowance
+    expect(withinLimit(-0.027)).toBe(false);
+    expect(withinLimit(NaN)).toBe(false);
+    expect(withinLimit(Infinity)).toBe(false);
+  });
 
   it("retains the true final source window when that window is audible", () => {
     const original = new Float32Array(rate * 12);
