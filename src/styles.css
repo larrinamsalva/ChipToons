@@ -6282,3 +6282,44 @@ fieldset.interaction-fields {
 @media (max-width: 680px) {
   .workshop-pose-comparison-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+
+/* #162 read-only joint comparison: legible on phones and in dark mode. */
+.workshop-joint-inspector {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.workshop-joint-inspector > .button {
+  width: 100%;
+  white-space: normal;
+}
+.workshop-joint-inspector-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.workshop-joint-inspector table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 420px;
+  font-size: 11px;
+  color: var(--text);
+}
+.workshop-joint-inspector :is(th, td) {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.workshop-joint-inspector :is(th, td):first-child {
+  text-align: left;
+}
+.workshop-joint-inspector thead {
+  background: var(--mint);
+}
+.workshop-joint-inspector tbody tr:last-child :is(th, td) {
+  border-bottom: none;
+}
