@@ -5,6 +5,7 @@ import { Stage } from "./Stage";
 import { resolvedCharacter } from "../library";
 import { workshopJointDifferences } from "../workshop-joint-differences";
 import { workshopMotionSteps } from "../workshop-motion-steps";
+import { workshopMotionFilmstrip } from "../workshop-motion-filmstrip";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup, WorkshopJointOrder } from "../workshop-joint-review-filter";
 
@@ -26,6 +27,7 @@ export function WorkshopPoseCompare({
   const [opened, setOpened] = useState(false);
   const [inspecting, setInspecting] = useState(false);
   const [stepsOpened, setStepsOpened] = useState(false);
+  const [filmstripOpened, setFilmstripOpened] = useState(false);
   const [jointGroup, setJointGroup] = useState<WorkshopJointGroup>("all");
   const [jointOrder, setJointOrder] = useState<WorkshopJointOrder>("rig");
   const [leftChoice, setLeftChoice] = useState("seated");
@@ -43,6 +45,10 @@ export function WorkshopPoseCompare({
   const changed = differences.length;
   const review = workshopJointReview(differences, jointGroup, jointOrder);
   const steps = opened && stepsOpened ? workshopMotionSteps(scene, actorId, rig) : [];
+  const selectedStep = steps.find(step =>
+    step.from.id === left.id && step.to.id === right.id);
+  const filmstrip = stepsOpened && filmstripOpened
+    ? workshopMotionFilmstrip(scene, actorId, selectedStep) : [];
 
   return (
     <section className="workshop-pose-comparison" aria-label="Side-by-side workshop pose comparison">
@@ -104,6 +110,57 @@ export function WorkshopPoseCompare({
                       </button>
                     );
                   })}
+                </div>
+                <div className="workshop-motion-filmstrip-review">
+                  <button
+                    className="button secondary small"
+                    type="button"
+                    aria-expanded={filmstripOpened}
+                    onClick={() => setFilmstripOpened(value => !value)}
+                  >
+                    {filmstripOpened ? "Close Three-Frame Filmstrip" : "Review Three-Frame Filmstrip"}
+                  </button>
+                  {filmstripOpened && (filmstrip.length ? (
+                    <>
+                      <p className="field-hint">
+                        Real Stage snapshots at the selected step's start, halfway,
+                        and end. The middle is sampled from the original timeline;
+                        it is not an added keyframe. Existing props, furniture,
+                        background and camera are retained.
+                      </p>
+                      <div className="workshop-motion-filmstrip-grid"
+                        aria-label="Three-frame motion filmstrip">
+                        {filmstrip.map(frame => (
+                          <figure
+                            key={frame.id}
+                            className="workshop-motion-filmstrip-frame"
+                            aria-label={`${frame.label} motion filmstrip frame`}
+                          >
+                            <div className="workshop-motion-filmstrip-picture">
+                              <Stage
+                                project={project}
+                                scene={scene}
+                                time={frame.seconds}
+                                labelled={false}
+                              />
+                            </div>
+                            <figcaption>
+                              <strong>{frame.label} — {frame.seconds.toFixed(2)}s</strong>
+                              <span>
+                                {frame.savedKeyframe
+                                  ? "Saved keyframe"
+                                  : "Real timeline sample (between keys)"}
+                              </span>
+                            </figcaption>
+                          </figure>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="field-hint" role="status">
+                      Choose a recorded motion step above to see its three real frames.
+                    </p>
+                  ))}
                 </div>
               </>
             )}
