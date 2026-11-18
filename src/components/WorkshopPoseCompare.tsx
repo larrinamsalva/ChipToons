@@ -4,6 +4,8 @@ import { workshopSeatingReviewMoments } from "../workshop-seating-review";
 import { Stage } from "./Stage";
 import { resolvedCharacter } from "../library";
 import { workshopJointDifferences } from "../workshop-joint-differences";
+import { workshopJointReview } from "../workshop-joint-review-filter";
+import type { WorkshopJointGroup, WorkshopJointOrder } from "../workshop-joint-review-filter";
 
 /**
  * Two genuine, independent renderings of the same saved Stage scene.
@@ -22,6 +24,8 @@ export function WorkshopPoseCompare({
   const moments = workshopSeatingReviewMoments(scene, actorId);
   const [opened, setOpened] = useState(false);
   const [inspecting, setInspecting] = useState(false);
+  const [jointGroup, setJointGroup] = useState<WorkshopJointGroup>("all");
+  const [jointOrder, setJointOrder] = useState<WorkshopJointOrder>("rig");
   const [leftChoice, setLeftChoice] = useState("seated");
   const [rightChoice, setRightChoice] = useState("standing");
   if (moments.length < 2) return null;
@@ -35,6 +39,7 @@ export function WorkshopPoseCompare({
     scene, actorId, rig, left.seconds, right.seconds,
   );
   const changed = differences.length;
+  const review = workshopJointReview(differences, jointGroup, jointOrder);
 
   return (
     <section className="workshop-pose-comparison" aria-label="Side-by-side workshop pose comparison">
@@ -111,7 +116,37 @@ export function WorkshopPoseCompare({
                   reflect local joint rotation, not collision or foot contact.
                   Offsets are local joint pixels. No values are changed.
                 </p>
-                {differences.length ? (
+                <div className="workshop-joint-review-controls">
+                  <label>
+                    Body-part filter
+                    <select
+                      aria-label="Joint body filter"
+                      value={jointGroup}
+                      onChange={event => setJointGroup(event.target.value as WorkshopJointGroup)}
+                    >
+                      <option value="all">All changed joints</option>
+                      <option value="arms">Arms and hands</option>
+                      <option value="legs">Legs and feet</option>
+                      <option value="body">Head and body</option>
+                    </select>
+                  </label>
+                  <label>
+                    Display order
+                    <select
+                      aria-label="Joint listing order"
+                      value={jointOrder}
+                      onChange={event => setJointOrder(event.target.value as WorkshopJointOrder)}
+                    >
+                      <option value="rig">Original rig order</option>
+                      <option value="rotation">Largest rotation first</option>
+                    </select>
+                  </label>
+                </div>
+                <p className="field-hint" role="status">
+                  Showing {review.rows.length} of {review.total} changed joints.
+                  The largest rotation is relative to these two keyframes only.
+                </p>
+                {review.rows.length ? (
                   <div className="workshop-joint-inspector-scroll">
                     <table aria-label="Changed workshop joints">
                       <thead>
@@ -124,9 +159,19 @@ export function WorkshopPoseCompare({
                         </tr>
                       </thead>
                       <tbody>
-                        {differences.map(diff => (
-                          <tr key={diff.partId}>
-                            <th scope="row">{diff.label}</th>
+                        {review.rows.map(diff => (
+                          <tr
+                            key={diff.partId}
+                            data-largest-rotation={
+                              diff.partId === review.largestRotationPartId ? "true" : undefined
+                            }
+                          >
+                            <th scope="row">
+                              {diff.label}
+                              {diff.partId === review.largestRotationPartId && (
+                                <span className="workshop-joint-largest-label">Largest rotation</span>
+                              )}
+                            </th>
                             <td>{diff.beforeAngle.toFixed(1)}</td>
                             <td>{diff.afterAngle.toFixed(1)}</td>
                             <td>{diff.angleDelta > 0 ? "+" : ""}{diff.angleDelta.toFixed(1)}</td>
@@ -140,7 +185,9 @@ export function WorkshopPoseCompare({
                   </div>
                 ) : (
                   <p className="field-hint" role="status">
-                    No joint angles or offsets differ beyond 0.1 between these frames.
+                    {review.total
+                      ? "No changed joints in this body group. Choose another filter."
+                      : "No joint angles or offsets differ beyond 0.1 between these frames."}
                   </p>
                 )}
               </>
