@@ -485,6 +485,24 @@ test("creates and saves a new fully jointed original workshop hero with editable
   // angle; the inspector correctly omits unchanged joints here.
   await expect(changes).not.toContainText("Right Forearm");
   await expect(page.getByText(/articulated joints? differ/)).toBeVisible();
+
+  // #163: filter the real joint differences by limb group and rank only
+  // by absolute *rotation*, never confuse pixel offsets with degrees.
+  const jointFilter = page.getByLabel("Joint body filter", { exact: true });
+  const jointOrder = page.getByLabel("Joint listing order", { exact: true });
+  await expect(jointFilter).toHaveValue("all");
+  await jointFilter.selectOption("arms");
+  await expect(changes).toContainText("Right Arm");
+  await expect(changes).not.toContainText("Left Shin");
+  await jointOrder.selectOption("rotation");
+  await expect(changes.locator("tbody tr").first()).toContainText("Right Arm");
+  await expect(changes.getByText("Largest rotation", { exact: true })).toHaveCount(1);
+  await jointFilter.selectOption("legs");
+  await expect(changes).toHaveCount(0);
+  await expect(page.getByText("No changed joints in this body group. Choose another filter."))
+    .toBeVisible();
+  await jointFilter.selectOption("all");
+  await expect(changes).toContainText("Right Arm");
   await page.getByLabel("After pose", { exact: true }).selectOption("seated");
   await expect(changes).toHaveCount(0);
   await expect(page.getByText("No joint angles or offsets differ beyond 0.1 between these frames."))

@@ -769,6 +769,46 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   the genuine independently decoded 20-minute episode export, and
   visual inspection of both original Stage views.
 
+## PR #163 — Body-part filters and largest joint-rotation review
+
+- Continue from the read-only **#162 Joint Difference Inspector** inside
+  **Edit scene → Characters & movement → Compare Two Poses Side by Side**.
+  Creators can filter the named changed joints into **All changed joints**,
+  **Arms and hands**, **Legs and feet** or **Head and body**. The groups
+  follow the original 15-part rig's saved part roles; no additional
+  motion or AI-generated poses are introduced.
+- **Display order** switches between **Original rig order** and
+  **Largest rotation first**, ranking by absolute local joint angle
+  change in degrees. X/Y offset changes stay visible in their own
+  pixel units and never masquerade as a rotation.
+- The single largest nontrivial rotation among the currently visible
+  changed rows gets a **Largest rotation** label. A position-only
+  change does not receive this label. Ties preserve original rig
+  ordering, and changing a filter may change the labeled row.
+- **Showing X of Y changed joints** makes clear that filtering hides
+  rows rather than modifying saved animation. If a selected group has
+  no differences the inspector states so; if the Before and After
+  frames match, it retains the original explicit no-differences
+  message. All joint measurements continue to use the exact saved
+  keyframes, including sparse neutral joints, from PR #162.
+- Buttons and selectors only change local review-panel state. They
+  never move the main playback clock, edit a rig, generate keyframes,
+  reposition furniture, change the project, create Undo entries,
+  alter export output, or make collision/foot-contact claims.
+- Group selectors are labeled for accessible tests and screen readers.
+  The responsive two-column controls stack vertically on phones
+  while the details table scrolls horizontally. Colors follow
+  light/dark theme variables, without an arbitrary severity score.
+- New pure unit tests cover group mapping, stable rig order, absolute
+  rotational sorting, biggest-rotation labeling, ties, offset-only
+  changes, zero-row groups and input immutability. Existing
+  desktop/phone/tablet browser QA now checks filter selections, sorted
+  arm rows, leg-only empty state, restoring all rows and preserving
+  the original saved animation.
+- Before merging, require the **Foundation, browser, and genuinely
+  decoded 20-minute movie-export checks** plus visual review of the
+  original Stage's before/after poses.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
