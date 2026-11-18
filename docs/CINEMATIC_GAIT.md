@@ -732,6 +732,43 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   the independent 20-minute media-export proof. Visually compare
   real chair/bench contact and mouth/hand overlap across stages.
 
+## PR #162 — Inspect exact joint differences between two saved poses
+
+- Open **Edit scene → Characters & movement → Compare Two Poses Side
+  by Side** and choose Before/After checkpoints. Expand **Inspect Joint
+  Differences** to see the actual 15-part Workshop Character's named
+  joints (such as Right Arm, Right Forearm, Left Shin) whose saved
+  local joint values differ by more than 0.1 degrees or pixels.
+- The optional read-only table reports **Before angle**, **After angle**,
+  signed **angle change** in degrees and local **X,Y offset change**
+  in pixels, directly from the original keyframe joint snapshots.
+  Keyframes store sparse joint data; an absent joint is treated as
+  the normal neutral (0°, 0px, 0px), not as an error.
+- The exact model part ID and role determine the friendly row names;
+  unknown or unrelated part IDs are never substituted, and all rows
+  are listed in the original Workshop rig's stable part order.
+  If both selectors point to one pose, the inspector says there are no
+  differences. Selecting other saved review checkpoints immediately
+  updates the read-only measurements.
+- The joint table is a **diagnostic, not collision physics**. A zero
+  local rotation does not prove a foot touches the floor; hand/head
+  overlap and furniture contact still require review in the two
+  genuine Stage previews introduced by PR #161.
+- This panel opens separately from the main comparison and starts
+  closed. It does not edit keyframes, move the playhead, invoke sound,
+  change any scene values, record Undo entries, or alter exports.
+  Semantic table headers, responsive horizontal overflow and
+  light/dark text colors keep the details usable on small screens.
+- Unit QA checks real sit/wave/stand arm and shin deltas, sparse
+  neutral values, same-frame zero changes, local offsets, unknown
+  part IDs, invalid inputs, and unchanged project data. Cross-device
+  browser QA opens the table, checks named joints, changes the After
+  pose to match the Before pose (no differences), selects Standing
+  (shin changes), closes the table and verifies the same saved scene.
+- Before merging, require the complete Foundation/browser workflow,
+  the genuine independently decoded 20-minute episode export, and
+  visual inspection of both original Stage views.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
