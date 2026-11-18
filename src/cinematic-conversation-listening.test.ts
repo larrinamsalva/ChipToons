@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { cinematicConversationListeningAt } from "./cinematic-conversation-listening";
 import { cinematicSpeakingEyelineAt } from "./cinematic-conversation-speaking";
 import { cinematicFaceAt } from "./cinematic-face";
+import { cinematicEyelidClosureAt } from "./cinematic-eyelid-motion";
 import { littleFixersArticulatedWorkshop } from "./little-fixers-articulated-workshop";
 import { builtInSound } from "./sounds";
 import { newAudioClip } from "./production";
@@ -75,8 +76,26 @@ describe("PR #100 genuine recorded-conversation listening", () => {
     const face=cinematicFaceAt(project,scene,jo,listener,frames,time,false)!;
     expect(face.x).toBeLessThan(-1.1);
     expect(sceneFramesAt(project,scene,time).get(jo.id)).toEqual(listener);
+    // Character IDs are freshly generated for each fixture, and both the
+    // legacy and cinematic blink clocks intentionally depend on those IDs.
+    // At exactly 1.4s either performer may be blinking. Check a genuine
+    // eyes-open moment of the SAME approved conversation instead of
+    // mistaking a legitimate closed-eye drawing for a rendering failure.
+    const openTime = Array.from({ length: 60 }, (_, i) => 1 + i * .04)
+      .find(t => cinematicEyelidClosureAt(jo, t) < .01 &&
+        cinematicEyelidClosureAt(scout, t) < .01);
+    expect(openTime).toBeDefined();
+    const openFrames = sceneFramesAt(project, scene, openTime!);
+    expect(cinematicConversationListeningAt(
+      project, scene, jo, openFrames, openTime!, false,
+    )?.focus).toBeGreaterThan(.5);
+    const openFace = cinematicFaceAt(
+      project, scene, jo, openFrames.get(jo.id)!, openFrames, openTime!, false,
+    )!;
+    expect(openFace.blink).toBe(false);
+    expect(openFace.x).toBeLessThan(-1.1);
     const svg=renderToStaticMarkup(createElement(Stage,{
-      project,scene,time,labelled:false,
+      project,scene,time:openTime!,labelled:false,
     }));
     expect(svg).toContain("data-cinematic-pupil");
     expect(JSON.stringify(project)).toBe(snapshot);
