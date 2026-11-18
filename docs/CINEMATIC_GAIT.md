@@ -692,6 +692,46 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   contact, puppet joints, hand/face overlap, boots, props and backdrop
   depth before accepting a production render.
 
+## PR #161 — Compare two real Stage poses side by side
+
+- For any 15-part original Workshop Character with at least two
+  saved seat-action review checkpoints, **Edit scene → Characters &
+  movement → Compare Two Poses Side by Side** reveals two read-only
+  preview cards. It uses the **same Stage renderer** as playback/export,
+  rather than flat stick figures or invented motion thumbnails.
+- **Before pose** defaults to the confirmed seated checkpoint at 3s,
+  and **After pose** defaults to the last recorded checkpoint (finished
+  standing or seated greeting). Each dropdown can independently choose
+  any available saved sitting, waving, half-rising, standing or settled
+  moment supplied by PR #160; each card includes the exact scene-local
+  timestamp. This makes it easy to inspect chair/bench contact, hand
+  overlap, actual knee bends, boots, background and props.
+- A short count reports how many articulated joint angles differ
+  between the two original saved keys; zero rotations may be omitted
+  from sparse snapshots and count as neutral. This is information
+  only, not a quality verdict or an automatic physics simulation.
+- Opening and closing the comparison is local UI state. It does
+  **not** seek the normal playback clock, play audio, change the
+  recording, write or reorder keyframes, alter object positions,
+  mutate the project, or create Undo entries.
+- Both views render the exact same source scene at different saved
+  times (including its own authored camera/framing). They do not
+  promise a fixed camera or collision physics, and do not impose a
+  new default rendering style on existing projects.
+- A responsive 16:9 two-column layout becomes single-column in
+  compact editors; controls honor light/dark theme text and field
+  colors, have explicit Before/After labels, and the compare panel
+  starts closed to avoid unnecessary Stage renders.
+- Unit tests verify the two genuinely different Stage SVG outputs,
+  valid saved checkpoint selections, no preview for single/missing
+  keyframes, and byte-for-byte project immutability. The existing
+  desktop/phone/tablet browser scenario opens comparison, checks
+  two SVG Stage views, switches one checkpoint, closes comparison,
+  and verifies original saved frames are unchanged.
+- Before merging, require Foundation, cross-device browser QA and
+  the independent 20-minute media-export proof. Visually compare
+  real chair/bench contact and mouth/hand overlap across stages.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

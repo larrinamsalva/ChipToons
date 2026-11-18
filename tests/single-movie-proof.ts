@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { expect } from "@playwright/test";
 import { MOVIE_PART_TOLERANCE } from "../src/single-movie-plan";
-import { audibleTailSamplePosition } from "./audio-proof-sampling";
+import { audibleTailSamplePosition, MAX_JOINED_AUDIO_DELAY_SECONDS } from "./audio-proof-sampling";
 import type { Page, TestInfo } from "@playwright/test";
 
 const RATE = 8000;
@@ -57,7 +57,12 @@ function audioMatch(source: Float32Array, movie: Float32Array, start: number, po
     }
   }
   expect(correlation).toBeGreaterThan(0.85);
-  expect(Math.abs(samples / RATE)).toBeLessThanOrEqual(0.025);
+  // Decoder/resampler and millisecond WebM/Opus packet timestamp rounding
+  // can add 0.5–1 ms to the original 25 ms bound at an otherwise sound join.
+  // Do not widen the audio correlation/RMS or frame/packet checks.
+  expect(Math.abs(samples / RATE),
+    `Joined audio offset at original sample ${position.toFixed(3)}s (segment start ${start.toFixed(3)}s)`,
+  ).toBeLessThanOrEqual(MAX_JOINED_AUDIO_DELAY_SECONDS);
   expect(ratio).toBeGreaterThan(0.75);
   expect(ratio).toBeLessThan(1.25);
   return { position, correlation, delay: samples / RATE, rmsRatio: ratio };
