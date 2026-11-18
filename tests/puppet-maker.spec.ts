@@ -513,7 +513,7 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(lastFrame).toContainText("10.00s");
   await sitToWave.click();
   await expect(middleFrame).toContainText("3.75s");
-  await button(page, "Close Three-Frame Filmstrip");
+  await button(page, "Close Three-Frame Filmstrip").click();
   await expect(filmstrip).toHaveCount(0);
   await button(page, "Close Motion Steps").click();
 
