@@ -809,6 +809,45 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   decoded 20-minute movie-export checks** plus visual review of the
   original Stage's before/after poses.
 
+## PR #164 — One-click review of consecutive saved motion steps
+
+- Inside **Edit scene → Characters & movement → Compare Two Poses Side
+  by Side**, open **Review Motion Steps**. A short, ordered list shows
+  each adjacent *real saved* scene checkpoint: sitting → waving,
+  waving → rising, rising → standing, or seated greeting → settled.
+  A scene lacking the genuine saved moments is never padded with
+  invented steps or inferred keyframes.
+- Click **Compare sitting to wave**, **Compare wave to rising** or
+  **Compare rising to standing** to set the existing Before and After
+  selectors together. Both previews remain genuine, independently
+  sampled Stage renders at the selected source timestamps. The
+  Joint Difference Inspector from #162/#163 automatically reflects
+  the new pair if already open.
+- Every transition card displays its exact scene-local start/end
+  timestamps, the number of saved original puppet rig joints whose
+  angles or offsets differ, and the greatest absolute local joint
+  rotation in degrees (plus its named part). Missing neutral joint
+  keys still count as 0. These measurements describe *only* the two
+  saved endpoints; they are not a judgment of movement quality,
+  momentum, foot-contact physics or collision clearance between frames.
+- This opt-in panel starts closed and reads scene data only. Choosing
+  a transition does not seek or play the main editor timeline,
+  change keyframes, add tween frames, modify rigs or furniture, alter
+  voice tracks/exports, or create Undo entries.
+- Buttons use explicit accessible names, visually distinguish the
+  currently selected pair, wrap on compact screens and honor
+  light/dark contrast. The original pose selector dropdowns stay
+  fully functional; custom Before/After combinations are unaffected.
+- Pure unit tests cover genuine complete sit/wave/rise/stand and
+  bench greeting/settled sequences, exact endpoint keyframe times,
+  consistency with the existing joint difference math, no fabricated
+  transitions, and unchanged saved scene JSON. Desktop/phone/tablet
+  QA clicks through all three recorded transitions and confirms both
+  Stage preview times and the original saved animation.
+- Before merging, require full Foundation/browser checks, the
+  separately decoded twenty-minute narrated movie proof, and a
+  visual look at the transitions in the actual original Stage.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

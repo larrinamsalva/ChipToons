@@ -6364,3 +6364,54 @@ fieldset.interaction-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* #164: original recorded pose-to-pose transitions, not invented tween frames. */
+.workshop-motion-steps {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.workshop-motion-steps > .button {
+  width: 100%;
+  white-space: normal;
+}
+.workshop-motion-step-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.workshop-motion-step-button {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+  gap: 5px;
+  padding: 11px 12px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.workshop-motion-step-button strong {
+  font-size: 12px;
+}
+.workshop-motion-step-button span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.workshop-motion-step-button[aria-pressed="true"] {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+.workshop-motion-step-button:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}

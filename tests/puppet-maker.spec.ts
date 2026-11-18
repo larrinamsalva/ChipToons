@@ -476,6 +476,29 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(page.getByRole("group", { name: "After pose preview" }))
     .toContainText("wave at 4.50 seconds");
 
+  // #164: jump through actual consecutive saved Workshop transition
+  // checkpoints without moving the main clock or editing timeline keys.
+  await button(page, "Review Motion Steps").click();
+  const stepReview = page.getByLabel("Recorded motion step review");
+  const sitToWave = stepReview.getByRole("button", { name: /Compare sitting to wave/ });
+  const waveToRise = stepReview.getByRole("button", { name: /Compare wave to rising/ });
+  const riseToStand = stepReview.getByRole("button", { name: /Compare rising to standing/ });
+  await expect(stepReview.getByRole("button", { name: /^Compare / })).toHaveCount(3);
+  await sitToWave.click();
+  await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("seated");
+  await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("wave");
+  await expect(sitToWave).toHaveAttribute("aria-pressed", "true");
+  await waveToRise.click();
+  await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("wave");
+  await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("rise");
+  await riseToStand.click();
+  await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("rise");
+  await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("standing");
+  await expect(page.getByRole("group", { name: "Before pose preview" }))
+    .toContainText("rising at 8.50 seconds");
+  await sitToWave.click();
+  await button(page, "Close Motion Steps").click();
+
   // #162: inspect original named puppet-part angle changes without
   // modifying either saved frame or touching the main preview clock.
   await button(page, "Inspect Joint Differences").click();
