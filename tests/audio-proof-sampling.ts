@@ -1,4 +1,14 @@
 /**
+ * The full-movie proof independently decodes and downsamples Chromium's
+ * re-encoded 48 kHz Opus movie to 8 kHz PCM, then correlates each 260 ms
+ * sample against its original segment. The original 25 ms per-window
+ * budget needs at most 1 ms for Opus packet/Matroska millisecond timestamp
+ * granularity plus resampling. Preserve the strict 26 ms ceiling: this is
+ * NOT a waiver for missing, mismatched or significantly drifting sound.
+ */
+export const MAX_JOINED_AUDIO_DELAY_SECONDS = 0.026;
+
+/**
  * Pick a genuinely audible 260ms source window close to a movie-part
  * boundary. An original recording may contain a natural musical pause or
  * a quiet encoder tail; treating that silence as missing audio creates a
