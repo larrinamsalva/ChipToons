@@ -848,6 +848,46 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   separately decoded twenty-minute narrated movie proof, and a
   visual look at the transitions in the actual original Stage.
 
+## PR #165 — Three genuine Stage frames for every recorded motion step
+
+- Open **Edit scene → Characters & movement → Compare Two Poses Side
+  by Side → Review Motion Steps**, select an actual saved transition,
+  then open **Review Three-Frame Filmstrip**.
+- The optional filmstrip renders three **real Stage frames** with the
+  existing original scene, artwork, furniture, camera and animation
+  interpolation: **Start** (saved keyframe), **Middle** (actual halfway
+  sampled timeline picture) and **End** (saved keyframe). This reveals
+  bent arms, knee positions, awkward pose blending and momentary
+  background/furniture intersections that endpoint-only review misses.
+- The halfway time is the midpoint of the two real saved endpoint
+  timestamps, rounded to the Stage's existing millisecond precision.
+  Its label says **Saved keyframe** when an original key already exists
+  at that time; otherwise **Real timeline sample (between keys)**.
+  **Never** add a missing midpoint keyframe or fabricate extra movement.
+- This is *observation*, not an animation-quality guarantee: three
+  samples do not prove there are no overlaps or contact problems at
+  other times. Scrub the real timeline to review further frames if
+  necessary. This feature does not change any keyframes, actors,
+  puppets, furniture, scene data, main playback position, audio,
+  Undo history, or exported movies.
+- The strip starts closed and renders only when its section is open
+  and a valid adjacent saved motion step is selected. Choosing a
+  nonadjacent custom Before/After pair hides the strip and prompts
+  you to select a recorded step; original two-pane comparison stays
+  available.
+- Three 16:9 Stage previews fit in a row on desktop and stack
+  vertically on smaller screens, retaining clear Start/Middle/End
+  accessible figure names and light/dark contrast.
+- Unit QA checks true saved timestamps for chair and bench scenes,
+  real sampled Stage rendering differences at the halfway moment,
+  no fabricated/invalid transition frames, and unchanged scene JSON.
+  Desktop/phone/tablet browser tests compare every one of the three
+  sit/wave/rise/stand transitions and check that the genuine middle
+  time and three SVGs update without changing the saved project.
+- Before merging, require full Foundation, cross-device browser
+  QA and genuinely independently decoded 20-minute episode export,
+  plus visual review of the Stage frames.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
