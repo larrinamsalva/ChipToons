@@ -888,6 +888,48 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   QA and genuinely independently decoded 20-minute episode export,
   plus visual review of the Stage frames.
 
+## PR #166 — Genuine in-between Motion Scrubber
+
+- Extend **Edit scene → Characters & movement → Compare Two Poses
+  Side by Side → Review Motion Steps → Review Three-Frame Filmstrip**.
+  When a saved adjacent transition is selected, a **Scrub motion
+  within selected step** slider lets the creator inspect the exact
+  original Stage pose anywhere from 0% (saved starting keyframe)
+  to 100% (saved final keyframe), one percent at a time.
+- The slider only changes a local inspection time. The preview is a
+  *genuine* Stage render at that scene-local time, preserving
+  the original timeline's interpolation, scenery, props, lighting,
+  camera, seat, puppet rig, mouth, and authored animation.
+  It is **not** a newly generated key, screenshot approximation,
+  retiming operation or a claim of automatic animation correction.
+- The percentage remains stable when you switch between sitting →
+  waving, waving → rising, and rising → standing, so it's easy to
+  compare, for example, the 75% positions across different moves.
+  The readout shows the precise sampled time to two decimals.
+  It identifies **Original saved keyframe** only if an existing
+  authored key is at the sampled time. Other positions show
+  **Original Stage interpolation (not a new keyframe)**.
+- This extra Stage preview is rendered *only* when both the Motion
+  Steps and Filmstrip sections are open and an existing adjacent
+  saved step is selected. Nonadjacent custom Before/After choices
+  remain available and are never overwritten by the slider.
+- **No writes** to keyframes, project, Undo, main playhead, audio
+  or movie exports. A scrubber cannot create new joints, change
+  camera shots, or solve foot contact. It provides more precise
+  visual inspection between the original three sample frames.
+- High-contrast responsive slider with keyboard/range support,
+  accessible label and spoken percentage/time, 16:9 Stage preview
+  and separate original/keyframed-versus-interpolated status.
+- Pure unit QA checks 0/25/50/75/100% sample times across three
+  original motion steps, real Stage SVG frame differences, genuine
+  authored internal keyframe detection, clamping, fabricated-step
+  refusal and original project immutability. Browser QA exercises
+  25% and 75% across desktop, phone and tablet, validates
+  Stage time readouts, and retains the existing backup/Undo proof.
+- Merge only after full Foundation/browser QA and independently
+  decoded 20-minute export proofs pass, plus visual review of
+  movement along the slider.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
