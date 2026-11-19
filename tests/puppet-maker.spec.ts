@@ -500,7 +500,24 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(firstFrame).toContainText("3.00s");
   await expect(middleFrame).toContainText("3.75s");
   await expect(lastFrame).toContainText("4.50s");
+
+  // #166: the user can scrub the actual interpolated Stage between
+  // existing saved poses; the filmstrip and the main clock stay intact.
+  const scrubber = page.getByLabel("Motion frame scrubber");
+  const scrubControl = scrubber.getByRole("slider", {
+    name: "Scrub motion within selected step",
+  });
+  await expect(scrubControl).toHaveValue("50");
+  await expect(scrubber).toContainText("50% — 3.75s");
+  await expect(scrubber.getByLabel("Scrubbed real Stage frame").locator("svg"))
+    .toHaveCount(1);
+  await scrubControl.fill("25");
+  await expect(scrubber).toContainText("25% — 3.38s");
+  await expect(scrubber).toContainText("Original Stage interpolation (not a new keyframe)");
+  await scrubControl.fill("75");
+  await expect(scrubber).toContainText("75% — 4.13s");
   await waveToRise.click();
+  await expect(scrubber).toContainText("75% — 7.50s");
   await expect(middleFrame).toContainText("6.50s");
   await expect(page.getByLabel("Before pose", { exact: true })).toHaveValue("wave");
   await expect(page.getByLabel("After pose", { exact: true })).toHaveValue("rise");
@@ -511,6 +528,10 @@ test("creates and saves a new fully jointed original workshop hero with editable
     .toContainText("rising at 8.50 seconds");
   await expect(middleFrame).toContainText("9.25s");
   await expect(lastFrame).toContainText("10.00s");
+  await expect(scrubber).toContainText("75% — 9.63s");
+  await scrubControl.fill("100");
+  await expect(scrubber).toContainText("100% — 10.00s");
+  await expect(scrubber).toContainText("Original saved keyframe");
   await sitToWave.click();
   await expect(middleFrame).toContainText("3.75s");
   await button(page, "Close Three-Frame Filmstrip").click();
