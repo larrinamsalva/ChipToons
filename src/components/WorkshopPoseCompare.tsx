@@ -6,6 +6,7 @@ import { resolvedCharacter } from "../library";
 import { workshopJointDifferences } from "../workshop-joint-differences";
 import { workshopMotionSteps } from "../workshop-motion-steps";
 import { workshopMotionFilmstrip } from "../workshop-motion-filmstrip";
+import { workshopMotionScrubSample } from "../workshop-motion-scrub";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup, WorkshopJointOrder } from "../workshop-joint-review-filter";
 
@@ -28,6 +29,7 @@ export function WorkshopPoseCompare({
   const [inspecting, setInspecting] = useState(false);
   const [stepsOpened, setStepsOpened] = useState(false);
   const [filmstripOpened, setFilmstripOpened] = useState(false);
+  const [scrubPercent, setScrubPercent] = useState(50);
   const [jointGroup, setJointGroup] = useState<WorkshopJointGroup>("all");
   const [jointOrder, setJointOrder] = useState<WorkshopJointOrder>("rig");
   const [leftChoice, setLeftChoice] = useState("seated");
@@ -49,6 +51,9 @@ export function WorkshopPoseCompare({
     step.from.id === left.id && step.to.id === right.id);
   const filmstrip = stepsOpened && filmstripOpened
     ? workshopMotionFilmstrip(scene, actorId, selectedStep) : [];
+  const scrubSample = filmstrip.length
+    ? workshopMotionScrubSample(scene, actorId, selectedStep, scrubPercent)
+    : undefined;
 
   return (
     <section className="workshop-pose-comparison" aria-label="Side-by-side workshop pose comparison">
@@ -155,6 +160,47 @@ export function WorkshopPoseCompare({
                           </figure>
                         ))}
                       </div>
+                      {scrubSample && (
+                        <section
+                          className="workshop-motion-scrubber"
+                          aria-label="Motion frame scrubber"
+                        >
+                          <label htmlFor="workshop-motion-scrub-range">
+                            Scrub motion within selected step
+                          </label>
+                          <input
+                            id="workshop-motion-scrub-range"
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={scrubPercent}
+                            onChange={event => setScrubPercent(Number(event.target.value))}
+                            aria-valuetext={`${scrubSample.percent}% at ${scrubSample.seconds.toFixed(2)} seconds`}
+                          />
+                          <div className="workshop-motion-scrub-readout" role="status">
+                            <strong>{scrubSample.percent}% — {scrubSample.seconds.toFixed(2)}s</strong>
+                            <span>
+                              {scrubSample.savedKeyframe
+                                ? "Original saved keyframe"
+                                : "Original Stage interpolation (not a new keyframe)"}
+                            </span>
+                          </div>
+                          <div className="workshop-motion-scrub-stage"
+                            aria-label="Scrubbed real Stage frame">
+                            <Stage
+                              project={project}
+                              scene={scene}
+                              time={scrubSample.seconds}
+                              labelled={false}
+                            />
+                          </div>
+                          <p className="field-hint">
+                            Examine any point between these two saved poses.
+                            The original timeline and exported cartoon stay unchanged.
+                          </p>
+                        </section>
+                      )}
                     </>
                   ) : (
                     <p className="field-hint" role="status">
