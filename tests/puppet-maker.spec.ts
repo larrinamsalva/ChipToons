@@ -507,14 +507,24 @@ test("creates and saves a new fully jointed original workshop hero with editable
   const scrubControl = scrubber.getByRole("slider", {
     name: "Scrub motion within selected step",
   });
+  const chooseScrub = (percent: number) =>
+    scrubControl.evaluate((node, value) => {
+      const input = node as HTMLInputElement;
+      const setValue = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype, "value",
+      )!.set!;
+      setValue.call(input, String(value));
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, percent);
   await expect(scrubControl).toHaveValue("50");
   await expect(scrubber).toContainText("50% — 3.75s");
   await expect(scrubber.getByLabel("Scrubbed real Stage frame").locator("svg"))
     .toHaveCount(1);
-  await scrubControl.fill("25");
+  await chooseScrub(25);
   await expect(scrubber).toContainText("25% — 3.38s");
   await expect(scrubber).toContainText("Original Stage interpolation (not a new keyframe)");
-  await scrubControl.fill("75");
+  await chooseScrub(75);
   await expect(scrubber).toContainText("75% — 4.13s");
   await waveToRise.click();
   await expect(scrubber).toContainText("75% — 7.50s");
@@ -529,7 +539,7 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(middleFrame).toContainText("9.25s");
   await expect(lastFrame).toContainText("10.00s");
   await expect(scrubber).toContainText("75% — 9.63s");
-  await scrubControl.fill("100");
+  await chooseScrub(100);
   await expect(scrubber).toContainText("100% — 10.00s");
   await expect(scrubber).toContainText("Original saved keyframe");
   await sitToWave.click();
