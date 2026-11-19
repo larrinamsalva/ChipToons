@@ -61,7 +61,10 @@ jobs:
     # transient >500ms scheduling stalls failed full proof on #128 attempts 1/2.
     # Retain all 10 two-minute genuine WebM exports and independent decoding.
     runs-on: ubuntu-24.04
-    timeout-minutes: 46
+    # Browser/codec installs sometimes take >20 minutes on hosted Ubuntu mirrors.
+    # Keep the genuine ten-part 20-minute movie export and independent decoding;
+    # allow setup time without cancelling while the final part is rendering.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7.0.1
         with:
