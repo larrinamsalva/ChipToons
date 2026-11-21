@@ -930,6 +930,40 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   decoded 20-minute export proofs pass, plus visual review of
   movement along the slider.
 
+## PR #167 — Play, Pause and Slow Down a Real Workshop Motion Step
+
+- Follow **Edit scene → Characters & movement → Compare Two Poses
+  Side by Side → Review Motion Steps → Review Three-Frame Filmstrip**.
+  Pick an adjacent saved movement (sitting → waving, waving → rising
+  or rising → standing), then choose **Review Motion Loop**.
+- **Play Motion Loop** runs the same saved Stage timeline between the two
+  real keyframes, repeating at the original transition boundaries.
+  **Pause Motion Loop** freezes the current Stage sample,
+  **Restart Motion Loop** stops playback at the first saved keyframe,
+  and **Motion loop speed** offers Slow (0.5×), Normal (1×), Fast (2×).
+- Playback uses requestAnimationFrame and a **private inspector clock**
+  sampled from existing keyframes with normal Stage interpolation.
+  Stage frames are true SVG scene renders with the original puppet,
+  rig, camera, props and background; the feature adds **zero** keyframes
+  and makes no changes to the main scene clock, Undo, audio or exports.
+- The loop preview starts paused at the real first saved pose.
+  Playback requires an explicit press of Play (no unexpected sound or
+  motion), pauses when the browser tab is hidden and stops on close.
+  Switching to another saved step recreates its own paused preview
+  instead of replaying the previous step's timing.
+- Slider and motion loop are both optional. High-contrast buttons
+  have touch-friendly targets, the speed control is keyboard accessible,
+  and the moving readout avoids constantly announcing frames to
+  screen readers during playback.
+- For a real 20-minute output, keep the independent studio export proof;
+  this preview does not record, re-encode, or create video.
+  At the end of a repeated step, it jumps back to the beginning by
+  design, not because the underlying animation is smooth at the seam.
+- Unit tests cover genuine sampled Stage SVG frames at 0.5×, 1× and 2×,
+  actual transition durations, exact wraparound, invalid inputs and
+  original project immutability. Browser checks cover Play, Pause,
+  Restart, speed changes and closing the loop across phone/tablet/desktop.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
