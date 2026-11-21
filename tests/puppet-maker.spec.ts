@@ -526,6 +526,28 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(scrubber).toContainText("Original Stage interpolation (not a new keyframe)");
   await chooseScrub(75);
   await expect(scrubber).toContainText("75% — 4.13s");
+
+  // #167: play original interpolated Stage movement in a private loop.
+  // The 20-minute export and main playhead remain independently verified.
+  await button(page, "Review Motion Loop").click();
+  const motionLoop = page.getByLabel("Selected motion loop");
+  const loopReadout = motionLoop.getByLabel("Motion loop frame readout");
+  await expect(loopReadout).toContainText("Paused · 0% · 3.00s");
+  await expect(motionLoop.getByLabel("Playing original Stage movement").locator("svg"))
+    .toHaveCount(1);
+  await button(page, "Play Motion Loop").click();
+  await expect(button(page, "Pause Motion Loop")).toBeVisible();
+  await expect(loopReadout).not.toContainText("Playing · 0% · 3.00s");
+  await button(page, "Pause Motion Loop").click();
+  await expect(loopReadout).toContainText("Paused");
+  await motionLoop.getByLabel("Motion loop speed").selectOption("0.5");
+  await button(page, "Restart Motion Loop").click();
+  await expect(loopReadout).toContainText("Paused · 0% · 3.00s");
+  await button(page, "Play Motion Loop").click();
+  await expect(button(page, "Pause Motion Loop")).toBeVisible();
+  await button(page, "Close Motion Loop").click();
+  await expect(motionLoop.getByLabel("Playing original Stage movement"))
+    .toHaveCount(0);
   await waveToRise.click();
   await expect(scrubber).toContainText("75% — 7.50s");
   await expect(middleFrame).toContainText("6.50s");
