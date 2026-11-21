@@ -7,6 +7,7 @@ import { workshopJointDifferences } from "../workshop-joint-differences";
 import { workshopMotionSteps } from "../workshop-motion-steps";
 import { workshopMotionFilmstrip } from "../workshop-motion-filmstrip";
 import { workshopMotionScrubSample } from "../workshop-motion-scrub";
+import { WorkshopMotionLoopPlayer } from "./WorkshopMotionLoopPlayer";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup, WorkshopJointOrder } from "../workshop-joint-review-filter";
 
@@ -195,6 +196,15 @@ export function WorkshopPoseCompare({
                               labelled={false}
                             />
                           </div>
+                          {selectedStep && (
+                            <WorkshopMotionLoopPlayer
+                              key={`${scene.id}:${actorId}:${selectedStep.id}`}
+                              project={project}
+                              scene={scene}
+                              actorId={actorId}
+                              step={selectedStep}
+                            />
+                          )}
                           <p className="field-hint">
                             Examine any point between these two saved poses.
                             The original timeline and exported cartoon stay unchanged.
