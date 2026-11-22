@@ -16,6 +16,7 @@ import { workshopAdjacentJointReview } from "./workshop-adjacent-joint-review";
 import { workshopJointMotionCurve } from "./workshop-joint-motion-curve";
 import { workshopJointRotationRates } from "./workshop-joint-rotation-rate";
 import { workshopLargestRotationRateChanges } from "./workshop-rate-change-finder";
+import { workshopMotionTransitionTriplet } from "./workshop-motion-transition-triplet";
 import { workshopJointReview } from "./workshop-joint-review-filter";
 import { sceneFramesAt } from "./timeline";
 import { Stage } from "./components/Stage";
@@ -593,5 +594,96 @@ describe("PR #173 find authentic Stage joint rotation-rate transitions", () => {
     malformed.intervals[1].afterIndex = 2;
     malformed.intervals[1].degreesPerSecond = Infinity;
     expect(workshopLargestRotationRateChanges(malformed)).toBeUndefined();
+  });
+});
+
+describe("PR #174 authentic three-frame Stage transition previews", () => {
+  it("renders the exact original neighboring timestamps around measured rate changes", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const immutableSnapshot = JSON.stringify(project);
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const curve = workshopJointMotionCurve(project, scene, actorId, steps[0], arm.id)!;
+    const rates = workshopJointRotationRates(curve)!;
+    const changes = workshopLargestRotationRateChanges(rates)!.largest;
+    for (const change of changes) {
+      const frames = workshopMotionTransitionTriplet(scene, actorId, steps[0], change)!;
+      expect(frames).toBeDefined();
+      expect(frames.before.index).toBe(change.sharedFrameIndex - 1);
+      expect(frames.middle.index).toBe(change.sharedFrameIndex);
+      expect(frames.after.index).toBe(change.afterFrameIndex);
+      expect(frames.middle.seconds).toBe(change.seconds);
+      for (const frame of [frames.before, frames.middle, frames.after]) {
+        expect(frame).toEqual(
+          workshopMotionInspectionFrame(scene, actorId, steps[0], frame.index),
+        );
+        const svg = renderToStaticMarkup(createElement(Stage, {
+          project, scene, time: frame.seconds, labelled: false,
+        }));
+        expect(svg).toContain('viewBox="0 0 800 450"');
+        expect(svg).toContain('data-puppet-part="rightArm"');
+      }
+      expect(frames.before.seconds).toBeLessThan(frames.middle.seconds);
+      expect(frames.middle.seconds).toBeLessThan(frames.after.seconds);
+    }
+    expect(JSON.stringify(project)).toBe(immutableSnapshot);
+  });
+
+  it("keeps exact real motion endpoints, including unequal last-frame spacing", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const curve = workshopJointMotionCurve(project, scene, actorId, steps[1], arm.id)!;
+    const lastRate = workshopJointRotationRates(curve)!.intervals.at(-1)!;
+    const change = {
+      ...workshopLargestRotationRateChanges(workshopJointRotationRates(curve))!.largest[0],
+      sharedFrameIndex: 95,
+      afterFrameIndex: 96,
+      seconds: curve.points[95].seconds,
+    };
+    const actual = workshopMotionTransitionTriplet(scene, actorId, steps[1], change)!;
+    expect(actual.before.index).toBe(94);
+    expect(actual.middle.index).toBe(95);
+    expect(actual.after.index).toBe(96);
+    expect(actual.after.savedKeyframe).toBe(true);
+    expect(actual.after.seconds).toBe(8.5);
+    expect(lastRate.afterSeconds).toBe(actual.after.seconds);
+  });
+
+  it("rejects invalid transition frames, fake times and fabricated saved endpoints", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const change = workshopLargestRotationRateChanges(workshopJointRotationRates(
+      workshopJointMotionCurve(project, scene, actorId, steps[0], arm.id)))!.largest[0];
+    expect(workshopMotionTransitionTriplet(scene, actorId, steps[0], undefined))
+      .toBeUndefined();
+    expect(workshopMotionTransitionTriplet(scene, actorId, steps[0], {
+      ...change, sharedFrameIndex: -1, afterFrameIndex: 0,
+    })).toBeUndefined();
+    expect(workshopMotionTransitionTriplet(scene, actorId, steps[0], {
+      ...change, afterFrameIndex: change.sharedFrameIndex + 2,
+    })).toBeUndefined();
+    expect(workshopMotionTransitionTriplet(scene, actorId, steps[0], {
+      ...change, seconds: change.seconds + 0.025,
+    })).toBeUndefined();
+    expect(workshopMotionTransitionTriplet(scene, actorId, steps[0], {
+      ...change, sharedFrameIndex: 36, afterFrameIndex: 37, seconds: 4.5,
+    })).toBeUndefined();
+    // 4.25 seconds genuinely exists inside the saved wave animation,
+    // but is NOT the selected recorded movement's original endpoint.
+    const keys = scene.elements.find(element => element.id === actorId)!
+      .animation!.keyframes;
+    expect(keys.some(key => Math.abs(key.time - 4.25) < .001)).toBe(true);
+    expect(workshopMotionTransitionTriplet(scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
+    }, change)).toBeUndefined();
+    // Also reject an entirely unsaved substituted endpoint.
+    expect(workshopMotionTransitionTriplet(scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.333 },
+    }, change)).toBeUndefined();
   });
 });

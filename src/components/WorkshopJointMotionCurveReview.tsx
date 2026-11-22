@@ -6,6 +6,8 @@ import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
 import { workshopJointMotionCurve } from "../workshop-joint-motion-curve";
 import { workshopJointRotationRates } from "../workshop-joint-rotation-rate";
 import { workshopLargestRotationRateChanges } from "../workshop-rate-change-finder";
+import { workshopMotionTransitionTriplet } from "../workshop-motion-transition-triplet";
+import { Stage } from "./Stage";
 
 /** A compact opt-in graph of actual Stage joint rotations, not a pose editor. */
 export function WorkshopJointMotionCurveReview({
@@ -22,6 +24,7 @@ export function WorkshopJointMotionCurveReview({
   const [partId, setPartId] = useState("");
   const [reviewRates, setReviewRates] = useState(false);
   const [reviewChanges, setReviewChanges] = useState(false);
+  const [selectedTransitionIndex, setSelectedTransitionIndex] = useState<number | null>(null);
   const actor = scene.elements.find(element => element.id === actorId);
   const parts = actor ? resolvedCharacter(project, actor)?.puppet?.parts ?? [] : [];
   const chosenPartId = parts.some(part => part.id === partId)
@@ -36,6 +39,11 @@ export function WorkshopJointMotionCurveReview({
   const rates = opened && reviewRates ? workshopJointRotationRates(curve) : undefined;
   const changes = opened && reviewRates && reviewChanges
     ? workshopLargestRotationRateChanges(rates) : undefined;
+  const selectedTransition = changes?.largest.find(
+    change => change.sharedFrameIndex === selectedTransitionIndex);
+  const transition = selectedTransition
+    ? workshopMotionTransitionTriplet(scene, actorId, step, selectedTransition)
+    : undefined;
 
   const width = 600;
   const height = 144;
@@ -81,7 +89,10 @@ export function WorkshopJointMotionCurveReview({
             Movement curve joint
             <select aria-label="Movement curve joint"
               value={chosenPartId}
-              onChange={event => setPartId(event.target.value)}>
+              onChange={event => {
+                setPartId(event.target.value);
+                setSelectedTransitionIndex(null);
+              }}>
               {parts.map(part => (
                 <option key={part.id} value={part.id}>
                   {part.role.replace(/([a-z])([A-Z])/g, "$1 $2")}
@@ -200,9 +211,56 @@ export function WorkshopJointMotionCurveReview({
                               Review Frames {change.sharedFrameIndex + 1}–
                               {change.afterFrameIndex + 1}
                             </button>
+                            <button type="button" className="button secondary small"
+                              aria-pressed={selectedTransitionIndex === change.sharedFrameIndex}
+                              onClick={() => setSelectedTransitionIndex(current =>
+                                current === change.sharedFrameIndex
+                                  ? null : change.sharedFrameIndex)}>
+                              {selectedTransitionIndex === change.sharedFrameIndex
+                                ? "Hide Three-Frame Preview"
+                                : `Preview Three Frames at Frame ${change.sharedFrameIndex + 1}`}
+                            </button>
                           </li>
                         ))}
                       </ol>
+                      {transition && (
+                        <section className="workshop-motion-transition-preview"
+                          aria-label="Original three-frame motion transition">
+                          <p className="field-hint">
+                            Original Stage samples immediately before, at and
+                            after this joint-rate change. These are not newly
+                            authored keyframes or modified animation.
+                          </p>
+                          <div className="workshop-motion-transition-frames">
+                            {([
+                              { label: "Before", frame: transition.before },
+                              { label: "Middle", frame: transition.middle },
+                              { label: "After", frame: transition.after },
+                            ] as const).map(({ label, frame }) => (
+                              <figure key={label}
+                                aria-label={`${label} original transition frame`}>
+                                <div className="workshop-motion-transition-picture">
+                                  <Stage project={project} scene={scene}
+                                    time={frame.seconds} labelled={false} />
+                                </div>
+                                <figcaption>
+                                  <strong>{label} — Frame {frame.index + 1}</strong>
+                                  <span>
+                                    {frame.seconds.toFixed(3)}s
+                                    {" · "}{frame.savedKeyframe
+                                      ? "Original saved keyframe"
+                                      : "Real Stage sample"}
+                                  </span>
+                                </figcaption>
+                              </figure>
+                            ))}
+                          </div>
+                          <button type="button" className="button secondary small"
+                            onClick={() => onSelectFrame(transition.after.index)}>
+                            Review This Transition in Adjacent Frames
+                          </button>
+                        </section>
+                      )}
                     </section>
                   )}
                   {reviewChanges && !changes && (

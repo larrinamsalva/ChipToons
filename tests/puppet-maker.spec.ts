@@ -657,6 +657,38 @@ test("creates and saves a new fully jointed original workshop hero with editable
     name: "Largest local joint rotation rate changes",
   });
   await expect(rankedChanges.locator("li")).toHaveCount(5);
+
+  // #174: a single tap shows the real before/middle/after Stage frames
+  // around a measured rotation-rate change without writing keyframes.
+  await rankedChanges.getByRole("button", {
+    name: /Preview Three Frames at Frame/,
+  }).first().click();
+  const transition = rateChangeFinder.getByLabel("Original three-frame motion transition");
+  const beforeTransition = transition.getByRole("figure", {
+    name: "Before original transition frame",
+  });
+  const middleTransition = transition.getByRole("figure", {
+    name: "Middle original transition frame",
+  });
+  const afterTransition = transition.getByRole("figure", {
+    name: "After original transition frame",
+  });
+  await expect(transition.locator("figure")).toHaveCount(3);
+  await expect(beforeTransition.locator("svg")).toHaveCount(1);
+  await expect(middleTransition.locator("svg")).toHaveCount(1);
+  await expect(afterTransition.locator("svg")).toHaveCount(1);
+  await expect(beforeTransition).toContainText("Before — Frame");
+  await expect(middleTransition).toContainText("Middle — Frame");
+  await expect(afterTransition).toContainText("After — Frame");
+  const afterText = await afterTransition.textContent() ?? "";
+  const afterMatch = afterText.match(/After — Frame (\d+)/);
+  expect(afterMatch).not.toBeNull();
+  if (!afterMatch) throw new Error("Missing original transition frame number");
+  await button(page, "Review This Transition in Adjacent Frames").click();
+  await expect(frameStatus).toContainText(`Frame ${afterMatch[1]} of 37`);
+  await button(page, "Hide Three-Frame Preview").click();
+  await expect(transition).toHaveCount(0);
+
   const jump = rankedChanges.getByRole("button", {
     name: /Review Frames/,
   }).first();
