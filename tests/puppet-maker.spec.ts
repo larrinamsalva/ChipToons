@@ -646,6 +646,31 @@ test("creates and saves a new fully jointed original workshop hero with editable
   })).toBeVisible();
   await expect(rateSummary).toContainText("36 measured intervals");
   await expect(rateReview.getByText(/Frames 2 to 3/)).toBeVisible();
+
+  // #173: find the largest genuine changes in local angular velocity,
+  // navigate directly to the original adjacent Stage frames, never edit keys.
+  await button(page, "Find Largest Rotation Changes").click();
+  const rateChangeFinder = movementCurve.getByLabel("Rotation speed change finder");
+  await expect(rateChangeFinder.getByLabel("Rotation change findings count"))
+    .toContainText("35 measured rate changes");
+  const rankedChanges = rateChangeFinder.getByRole("list", {
+    name: "Largest local joint rotation rate changes",
+  });
+  await expect(rankedChanges.locator("li")).toHaveCount(5);
+  const jump = rankedChanges.getByRole("button", {
+    name: /Review Frames/,
+  }).first();
+  const jumpLabel = (await jump.textContent() ?? "").replace(/\\s+/g, "");
+  const frames = jumpLabel.match(/ReviewFrames(\\d+)–(\\d+)/);
+  expect(frames).not.toBeNull();
+  if (!frames) throw new Error("Invalid original-frame jump label");
+  await jump.click();
+  await expect(frameStatus).toContainText(`Frame ${frames[2]} of 37`);
+  await expect(rateReview.getByText(new RegExp(
+    `Frames ${frames[1]} to ${frames[2]}`,
+  ))).toBeVisible();
+  await button(page, "Close Rotation Change Finder").click();
+  await expect(rateChangeFinder).toHaveCount(0);
   await button(page, "Last Frame").click();
   await expect(rateReview.getByText(/Frames 36 to 37/)).toBeVisible();
   await curveJoint.selectOption({ label: "right Arm" });
