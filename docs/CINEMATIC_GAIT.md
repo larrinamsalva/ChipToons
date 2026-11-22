@@ -1068,6 +1068,45 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   genuine table, filter changes and updates after navigating
   frames on desktop, phone and tablet.
 
+## PR #171 — Review a Real Joint's Rotation Curve
+
+- Open **Compare Two Poses Side by Side → Review Motion Steps →
+  Review Three-Frame Filmstrip → Review Frame by Frame →
+  Compare Adjacent Frames → Inspect Adjacent Joint Changes →
+  Review Movement Curve**.
+- Select a named puppet part (e.g., **Right Arm** or **Left Leg**).
+  The graph samples that part's **actual local Stage joint angle** across
+  the same original recorded motion step on the existing 24-fps inspection
+  grid. Every data point uses `sceneFramesAt()`, the same timeline
+  calculations used by the rendered Stage previews.
+- The graph includes the exact original saved start and ending poses,
+  even when the final time interval is shorter than 1/24 second.
+  It shows minimum/maximum/start/end local joint rotation in degrees
+  and marks the two frames currently shown in the neighboring
+  before/after comparison. Moving First/Previous/Next/Last changes
+  these markers; choosing a different joint redraws the same original
+  time interval without authoring new frames.
+- This is opt-in: the graph computes when opened, so the normal
+  creator view isn't burdened by sampling all inspection frames.
+  Extremely long motions (over 720 inspection intervals, about
+  30 seconds) are omitted to avoid an expensive read-only graph.
+- The graph's vertical scale adapts to each joint's measured
+  angular range. It shows local joint rotations, **not** joint speed,
+  physical world-space paths, sliding feet, floor contact,
+  collision detection or a subjective motion-quality score.
+  Non-joint cinematic effects may also affect the finished picture.
+- The feature creates no keyframes or drawings and does not change
+  saved projects, Undo, recorded voice or music, main playback
+  clock, export frame rate, or complete-episode render behavior.
+  Labels and graph remain accessible in dark/light mode on phones.
+- Unit checks compare exact 24-fps curve samples to independently
+  sampled `sceneFramesAt` joint angles, verify 37/97-point
+  durations, both authored endpoints, min/max, invalid selected
+  joints and substituted timestamps, and immutable project data.
+  Browser checks open the opt-in graph, change the puppet part,
+  confirm the real Stage sample count and track currently selected
+  adjacent frames on phone/tablet/desktop.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
