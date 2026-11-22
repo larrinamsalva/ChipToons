@@ -548,6 +548,32 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await button(page, "Close Motion Loop").click();
   await expect(motionLoop.getByLabel("Playing original Stage movement"))
     .toHaveCount(0);
+
+  // #168: inspect the true Stage at 24-fps spacing, with no new keyframes,
+  // playhead seeks or changes to the animation / saved 20-minute episode.
+  await button(page, "Review Frame by Frame").click();
+  const frameInspector = page.getByLabel("Motion frame-by-frame inspector");
+  const frameStatus = frameInspector.getByLabel("Frame-by-frame inspection status");
+  await expect(frameStatus).toContainText("Frame 1 of 37 · 3.000s");
+  await expect(button(page, "Previous Frame")).toBeDisabled();
+  await expect(frameInspector.getByLabel("Inspected original Stage frame").locator("svg"))
+    .toHaveCount(1);
+  await button(page, "Next Frame").click();
+  await expect(frameStatus).toContainText("Frame 2 of 37 · 3.042s");
+  await expect(frameStatus).toContainText("Real interpolated Stage sample");
+  await button(page, "Next Frame").click();
+  await expect(frameStatus).toContainText("Frame 3 of 37 · 3.083s");
+  await button(page, "Previous Frame").click();
+  await expect(frameStatus).toContainText("Frame 2 of 37 · 3.042s");
+  await button(page, "Last Frame").click();
+  await expect(frameStatus).toContainText("Frame 37 of 37 · 4.500s");
+  await expect(frameStatus).toContainText("Original saved keyframe");
+  await expect(button(page, "Next Frame")).toBeDisabled();
+  await button(page, "First Frame").click();
+  await expect(frameStatus).toContainText("Frame 1 of 37 · 3.000s");
+  await button(page, "Close Frame by Frame").click();
+  await expect(frameInspector.getByLabel("Inspected original Stage frame"))
+    .toHaveCount(0);
   await waveToRise.click();
   await expect(scrubber).toContainText("75% — 7.50s");
   await expect(middleFrame).toContainText("6.50s");
