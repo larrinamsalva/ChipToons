@@ -8,6 +8,7 @@ import { workshopMotionSteps } from "../workshop-motion-steps";
 import { workshopMotionFilmstrip } from "../workshop-motion-filmstrip";
 import { workshopMotionScrubSample } from "../workshop-motion-scrub";
 import { WorkshopMotionLoopPlayer } from "./WorkshopMotionLoopPlayer";
+import { WorkshopMotionFrameStepper } from "./WorkshopMotionFrameStepper";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup, WorkshopJointOrder } from "../workshop-joint-review-filter";
 
@@ -196,6 +197,15 @@ export function WorkshopPoseCompare({
                               labelled={false}
                             />
                           </div>
+                          {selectedStep && (
+                            <WorkshopMotionFrameStepper
+                              key={`${scene.id}:${actorId}:${selectedStep.id}:frames`}
+                              project={project}
+                              scene={scene}
+                              actorId={actorId}
+                              step={selectedStep}
+                            />
+                          )}
                           {selectedStep && (
                             <WorkshopMotionLoopPlayer
                               key={`${scene.id}:${actorId}:${selectedStep.id}`}
