@@ -537,7 +537,10 @@ test("creates and saves a new fully jointed original workshop hero with editable
     .toHaveCount(1);
   await button(page, "Play Motion Loop").click();
   await expect(button(page, "Pause Motion Loop")).toBeVisible();
+  // #169 reliability: an early first requestAnimationFrame callback must
+  // not revert the Play button. Verify it survives multiple animation frames.
   await expect(loopReadout).not.toContainText("Playing · 0% · 3.00s");
+  await expect(button(page, "Pause Motion Loop")).toBeVisible();
   await button(page, "Pause Motion Loop").click();
   await expect(loopReadout).toContainText("Paused");
   await motionLoop.getByLabel("Motion loop speed").selectOption("0.5");
