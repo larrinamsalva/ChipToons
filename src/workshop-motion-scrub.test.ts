@@ -9,6 +9,7 @@ import { waveWorkshopWhileSeated } from "./workshop-seated-wave";
 import { standAfterSeatedGreeting } from "./workshop-sit-wave-stand";
 import { workshopMotionSteps } from "./workshop-motion-steps";
 import { workshopMotionScrubSample } from "./workshop-motion-scrub";
+import { workshopMotionLoopFrame } from "./workshop-motion-loop";
 import { Stage } from "./components/Stage";
 
 function fixture() {
@@ -111,5 +112,71 @@ describe("PR #166 read-only true Stage motion scrubber", () => {
       .toMatchObject({ seconds: 3.375, savedKeyframe: true });
     expect(workshopMotionScrubSample(scene, actorId, step, 25)?.savedKeyframe)
       .toBe(false);
+  });
+});
+
+
+describe("PR #167 true read-only Stage motion loop", () => {
+  it("uses original saved endpoints and samples real time at half normal and double speed", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const original = JSON.stringify(project);
+    const step = steps[0]; // 3.00s to 4.50s = 1500ms
+    const sample = (start: number, elapsed: number, speed: 0.5 | 1 | 2) =>
+      workshopMotionLoopFrame(scene, actorId, step, start, elapsed, speed);
+    expect(sample(0, 0, 1)).toMatchObject({
+      percent: 0, seconds: 3, savedKeyframe: true,
+    });
+    expect(sample(0, 375, 1)).toMatchObject({
+      percent: 25, seconds: 3.375, savedKeyframe: false,
+    });
+    expect(sample(0, 375, 2)).toMatchObject({
+      percent: 50, seconds: 3.75,
+    });
+    expect(sample(0, 750, 0.5)).toMatchObject({
+      percent: 25, seconds: 3.375,
+    });
+    expect(sample(25, 375, 1)).toMatchObject({
+      percent: 50, seconds: 3.75,
+    });
+    expect(sample(0, 1500, 1)).toMatchObject({
+      percent: 0, seconds: 3, savedKeyframe: true,
+    });
+    expect(sample(0, 3000, 0.5)).toMatchObject({
+      percent: 0, seconds: 3, savedKeyframe: true,
+    });
+    const at25 = sample(0, 375, 1)!;
+    const svg = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: at25.seconds, labelled: false,
+    }));
+    const initial = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: 3, labelled: false,
+    }));
+    expect(svg).toContain('data-puppet-part="rightArm"');
+    expect(svg).toContain('data-puppet-part="leftShin"');
+    expect(svg).not.toBe(initial);
+    expect(JSON.stringify(project)).toBe(original);
+  });
+
+  it("supports the real longer waving-to-rising step and rejects invalid data", () => {
+    const { scene, actorId, steps } = fixture();
+    expect(workshopMotionLoopFrame(scene, actorId, steps[1], 0, 1000, 1))
+      .toMatchObject({ percent: 25, seconds: 5.5 });
+    expect(workshopMotionLoopFrame(scene, actorId, steps[1], 0, 1000, 2))
+      .toMatchObject({ percent: 50, seconds: 6.5 });
+    expect(workshopMotionLoopFrame(scene, actorId, steps[2], 0, 375, 1))
+      .toMatchObject({ percent: 25, seconds: 8.875 });
+    expect(workshopMotionLoopFrame(scene, actorId, steps[0], 0, -1, 1))
+      .toBeUndefined();
+    expect(workshopMotionLoopFrame(scene, actorId, steps[0], 0, Infinity, 1))
+      .toBeUndefined();
+    expect(workshopMotionLoopFrame(scene, actorId, steps[0], NaN, 0, 1))
+      .toBeUndefined();
+    expect(workshopMotionLoopFrame(scene, "not-an-actor", steps[0], 0, 0, 1))
+      .toBeUndefined();
+    expect(workshopMotionLoopFrame(scene, actorId, undefined, 0, 0, 1))
+      .toBeUndefined();
+    expect(workshopMotionLoopFrame(scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.333 },
+    }, 0, 0, 1)).toBeUndefined();
   });
 });
