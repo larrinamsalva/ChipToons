@@ -15,6 +15,7 @@ import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
 import { workshopAdjacentJointReview } from "./workshop-adjacent-joint-review";
 import { workshopJointMotionCurve } from "./workshop-joint-motion-curve";
 import { workshopJointRotationRates } from "./workshop-joint-rotation-rate";
+import { workshopLargestRotationRateChanges } from "./workshop-rate-change-finder";
 import { workshopJointReview } from "./workshop-joint-review-filter";
 import { sceneFramesAt } from "./timeline";
 import { Stage } from "./components/Stage";
@@ -508,5 +509,89 @@ describe("PR #172 signed local rotation speed between authentic Stage samples", 
     duplicate.points[1].seconds = curve.points[1].seconds;
     duplicate.points[1].angle = Infinity;
     expect(workshopJointRotationRates(duplicate)).toBeUndefined();
+  });
+});
+
+describe("PR #173 find authentic Stage joint rotation-rate transitions", () => {
+  it("ranks signed angular acceleration from true adjacent 24-fps Stage intervals", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const beforeProject = JSON.stringify(project);
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const curve = workshopJointMotionCurve(project, scene, actorId, steps[0], arm.id)!;
+    const rates = workshopJointRotationRates(curve)!;
+    const results = workshopLargestRotationRateChanges(rates)!;
+    expect(results.label).toBe(rates.label);
+    expect(results.totalChanges).toBe(35);
+    expect(results.largest).toHaveLength(5);
+    for (const item of results.largest) {
+      const before = rates.intervals[item.sharedFrameIndex - 1];
+      const after = rates.intervals[item.sharedFrameIndex];
+      expect(after).toBeDefined();
+      expect(item.afterFrameIndex).toBe(item.sharedFrameIndex + 1);
+      expect(item.seconds).toBe(curve.points[item.sharedFrameIndex].seconds);
+      expect(item.rateBefore).toBe(before.degreesPerSecond);
+      expect(item.rateAfter).toBe(after.degreesPerSecond);
+      expect(item.rateDelta).toBeCloseTo(after.degreesPerSecond - before.degreesPerSecond, 8);
+      const midpointSpacing = ((after.beforeSeconds + after.afterSeconds) -
+        (before.beforeSeconds + before.afterSeconds)) / 2;
+      expect(item.midpointSpacingSeconds).toBeCloseTo(midpointSpacing, 8);
+      expect(item.degreesPerSecondSquared).toBeCloseTo(
+        item.rateDelta / midpointSpacing, 8);
+      const pair = workshopAdjacentFramePair(scene, actorId, steps[0], item.afterFrameIndex)!;
+      expect(pair.before.index).toBe(item.sharedFrameIndex);
+      expect(pair.after.index).toBe(item.afterFrameIndex);
+    }
+    for (let i = 1; i < results.largest.length; i++) {
+      expect(Math.abs(results.largest[i - 1].degreesPerSecondSquared))
+        .toBeGreaterThanOrEqual(Math.abs(results.largest[i].degreesPerSecondSquared));
+    }
+    expect(JSON.stringify(project)).toBe(beforeProject);
+  });
+
+  it("handles other original steps and supports a smaller results limit", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const wavedRates = workshopJointRotationRates(
+      workshopJointMotionCurve(project, scene, actorId, steps[1], arm.id),
+    )!;
+    expect(workshopLargestRotationRateChanges(wavedRates)?.totalChanges).toBe(95);
+    expect(workshopLargestRotationRateChanges(wavedRates, 3)?.largest).toHaveLength(3);
+    expect(workshopLargestRotationRateChanges(undefined)).toBeUndefined();
+    expect(workshopLargestRotationRateChanges(wavedRates, 0)).toBeUndefined();
+    expect(workshopLargestRotationRateChanges(wavedRates, 11)).toBeUndefined();
+  });
+
+  it("uses exact unequal interval midpoints and rejects discontinuities", () => {
+    const rates = {
+      partId: "arm", label: "Arm", minRate: 0, maxRate: 10, maxAbsoluteRate: 10,
+      intervals: [
+        { afterIndex: 1, beforeSeconds: 0, afterSeconds: 0.1,
+          angleDelta: 0.2, degreesPerSecond: 2 },
+        { afterIndex: 2, beforeSeconds: 0.1, afterSeconds: 0.15,
+          angleDelta: 0.5, degreesPerSecond: 10 },
+        { afterIndex: 3, beforeSeconds: 0.15, afterSeconds: 0.3,
+          angleDelta: 0.3, degreesPerSecond: 2 },
+      ],
+    };
+    const result = workshopLargestRotationRateChanges(rates)!;
+    expect(result.totalChanges).toBe(2);
+    expect(result.largest[0].sharedFrameIndex).toBe(1);
+    expect(result.largest[0].midpointSpacingSeconds).toBeCloseTo(0.075, 8);
+    expect(result.largest[0].degreesPerSecondSquared).toBeCloseTo(8 / 0.075, 8);
+    expect(result.largest[1].midpointSpacingSeconds).toBeCloseTo(0.1, 8);
+    expect(result.largest[1].degreesPerSecondSquared).toBeCloseTo(-8 / 0.1, 8);
+    const gap = { ...rates, intervals: rates.intervals.map(item => ({ ...item })) };
+    gap.intervals[1].beforeSeconds = 0.2;
+    expect(workshopLargestRotationRateChanges(gap)).toBeUndefined();
+    const malformed = { ...rates, intervals: rates.intervals.map(item => ({ ...item })) };
+    malformed.intervals[1].afterIndex = 9;
+    expect(workshopLargestRotationRateChanges(malformed)).toBeUndefined();
+    malformed.intervals[1].afterIndex = 2;
+    malformed.intervals[1].degreesPerSecond = Infinity;
+    expect(workshopLargestRotationRateChanges(malformed)).toBeUndefined();
   });
 });
