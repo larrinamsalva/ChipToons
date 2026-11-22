@@ -673,8 +673,17 @@ describe("PR #174 authentic three-frame Stage transition previews", () => {
     expect(workshopMotionTransitionTriplet(scene, actorId, steps[0], {
       ...change, sharedFrameIndex: 36, afterFrameIndex: 37, seconds: 4.5,
     })).toBeUndefined();
+    // 4.25 seconds genuinely exists inside the saved wave animation,
+    // but is NOT the selected recorded movement's original endpoint.
+    const keys = scene.elements.find(element => element.id === actorId)!
+      .animation!.keyframes;
+    expect(keys.some(key => Math.abs(key.time - 4.25) < .001)).toBe(true);
     expect(workshopMotionTransitionTriplet(scene, actorId, {
       ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
+    }, change)).toBeUndefined();
+    // Also reject an entirely unsaved substituted endpoint.
+    expect(workshopMotionTransitionTriplet(scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.333 },
     }, change)).toBeUndefined();
   });
 });
