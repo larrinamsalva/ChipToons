@@ -189,6 +189,7 @@ export function WorkshopMotionFrameStepper({
                       actorId={actorId}
                       step={step}
                       selectedIndex={frameIndex}
+                      onSelectFrame={setFrameIndex}
                     />
                   </>
                 )}
