@@ -7,6 +7,7 @@ import {
 } from "../workshop-motion-frame-stepper";
 import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
 import { workshopAdjacentJointReview } from "../workshop-adjacent-joint-review";
+import { WorkshopJointMotionCurveReview } from "./WorkshopJointMotionCurveReview";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup } from "../workshop-joint-review-filter";
 import { Stage } from "./Stage";
@@ -182,6 +183,13 @@ export function WorkshopMotionFrameStepper({
                         between these two samples. Try another filter.
                       </p>
                     )}
+                    <WorkshopJointMotionCurveReview
+                      project={project}
+                      scene={scene}
+                      actorId={actorId}
+                      step={step}
+                      selectedIndex={frameIndex}
+                    />
                   </>
                 )}
               </section>
