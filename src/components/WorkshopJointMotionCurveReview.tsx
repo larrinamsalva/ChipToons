@@ -4,6 +4,7 @@ import type { WorkshopMotionStep } from "../workshop-motion-steps";
 import { resolvedCharacter } from "../library";
 import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
 import { workshopJointMotionCurve } from "../workshop-joint-motion-curve";
+import { workshopJointRotationRates } from "../workshop-joint-rotation-rate";
 
 /** A compact opt-in graph of actual Stage joint rotations, not a pose editor. */
 export function WorkshopJointMotionCurveReview({
@@ -17,6 +18,7 @@ export function WorkshopJointMotionCurveReview({
 }) {
   const [opened, setOpened] = useState(false);
   const [partId, setPartId] = useState("");
+  const [reviewRates, setReviewRates] = useState(false);
   const actor = scene.elements.find(element => element.id === actorId);
   const parts = actor ? resolvedCharacter(project, actor)?.puppet?.parts ?? [] : [];
   const chosenPartId = parts.some(part => part.id === partId)
@@ -28,6 +30,7 @@ export function WorkshopJointMotionCurveReview({
     ? workshopJointMotionCurve(project, scene, actorId, step, chosenPartId)
     : undefined;
   const pair = opened ? workshopAdjacentFramePair(scene, actorId, step, selectedIndex) : undefined;
+  const rates = opened && reviewRates ? workshopJointRotationRates(curve) : undefined;
 
   const width = 600;
   const height = 144;
@@ -46,6 +49,12 @@ export function WorkshopJointMotionCurveReview({
   const lastIndex = (curve?.points.length ?? 1) - 1;
   const linePoints = curve?.points.map(point =>
     `${xAt(point.index, lastIndex).toFixed(2)},${yAt(point.angle).toFixed(2)}`,
+  ).join(" ") ?? "";
+  const zeroRateY = height / 2;
+  const rateAtY = (degreesPerSecond: number) =>
+    zeroRateY - degreesPerSecond / Math.max(1, rates?.maxAbsoluteRate ?? 1) * (plotHeight / 2);
+  const rateLinePoints = rates?.intervals.map(item =>
+    `${xAt(item.afterIndex, lastIndex).toFixed(2)},${rateAtY(item.degreesPerSecond).toFixed(2)}`,
   ).join(" ") ?? "";
 
   return (
@@ -110,6 +119,67 @@ export function WorkshopJointMotionCurveReview({
                 {" · "}start {curve.points[0].angle.toFixed(2)}°
                 {" · "}end {curve.points[lastIndex].angle.toFixed(2)}°
               </output>
+              <button type="button" className="button secondary small"
+                aria-expanded={reviewRates} onClick={() => setReviewRates(value => !value)}>
+                {reviewRates ? "Close Rotation Speed" : "Review Rotation Speed"}
+              </button>
+              {reviewRates && rates && (
+                <section aria-label="Local joint rotation speed review"
+                  className="workshop-joint-rotation-rate">
+                  <p className="field-hint">
+                    Signed local angle change in degrees per second, measured
+                    between real neighboring Stage samples. Positive and negative
+                    values indicate rotation direction, not how fast the
+                    character walks or whether any foot is sliding.
+                  </p>
+                  <div className="workshop-joint-motion-curve-picture">
+                    <svg viewBox={`0 0 ${width} ${height}`} role="img"
+                      aria-label={`${rates.label} signed local rotation rate across ${rates.intervals.length} Stage intervals`}>
+                      <line className="workshop-joint-motion-curve-axis"
+                        x1={insetX} y1={zeroRateY}
+                        x2={width - insetX} y2={zeroRateY} />
+                      <polyline className="workshop-joint-motion-curve-line"
+                        fill="none" strokeWidth={2.5} points={rateLinePoints} />
+                      {pair && (() => {
+                        const interval = rates.intervals[pair.after.index - 1];
+                        return interval ? (
+                          <g>
+                            <line className="workshop-joint-motion-curve-marker"
+                              x1={xAt(interval.afterIndex, lastIndex)} y1={insetY}
+                              x2={xAt(interval.afterIndex, lastIndex)} y2={bottom}
+                              strokeWidth={1.8} strokeDasharray="4 3" />
+                            <circle className="workshop-joint-motion-curve-dot"
+                              cx={xAt(interval.afterIndex, lastIndex)}
+                              cy={rateAtY(interval.degreesPerSecond)} r={4} />
+                          </g>
+                        ) : null;
+                      })()}
+                    </svg>
+                  </div>
+                  <output aria-label="Rotation rate summary"
+                    className="workshop-joint-motion-curve-summary">
+                    {rates.label}: {rates.intervals.length} measured intervals
+                    {" · "}minimum {rates.minRate.toFixed(2)}°/s
+                    {" · "}maximum {rates.maxRate.toFixed(2)}°/s
+                    {" · "}peak absolute {rates.maxAbsoluteRate.toFixed(2)}°/s
+                  </output>
+                  {pair && rates.intervals[pair.after.index - 1] && (
+                    <p className="field-hint" role="status">
+                      Frames {pair.before.index + 1} to {pair.after.index + 1}
+                      {" · "}signed rotation rate{" "}
+                      {rates.intervals[pair.after.index - 1].degreesPerSecond.toFixed(2)}°/s
+                      {" · "}sample duration{" "}
+                      {(rates.intervals[pair.after.index - 1].afterSeconds -
+                        rates.intervals[pair.after.index - 1].beforeSeconds).toFixed(6)}s.
+                    </p>
+                  )}
+                </section>
+              )}
+              {reviewRates && !rates && (
+                <p role="status" className="field-hint">
+                  No valid local joint rotation rate is available for this step.
+                </p>
+              )}
               {pair && (
                 <p className="field-hint" role="status">
                   Selected frames {pair.before.index + 1} and {pair.after.index + 1}
