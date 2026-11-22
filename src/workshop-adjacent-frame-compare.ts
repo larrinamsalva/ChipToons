@@ -1,5 +1,6 @@
 import type { Scene } from "./model";
 import type { WorkshopMotionStep } from "./workshop-motion-steps";
+import { workshopSeatingReviewMoments } from "./workshop-seating-review";
 import {
   workshopMotionInspectionFrame,
   type WorkshopMotionInspectionFrame,
@@ -23,7 +24,19 @@ export function workshopAdjacentFramePair(
   step: WorkshopMotionStep | undefined,
   selectedIndex: number,
 ): WorkshopAdjacentFramePair | undefined {
-  if (!Number.isFinite(selectedIndex)) return undefined;
+  if (!Number.isFinite(selectedIndex) || !step) return undefined;
+  // A saved key inside the animation is not necessarily an endpoint of
+  // the SELECTED recorded movement. Verify the original adjacent review
+  // moments as well as the true keyframe times before displaying a pair.
+  const moments = workshopSeatingReviewMoments(scene, actorId);
+  const recordedStep = moments.slice(1).some((to, index) => {
+    const from = moments[index];
+    return step.id === `${from.id}-to-${to.id}` &&
+      step.from.id === from.id && step.to.id === to.id &&
+      Math.abs(step.from.seconds - from.seconds) < 0.001 &&
+      Math.abs(step.to.seconds - to.seconds) < 0.001;
+  });
+  if (!recordedStep) return undefined;
   const current = workshopMotionInspectionFrame(scene, actorId, step, selectedIndex);
   if (!current || current.lastIndex < 1) return undefined;
   const beforeIndex = current.index === 0 ? 0 : current.index - 1;
