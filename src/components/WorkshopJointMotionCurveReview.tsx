@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { Project, Scene } from "../model";
 import type { WorkshopMotionStep } from "../workshop-motion-steps";
 import { resolvedCharacter } from "../library";
@@ -21,12 +21,12 @@ export function WorkshopJointMotionCurveReview({
   const parts = actor ? resolvedCharacter(project, actor)?.puppet?.parts ?? [] : [];
   const chosenPartId = parts.some(part => part.id === partId)
     ? partId : parts.find(part => part.role === "rightArm")?.id ?? parts[0]?.id ?? "";
-  const curve = useMemo(
-    () => opened && chosenPartId
-      ? workshopJointMotionCurve(project, scene, actorId, step, chosenPartId)
-      : undefined,
-    [opened, project, scene, actorId, step, chosenPartId],
-  );
+  // Read-only graph only samples Stage while explicitly open. Avoid
+  // manual memoization across mutable scene/project references: the React
+  // Compiler rightly cannot guarantee that those dependencies stay stable.
+  const curve = opened && chosenPartId
+    ? workshopJointMotionCurve(project, scene, actorId, step, chosenPartId)
+    : undefined;
   const pair = opened ? workshopAdjacentFramePair(scene, actorId, step, selectedIndex) : undefined;
 
   const width = 600;
