@@ -14,6 +14,7 @@ import { WORKSHOP_INSPECTION_FPS, workshopMotionInspectionFrame } from "./worksh
 import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
 import { workshopAdjacentJointReview } from "./workshop-adjacent-joint-review";
 import { workshopJointMotionCurve } from "./workshop-joint-motion-curve";
+import { workshopJointRotationRates } from "./workshop-joint-rotation-rate";
 import { workshopJointReview } from "./workshop-joint-review-filter";
 import { sceneFramesAt } from "./timeline";
 import { Stage } from "./components/Stage";
@@ -451,5 +452,61 @@ describe("PR #171 real Stage-sampled local joint rotation curve", () => {
     expect(workshopJointMotionCurve(project, scene, actorId, {
       ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
     }, part.id)).toBeUndefined();
+  });
+});
+
+describe("PR #172 signed local rotation speed between authentic Stage samples", () => {
+  it("calculates the real degrees/second for each original neighboring interval", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const snapshot = JSON.stringify(project);
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const curve = workshopJointMotionCurve(project, scene, actorId, steps[0], arm.id)!;
+    const result = workshopJointRotationRates(curve)!;
+    expect(result).toBeDefined();
+    expect(result.partId).toBe(arm.id);
+    expect(result.intervals).toHaveLength(36);
+    for (const index of [1, 2, 18, 35, 36]) {
+      const interval = result.intervals[index - 1];
+      const before = curve.points[index - 1];
+      const after = curve.points[index];
+      expect(interval.afterIndex).toBe(index);
+      expect(interval.beforeSeconds).toBe(before.seconds);
+      expect(interval.afterSeconds).toBe(after.seconds);
+      expect(interval.angleDelta).toBeCloseTo(after.angle - before.angle, 8);
+      expect(interval.degreesPerSecond)
+        .toBeCloseTo((after.angle - before.angle) / (after.seconds - before.seconds), 8);
+      // The exact inspected frame pair must select this same interval.
+      const pair = workshopAdjacentFramePair(scene, actorId, steps[0], index)!;
+      expect(interval.afterSeconds).toBe(pair.after.seconds);
+      expect(interval.beforeSeconds).toBe(pair.before.seconds);
+    }
+    expect(result.minRate).toBe(Math.min(...result.intervals.map(item => item.degreesPerSecond)));
+    expect(result.maxRate).toBe(Math.max(...result.intervals.map(item => item.degreesPerSecond)));
+    expect(result.maxAbsoluteRate)
+      .toBe(Math.max(Math.abs(result.minRate), Math.abs(result.maxRate)));
+    expect(JSON.stringify(project)).toBe(snapshot);
+  });
+
+  it("handles all three real saved steps and rejects malformed frame spacing", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const arm = rig!.parts.find(part => part.role === "rightArm")!;
+    const curve = workshopJointMotionCurve(project, scene, actorId, steps[1], arm.id)!;
+    expect(workshopJointRotationRates(curve)?.intervals).toHaveLength(96);
+    expect(workshopJointRotationRates(
+      workshopJointMotionCurve(project, scene, actorId, steps[2], arm.id),
+    )?.intervals).toHaveLength(36);
+    expect(workshopJointRotationRates(undefined)).toBeUndefined();
+    expect(workshopJointRotationRates({ ...curve, points: [curve.points[0]] }))
+      .toBeUndefined();
+    const duplicate = { ...curve, points: curve.points.map(point => ({ ...point })) };
+    duplicate.points[1].seconds = duplicate.points[0].seconds;
+    expect(workshopJointRotationRates(duplicate)).toBeUndefined();
+    duplicate.points[1].seconds = curve.points[1].seconds;
+    duplicate.points[1].angle = Infinity;
+    expect(workshopJointRotationRates(duplicate)).toBeUndefined();
   });
 });
