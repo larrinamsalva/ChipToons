@@ -660,8 +660,8 @@ test("creates and saves a new fully jointed original workshop hero with editable
   const jump = rankedChanges.getByRole("button", {
     name: /Review Frames/,
   }).first();
-  const jumpLabel = (await jump.textContent() ?? "").replace(/\\s+/g, "");
-  const frames = jumpLabel.match(/ReviewFrames(\\d+)–(\\d+)/);
+  const jumpLabel = (await jump.textContent() ?? "").replace(/\s+/g, "");
+  const frames = jumpLabel.match(/ReviewFrames(\d+)–(\d+)/);
   expect(frames).not.toBeNull();
   if (!frames) throw new Error("Invalid original-frame jump label");
   await jump.click();
