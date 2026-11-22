@@ -618,7 +618,27 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(jointBody).toHaveValue("legs");
   await jointBody.selectOption("all");
   await expect(jointChangesTable).toBeVisible();
+
+  // #171: graph actual Stage-sampled local joint rotation across this
+  // recorded step. Switching a part or selected frames never edits keys.
+  await button(page, "Review Movement Curve").click();
+  const movementCurve = frameInspector.getByLabel("Joint rotation curve review");
+  const curveJoint = movementCurve.getByRole("combobox", {
+    name: "Movement curve joint",
+  });
+  const curveSummary = movementCurve.getByLabel("Joint rotation curve summary");
+  await expect(curveJoint).toBeVisible();
+  await expect(movementCurve.getByRole("img", {
+    name: /original local rotation from 3.000 to 4.500 seconds/,
+  })).toBeVisible();
+  await expect(curveSummary).toContainText("37 real Stage samples");
+  await expect(movementCurve.getByText(/Selected frames 2 and 3/)).toBeVisible();
+  await curveJoint.selectOption({ label: "left Arm" });
+  await expect(curveSummary).toContainText("Left Arm: 37 real Stage samples");
   await button(page, "Last Frame").click();
+  await expect(movementCurve.getByText(/Selected frames 36 and 37/)).toBeVisible();
+  await button(page, "Close Movement Curve").click();
+  await expect(curveSummary).toHaveCount(0);
   await expect(adjacentJoints).toContainText("4.458s and 4.500s");
   await expect(previousFrame).toContainText("Before — Frame 36");
   await expect(followingFrame).toContainText("After — Frame 37");
