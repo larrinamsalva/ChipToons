@@ -6692,3 +6692,58 @@ fieldset.interaction-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* #170: actual adjacent Stage joint deltas, inspect-only, no edits. */
+.workshop-motion-adjacent-joints {
+  display: grid;
+  grid-column: 1 / -1;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.workshop-motion-adjacent-joints > .button {
+  width: 100%;
+  white-space: normal;
+}
+.workshop-motion-adjacent-joints label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.workshop-motion-adjacent-joints select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--bg);
+}
+.workshop-motion-adjacent-joints-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.workshop-motion-adjacent-joints-scroll table {
+  width: 100%;
+  min-width: 500px;
+  border-collapse: collapse;
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.workshop-motion-adjacent-joints-scroll th,
+.workshop-motion-adjacent-joints-scroll td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.workshop-motion-adjacent-joints-scroll tr[data-largest-rotation="true"] th {
+  font-weight: 800;
+}
