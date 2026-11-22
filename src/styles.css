@@ -6588,3 +6588,56 @@ fieldset.interaction-fields {
     flex: 1 1 100%;
   }
 }
+
+
+/* #168: real 24fps read-only frame-by-frame Stage inspection. */
+.workshop-motion-frame-stepper {
+  display: grid;
+  min-width: 0;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.workshop-motion-frame-stepper > .button {
+  width: 100%;
+  white-space: normal;
+}
+.workshop-motion-frame-stepper-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.workshop-motion-frame-stepper-controls .button {
+  min-height: 44px;
+  padding: 9px;
+  white-space: normal;
+}
+.workshop-motion-frame-stepper-status {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.workshop-motion-frame-stepper-stage {
+  min-width: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--hero);
+  overflow: hidden;
+}
+.workshop-motion-frame-stepper-stage svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (min-width: 640px) {
+  .workshop-motion-frame-stepper-controls {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
