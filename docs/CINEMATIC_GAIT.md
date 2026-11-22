@@ -1129,6 +1129,32 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   and playback, recordings, saved episodes, export and Undo stay
   unchanged. The graph only appears when explicitly opened.
 
+## PR #173 — Find Real Joint Rotation Rate Changes
+
+- Open **Review Movement Curve → Review Rotation Speed → Find Largest
+  Rotation Changes** for a named puppet joint. The opt-in list ranks
+  the five largest observed differences in signed *local* rotation
+  speed across two neighboring genuine Stage sample intervals.
+- These observations are calculated from **#172 original degrees-per-second
+  intervals**. Each change in angular rate uses the actual spacing between
+  the **two interval midpoints** (including irregular final-frame spacing),
+  so numbers are expressed as signed **degrees per second squared**.
+- Choose **Review Frames X–Y** to select the real adjacent Stage pair
+  immediately after that measured change. The existing before/after
+  Stage previews and inspectors update without changing saved motion
+  keys, Undo state, recordings, playhead or the media export.
+- The findings are **descriptive, not automatic warnings or quality
+  scores**. An intentional impact or quick gesture can have a large
+  measured change. This does not infer world-space walking speed,
+  foot contact, collisions, biomechanics or a promise of natural-looking
+  animation. Creators decide whether to edit their source animation.
+- Unit tests verify real Stage point-derived rates, ranking and shared-frame
+  navigation across multiple Workshop steps, irregular timestamp
+  spacing and malformed input rejection. Browser coverage checks
+  the ranked view and one-click adjacent-frame navigation.
+- Keep this optional and bounded to the existing <=720-frame
+  inspection limit, high-contrast on phone/tablet/desktop.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
