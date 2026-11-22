@@ -5,20 +5,23 @@ import { resolvedCharacter } from "../library";
 import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
 import { workshopJointMotionCurve } from "../workshop-joint-motion-curve";
 import { workshopJointRotationRates } from "../workshop-joint-rotation-rate";
+import { workshopLargestRotationRateChanges } from "../workshop-rate-change-finder";
 
 /** A compact opt-in graph of actual Stage joint rotations, not a pose editor. */
 export function WorkshopJointMotionCurveReview({
-  project, scene, actorId, step, selectedIndex,
+  project, scene, actorId, step, selectedIndex, onSelectFrame,
 }: {
   project: Project;
   scene: Scene;
   actorId: string;
   step: WorkshopMotionStep;
   selectedIndex: number;
+  onSelectFrame: (index: number) => void;
 }) {
   const [opened, setOpened] = useState(false);
   const [partId, setPartId] = useState("");
   const [reviewRates, setReviewRates] = useState(false);
+  const [reviewChanges, setReviewChanges] = useState(false);
   const actor = scene.elements.find(element => element.id === actorId);
   const parts = actor ? resolvedCharacter(project, actor)?.puppet?.parts ?? [] : [];
   const chosenPartId = parts.some(part => part.id === partId)
@@ -31,6 +34,8 @@ export function WorkshopJointMotionCurveReview({
     : undefined;
   const pair = opened ? workshopAdjacentFramePair(scene, actorId, step, selectedIndex) : undefined;
   const rates = opened && reviewRates ? workshopJointRotationRates(curve) : undefined;
+  const changes = opened && reviewRates && reviewChanges
+    ? workshopLargestRotationRateChanges(rates) : undefined;
 
   const width = 600;
   const height = 144;
@@ -163,6 +168,48 @@ export function WorkshopJointMotionCurveReview({
                     {" · "}maximum {rates.maxRate.toFixed(2)}°/s
                     {" · "}peak absolute {rates.maxAbsoluteRate.toFixed(2)}°/s
                   </output>
+                  <button type="button" className="button secondary small"
+                    aria-expanded={reviewChanges}
+                    onClick={() => setReviewChanges(value => !value)}>
+                    {reviewChanges ? "Close Rotation Change Finder" : "Find Largest Rotation Changes"}
+                  </button>
+                  {reviewChanges && changes && (
+                    <section aria-label="Rotation speed change finder"
+                      className="workshop-rotation-change-finder">
+                      <p className="field-hint">
+                        These are the largest measured changes in local joint
+                        rotation rate between neighboring Stage intervals.
+                        A big number may be intentional. Choose any result
+                        to inspect its original adjacent frames—no keyframes
+                        or recorded motions are edited.
+                      </p>
+                      <output aria-label="Rotation change findings count">
+                        {changes.totalChanges} measured rate changes
+                        {" · "}showing the largest {changes.largest.length}.
+                      </output>
+                      <ol aria-label="Largest local joint rotation rate changes">
+                        {changes.largest.map(change => (
+                          <li key={change.sharedFrameIndex}>
+                            <span>
+                              Frame {change.sharedFrameIndex + 1}
+                              {" · "}{change.seconds.toFixed(3)}s
+                              {" · "}{change.degreesPerSecondSquared.toFixed(2)}°/s²
+                            </span>
+                            <button type="button" className="button secondary small"
+                              onClick={() => onSelectFrame(change.afterFrameIndex)}>
+                              Review Frames {change.sharedFrameIndex + 1}–
+                              {change.afterFrameIndex + 1}
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                    </section>
+                  )}
+                  {reviewChanges && !changes && (
+                    <p role="status" className="field-hint">
+                      No valid neighboring rate changes are available.
+                    </p>
+                  )}
                   {pair && rates.intervals[pair.after.index - 1] && (
                     <p className="field-hint" role="status">
                       Frames {pair.before.index + 1} to {pair.after.index + 1}
