@@ -11,6 +11,7 @@ import { workshopMotionSteps } from "./workshop-motion-steps";
 import { workshopMotionScrubSample } from "./workshop-motion-scrub";
 import { workshopMotionLoopFrame } from "./workshop-motion-loop";
 import { WORKSHOP_INSPECTION_FPS, workshopMotionInspectionFrame } from "./workshop-motion-frame-stepper";
+import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
 import { Stage } from "./components/Stage";
 
 function fixture() {
@@ -236,5 +237,69 @@ describe("PR #168 genuine 24-fps read-only frame inspection", () => {
     expect(workshopMotionInspectionFrame(scene, actorId, {
       ...steps[0], from: { ...steps[0].from, seconds: 3.125 },
     }, 0)).toBeUndefined();
+  });
+});
+
+
+describe("PR #169 adjacent original Stage-frame comparisons", () => {
+  it("compares authentic neighboring samples at the beginning, middle and end", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const snapshot = JSON.stringify(project);
+    const pair = (index: number) =>
+      workshopAdjacentFramePair(scene, actorId, steps[0], index);
+    expect(pair(0)).toMatchObject({
+      before: { index: 0, seconds: 3, savedKeyframe: true },
+      after: { index: 1, seconds: 3.041667, savedKeyframe: false },
+      spacingSeconds: 0.041667,
+    });
+    expect(pair(1)).toMatchObject({
+      before: { index: 0, seconds: 3 },
+      after: { index: 1, seconds: 3.041667 },
+    });
+    expect(pair(2)).toMatchObject({
+      before: { index: 1, seconds: 3.041667 },
+      after: { index: 2, seconds: 3.083333 },
+      spacingSeconds: 0.041666,
+    });
+    expect(pair(36)).toMatchObject({
+      before: { index: 35, seconds: 4.458333 },
+      after: { index: 36, seconds: 4.5, savedKeyframe: true },
+      spacingSeconds: 0.041667,
+    });
+    expect(pair(900)?.after.seconds).toBe(4.5);
+    const first = pair(2)!;
+    const before = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: first.before.seconds, labelled: false,
+    }));
+    const after = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: first.after.seconds, labelled: false,
+    }));
+    expect(before).toContain('viewBox="0 0 800 450"');
+    expect(after).toContain('data-puppet-part="rightArm"');
+    expect(before).not.toBe(after);
+    expect(JSON.stringify(project)).toBe(snapshot);
+  });
+
+  it("uses actual saved endpoints across different durations and rejects fabricated keys", () => {
+    const { scene, actorId, steps } = fixture();
+    expect(workshopAdjacentFramePair(scene, actorId, steps[1], 2)).toMatchObject({
+      before: { index: 1, seconds: 4.541667 },
+      after: { index: 2, seconds: 4.583333 },
+    });
+    expect(workshopAdjacentFramePair(scene, actorId, steps[1], 96)?.after)
+      .toMatchObject({ index: 96, seconds: 8.5, savedKeyframe: true });
+    expect(workshopAdjacentFramePair(scene, actorId, steps[2], 1)?.before)
+      .toMatchObject({ index: 0, seconds: 8.5, savedKeyframe: true });
+    expect(workshopAdjacentFramePair(scene, actorId, steps[0], NaN))
+      .toBeUndefined();
+    expect(workshopAdjacentFramePair(scene, actorId, steps[0], Infinity))
+      .toBeUndefined();
+    expect(workshopAdjacentFramePair(scene, "unknown", steps[0], 1))
+      .toBeUndefined();
+    expect(workshopAdjacentFramePair(scene, actorId, undefined, 1))
+      .toBeUndefined();
+    expect(workshopAdjacentFramePair(scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
+    }, 1)).toBeUndefined();
   });
 });
