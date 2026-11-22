@@ -3,6 +3,7 @@ import type { Project, Scene } from "../model";
 import type { WorkshopMotionStep } from "../workshop-motion-steps";
 import {
   workshopMotionLoopFrame,
+  workshopMotionLoopElapsed,
   type WorkshopMotionLoopSpeed,
 } from "../workshop-motion-loop";
 import { workshopMotionScrubSample } from "../workshop-motion-scrub";
@@ -42,7 +43,11 @@ export function WorkshopMotionLoopPlayer({
         // slightly BEFORE performance.now() captured while Play was clicked.
         // A tiny negative elapsed value is not an invalid saved motion step:
         // clamp it to frame zero rather than immediately toggling Play off.
-        const elapsed = Math.max(0, now - startingTime);
+        const elapsed = workshopMotionLoopElapsed(now, startingTime);
+        if (elapsed === undefined) {
+          setPlaying(false);
+          return;
+        }
         const next = workshopMotionLoopFrame(
           scene, actorId, step, startingPercent, elapsed, speed,
         );
