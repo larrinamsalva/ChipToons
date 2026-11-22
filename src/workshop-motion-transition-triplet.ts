@@ -1,10 +1,8 @@
 import type { Scene } from "./model";
 import type { WorkshopMotionStep } from "./workshop-motion-steps";
 import type { WorkshopRotationRateChange } from "./workshop-rate-change-finder";
-import {
-  workshopMotionInspectionFrame,
-  type WorkshopMotionInspectionFrame,
-} from "./workshop-motion-frame-stepper";
+import type { WorkshopMotionInspectionFrame } from "./workshop-motion-frame-stepper";
+import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
 
 export interface WorkshopMotionTransitionTriplet {
   before: WorkshopMotionInspectionFrame;
@@ -32,13 +30,21 @@ export function workshopMotionTransitionTriplet(
     change.afterFrameIndex !== change.sharedFrameIndex + 1 ||
     !Number.isFinite(change.seconds)) return undefined;
 
-  const before = workshopMotionInspectionFrame(
-    scene, actorId, step, change.sharedFrameIndex - 1);
-  const middle = workshopMotionInspectionFrame(
+  // Reuse the STRICT original recorded-step boundary validator from
+  // #169. A real *interior* keyframe still cannot replace the saved
+  // destination of the selected sit/wave/rise/stand motion step.
+  const firstPair = workshopAdjacentFramePair(
     scene, actorId, step, change.sharedFrameIndex);
-  const after = workshopMotionInspectionFrame(
+  const secondPair = workshopAdjacentFramePair(
     scene, actorId, step, change.afterFrameIndex);
-  if (!before || !middle || !after ||
+  if (!firstPair || !secondPair ||
+    firstPair.after.index !== secondPair.before.index ||
+    Math.abs(firstPair.after.seconds - secondPair.before.seconds) > 0.000001)
+    return undefined;
+  const before = firstPair.before;
+  const middle = firstPair.after;
+  const after = secondPair.after;
+  if (
     before.index !== change.sharedFrameIndex - 1 ||
     middle.index !== change.sharedFrameIndex ||
     after.index !== change.afterFrameIndex ||
