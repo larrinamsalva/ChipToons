@@ -5,6 +5,7 @@ import {
   WORKSHOP_INSPECTION_FPS,
   workshopMotionInspectionFrame,
 } from "../workshop-motion-frame-stepper";
+import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
 import { Stage } from "./Stage";
 
 /** Read-only one-frame-at-a-time inspection of existing Stage interpolation. */
@@ -18,7 +19,11 @@ export function WorkshopMotionFrameStepper({
 }) {
   const [opened, setOpened] = useState(false);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [comparing, setComparing] = useState(false);
   const sample = workshopMotionInspectionFrame(scene, actorId, step, frameIndex);
+  const neighboring = comparing
+    ? workshopAdjacentFramePair(scene, actorId, step, frameIndex)
+    : undefined;
 
   return (
     <section className="workshop-motion-frame-stepper" aria-label="Motion frame-by-frame inspector">
@@ -59,11 +64,50 @@ export function WorkshopMotionFrameStepper({
               ? "Original saved keyframe"
               : "Real interpolated Stage sample"}
           </output>
-          <div className="workshop-motion-frame-stepper-stage"
-            aria-label="Inspected original Stage frame">
-            <Stage project={project} scene={scene}
-              time={sample.seconds} labelled={false} />
-          </div>
+          <button
+            className="button secondary small"
+            type="button"
+            aria-pressed={comparing}
+            onClick={() => setComparing(value => !value)}
+          >
+            {comparing ? "Show Single Frame" : "Compare Adjacent Frames"}
+          </button>
+          {comparing && neighboring ? (
+            <div className="workshop-motion-adjacent-comparison"
+              aria-label="Adjacent original Stage frames comparison">
+              {([
+                { label: "Before", frame: neighboring.before },
+                { label: "After", frame: neighboring.after },
+              ] as const).map(({ label, frame }) => (
+                <figure className="workshop-motion-adjacent-card"
+                  key={label}
+                  aria-label={`${label} adjacent original Stage frame`}>
+                  <div className="workshop-motion-adjacent-picture">
+                    <Stage project={project} scene={scene}
+                      time={frame.seconds} labelled={false} />
+                  </div>
+                  <figcaption>
+                    <strong>{label} — Frame {frame.index + 1}</strong>
+                    <span>{frame.seconds.toFixed(3)}s · {frame.savedKeyframe
+                      ? "Original saved keyframe"
+                      : "Real interpolated Stage sample"}</span>
+                  </figcaption>
+                </figure>
+              ))}
+              <p className="field-hint workshop-motion-adjacent-spacing"
+                role="status">
+                Comparing adjacent original timeline samples
+                {" · "}{neighboring.spacingSeconds.toFixed(3)}s apart.
+                This is a visual comparison, not a movement-quality score.
+              </p>
+            </div>
+          ) : (
+            <div className="workshop-motion-frame-stepper-stage"
+              aria-label="Inspected original Stage frame">
+              <Stage project={project} scene={scene}
+                time={sample.seconds} labelled={false} />
+            </div>
+          )}
           <p className="field-hint">
             {WORKSHOP_INSPECTION_FPS} frames per second is an inspection
             spacing, not a change to your project's export settings.
