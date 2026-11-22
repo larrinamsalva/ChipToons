@@ -298,8 +298,19 @@ describe("PR #169 adjacent original Stage-frame comparisons", () => {
       .toBeUndefined();
     expect(workshopAdjacentFramePair(scene, actorId, undefined, 1))
       .toBeUndefined();
+    // A real key at 4.25s exists inside the authored sit-to-wave
+    // animation. That key is valid source data, but it is NOT the
+    // recorded step endpoint at 4.50s and must not replace it.
+    const authoredKeys = scene.elements.find(element => element.id === actorId)!
+      .animation!.keyframes;
+    expect(authoredKeys.some(key => Math.abs(key.time - 4.25) < .001))
+      .toBe(true);
     expect(workshopAdjacentFramePair(scene, actorId, {
       ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
+    }, 1)).toBeUndefined();
+    // An entirely unsaved timestamp must also be rejected.
+    expect(workshopAdjacentFramePair(scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.333 },
     }, 1)).toBeUndefined();
   });
 });
