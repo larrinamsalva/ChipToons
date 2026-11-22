@@ -6814,3 +6814,36 @@ fieldset.interaction-fields {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
+
+/* #173: original Stage-local joint rate changes, accessible on small screens. */
+.workshop-rotation-change-finder {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+.workshop-rotation-change-finder ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-inline-start: 22px;
+}
+.workshop-rotation-change-finder li {
+  min-width: 0;
+  padding: 7px 3px;
+  border-bottom: 1px solid var(--line);
+}
+.workshop-rotation-change-finder li span {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-bottom: 5px;
+}
+.workshop-rotation-change-finder li button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+}
