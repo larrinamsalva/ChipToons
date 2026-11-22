@@ -964,6 +964,42 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   original project immutability. Browser checks cover Play, Pause,
   Restart, speed changes and closing the loop across phone/tablet/desktop.
 
+## PR #168 — Exact Frame-by-Frame Stage Inspection (24-fps grid)
+
+- In **Compare Two Poses Side by Side → Review Motion Steps → Review
+  Three-Frame Filmstrip**, select one actual adjacent saved transition
+  and open **Review Frame by Frame**.
+- **Next Frame** and **Previous Frame** inspect one frame-spacing step
+  of the existing real Stage animation at a time. **First Frame** and
+  **Last Frame** jump directly to the original saved endpoints. All four
+  buttons respect endpoints, with no wraparound.
+- Inspection uses a fixed **24 samples per second** from the saved
+  start pose, plus the exact saved ending pose even for an interval
+  whose duration is not evenly divisible by 1/24 second. The UI shows
+  a one-based frame number, total sample count, and time to three
+  decimal places. An existing saved authored keyframe is identified
+  separately from the real interpolated Stage result.
+- Unlike the prior percentage slider (1% steps), inspection samples
+  the exact scene timeline at 1/24-second intervals. It calls the
+  normal `Stage` renderer with the authored scene, camera, furniture,
+  puppet and props. It **does not** create artwork, keys, changes to
+  angles, screenshots, exports or a second video.
+- **24 fps is only the inspection grid**, not a claim that the studio
+  media export uses a particular frame rate. The feature does not
+  modify project export settings, the separate motion loop, Undo,
+  main playhead, audio, effects, narration or saved scene data.
+- The controls and 16:9 preview are opt-in, keyboard and touch
+  accessible, sized for phones and high contrast in dark/light mode.
+  The inspector resets to the first original saved pose when switching
+  to a different recorded motion step.
+- Unit QA checks the actual Stage SVG at positions 0, 1, 2, 18 and
+  36 of a real 1.5-second recorded move (including exact 3.041667s
+  interpolation), second/final step lengths, clamping, rejecting
+  missing or spoofed keyframe endpoints, and no project mutation.
+  Desktop/phone/tablet browser QA checks 24-fps stepping, Previous/
+  Next and First/Last limits, timestamp readouts, true SVG preview
+  and closing the panel.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

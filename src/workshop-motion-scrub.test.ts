@@ -10,6 +10,7 @@ import { standAfterSeatedGreeting } from "./workshop-sit-wave-stand";
 import { workshopMotionSteps } from "./workshop-motion-steps";
 import { workshopMotionScrubSample } from "./workshop-motion-scrub";
 import { workshopMotionLoopFrame } from "./workshop-motion-loop";
+import { WORKSHOP_INSPECTION_FPS, workshopMotionInspectionFrame } from "./workshop-motion-frame-stepper";
 import { Stage } from "./components/Stage";
 
 function fixture() {
@@ -178,5 +179,62 @@ describe("PR #167 true read-only Stage motion loop", () => {
     expect(workshopMotionLoopFrame(scene, actorId, {
       ...steps[0], to: { ...steps[0].to, seconds: 4.333 },
     }, 0, 0, 1)).toBeUndefined();
+  });
+});
+
+
+describe("PR #168 genuine 24-fps read-only frame inspection", () => {
+  it("inspects real Stage at every 1/24s step, including both saved endpoints", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const snapshot = JSON.stringify(project);
+    const sample = (index: number) =>
+      workshopMotionInspectionFrame(scene, actorId, steps[0], index);
+    expect(WORKSHOP_INSPECTION_FPS).toBe(24);
+    expect(sample(0)).toMatchObject({
+      index: 0, lastIndex: 36, seconds: 3, savedKeyframe: true,
+    });
+    expect(sample(1)).toMatchObject({
+      index: 1, lastIndex: 36, seconds: 3.041667, savedKeyframe: false,
+    });
+    expect(sample(2)).toMatchObject({
+      index: 2, lastIndex: 36, seconds: 3.083333,
+    });
+    expect(sample(18)).toMatchObject({ seconds: 3.75 });
+    expect(sample(36)).toMatchObject({
+      index: 36, lastIndex: 36, seconds: 4.5, savedKeyframe: true,
+    });
+    expect(sample(-10)).toMatchObject({ index: 0, seconds: 3 });
+    expect(sample(900)).toMatchObject({ index: 36, seconds: 4.5 });
+    const frame0 = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: sample(0)!.seconds, labelled: false,
+    }));
+    const frame1 = renderToStaticMarkup(createElement(Stage, {
+      project, scene, time: sample(1)!.seconds, labelled: false,
+    }));
+    expect(frame1).toContain('viewBox="0 0 800 450"');
+    expect(frame1).toContain('data-puppet-part="rightArm"');
+    expect(frame1).not.toBe(frame0);
+    expect(JSON.stringify(project)).toBe(snapshot);
+  });
+
+  it("handles other real movement lengths, rejects invalid requests and never edits keys", () => {
+    const { scene, actorId, steps } = fixture();
+    expect(workshopMotionInspectionFrame(scene, actorId, steps[1], 0))
+      .toMatchObject({ index: 0, lastIndex: 96, seconds: 4.5 });
+    expect(workshopMotionInspectionFrame(scene, actorId, steps[1], 96))
+      .toMatchObject({ index: 96, seconds: 8.5, savedKeyframe: true });
+    expect(workshopMotionInspectionFrame(scene, actorId, steps[2], 1))
+      .toMatchObject({ index: 1, lastIndex: 36, seconds: 8.541667 });
+    expect(workshopMotionInspectionFrame(scene, actorId, steps[0], NaN))
+      .toBeUndefined();
+    expect(workshopMotionInspectionFrame(scene, actorId, steps[0], Infinity))
+      .toBeUndefined();
+    expect(workshopMotionInspectionFrame(scene, actorId, undefined, 0))
+      .toBeUndefined();
+    expect(workshopMotionInspectionFrame(scene, "unknown", steps[0], 0))
+      .toBeUndefined();
+    expect(workshopMotionInspectionFrame(scene, actorId, {
+      ...steps[0], from: { ...steps[0].from, seconds: 3.125 },
+    }, 0)).toBeUndefined();
   });
 });
