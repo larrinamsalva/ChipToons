@@ -1107,6 +1107,28 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   confirm the real Stage sample count and track currently selected
   adjacent frames on phone/tablet/desktop.
 
+## PR #172 — Inspect Real Joint Rotation Speed
+
+- Inside **Review Movement Curve**, choose **Review Rotation Speed**.
+  The optional second graph uses the same 24-fps Stage joint angles
+  already sampled by #171, converting consecutive signed local-angle
+  differences into **degrees per second** using their actual timestamps.
+- Positive values represent one direction of local rotation and negative
+  values the opposite direction. The horizontal reference line is zero.
+  A marker follows the authentic currently selected neighboring frame
+  pair; the readout shows the signed rate and the sample duration.
+- The final frame interval may be shorter than 1/24 second; its
+  measured spacing is honored, not assumed. Unit tests compare
+  computed rates with original Stage samples for all three recorded
+  motion steps and reject invalid/duplicate timestamps. Browser
+  coverage verifies opening, different limbs, navigating frames and
+  closing the speed graph on existing phone/desktop workflows.
+- This is **not** a world-space speed, character walking speed,
+  foot-contact detector, collision system, easing editor or subjective
+  animation-quality score. No keyframes are created or modified,
+  and playback, recordings, saved episodes, export and Undo stay
+  unchanged. The graph only appears when explicitly opened.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
