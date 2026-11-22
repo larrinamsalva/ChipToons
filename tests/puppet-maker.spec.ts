@@ -681,7 +681,7 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(middleTransition).toContainText("Middle — Frame");
   await expect(afterTransition).toContainText("After — Frame");
   const afterText = await afterTransition.textContent() ?? "";
-  const afterMatch = afterText.match(/After — Frame (\\d+)/);
+  const afterMatch = afterText.match(/After — Frame (\d+)/);
   expect(afterMatch).not.toBeNull();
   if (!afterMatch) throw new Error("Missing original transition frame number");
   await button(page, "Review This Transition in Adjacent Frames").click();
