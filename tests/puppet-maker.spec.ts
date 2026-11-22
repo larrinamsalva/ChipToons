@@ -598,7 +598,28 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await button(page, "Next Frame").click();
   await expect(previousFrame).toContainText("Before — Frame 2");
   await expect(followingFrame).toContainText("After — Frame 3");
+
+  // #170: genuine Stage-resolved local joints at neighboring 24-fps frames,
+  // with no edits to source animation, main clock or 20-minute export.
+  await button(page, "Inspect Adjacent Joint Changes").click();
+  const adjacentJoints = frameInspector.getByLabel(
+    "Adjacent frame joint movement review",
+  );
+  const jointChangesTable = adjacentJoints.getByRole("table", {
+    name: "Adjacent frame joint changes",
+  });
+  await expect(adjacentJoints).toContainText("3.042s and 3.083s");
+  await expect(jointChangesTable).toBeVisible();
+  await expect(jointChangesTable.locator("tbody tr").first()).toBeVisible();
+  const jointBody = adjacentJoints.getByLabel("Adjacent joint body filter");
+  await jointBody.selectOption("arms");
+  await expect(jointBody).toHaveValue("arms");
+  await jointBody.selectOption("legs");
+  await expect(jointBody).toHaveValue("legs");
+  await jointBody.selectOption("all");
+  await expect(jointChangesTable).toBeVisible();
   await button(page, "Last Frame").click();
+  await expect(adjacentJoints).toContainText("4.458s and 4.500s");
   await expect(previousFrame).toContainText("Before — Frame 36");
   await expect(followingFrame).toContainText("After — Frame 37");
   await expect(followingFrame).toContainText("4.500s");

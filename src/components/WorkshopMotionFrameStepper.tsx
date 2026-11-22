@@ -6,6 +6,9 @@ import {
   workshopMotionInspectionFrame,
 } from "../workshop-motion-frame-stepper";
 import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
+import { workshopAdjacentJointReview } from "../workshop-adjacent-joint-review";
+import { workshopJointReview } from "../workshop-joint-review-filter";
+import type { WorkshopJointGroup } from "../workshop-joint-review-filter";
 import { Stage } from "./Stage";
 
 /** Read-only one-frame-at-a-time inspection of existing Stage interpolation. */
@@ -20,9 +23,17 @@ export function WorkshopMotionFrameStepper({
   const [opened, setOpened] = useState(false);
   const [frameIndex, setFrameIndex] = useState(0);
   const [comparing, setComparing] = useState(false);
+  const [jointInspecting, setJointInspecting] = useState(false);
+  const [jointGroup, setJointGroup] = useState<WorkshopJointGroup>("all");
   const sample = workshopMotionInspectionFrame(scene, actorId, step, frameIndex);
   const neighboring = comparing
     ? workshopAdjacentFramePair(scene, actorId, step, frameIndex)
+    : undefined;
+  const jointChanges = comparing && jointInspecting && neighboring
+    ? workshopAdjacentJointReview(project, scene, actorId, step, frameIndex)
+    : undefined;
+  const jointView = jointChanges
+    ? workshopJointReview(jointChanges.changes, jointGroup, "rotation")
     : undefined;
 
   return (
@@ -100,6 +111,80 @@ export function WorkshopMotionFrameStepper({
                 {" · "}{neighboring.spacingSeconds.toFixed(3)}s apart.
                 This is a visual comparison, not a movement-quality score.
               </p>
+              <section className="workshop-motion-adjacent-joints"
+                aria-label="Adjacent frame joint movement review">
+                <button type="button" className="button secondary small"
+                  aria-expanded={jointInspecting}
+                  onClick={() => setJointInspecting(value => !value)}>
+                  {jointInspecting
+                    ? "Close Adjacent Joint Changes"
+                    : "Inspect Adjacent Joint Changes"}
+                </button>
+                {jointInspecting && jointChanges && jointView && (
+                  <>
+                    <p className="field-hint">
+                      Actual local joint angles and offsets sampled from the
+                      two rendered Stage frames. These measurements do not
+                      detect ground contact, collisions or animation quality.
+                    </p>
+                    <label>
+                      Adjacent joint body filter
+                      <select aria-label="Adjacent joint body filter"
+                        value={jointGroup}
+                        onChange={event =>
+                          setJointGroup(event.target.value as WorkshopJointGroup)}>
+                        <option value="all">All body parts</option>
+                        <option value="arms">Arms and hands</option>
+                        <option value="legs">Legs and feet</option>
+                        <option value="body">Head and body</option>
+                      </select>
+                    </label>
+                    <p className="field-hint" role="status">
+                      Showing {jointView.rows.length} of {jointChanges.changes.length}
+                      {" "}changed local joints between
+                      {" "}{jointChanges.beforeSeconds.toFixed(3)}s and
+                      {" "}{jointChanges.afterSeconds.toFixed(3)}s.
+                      Largest angular change appears first.
+                    </p>
+                    {jointView.rows.length ? (
+                      <div className="workshop-motion-adjacent-joints-scroll">
+                        <table aria-label="Adjacent frame joint changes">
+                          <thead>
+                            <tr>
+                              <th scope="col">Joint</th>
+                              <th scope="col">Before °</th>
+                              <th scope="col">After °</th>
+                              <th scope="col">Change °</th>
+                              <th scope="col">Offset Δ px</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {jointView.rows.map(change => (
+                              <tr key={change.partId}
+                                data-largest-rotation={
+                                  change.partId === jointView.largestRotationPartId
+                                    ? "true" : undefined}>
+                                <th scope="row">{change.label}</th>
+                                <td>{change.beforeAngle.toFixed(2)}</td>
+                                <td>{change.afterAngle.toFixed(2)}</td>
+                                <td>{change.angleDelta > 0 ? "+" : ""}
+                                  {change.angleDelta.toFixed(2)}</td>
+                                <td>{change.xDelta.toFixed(2)},
+                                  {" "}{change.yDelta.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="field-hint" role="status">
+                        No measurable local joint changes in this body group
+                        between these two samples. Try another filter.
+                      </p>
+                    )}
+                  </>
+                )}
+              </section>
             </div>
           ) : (
             <div className="workshop-motion-frame-stepper-stage"

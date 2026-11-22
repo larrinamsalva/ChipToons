@@ -12,6 +12,9 @@ import { workshopMotionScrubSample } from "./workshop-motion-scrub";
 import { workshopMotionLoopFrame, workshopMotionLoopElapsed } from "./workshop-motion-loop";
 import { WORKSHOP_INSPECTION_FPS, workshopMotionInspectionFrame } from "./workshop-motion-frame-stepper";
 import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
+import { workshopAdjacentJointReview } from "./workshop-adjacent-joint-review";
+import { workshopJointReview } from "./workshop-joint-review-filter";
+import { sceneFramesAt } from "./timeline";
 import { Stage } from "./components/Stage";
 
 function fixture() {
@@ -326,6 +329,70 @@ describe("PR #169 adjacent original Stage-frame comparisons", () => {
     // An entirely unsaved timestamp must also be rejected.
     expect(workshopAdjacentFramePair(scene, actorId, {
       ...steps[0], to: { ...steps[0].to, seconds: 4.333 },
+    }, 1)).toBeUndefined();
+  });
+});
+
+
+describe("PR #170 true adjacent Stage-sampled joint movement review", () => {
+  it("measures real interpolated local joint differences from the same Stage frames", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const original = JSON.stringify(project);
+    const result = workshopAdjacentJointReview(project, scene, actorId, steps[0], 12);
+    expect(result).toBeDefined();
+    expect(result?.beforeSeconds).toBe(3.458333);
+    expect(result?.afterSeconds).toBe(3.5);
+    expect(result?.changes.length).toBeGreaterThan(0);
+    const beforeJoints = sceneFramesAt(project, scene, result!.beforeSeconds)
+      .get(actorId)?.joints;
+    const afterJoints = sceneFramesAt(project, scene, result!.afterSeconds)
+      .get(actorId)?.joints;
+    expect(beforeJoints).toBeDefined();
+    expect(afterJoints).toBeDefined();
+    for (const change of result!.changes) {
+      expect(change.beforeAngle).toBeCloseTo(beforeJoints?.[change.partId]?.angle ?? 0, 6);
+      expect(change.afterAngle).toBeCloseTo(afterJoints?.[change.partId]?.angle ?? 0, 6);
+      expect(change.angleDelta).toBeCloseTo(change.afterAngle - change.beforeAngle, 6);
+      expect(Number.isFinite(change.xDelta)).toBe(true);
+      expect(Number.isFinite(change.yDelta)).toBe(true);
+    }
+    for (let i = 1; i < result!.changes.length; i++) {
+      expect(Math.abs(result!.changes[i - 1].angleDelta))
+        .toBeGreaterThanOrEqual(Math.abs(result!.changes[i].angleDelta) - 1e-8);
+    }
+    const arms = workshopJointReview(result!.changes, "arms", "rotation");
+    const legs = workshopJointReview(result!.changes, "legs", "rotation");
+    const body = workshopJointReview(result!.changes, "body", "rotation");
+    expect(arms.rows.every(item => /^(left|right)(Arm|Forearm|Hand)$/.test(item.role)))
+      .toBe(true);
+    expect(legs.rows.every(item => /^(left|right)(Leg|Shin|Foot)$/.test(item.role)))
+      .toBe(true);
+    expect(arms.rows.length + legs.rows.length + body.rows.length)
+      .toBe(result!.changes.length);
+    expect(JSON.stringify(project)).toBe(original);
+  });
+
+  it("uses saved step boundaries and rejects invalid or substituted endpoints", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const first = workshopAdjacentJointReview(project, scene, actorId, steps[0], 0);
+    const last = workshopAdjacentJointReview(project, scene, actorId, steps[0], 36);
+    expect(first).toMatchObject({
+      beforeSeconds: 3, afterSeconds: 3.041667,
+    });
+    expect(last).toMatchObject({
+      beforeSeconds: 4.458333, afterSeconds: 4.5,
+    });
+    expect(workshopAdjacentJointReview(project, scene, actorId, steps[1], 96))
+      .toMatchObject({ beforeSeconds: 8.458333, afterSeconds: 8.5 });
+    expect(workshopAdjacentJointReview(project, scene, actorId, steps[0], NaN))
+      .toBeUndefined();
+    expect(workshopAdjacentJointReview(project, scene, "non-existent", steps[0], 0))
+      .toBeUndefined();
+    expect(workshopAdjacentJointReview(project, scene, actorId, undefined, 0))
+      .toBeUndefined();
+    // 4.25s is a real interior key, but not the selected step's endpoint.
+    expect(workshopAdjacentJointReview(project, scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
     }, 1)).toBeUndefined();
   });
 });
