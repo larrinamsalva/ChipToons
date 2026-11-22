@@ -1000,6 +1000,39 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   Next and First/Last limits, timestamp readouts, true SVG preview
   and closing the panel.
 
+## PR #169 — Compare Two Adjacent REAL Animation Frames
+
+- Follow **Compare Two Poses Side by Side → Review Motion Steps →
+  Review Three-Frame Filmstrip → Review Frame by Frame**. Choose
+  **Compare Adjacent Frames** to replace the single-frame preview
+  with two genuine Stage snapshots. **Show Single Frame** returns
+  to the original view.
+- The comparison is taken from the existing 24-fps frame-inspection
+  grid, not invented in-between artwork. For frame 2 onward,
+  the left **Before** preview displays the previous real sample
+  and the right **After** preview displays the selected frame.
+  At the first frame it compares frame 1 → frame 2 so there is
+  always a useful motion change to inspect.
+- Each snapshot renders the complete authored Stage scene at its
+  genuine scene-local time; labels show the sample number, exact
+  timestamp and whether the sample was a saved keyframe or
+  normal timeline interpolation. The comparison also displays
+  the actual elapsed spacing (normally about 0.042 seconds,
+  potentially shorter on a fractional final frame).
+- On wide screens, previews are side by side; on phones
+  they stack vertically for readable character proportions.
+  First/Previous/Next/Last navigation continues to operate.
+- This feature **does not detect physical collisions or judge
+  motion quality**, save an image, write pose corrections, change
+  the original timeline, modify keyframes, seek the main clock,
+  edit audio, or alter the full-episode export.
+- Unit tests cover the first two real frames, moving pairs,
+  the final endpoint, step duration changes, rejected fabricated
+  endpoints, genuine SVG differences and project immutability.
+  Browser QA exercises before/after previews, changing selected
+  frames, last keyframe labels, and returning to single-frame
+  inspection on desktop, tablet and phone.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.

@@ -537,7 +537,10 @@ test("creates and saves a new fully jointed original workshop hero with editable
     .toHaveCount(1);
   await button(page, "Play Motion Loop").click();
   await expect(button(page, "Pause Motion Loop")).toBeVisible();
+  // #169 reliability: an early first requestAnimationFrame callback must
+  // not revert the Play button. Verify it survives multiple animation frames.
   await expect(loopReadout).not.toContainText("Playing · 0% · 3.00s");
+  await expect(button(page, "Pause Motion Loop")).toBeVisible();
   await button(page, "Pause Motion Loop").click();
   await expect(loopReadout).toContainText("Paused");
   await motionLoop.getByLabel("Motion loop speed").selectOption("0.5");
@@ -571,6 +574,38 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(button(page, "Next Frame")).toBeDisabled();
   await button(page, "First Frame").click();
   await expect(frameStatus).toContainText("Frame 1 of 37 · 3.000s");
+
+  // #169: compare real neighboring Stage samples, not generated keyframes
+  // or a quality score, and keep the original inspector available.
+  await button(page, "Compare Adjacent Frames").click();
+  const adjacentFrames = frameInspector.getByLabel(
+    "Adjacent original Stage frames comparison",
+  );
+  const previousFrame = adjacentFrames.getByRole("figure", {
+    name: "Before adjacent original Stage frame",
+  });
+  const followingFrame = adjacentFrames.getByRole("figure", {
+    name: "After adjacent original Stage frame",
+  });
+  await expect(adjacentFrames.locator("svg")).toHaveCount(2);
+  await expect(previousFrame).toContainText("Before — Frame 1");
+  await expect(previousFrame).toContainText("3.000s");
+  await expect(followingFrame).toContainText("After — Frame 2");
+  await expect(followingFrame).toContainText("3.042s");
+  await button(page, "Next Frame").click();
+  await expect(previousFrame).toContainText("Before — Frame 1");
+  await expect(followingFrame).toContainText("After — Frame 2");
+  await button(page, "Next Frame").click();
+  await expect(previousFrame).toContainText("Before — Frame 2");
+  await expect(followingFrame).toContainText("After — Frame 3");
+  await button(page, "Last Frame").click();
+  await expect(previousFrame).toContainText("Before — Frame 36");
+  await expect(followingFrame).toContainText("After — Frame 37");
+  await expect(followingFrame).toContainText("4.500s");
+  await button(page, "Show Single Frame").click();
+  await expect(adjacentFrames).toHaveCount(0);
+  await expect(frameInspector.getByLabel("Inspected original Stage frame").locator("svg"))
+    .toHaveCount(1);
   await button(page, "Close Frame by Frame").click();
   await expect(frameInspector.getByLabel("Inspected original Stage frame"))
     .toHaveCount(0);

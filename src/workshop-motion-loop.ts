@@ -7,6 +7,16 @@ import {
 
 export type WorkshopMotionLoopSpeed = 0.5 | 1 | 2;
 
+/** Frame timestamps can predate a click-time performance.now() origin. */
+export function workshopMotionLoopElapsed(
+  frameTimestamp: number,
+  startedAt: number,
+): number | undefined {
+  if (!Number.isFinite(frameTimestamp) || !Number.isFinite(startedAt))
+    return undefined;
+  return Math.max(0, frameTimestamp - startedAt);
+}
+
 /**
  * Repeatedly sample the existing Stage timeline between two validated saved
  * keyframes. The preview has its own clock; it never changes the real
