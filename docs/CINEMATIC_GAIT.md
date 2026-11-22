@@ -1155,6 +1155,34 @@ Use existing browser + media-export regressions. Added unit tests check scene im
 - Keep this optional and bounded to the existing <=720-frame
   inspection limit, high-contrast on phone/tablet/desktop.
 
+## PR #174 — Three Real Stage Frames Around a Rotation Change
+
+- Open **Review Movement Curve → Review Rotation Speed → Find Largest
+  Rotation Changes**, then choose **Preview Three Frames at Frame N**
+  for a ranked local-rotation-rate transition.
+- This shows the **real Stage SVG** from the exact inspection times
+  immediately before, at, and after that transition: a 3-frame original
+  Stage preview with per-frame number, timestamp and saved-keyframe label.
+  The selected middle sample is the shared frame between the two rate
+  intervals computed by #173. The original keyframe endpoints are never
+  replaced or invented; the last fraction of a frame retains its exact
+  timing.
+- **Review This Transition in Adjacent Frames** jumps to the existing
+  two-frame inspector at the final sample. Existing First/Previous/Next/Last
+  frame controls, recorded motion, story assets, audio, Undo, saved projects
+  and export stay unchanged.
+- The three images are opt-in and display side by side on larger screens
+  or stacked with full-width frames on phones. The selected part's existing
+  #171–#173 graphs and ranked results stay read-only.
+- Unit tests verify each preview sample against the original
+  `workshopMotionInspectionFrame()` Stage timeline, validate frame
+  ordering, reject falsified keys/times and confirm project immutability.
+  Browser QA opens the real 3-frame Stage previews, navigates to
+  original adjacent frames and closes the preview on supported devices.
+- This is **visual inspection**, not automatic smoothing, authoring a
+  new animation frame, changing playback fps, or evidence that movement
+  is anatomically correct.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
