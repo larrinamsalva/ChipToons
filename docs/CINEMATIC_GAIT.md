@@ -1033,6 +1033,41 @@ Use existing browser + media-export regressions. Added unit tests check scene im
   frames, last keyframe labels, and returning to single-frame
   inspection on desktop, tablet and phone.
 
+## PR #170 — Real Adjacent-Frame Joint Movement Inspector
+
+- Open **Compare Two Poses Side by Side → Review Motion Steps →
+  Review Three-Frame Filmstrip → Review Frame by Frame →
+  Compare Adjacent Frames → Inspect Adjacent Joint Changes**.
+- The new optional table measures the puppet's local joint rotation
+  and x/y offsets **as returned by the very same Stage timeline
+  calculation used for the two visible neighboring frame previews**.
+  It uses genuine 24-fps inspection times, not only stored keyframe
+  snapshots, and sorts parts by absolute angular change.
+- Choose **All body parts**, **Arms and hands**, **Legs and feet**,
+  or **Head and body**. Show before/after rotation in degrees,
+  signed angular change and x/y offset change in local pixels.
+  The table updates when the creator steps First/Previous/Next/Last.
+  Parts with movement no larger than 0.01 in local rotation or
+  offset are hidden to avoid showing numerical noise.
+- Real Stage snapshots remain unedited and complete. The
+  measurements use local puppet joints, **not world-space limb
+  endpoints, ground contact, an automatic collision detector,
+  a foot-sliding detector or an animation quality score**.
+  Non-joint cinematic effects such as camera or gaze animation
+  may still affect the final artwork beyond this table.
+- The inspector only computes measurements while explicitly open.
+  It does not seek the global playhead, modify a character,
+  add a keyframe, change music/recording, write scene data,
+  or alter movie export frame rates and length.
+- Responsive controls, high contrast on light and dark themes,
+  and an accessible horizontally scrollable table on phones.
+- Unit QA verifies authentic timeline-sampled joint values
+  at adjacent 24-fps times, sorted changes, body-part filtering,
+  first/last boundaries, unselected and substituted endpoints,
+  and original project immutability. Browser QA checks the
+  genuine table, filter changes and updates after navigating
+  frames on desktop, phone and tablet.
+
 ## Scope limits
 
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
