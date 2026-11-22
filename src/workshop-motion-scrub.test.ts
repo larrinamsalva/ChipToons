@@ -9,7 +9,7 @@ import { waveWorkshopWhileSeated } from "./workshop-seated-wave";
 import { standAfterSeatedGreeting } from "./workshop-sit-wave-stand";
 import { workshopMotionSteps } from "./workshop-motion-steps";
 import { workshopMotionScrubSample } from "./workshop-motion-scrub";
-import { workshopMotionLoopFrame } from "./workshop-motion-loop";
+import { workshopMotionLoopFrame, workshopMotionLoopElapsed } from "./workshop-motion-loop";
 import { WORKSHOP_INSPECTION_FPS, workshopMotionInspectionFrame } from "./workshop-motion-frame-stepper";
 import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
 import { Stage } from "./components/Stage";
@@ -119,6 +119,21 @@ describe("PR #166 read-only true Stage motion scrubber", () => {
 
 
 describe("PR #167 true read-only Stage motion loop", () => {
+  it("never cancels Play for a real animation-frame timestamp slightly before click time", () => {
+    // requestAnimationFrame can supply the beginning of its frame, older
+    // than performance.now() sampled by the Play event handler.
+    expect(workshopMotionLoopElapsed(1000, 1016)).toBe(0);
+    expect(workshopMotionLoopElapsed(1000, 1000)).toBe(0);
+    expect(workshopMotionLoopElapsed(1016, 1000)).toBe(16);
+    expect(workshopMotionLoopElapsed(1025.5, 1000)).toBe(25.5);
+    expect(workshopMotionLoopElapsed(Number.NaN, 1000)).toBeUndefined();
+    expect(workshopMotionLoopElapsed(1000, Infinity)).toBeUndefined();
+    const { scene, actorId, steps } = fixture();
+    const elapsed = workshopMotionLoopElapsed(1000, 1016)!;
+    expect(workshopMotionLoopFrame(scene, actorId, steps[0], 0, elapsed, 1))
+      .toMatchObject({ percent: 0, seconds: 3, savedKeyframe: true });
+  });
+
   it("uses original saved endpoints and samples real time at half normal and double speed", () => {
     const { project, scene, actorId, steps } = fixture();
     const original = JSON.stringify(project);
