@@ -6747,3 +6747,70 @@ fieldset.interaction-fields {
 .workshop-motion-adjacent-joints-scroll tr[data-largest-rotation="true"] th {
   font-weight: 800;
 }
+
+
+/* #171: true read-only local joint rotation curve across a saved move. */
+.workshop-joint-motion-curve {
+  display: grid;
+  min-width: 0;
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.workshop-joint-motion-curve > .button {
+  width: 100%;
+  white-space: normal;
+}
+.workshop-joint-motion-curve label {
+  display: grid;
+  gap: 5px;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 12px;
+}
+.workshop-joint-motion-curve select {
+  width: 100%;
+  min-height: 44px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.workshop-joint-motion-curve-picture {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.workshop-joint-motion-curve-picture svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.workshop-joint-motion-curve-axis {
+  stroke: var(--muted);
+  stroke-width: 1.4px;
+}
+.workshop-joint-motion-curve-line {
+  stroke: var(--text);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.workshop-joint-motion-curve-marker {
+  stroke: var(--muted);
+}
+.workshop-joint-motion-curve-dot {
+  fill: var(--text);
+  stroke: var(--surface);
+  stroke-width: 1.5px;
+}
+.workshop-joint-motion-curve-summary {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
