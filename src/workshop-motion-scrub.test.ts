@@ -13,6 +13,7 @@ import { workshopMotionLoopFrame, workshopMotionLoopElapsed } from "./workshop-m
 import { WORKSHOP_INSPECTION_FPS, workshopMotionInspectionFrame } from "./workshop-motion-frame-stepper";
 import { workshopAdjacentFramePair } from "./workshop-adjacent-frame-compare";
 import { workshopAdjacentJointReview } from "./workshop-adjacent-joint-review";
+import { workshopJointMotionCurve } from "./workshop-joint-motion-curve";
 import { workshopJointReview } from "./workshop-joint-review-filter";
 import { sceneFramesAt } from "./timeline";
 import { Stage } from "./components/Stage";
@@ -394,5 +395,61 @@ describe("PR #170 true adjacent Stage-sampled joint movement review", () => {
     expect(workshopAdjacentJointReview(project, scene, actorId, {
       ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
     }, 1)).toBeUndefined();
+  });
+});
+
+
+describe("PR #171 real Stage-sampled local joint rotation curve", () => {
+  it("samples the original joint at every authentic 24-fps Stage instant", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const snapshot = JSON.stringify(project);
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const part = rig?.parts.find(item => item.role === "rightArm");
+    expect(part).toBeDefined();
+    const curve = workshopJointMotionCurve(project, scene, actorId, steps[0], part!.id);
+    expect(curve).toBeDefined();
+    expect(curve!.partId).toBe(part!.id);
+    expect(curve!.points).toHaveLength(37);
+    expect(curve!.points[0]).toMatchObject({
+      index: 0, seconds: 3, savedKeyframe: true,
+    });
+    expect(curve!.points[1]).toMatchObject({
+      index: 1, seconds: 3.041667, savedKeyframe: false,
+    });
+    expect(curve!.points[36]).toMatchObject({
+      index: 36, seconds: 4.5, savedKeyframe: true,
+    });
+    for (const index of [0, 1, 2, 12, 18, 35, 36]) {
+      const point = curve!.points[index];
+      expect(point.angle).toBeCloseTo(
+        sceneFramesAt(project, scene, point.seconds).get(actorId)?.joints?.[part!.id]?.angle ?? 0,
+        6,
+      );
+    }
+    expect(curve!.minAngle).toBe(Math.min(...curve!.points.map(point => point.angle)));
+    expect(curve!.maxAngle).toBe(Math.max(...curve!.points.map(point => point.angle)));
+    expect(JSON.stringify(project)).toBe(snapshot);
+  });
+
+  it("works across recorded movements and safely rejects invalid inputs", () => {
+    const { project, scene, actorId, steps } = fixture();
+    const rig = project.characters.find(character =>
+      character.id === scene.elements.find(element => element.id === actorId)?.characterId)?.puppet;
+    const part = rig!.parts.find(item => item.role === "rightArm")!;
+    expect(workshopJointMotionCurve(project, scene, actorId, steps[1], part.id)?.points)
+      .toHaveLength(97);
+    expect(workshopJointMotionCurve(project, scene, actorId, steps[2], part.id)?.points)
+      .toHaveLength(37);
+    expect(workshopJointMotionCurve(project, scene, actorId, steps[0], "not-a-joint"))
+      .toBeUndefined();
+    expect(workshopJointMotionCurve(project, scene, "unknown", steps[0], part.id))
+      .toBeUndefined();
+    expect(workshopJointMotionCurve(project, scene, actorId, undefined, part.id))
+      .toBeUndefined();
+    // A real 4.25s interior key must not become a fake 4.50s endpoint.
+    expect(workshopJointMotionCurve(project, scene, actorId, {
+      ...steps[0], to: { ...steps[0].to, seconds: 4.25 },
+    }, part.id)).toBeUndefined();
   });
 });
