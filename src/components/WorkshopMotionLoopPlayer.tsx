@@ -38,8 +38,13 @@ export function WorkshopMotionLoopPlayer({
     const tick = (now: number) => {
       // Limit heavy Stage SVG renders while preserving continuous real time.
       if (now - lastUpdateTime >= 50) {
+        // requestAnimationFrame timestamps can refer to the frame start,
+        // slightly BEFORE performance.now() captured while Play was clicked.
+        // A tiny negative elapsed value is not an invalid saved motion step:
+        // clamp it to frame zero rather than immediately toggling Play off.
+        const elapsed = Math.max(0, now - startingTime);
         const next = workshopMotionLoopFrame(
-          scene, actorId, step, startingPercent, now - startingTime, speed,
+          scene, actorId, step, startingPercent, elapsed, speed,
         );
         if (!next) {
           setPlaying(false);
