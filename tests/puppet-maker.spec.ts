@@ -635,7 +635,23 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(movementCurve.getByText(/Selected frames 2 and 3/)).toBeVisible();
   await curveJoint.selectOption({ label: "left Arm" });
   await expect(curveSummary).toContainText("Left Arm: 37 real Stage samples");
+
+  // #172: opt-in signed local angle speed between real adjacent Stage
+  // samples; a timing inspection only, not animation smoothing or edits.
+  await button(page, "Review Rotation Speed").click();
+  const rateReview = movementCurve.getByLabel("Local joint rotation speed review");
+  const rateSummary = rateReview.getByLabel("Rotation rate summary");
+  await expect(rateReview.getByRole("img", {
+    name: /Left Arm signed local rotation rate across 36 Stage intervals/,
+  })).toBeVisible();
+  await expect(rateSummary).toContainText("36 measured intervals");
+  await expect(rateReview.getByText(/Frames 2 to 3/)).toBeVisible();
   await button(page, "Last Frame").click();
+  await expect(rateReview.getByText(/Frames 36 to 37/)).toBeVisible();
+  await curveJoint.selectOption({ label: "right Arm" });
+  await expect(rateSummary).toContainText("Right Arm: 36 measured intervals");
+  await button(page, "Close Rotation Speed").click();
+  await expect(rateSummary).toHaveCount(0);
   await expect(movementCurve.getByText(/Selected frames 36 and 37/)).toBeVisible();
   await button(page, "Close Movement Curve").click();
   await expect(curveSummary).toHaveCount(0);
