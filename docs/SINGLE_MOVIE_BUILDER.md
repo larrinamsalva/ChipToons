@@ -10,9 +10,9 @@ Keep the original numbered exports and complete episode ZIP for recovery and for
 
 ## Browser, format and size
 
-Use current desktop Chromium with WebCodecs and local file storage available. The first version accepts matching VP8 exports from Chromium with stereo 48 kHz Opus sound or with sound turned off for every part. It handles up to 20 planned minutes and 256 MiB of source video and output. It keeps the source video frames and encodes the mixed audio again as Opus, which can slightly change sound quality. The saved WebM can be opened in a player that supports VP8/Opus WebM. Subtitles are available as a separate file.
+Use current desktop Chromium with WebCodecs and local file storage available. The builder accepts matching 800×450 or 1280×720 VP8 exports from Chromium with stereo 48 kHz Opus sound or with sound turned off for every part. It handles up to 20 planned minutes and 512 MiB of source video and output. It does not yet accept 1080p files. It keeps the source video frames and encodes the mixed audio again as Opus, which can slightly change sound quality. The saved WebM can be opened in a player that supports VP8/Opus WebM. Subtitles are available as a separate file.
 
-The browser needs temporary space for the output and its staging copy. The largest supported jobs can need about 544 MiB of available site storage. Narrow or low-memory layouts, unsupported formats, and insufficient browser space keep **Watch My Episode** and **Download Episode Delivery Package** available.
+The browser needs temporary space for the output and its staging copy. The largest supported jobs can need about 1056 MiB of available site storage. Narrow or low-memory layouts, unsupported formats, and insufficient browser space keep **Watch My Episode** and **Download Episode Delivery Package** available.
 
 The 20-minute fixture produced one WebM that reopened and sought across all nine joins. The verification compares every decoded frame with the original exports and measures audio around the joins and throughout the story. Short recorder lead-ins remain between the parts, so the file can be slightly longer than the storyboard. [Technical feasibility and measurements](SINGLE_MOVIE_FEASIBILITY.md)
 

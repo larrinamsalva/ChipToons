@@ -680,12 +680,18 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await expect(beforeTransition).toContainText("Before — Frame");
   await expect(middleTransition).toContainText("Middle — Frame");
   await expect(afterTransition).toContainText("After — Frame");
-  const afterText = await afterTransition.textContent() ?? "";
-  const afterMatch = afterText.match(/After — Frame (\d+)/);
+  // Read the frame index from its own heading. Whole-figure textContent
+  // joins "Frame 8" with the next timestamp "3.292s", yielding "Frame 83".
+  const afterHeading = (await afterTransition.locator("figcaption strong").textContent()
+    ?? "").trim();
+  const afterMatch = afterHeading.match(/^After — Frame (\d+)$/);
   expect(afterMatch).not.toBeNull();
   if (!afterMatch) throw new Error("Missing original transition frame number");
+  const afterFrameNumber = Number(afterMatch[1]);
+  expect(afterFrameNumber).toBeGreaterThanOrEqual(1);
+  expect(afterFrameNumber).toBeLessThanOrEqual(37);
   await button(page, "Review This Transition in Adjacent Frames").click();
-  await expect(frameStatus).toContainText(`Frame ${afterMatch[1]} of 37`);
+  await expect(frameStatus).toContainText(`Frame ${afterFrameNumber} of 37`);
   await button(page, "Hide Three-Frame Preview").click();
   await expect(transition).toHaveCount(0);
 

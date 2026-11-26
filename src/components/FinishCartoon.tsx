@@ -286,12 +286,13 @@ export function FinishCartoon({
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  width: Number(e.target.value) as 800 | 1280,
+                  width: Number(e.target.value) as ExportSettings["width"],
                 })
               }
             >
               <option value="800">800 × 450</option>
               {!mobile && <option value="1280">1280 × 720</option>}
+              {!mobile && <option value="1920">1920 × 1080 · detailed</option>}
             </select>
           </label>
           <label>
@@ -340,8 +341,17 @@ export function FinishCartoon({
           Export takes about the cartoon’s running time. Keep this tab visible.
           The limit is {exportLimit()} seconds on this device; recordings and
           artwork remain saved if export fails. MP4 is not offered in this
-          release.
+          release. 1080p takes more time and storage; try a shorter segment or
+          lower resolution if your device cannot keep up.
         </p>
+        {settings.width === 1920 && (
+          <p className="media-notice" role="status">
+            1080p parts are playable and downloadable individually. To join a
+            complete episode in ChipToons, export matching 800 × 450 or
+            1280 × 720 VP8 parts instead; the movie builder does not yet accept
+            1080p.
+          </p>
+        )}
         {!formats.length && (
           <p className="media-notice" role="status">
             This browser does not provide the required canvas/WebM/Web Audio

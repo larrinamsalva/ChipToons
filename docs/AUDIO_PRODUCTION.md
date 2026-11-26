@@ -56,7 +56,7 @@ The original shape mouth controls remain manually timed. Put a **Talking cycle (
 | Microphone capture       | Capability-detected WebM/Opus or Ogg/Opus; saved as portable mono WAV                                               |
 | Audio import             | WAV, MP3, Ogg and audio WebM after MIME, signature, duration and actual decoding checks                             |
 | Video                    | Real WebM, VP8/Opus or VP9/Opus when MediaRecorder reports support                                                  |
-| Movie sizes              | 800×450 at 15 fps; wider screens also offer 1280×720 and 24 fps                                                     |
+| Movie sizes              | 800×450 at 15 fps; wider screens also offer 1280×720 or 1920×1080 and 15 or 24 fps                                 |
 | Phone export             | Up to 60 seconds per complete movie or whole-scene segment, 800×450 at 15 fps                                       |
 | Desktop/tablet export    | Up to 120 seconds per file; whole-scene segmented export for longer stories                                         |
 | Recording/output budgets | 60-second microphone takes; 80 MB maximum encoded movie                                                             |
@@ -67,6 +67,8 @@ The original shape mouth controls remain manually timed. Put a **Talking cycle (
 The exporter preloads only images and audio overlapping the selected whole-scene range, mixes to a Web Audio recording destination, renders Stage SVG into a canvas at sampled times, and records actual canvas frames. Audio and pictures share a single clock. A short initial buffer lets both tracks begin together. Streaming WebM receives duration metadata so players can display its length. The completed file must load and begin video playback before the app reports success.
 
 Cancel stops encoding and releases media tracks, audio nodes, contexts and temporary URLs. Closing the review also cancels. Encoder errors, an inactive tab, damaged media, interrupted timing, excessive size or a device rendering too slowly produce an explanation. Export never edits the project. Keep a project backup and retry a shorter movie at 800×450 / 15 fps. A browser without the required exporter still has project, SVG storyboard and SRT downloads. MP4 and offline/accelerated encoding are not implemented.
+
+1080p uses the original scalable Stage artwork and the existing real-time WebM recorder, at a requested 4.5 Mbps video bitrate. It is an optional setting on wider screens; a short decoded output test covers picture, captions and sound. Some devices cannot encode at this size in real time. The existing 80 MB per-file limit applies. The complete-movie builder currently accepts only matching VP8 parts at 800×450 or 1280×720, with a 512 MiB source/output limit; deliver 1080p as individual verified files. Source raster images do not gain detail by increasing output resolution.
 
 ## Save, restore and compatibility
 

@@ -77,7 +77,7 @@ async function render(
   name: string,
   seconds: number,
   options: {
-    width?: 800 | 1280;
+    width?: 800 | 1280 | 1920;
     fps?: 15 | 24;
     codec?: "vp8" | "vp9";
     audio?: boolean;
@@ -379,6 +379,23 @@ test("master mute records silence in an actual encoded audio track", async ({
   p.mixer.muted = true;
   await restore(page, p);
   await render(page, info, "muted-cartoon", 4, { silent: true });
+});
+
+test("1080p WebM decodes moving cartoon frames, captions and mixed speech and music", async ({
+  page,
+}, info) => {
+  test.setTimeout(90_000);
+  await restore(page, shortProject());
+  const { path } = await render(page, info, "full-hd-cartoon", 4, {
+    width: 1920,
+  });
+  // The source stage and the caption plate are painted at the selected
+  // resolution, not merely labelled 1080p in the interface/container.
+  const caption = execFileSync("ffmpeg", [
+    "-v", "error", "-i", path, "-ss", "1", "-vf",
+    "crop=2:2:72:960,format=rgb24", "-frames:v", "1", "-f", "rawvideo", "pipe:1",
+  ]);
+  expect(Math.max(...caption)).toBeLessThan(80);
 });
 
 test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecked", async ({
