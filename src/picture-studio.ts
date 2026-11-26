@@ -10,6 +10,7 @@ import type { PartRole, PuppetPart } from "./puppet-model";
 import { clamp, cleanSceneReferences } from "./timeline";
 import { finishCutoutPixels } from "./cartoon-finish";
 import type { CartoonFinish } from "./cartoon-finish";
+import { clearConnectedBackground } from "./simple-background";
 
 export interface Panel extends PicturePanel {
   visible: boolean;
@@ -23,6 +24,7 @@ export interface Cutout {
   height: number;
 }
 export interface PreparedPart { role: PartRole; cutout: Cutout }
+export interface BackgroundCleanup { point: Point; tolerance: number }
 
 export const MAX_MASKS = 24;
 export const MAX_POINTS = 100;
@@ -136,7 +138,7 @@ export async function pictureImage(source: Asset) {
 }
 
 export async function pictureCutout(image: HTMLImageElement, masks: Mask[], name: string,
-  finish: CartoonFinish = "original"): Promise<Cutout> {
+  finish: CartoonFinish = "original", cleanup?: BackgroundCleanup): Promise<Cutout> {
   const added = masks.filter(mask => !mask.subtract).flatMap(mask => mask.points);
   if (!added.length) throw new Error("Add an outline around visible artwork first.");
   if (masks.length > MAX_MASKS || masks.some(mask => mask.points.length < 3 || mask.points.length > MAX_POINTS ||
@@ -173,10 +175,16 @@ export async function pictureCutout(image: HTMLImageElement, masks: Mask[], name
   const pixels = imageData.data;
   if (!pixels.some((alpha, index) => index % 4 === 3 && alpha > 0))
     throw new Error("This selection is fully transparent. Restore an area or choose other artwork.");
-  if (finish !== "original") {
-    imageData.data.set(finishCutoutPixels(pixels, canvas.width, canvas.height, finish));
-    ctx.putImageData(imageData, 0, 0);
+  if (cleanup) {
+    const x = Math.floor((cleanup.point.x * iw - left) * scale);
+    const y = Math.floor((cleanup.point.y * ih - top) * scale);
+    imageData.data.set(clearConnectedBackground(pixels, canvas.width, canvas.height,
+      x, y, cleanup.tolerance));
   }
+  if (finish !== "original") {
+    imageData.data.set(finishCutoutPixels(imageData.data, canvas.width, canvas.height, finish));
+  }
+  if (cleanup || finish !== "original") ctx.putImageData(imageData, 0, 0);
   return {
     asset: { id: uid(), name, mime: "image/png", type: "image", dataUrl: canvas.toDataURL(),
       sourceWidth: canvas.width, sourceHeight: canvas.height },

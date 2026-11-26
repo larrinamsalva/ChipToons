@@ -148,7 +148,12 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Use offline WebCodecs video samples with explicit scene timestamps and an offline copy of the existing audio mix for 1080p. Keep the lower-resolution real-time exports intact.
 - Require the real 1080p file to decode with nearly all sampled frames, changing animation, an audible mix and visible captions. Keep a fast dedicated media check alongside the existing complete browser and episode suites. Do not claim a 20-minute 1080p joined movie.
 
-## PR #178 — Optional Local 2D Color Finish for Picture Cutouts (in review)
+## PR #178 — Optional Local 2D Color Finish for Picture Cutouts (merged)
 
 - Keep the uploaded photo untouched while applying an optional, deterministic storybook color or bold ink treatment to each transparent hand-traced part. Reuse the derived PNG through the existing Art Library and Puppet Maker without a new project format or paid service.
 - Check actual changed PNG pixels and exact alpha preservation, then independently decode a moving picture puppet in a downloaded WebM. The finishes do not provide automatic background removal, anatomy, anime or 3D generation.
+
+## PR #179 — Plain-Background Cutout Cleanup (in review)
+
+- Let a creator pick a spot within a traced cutout and remove only connected pixels close to that color, with Low/Medium/High strength and keyboard position fields. Keep the uploaded original untouched and preview the derived transparent PNG before saving.
+- Test connected-region boundaries and destructive picks. Use a genuine uploaded flat-background picture in the browser, inspect removed alpha and preserved subject, then decode a moving puppet from a downloaded WebM. Busy backgrounds and arbitrary person segmentation remain outside this constrained local tool.

@@ -483,6 +483,74 @@ test("local 2D cartoon finish survives a reused puppet and real animated WebM", 
   expect(changedPixels(rawFrame(path, 0.5), rawFrame(path, 2.5), 80, 60, 640, 330)).toBeGreaterThan(500);
 });
 
+test("plain background cleanup produces a transparent moving picture puppet in a real WebM", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 160; canvas.height = 120;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#28b45f"; context.fillRect(0, 0, 160, 120);
+    context.fillStyle = "#713895"; context.fillRect(66, 60, 28, 44);
+    context.fillStyle = "#f0b98a";
+    context.beginPath(); context.ellipse(80, 45, 16, 18, 0, 0, 2 * Math.PI); context.fill();
+    context.fillStyle = "#2b2533"; context.fillRect(68, 25, 24, 8);
+    return canvas.toDataURL("image/png");
+  });
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const start = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await start.getByLabel("Original picture file", { exact: true }).setInputFiles({
+    name: "plain-background.png", mimeType: "image/png", buffer: Buffer.from(png.split(",")[1], "base64"),
+  });
+  await start.getByRole("button", { name: "Create storyboard scene" }).click();
+  await page.getByRole("button", { name: "Picture & cutouts" }).click();
+  const studio = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await studio.getByRole("button", { name: "Make This Character Move" }).click();
+  await studio.getByRole("textbox", { name: "Character or prop name" }).fill("Plain Background Hero");
+  for (const [x, y] of [[5, 5], [95, 5], [95, 95], [5, 95]]) {
+    await studio.getByRole("button", { name: "Add outline point" }).click();
+    await studio.getByRole("spinbutton", { name: "Point X (%)" }).fill(String(x));
+    await studio.getByRole("spinbutton", { name: "Point Y (%)" }).fill(String(y));
+  }
+  await studio.getByRole("button", { name: "Close outline" }).click();
+  await studio.getByRole("checkbox", { name: "Clean up a plain background inside this cutout" }).check();
+  await studio.getByRole("spinbutton", { name: "Background spot X (%)" }).fill("10");
+  await studio.getByRole("spinbutton", { name: "Background spot Y (%)" }).fill("10");
+  await studio.getByRole("combobox", { name: "Cutout color finish" }).selectOption("storybook");
+  await studio.getByRole("button", { name: "Preview transparent cutout" }).click();
+  const preview = studio.getByRole("img", { name: "Transparent cutout preview" });
+  await expect(preview).toBeVisible();
+  const alpha = await preview.evaluate(async (image: HTMLImageElement) => {
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+    return [context.getImageData(8, 8, 1, 1).data[3],
+      context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data[3]];
+  });
+  expect(alpha).toEqual([0, 255]);
+  await studio.getByRole("button", { name: "Keep this body part" }).click();
+  await studio.getByRole("button", { name: "Continue in Puppet Maker" }).click();
+  const maker = page.getByRole("dialog", { name: "Create a Puppet Character", exact: true });
+  await maker.getByRole("button", { name: "Next", exact: true }).click();
+  await maker.getByRole("button", { name: "Preview", exact: true }).click();
+  await maker.getByRole("button", { name: "Add to Cartoon", exact: true }).click();
+  await expect(maker).toBeHidden();
+  await saved(page);
+  const { data } = await backup(page);
+  expect(data.assets.find(asset => asset.id === data.pictureSourceId)?.dataUrl).toBe(png);
+  const character = data.characters.find(item => item.name === "Plain Background Hero")!;
+  const actor = data.scenes[0].elements.find(item => item.characterId === character.id)!;
+  const scene = { ...data.scenes[0], duration: 4, elements: data.scenes[0].elements.map(item =>
+    item.id === actor.id ? { ...item, animation: presetAnimation(item, 4, "walk", 0, 3, character.puppet) } : item) };
+  await restore(page, { ...data, scenes: [scene] });
+  const { path } = await render(page, info, "clean-background-picture-puppet", 4,
+    { audio: false, captions: false });
+  const frame = rawFrame(path, 1.5);
+  expect(pixels(frame, 0, 0, 800, 450, (red, green, blue) => red < 80 && green > 130 && blue < 130)).toBeLessThan(200);
+  expect(changedPixels(rawFrame(path, 0.5), rawFrame(path, 2.5), 80, 60, 640, 330)).toBeGreaterThan(500);
+});
+
 test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecked", async ({
   page,
 }, info) => {
