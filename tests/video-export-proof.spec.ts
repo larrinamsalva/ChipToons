@@ -305,7 +305,7 @@ async function render(
     body: await page.screenshot(),
     contentType: "image/png",
   });
-  return { path, pcm };
+  return { path, pcm, decodedFrames: Number(picture.nb_read_frames) };
 }
 
 function shortProject() {
@@ -386,9 +386,10 @@ test("1080p WebM decodes moving cartoon frames, captions and mixed speech and mu
 }, info) => {
   test.setTimeout(90_000);
   await restore(page, shortProject());
-  const { path } = await render(page, info, "full-hd-cartoon", 4, {
+  const { path, decodedFrames } = await render(page, info, "full-hd-cartoon", 4, {
     width: 1920,
   });
+  expect(decodedFrames).toBeGreaterThanOrEqual(58);
   // The source stage and the caption plate are painted at the selected
   // resolution, not merely labelled 1080p in the interface/container.
   const caption = execFileSync("ffmpeg", [

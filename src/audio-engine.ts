@@ -10,7 +10,7 @@ import {
 import { decodeAsset } from "./audio-files";
 
 export function mixingGraph(
-  context: AudioContext,
+  context: BaseAudioContext,
   destination: AudioNode,
   mixer: Mixer,
 ) {
@@ -42,7 +42,7 @@ export function mixingGraph(
 }
 export type MixGraph = ReturnType<typeof mixingGraph>;
 export function scheduleAudio(
-  context: AudioContext,
+  context: BaseAudioContext,
   project: Project,
   buffers: Map<string, AudioBuffer>,
   graph: MixGraph,
