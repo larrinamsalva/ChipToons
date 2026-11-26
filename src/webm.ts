@@ -190,22 +190,32 @@ export function readWebmTracks(bytes: Uint8Array, fileSize: number): WebmTracks 
   return { ...video, ...(audio ? { audio } : {}) };
 }
 
-export function isChromiumWebmRecording(bytes: Uint8Array, fileSize: number) {
+function webmWritingApp(bytes: Uint8Array, fileSize: number) {
   const header = element(bytes, 0);
   const segment = element(bytes, header.end, fileSize);
-  if (header.id !== 0x1a45dfa3 || segment.id !== 0x18538067 || segment.end > fileSize) return false;
+  if (header.id !== 0x1a45dfa3 || segment.id !== 0x18538067 || segment.end > fileSize) return undefined;
   for (let at = segment.data; at < Math.min(segment.end, bytes.length);) {
     const field = element(bytes, at);
-    if (field.unknown || field.end > bytes.length || field.end > segment.end) return false;
+    if (field.unknown || field.end > bytes.length || field.end > segment.end) return undefined;
     if (field.id === 0x1549a966) {
       const metadata = webmChildren(bytes, field);
-      return [0x4d80, 0x5741].every(id => {
-        const app = metadata.find(item => item.id === id);
-        return app && new TextDecoder().decode(bytes.subarray(app.data, app.end)) === "Chrome";
-      });
+      const apps = [0x4d80, 0x5741].map(id => metadata.find(item => item.id === id));
+      const names = apps.map(app => app && new TextDecoder().decode(bytes.subarray(app.data, app.end)));
+      return names[0] && names[0] === names[1] ? names[0] : undefined;
     }
-    if (field.id === 0x1f43b675) return false;
+    if (field.id === 0x1f43b675) return undefined;
     at = field.end;
   }
-  return false;
+  return undefined;
+}
+
+export function isChromiumWebmRecording(bytes: Uint8Array, fileSize: number) {
+  return webmWritingApp(bytes, fileSize) === "Chrome";
+}
+
+// The offline 1080p exporter uses Mediabunny, while the existing 450p/720p
+// real-time exporter uses Chromium's MediaRecorder. Container identity is only
+// one gate: the movie worker also checks tracks, timestamps and decoded frames.
+export function isOfflineWebmRecording(bytes: Uint8Array, fileSize: number) {
+  return /^Mediabunny v1\.\d+\.\d+$/.test(webmWritingApp(bytes, fileSize) ?? "");
 }

@@ -3,7 +3,7 @@ import {
   EncodedVideoPacketSource, Input, Output, StreamTarget, VideoSampleSink, WEBM, WebMOutputFormat,
 } from "mediabunny";
 import type { StreamTargetChunk } from "mediabunny";
-import { isChromiumWebmRecording, WEBM_METADATA_LIMIT } from "./webm";
+import { isChromiumWebmRecording, isOfflineWebmRecording, WEBM_METADATA_LIMIT } from "./webm";
 import { checkDeliveryAbort, deliveryDigest } from "./delivery-bytes";
 import {
   MOVIE_BYTES, MOVIE_OPUS_BITRATE, MOVIE_PACKET_TAIL_LIMIT, MOVIE_TIMELINE_TOLERANCE, OPUS_SAMPLE_RATE, moviePlanProblem,
@@ -25,8 +25,10 @@ async function copyPart(part: MoviePart, startFrames: number, videoSource: Encod
   const input = new Input({ formats: [WEBM], source: new BlobSource(part.file, { maxCacheSize: 8 * 1024 * 1024 }) });
   try {
     const prefix = new Uint8Array(await part.file.slice(0, WEBM_METADATA_LIMIT).arrayBuffer());
-    if (!isChromiumWebmRecording(prefix, part.file.size))
-      throw new Error("Use an original VP8 ChipToons export from Chromium. Other WebM writers can use different sound padding.");
+    const offline = part.media.width === 1920;
+    if (offline ? !isOfflineWebmRecording(prefix, part.file.size) :
+      !isChromiumWebmRecording(prefix, part.file.size))
+      throw new Error("Use a matching VP8 ChipToons export. Other WebM writers can use different sound padding.");
     const digest = await deliveryDigest(part.file, signal);
     if (digest.sha256 !== part.sha256) throw new Error("The file changed after it was checked. Choose it again.");
 
@@ -76,8 +78,10 @@ async function copyPart(part: MoviePart, startFrames: number, videoSource: Encod
       if (!packet || packet.type !== "key" || packet.timestamp !== 0 ||
           (audioSource && !sample)) throw timingError();
       if (sample) {
-        if (sample.timestamp < 0 || sample.timestamp > 0.12) throw timingError();
-        await silence(startFrames + Math.round(sample.timestamp * RATE));
+        // Offline Opus can decode with a short negative preroll (typically
+        // -7 ms). Start the joined track at zero and keep the decoded samples.
+        if (sample.timestamp < (offline ? -0.02 : 0) || sample.timestamp > 0.12) throw timingError();
+        await silence(startFrames + Math.round(Math.max(0, sample.timestamp) * RATE));
       }
 
       while (packet || sample) {
@@ -153,7 +157,7 @@ async function assemble({ parts, directory, name }: MovieWorkerRequest) {
     async write(chunk) {
       checkDeliveryAbort(task.signal);
       if (chunk.position + chunk.data.byteLength > MOVIE_BYTES)
-        throw new Error("The movie exceeded the 256 MiB limit. Keep the checked episode ZIP.");
+        throw new Error("The movie exceeded the 512 MiB limit. Keep the checked episode ZIP.");
       await stream.write(chunk);
     },
     close: () => stream.close(),

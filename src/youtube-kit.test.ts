@@ -25,6 +25,12 @@ describe("YouTube preparation", () => {
     expect(text).toContain("2\n00:00:12,600 --> 00:00:14,350\nLook at the chair");
     expect(text).toContain("3\n00:00:24,600 --> 00:00:26,350\nSet it aside");
     expect(publishingChapters(project, { ...movie, duration: 32 })).toEqual([]);
+    const hd = { ...movie, width: 1920, height: 1080 };
+    expect(publishingSubtitles(project, hd)).toContain("2\n00:00:12,450 --> 00:00:14,200\nLook at the chair");
+    expect(publishingChapters(project, hd)).toEqual([
+      { seconds: 0, title: "Opening" }, { seconds: 12, title: "Look at the chair" },
+      { seconds: 24, title: "Set it aside" },
+    ]);
   });
 
   it("drafts from authored metadata and leaves unknown credits and episode numbers empty", () => {

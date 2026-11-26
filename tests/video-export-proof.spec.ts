@@ -400,6 +400,42 @@ test("1080p WebM decodes moving cartoon frames, captions and mixed speech and mu
   expect(Math.max(...caption)).toBeLessThan(80);
 });
 
+test("joins two genuine 1080p WebM exports with all frames and continuous sound", async ({ page }, info) => {
+  test.setTimeout(240_000);
+  const project = segmentedProject(movieProofArtwork);
+  await restore(page, project);
+  const options = { width: 1920 as const, limit: 4 };
+  const first = await render(page, info, "hd-movie-part-one", 4, { ...options, segment: 1 });
+  await page.getByRole("button", { name: "Back to studio", exact: true }).click();
+  const second = await render(page, info, "hd-movie-part-two", 4, { ...options, segment: 2 });
+  expect(first.decodedFrames).toBeGreaterThanOrEqual(58);
+  expect(second.decodedFrames).toBeGreaterThanOrEqual(58);
+  await page.getByRole("button", { name: "Prepare My Complete Episode", exact: true }).click();
+  const files = [first.path, second.path];
+  for (const [index, path] of files.entries()) {
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: `Add missing part ${index + 1}`, exact: true }).click();
+    await (await chooser).setFiles(path);
+    await expect(page.getByRole("status").filter({ hasText: new RegExp(`${index + 1} of 2 parts assigned`) })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Make One Complete Movie", exact: true }).click();
+  const movie = await downloadAndVerifyMovie(page, info, files, [4, 4]);
+  expect(movie.width).toBe(1920);
+  expect(movie.height).toBe(1080);
+  expect(movie.frames).toBeGreaterThanOrEqual(116);
+  await page.getByRole("button", { name: "Prepare for YouTube", exact: true }).click();
+  const kit = page.getByRole("dialog", { name: "Prepare for YouTube" });
+  await expect(kit.getByText(/1920 × 1080 · WebM/)).toBeVisible();
+  const pending = page.waitForEvent("download");
+  await kit.getByRole("button", { name: "Download YouTube SRT", exact: true }).click();
+  const captions = await readFile((await (await pending).path())!, "utf8");
+  expect(captions).toContain("00:00:00,250 --> 00:00:01,600");
+  expect(captions).toContain("Scene 3: a kind hello makes room for a friend.");
+  const starts = [...captions.matchAll(/00:00:(\d{2}),(\d{3}) -->/g)].map(match => Number(match[1]) + Number(match[2]) / 1000);
+  expect(starts).toHaveLength(4);
+  expect(starts[2]).toBeCloseTo(movie.parts[1].start + 0.25, 3);
+});
+
 test("local 2D cartoon finish survives a reused puppet and real animated WebM", async ({ page }, info) => {
   test.setTimeout(120_000);
   await page.goto("./");
