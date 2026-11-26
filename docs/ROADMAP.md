@@ -2,6 +2,8 @@
 
 The studio is delivered in reviewable increments. Pull requests are never automatically merged.
 
+For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
+
 ## PR #1 — Functional Studio Foundation
 
 - React, TypeScript, Vite; public, no-login, browser-local operation.
@@ -133,3 +135,9 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 
 - Adds reviewed, optional opening and ending scenes, chapter cards, lesson recaps, and still or scrolling credits to the normal storyboard.
 - Reuses Series Studio for optional presentation defaults, Script Director for recordings, and the shared Stage for real WebM output. See [Episode Titles, Recaps & Credits](EPISODE_TITLES_RECAPS_CREDITS.md).
+
+## PR #176 — Optional 1080p WebM Export (in review)
+
+- Expose 1920×1080 on wider screens while preserving the 800×450 default and 1280×720 option. Render the original Stage and captions at the selected resolution with the existing audio mixer and WebM recorder.
+- Decode a real downloaded 1080p movie to verify dimensions, changing frames, visible caption plate and non-silent voice/music. Do not infer quality from controls or metadata alone.
+- Retain the 80 MB per-part cap, 60/120-second duration limits, and the 256 MiB size bound for joining parts. A complete 1080p twenty-minute movie is not yet verified or guaranteed.

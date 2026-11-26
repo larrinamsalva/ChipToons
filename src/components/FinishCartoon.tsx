@@ -286,12 +286,13 @@ export function FinishCartoon({
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  width: Number(e.target.value) as 800 | 1280,
+                  width: Number(e.target.value) as ExportSettings["width"],
                 })
               }
             >
               <option value="800">800 × 450</option>
               {!mobile && <option value="1280">1280 × 720</option>}
+              {!mobile && <option value="1920">1920 × 1080 · detailed</option>}
             </select>
           </label>
           <label>
@@ -340,7 +341,8 @@ export function FinishCartoon({
           Export takes about the cartoon’s running time. Keep this tab visible.
           The limit is {exportLimit()} seconds on this device; recordings and
           artwork remain saved if export fails. MP4 is not offered in this
-          release.
+          release. 1080p takes more time and storage; try a shorter segment or
+          lower resolution if your device cannot keep up.
         </p>
         {!formats.length && (
           <p className="media-notice" role="status">

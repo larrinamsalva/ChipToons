@@ -14,7 +14,7 @@ import type { AudioDecodeCache } from "./audio-engine";
 
 export interface ExportSettings {
   mime: string;
-  width: 800 | 1280;
+  width: 800 | 1280 | 1920;
   fps: 15 | 24;
   captions: boolean;
   audio: boolean;
@@ -241,7 +241,7 @@ export async function exportVideo(
     throw new Error(
       `Keep a video export to ${exportLimit()} seconds on this device. Split a longer story into shorter project copies.`,
     );
-  if (![800, 1280].includes(settings.width) || ![15, 24].includes(settings.fps))
+  if (![800, 1280, 1920].includes(settings.width) || ![15, 24].includes(settings.fps))
     throw new Error("Choose supported export settings.");
   const height = (settings.width * 450) / 800,
     canvas = document.createElement("canvas");
@@ -287,7 +287,7 @@ export async function exportVideo(
     ]);
     recorder = new MediaRecorder(stream, {
       mimeType: settings.mime,
-      videoBitsPerSecond: settings.width === 800 ? 2000000 : 3500000,
+      videoBitsPerSecond: settings.width === 800 ? 2000000 : settings.width === 1280 ? 3500000 : 4500000,
       audioBitsPerSecond: 128000,
     });
     const chunks: BlobPart[] = [];
