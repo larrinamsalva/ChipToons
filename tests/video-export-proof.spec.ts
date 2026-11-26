@@ -444,6 +444,15 @@ test("local 2D cartoon finish survives a reused puppet and real animated WebM", 
   expect(difference.changed).toBeGreaterThan(1000);
   expect(difference.alphaChanges).toBe(0);
   await studio.getByRole("button", { name: "Keep this body part" }).click();
+  await studio.getByRole("combobox", { name: "Prepare as a body part" }).selectOption("head");
+  for (const [x, y] of [[16, 2], [31, 2], [31, 31], [16, 31]]) {
+    await studio.getByRole("button", { name: "Add outline point" }).click();
+    await studio.getByRole("spinbutton", { name: "Point X (%)" }).fill(String(x));
+    await studio.getByRole("spinbutton", { name: "Point Y (%)" }).fill(String(y));
+  }
+  await studio.getByRole("button", { name: "Close outline" }).click();
+  await studio.getByRole("button", { name: "Preview transparent cutout" }).click();
+  await studio.getByRole("button", { name: "Keep this body part" }).click();
   await studio.getByRole("button", { name: "Continue in Puppet Maker" }).click();
   const maker = page.getByRole("dialog", { name: "Create a Puppet Character", exact: true });
   await maker.getByRole("button", { name: "Next", exact: true }).click();
@@ -463,6 +472,7 @@ test("local 2D cartoon finish survives a reused puppet and real animated WebM", 
   const { data } = await backup(page);
   expect(data.assets).toEqual(first.assets);
   const character = data.characters.find(item => item.name === "Ink Hero")!;
+  expect(character.puppet?.parts.map(part => part.role)).toEqual(["torso", "head"]);
   expect(data.scenes[1].elements.some(item => item.characterId === character.id)).toBe(true);
   const actor = data.scenes[0].elements.find(item => item.characterId === character.id)!;
   const scene = { ...data.scenes[0], duration: 4, elements: data.scenes[0].elements.map(item =>
