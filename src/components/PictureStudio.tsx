@@ -54,6 +54,10 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   const [zoom, setZoom] = useState(1);
   const [subtract, setSubtract] = useState(false);
   const [finish, setFinish] = useState<CartoonFinish>("original");
+  const [cleanBackground, setCleanBackground] = useState(false);
+  const [backgroundPoint, setBackgroundPoint] = useState<Point>();
+  const [choosingBackground, setChoosingBackground] = useState(false);
+  const [cleanupStrength, setCleanupStrength] = useState(35);
   const [pointIndex, setPointIndex] = useState(0);
   const [cutout, setCutout] = useState<Cutout>();
   const [name, setName] = useState("My picture character");
@@ -99,6 +103,8 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   function reset(next: Panel) {
     setHistory({ present: { panel: next, masks: [], points: [] }, past: [], future: [] });
     setCutout(undefined);
+    setBackgroundPoint(undefined);
+    setChoosingBackground(false);
   }
 
   function selectPicture(asset: Asset, example: boolean) {
@@ -106,6 +112,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
     setFixers(example);
     setZoom(1);
     setParts([]);
+    setCleanBackground(false);
     reset(example ? fixersPanels[0] : defaultPanel);
   }
 
@@ -134,10 +141,14 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   async function preview() {
     if (!source) return;
     if (points.length > 0 && points.length < 3) throw new Error("Add at least three points to close the outline.");
+    if (cleanBackground && !backgroundPoint)
+      throw new Error("Tap a plain background spot inside your outline before previewing.");
     const selection = points.length ? [...masks, { points, subtract }] : masks;
-    const result = await pictureCutout(await pictureImage(source), selection, name.trim() || "Picture cutout", finish);
+    const result = await pictureCutout(await pictureImage(source), selection, name.trim() || "Picture cutout",
+      finish, cleanBackground ? { point: backgroundPoint!, tolerance: cleanupStrength } : undefined);
     if (points.length) finishOutline();
     setCutout(result);
+    if (cleanBackground) setMessage("Preview ready. Check that the background is gone and the artwork remains.");
   }
 
   return <Modal title="Turn My Picture Into a Cartoon" onClose={() => { if (!busy) onClose(); }} wide>
@@ -208,7 +219,13 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
               setDrag(undefined);
               const moved = Math.hypot(start.x - end.x, start.y - end.y) > 0.015;
               if (mode === "panel" && moved) change({ panel: { ...panel, crop: cropBetween(start, end) } });
-              if (mode === "cutout" && !moved) addPoint(end);
+              if (mode === "cutout" && !moved) {
+                if (choosingBackground) {
+                  setBackgroundPoint(end);
+                  setChoosingBackground(false);
+                  setCutout(undefined);
+                } else addPoint(end);
+              }
             }}
             onPointerCancel={() => { dragStart.current = null; setDrag(undefined); }}>
             <image href={source.dataUrl} width={width} height={height} />
@@ -220,6 +237,8 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
               <polyline className={subtract ? "picture-outline subtract" : "picture-outline"} points={pointString(points)} vectorEffect="non-scaling-stroke" />
               {points.map((point, i) => <circle key={i} className={i === pointIndex ? "picture-point active" : "picture-point"}
                 cx={point.x * width} cy={point.y * height} r={Math.max(width, height) / (100 * zoom)} />)}
+              {cleanBackground && backgroundPoint && <circle className="picture-point active" aria-hidden="true" pointerEvents="none"
+                cx={backgroundPoint.x * width} cy={backgroundPoint.y * height} r={Math.max(width, height) / (65 * zoom)} />}
             </>}
           </svg>
         </div>
@@ -283,6 +302,36 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
             <button className="button primary small" onClick={() => void run(preview)}>Preview transparent cutout</button>
           </div>
           <p className="field-hint">Undo a closed outline to refine its points. Hidden limbs need separate drawings or uploads in Puppet Maker. Flat eyes and mouths stay still until you supply compatible face artwork.</p>
+          <label className="picture-check"><input type="checkbox" checked={cleanBackground} onChange={event => {
+            setCleanBackground(event.target.checked);
+            setChoosingBackground(false);
+            setCutout(undefined);
+          }} /> Clean up a plain background inside this cutout</label>
+          {cleanBackground && <>
+            <div className="animation-actions">
+              <button className="button secondary small" aria-pressed={choosingBackground} onClick={() => setChoosingBackground(!choosingBackground)}>
+                {choosingBackground ? "Tap the plain background in the picture" : "Pick a plain background spot"}
+              </button>
+              {backgroundPoint && <button className="button text small" onClick={() => {
+                setBackgroundPoint(undefined); setCutout(undefined);
+              }}>Clear background spot</button>}
+            </div>
+            <div className="property-fields picture-grid">
+              <label>Cleanup strength <select value={cleanupStrength} onChange={event => {
+                setCleanupStrength(Number(event.target.value)); setCutout(undefined);
+              }}><option value={20}>Low</option><option value={35}>Medium</option><option value={70}>High</option></select></label>
+              {(["x", "y"] as const).map(axis => <label key={axis}>Background spot {axis.toUpperCase()} (%)
+                <input type="number" min={0} max={100} step={0.1} value={backgroundPoint ? percent(backgroundPoint[axis]) : ""}
+                  onChange={event => {
+                    if (!event.target.value) setBackgroundPoint(undefined);
+                    else setBackgroundPoint(old => ({ ...old ?? { x: 0.1, y: 0.1 },
+                      [axis]: clamp(Number(event.target.value) / 100, 0, 1) }));
+                    setCutout(undefined);
+                  }} />
+              </label>)}
+            </div>
+            <p className="field-hint">Tap a plain-colored area inside the outline, or enter its position. Only matching pixels connected to that spot are removed. Start with Low and preview; busy or similarly colored backgrounds still need manual tracing.</p>
+          </>}
           <div className="property-fields picture-grid">
             <label>Character or prop name <input maxLength={80} value={name} onChange={event => setName(event.target.value)} /></label>
             <label>Prepare as a body part <select value={role} onChange={event => setRole(event.target.value as PartRole)}>
@@ -307,6 +356,8 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
               setParts(items => [...items.filter(item => item.role !== role), { role, cutout }]);
               setMessage(`Prepared ${roleChoices.find(([id]) => id === role)?.[1]}.`);
               change({ masks: [], points: [] });
+              setBackgroundPoint(undefined);
+              setChoosingBackground(false);
             }}>Keep this body part</button>
             <button className="button secondary" disabled={!cutout} onClick={() => void run(async () => {
               if (!cutout) return;
