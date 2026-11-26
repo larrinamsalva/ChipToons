@@ -1,6 +1,6 @@
-# Production gap audit — ChipToons after PR #175
+# Production gap audit — ChipToons through PR #180
 
-This audit describes the checked-out PR #175 revision, not a promise that a finished 15–20-minute animated episode exists. PR #175 repairs a browser-test selector; its production code is the same as merged #174. The Studio workflow and genuine-media job passed for PR #175. [Roadmap](ROADMAP.md) records past increments; the priorities below address what still separates the current studio from the requested complete production workflow.
+This audit describes the PR #180 revision based on merged PR #179, not a finished 15–20-minute animated episode. The short two-part HD joining proof is separate from the existing 20-minute lower-resolution technical fixture. [Roadmap](ROADMAP.md) records past increments; the priorities below address what still separates the current studio from the requested complete production workflow.
 
 | Production area | Verified or present | Remaining work |
 | --- | --- | --- |
