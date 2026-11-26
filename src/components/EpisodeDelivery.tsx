@@ -257,7 +257,7 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
         if (alive.current) setProgress({ label, done: fraction, total: 1 });
       });
       if (!alive.current || signal.aborted) { result.release(); return; }
-      const captions = singleMovieSrt(project, segments, result.ranges);
+      const captions = singleMovieSrt(project, segments, result.ranges, result.width);
       setMovie({ result, subtitle: captions ? new Blob([captions], { type: "application/x-subrip;charset=utf-8" }) : undefined,
         burned: review.rows.some(row => row.file?.receipt?.captions) });
       setNotice("The movie passed local playback and seeking checks.");
@@ -392,7 +392,7 @@ export function EpisodeDelivery({ project, initialLimit, initialAudio, active, o
       }</p>
       <section className="delivery-card" aria-label="Single-movie builder">
         <h3>One complete movie</h3>
-        <p>Join matching VP8 exports on this device. The picture stays unchanged. Sound is encoded again as Opus and may change slightly. The movie keeps the short lead-ins from your numbered recordings.</p>
+        <p>Join matching VP8 exports on this device. The picture stays unchanged. Sound is encoded again as Opus and may change slightly. Real-time recordings keep their short lead-ins; offline 1080p pictures begin at the scene start.</p>
         {movieProblem && <p className="field-hint">{movieProblem}</p>}
         {!movie && <div className="delivery-actions">
           <button className="button primary" disabled={!!movieProblem} onClick={buildMovie}>Make One Complete Movie</button>

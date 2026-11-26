@@ -140,7 +140,7 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 
 - Expose 1920×1080 on wider screens while preserving the 800×450 default and 1280×720 option. Render the original Stage and captions at the selected resolution with the existing audio mixer and WebM recorder.
 - Decode a real downloaded 1080p movie to verify dimensions, changing frames, visible caption plate and non-silent voice/music. Do not infer quality from controls or metadata alone.
-- Retain the 80 MB per-part cap and 60/120-second duration limits. The existing single-movie builder accepts 450p/720p VP8 only (up to 512 MiB); 1080p parts cannot currently be joined inside ChipToons. A complete 1080p twenty-minute movie is not yet verified or guaranteed.
+- Retain the 80 MB per-part cap and 60/120-second duration limits. At the time of this PR, the single-movie builder accepted only 450p/720p VP8 (up to 512 MiB). PR #180 adds a short, independently decoded two-part 1080p joining proof. A complete 1080p twenty-minute movie is not yet verified or guaranteed.
 
 ## PR #177 — Prevent Dropped Frames in 1080p Exports (merged)
 
@@ -153,7 +153,13 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Keep the uploaded photo untouched while applying an optional, deterministic storybook color or bold ink treatment to each transparent hand-traced part. Reuse the derived PNG through the existing Art Library and Puppet Maker without a new project format or paid service.
 - Check actual changed PNG pixels and exact alpha preservation, then independently decode a moving picture puppet in a downloaded WebM. The finishes do not provide automatic background removal, anatomy, anime or 3D generation.
 
-## PR #179 — Plain-Background Cutout Cleanup (in review)
+## PR #179 — Plain-Background Cutout Cleanup (merged)
 
 - Let a creator pick a spot within a traced cutout and remove only connected pixels close to that color, with Low/Medium/High strength and keyboard position fields. Keep the uploaded original untouched and preview the derived transparent PNG before saving.
 - Test connected-region boundaries and destructive picks. Use a genuine uploaded flat-background picture in the browser, inspect removed alpha and preserved subject, then decode a moving puppet from a downloaded WebM. Busy backgrounds and arbitrary person segmentation remain outside this constrained local tool.
+
+## PR #180 — Verified 1080p Movie Joining (in review)
+
+- Accept two or more matching VP8 offline 1920×1080 exports in the existing desktop single-movie builder, retaining its 512 MiB source/output and 20-minute planned-duration gates. Preserve the original video packets and re-encode continuous Opus audio.
+- Decode both real four-second HD exports, join them, compare every decoded frame and audio samples near the join, reopen and seek the downloaded movie. Align the joined subtitles to offline picture time, which has no real-time recorder lead-in.
+- A successful short HD proof does not validate a full 15–20-minute 1080p episode, arbitrary third-party WebMs, MP4 or mobile assembly. Measure real device and longer-run performance separately.

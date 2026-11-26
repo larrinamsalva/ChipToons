@@ -27,6 +27,13 @@ describe("single movie planning", () => {
     expect(moviePlanProblem([first, { ...second, media: { ...second.media, fps: 24 } }])).toMatch(/frame rate/);
     expect(moviePlanProblem([first, { ...second, media: { ...second.media, audio: undefined } }])).toMatch(/matching Opus/);
     expect(moviePlanProblem([first, { ...second, media: { ...second.media, duration: 5 } }])).toMatch(/unusual timing/);
+    const hd = [first, second].map(item => ({ ...item, media: {
+      ...item.media, width: 1920, height: 1080, duration: item.end - item.start + 0.16,
+    } }));
+    expect(moviePlanProblem(hd)).toBe("");
+    expect(moviePlanProblem([hd[0], second])).toMatch(/same size/);
+    expect(moviePlanProblem(hd.map(item => ({ ...item, media: { ...item.media, codec: "VP9" } }))))
+      .toMatch(/1920 × 1080/);
   });
 
   it("accepts only bounded genuine recorder lead/tail time and reports the offending part", () => {
@@ -82,5 +89,8 @@ describe("single movie planning", () => {
     expect(subtitles.match(/ --> /g)).toHaveLength(segments.length);
     expect(subtitles).toContain(`\n\n${segments.length}\n`);
     expect(subtitles).not.toContain("\n\n1\n");
+    const hd = singleMovieSrt(project, segments, ranges, 1920);
+    expect(hd).toContain("1\n00:00:00,250 --> 00:00:01,000\nScene cue 1");
+    expect(hd).toContain("2\n00:00:");
   });
 });

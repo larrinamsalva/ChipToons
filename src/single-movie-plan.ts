@@ -47,8 +47,9 @@ export function moviePlanProblem(parts: MoviePart[]) {
   if (parts.length < 2 || parts.length > 120) return "Choose and check at least two numbered video parts.";
   const first = parts[0].media;
   if (first.codec !== "VP8" ||
-      !((first.width === 800 && first.height === 450) || (first.width === 1280 && first.height === 720)))
-    return "Make one movie from matching VP8 ChipToons exports at 800 × 450 or 1280 × 720.";
+      !((first.width === 800 && first.height === 450) || (first.width === 1280 && first.height === 720) ||
+        (first.width === 1920 && first.height === 1080)))
+    return "Make one movie from matching VP8 ChipToons exports at 800 × 450, 1280 × 720 or 1920 × 1080.";
   const fps = parts.find(part => part.media.fps !== undefined)?.media.fps;
   let end = 0;
   let size = 0;

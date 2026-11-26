@@ -1,6 +1,5 @@
 import type { Project } from "./model";
-import { EXPORT_RECORDING_LEAD_SECONDS } from "./segments";
-import { singleMovieSrt } from "./single-movie";
+import { moviePictureLead, singleMovieSrt } from "./single-movie";
 import type { MovieRange } from "./single-movie-plan";
 import { episodePresentation } from "./story-card-studio";
 import type { SeriesPlan } from "./series";
@@ -51,7 +50,7 @@ export async function publishingTracks(movie: PublishingMovie) {
 }
 
 export const publishingSubtitles = (project: Project, movie: PublishingMovie) =>
-  singleMovieSrt(project, movie.plan, movie.ranges);
+  singleMovieSrt(project, movie.plan, movie.ranges, movie.width);
 
 export interface EpisodeDetails {
   title: string;
@@ -85,7 +84,7 @@ export function publishingChapters(project: Project, movie: PublishingMovie): Pu
   const boundaries = project.scenes.map((scene, index) => {
     const time = sceneStart(project, index);
     const part = movie.plan.findIndex(range => range.start <= time && time < range.end);
-    const seconds = part < 0 ? -1 : Math.floor(movie.ranges[part].start + EXPORT_RECORDING_LEAD_SECONDS + time - movie.plan[part].start);
+    const seconds = part < 0 ? -1 : Math.floor(movie.ranges[part].start + moviePictureLead(movie.width) + time - movie.plan[part].start);
     return { seconds: index === 0 ? 0 : seconds,
       title: scene.storyCard?.kind === "chapter" ? scene.storyCard.title : scene.title };
   });

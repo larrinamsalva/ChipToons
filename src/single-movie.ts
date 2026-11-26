@@ -126,10 +126,14 @@ export async function makeSingleMovie(parts: MoviePart[], signal: AbortSignal,
   });
 }
 
-export function singleMovieSrt(project: Project, plan: { start: number; end: number }[], ranges: MovieRange[]) {
+export function moviePictureLead(width: number) {
+  return width === 1920 ? 0 : EXPORT_RECORDING_LEAD_SECONDS;
+}
+
+export function singleMovieSrt(project: Project, plan: { start: number; end: number }[], ranges: MovieRange[], width = 800) {
   return formatSrt(plan.flatMap((segment, index) => {
     const range = ranges[index];
-    const lead = range.start + EXPORT_RECORDING_LEAD_SECONDS;
+    const lead = range.start + moviePictureLead(width);
     return subtitleCues(project, segment).map(cue => ({
       start: lead + cue.start, end: Math.min(range.end, lead + cue.end), text: cue.text,
     })).filter(cue => Math.round(cue.end * 1000) > Math.round(cue.start * 1000));
