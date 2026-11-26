@@ -140,4 +140,4 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 
 - Expose 1920×1080 on wider screens while preserving the 800×450 default and 1280×720 option. Render the original Stage and captions at the selected resolution with the existing audio mixer and WebM recorder.
 - Decode a real downloaded 1080p movie to verify dimensions, changing frames, visible caption plate and non-silent voice/music. Do not infer quality from controls or metadata alone.
-- Retain the 80 MB per-part cap, 60/120-second duration limits, and the 256 MiB size bound for joining parts. A complete 1080p twenty-minute movie is not yet verified or guaranteed.
+- Retain the 80 MB per-part cap and 60/120-second duration limits. The existing single-movie builder accepts 450p/720p VP8 only (up to 512 MiB); 1080p parts cannot currently be joined inside ChipToons. A complete 1080p twenty-minute movie is not yet verified or guaranteed.

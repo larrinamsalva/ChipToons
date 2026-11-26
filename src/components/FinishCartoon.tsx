@@ -344,6 +344,14 @@ export function FinishCartoon({
           release. 1080p takes more time and storage; try a shorter segment or
           lower resolution if your device cannot keep up.
         </p>
+        {settings.width === 1920 && (
+          <p className="media-notice" role="status">
+            1080p parts are playable and downloadable individually. To join a
+            complete episode in ChipToons, export matching 800 × 450 or
+            1280 × 720 VP8 parts instead; the movie builder does not yet accept
+            1080p.
+          </p>
+        )}
         {!formats.length && (
           <p className="media-notice" role="status">
             This browser does not provide the required canvas/WebM/Web Audio

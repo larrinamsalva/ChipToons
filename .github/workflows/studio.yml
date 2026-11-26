@@ -75,6 +75,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Exclude blocked third-party package feed on the media runner
+        run: |
+          # Playwright dependencies and FFmpeg come from Ubuntu. A preinstalled
+          # Microsoft apt feed returned 403 before any episode test could run.
+          for source in /etc/apt/sources.list.d/*; do
+            if [ -f "$source" ] && grep -q 'packages.microsoft.com' "$source"; then
+              sudo mv "$source" "${source}.chiptoons-disabled"
+            fi
+          done
       - name: Install verified browser and offline media tools
         run: |
           npx playwright install --with-deps chromium webkit
