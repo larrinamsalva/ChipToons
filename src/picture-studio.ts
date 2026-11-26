@@ -8,6 +8,8 @@ import { starterProject } from "./planner";
 import type { PicturePanel } from "./picture-model";
 import type { PartRole, PuppetPart } from "./puppet-model";
 import { clamp, cleanSceneReferences } from "./timeline";
+import { finishCutoutPixels } from "./cartoon-finish";
+import type { CartoonFinish } from "./cartoon-finish";
 
 export interface Panel extends PicturePanel {
   visible: boolean;
@@ -133,7 +135,8 @@ export async function pictureImage(source: Asset) {
   return image;
 }
 
-export async function pictureCutout(image: HTMLImageElement, masks: Mask[], name: string): Promise<Cutout> {
+export async function pictureCutout(image: HTMLImageElement, masks: Mask[], name: string,
+  finish: CartoonFinish = "original"): Promise<Cutout> {
   const added = masks.filter(mask => !mask.subtract).flatMap(mask => mask.points);
   if (!added.length) throw new Error("Add an outline around visible artwork first.");
   if (masks.length > MAX_MASKS || masks.some(mask => mask.points.length < 3 || mask.points.length > MAX_POINTS ||
@@ -166,9 +169,14 @@ export async function pictureCutout(image: HTMLImageElement, masks: Mask[], name
     else ctx.drawImage(image, 0, 0);
     ctx.restore();
   }
-  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
   if (!pixels.some((alpha, index) => index % 4 === 3 && alpha > 0))
     throw new Error("This selection is fully transparent. Restore an area or choose other artwork.");
+  if (finish !== "original") {
+    imageData.data.set(finishCutoutPixels(pixels, canvas.width, canvas.height, finish));
+    ctx.putImageData(imageData, 0, 0);
+  }
   return {
     asset: { id: uid(), name, mime: "image/png", type: "image", dataUrl: canvas.toDataURL(),
       sourceWidth: canvas.width, sourceHeight: canvas.height },
