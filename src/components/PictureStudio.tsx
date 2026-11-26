@@ -12,6 +12,7 @@ import {
 } from "../picture-studio";
 import type { Cutout, Mask, Panel, Point, PreparedPart } from "../picture-studio";
 import type { PartRole } from "../puppet-model";
+import type { CartoonFinish } from "../cartoon-finish";
 import { clamp } from "../timeline";
 import { Modal } from "./Modal";
 
@@ -52,6 +53,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   const dragStart = useRef<Point | null>(null);
   const [zoom, setZoom] = useState(1);
   const [subtract, setSubtract] = useState(false);
+  const [finish, setFinish] = useState<CartoonFinish>("original");
   const [pointIndex, setPointIndex] = useState(0);
   const [cutout, setCutout] = useState<Cutout>();
   const [name, setName] = useState("My picture character");
@@ -133,7 +135,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
     if (!source) return;
     if (points.length > 0 && points.length < 3) throw new Error("Add at least three points to close the outline.");
     const selection = points.length ? [...masks, { points, subtract }] : masks;
-    const result = await pictureCutout(await pictureImage(source), selection, name.trim() || "Picture cutout");
+    const result = await pictureCutout(await pictureImage(source), selection, name.trim() || "Picture cutout", finish);
     if (points.length) finishOutline();
     setCutout(result);
   }
@@ -286,7 +288,16 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
             <label>Prepare as a body part <select value={role} onChange={event => setRole(event.target.value as PartRole)}>
               {roleChoices.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select></label>
+            <label>Cutout color finish <select value={finish} onChange={event => {
+              setFinish(event.target.value as CartoonFinish);
+              setCutout(undefined);
+            }}>
+              <option value="original">Original picture colors</option>
+              <option value="storybook">Soft 2D storybook colors</option>
+              <option value="ink">Bold 2D ink and colors</option>
+            </select></label>
           </div>
+          <p className="field-hint">This optional finish is made on your device and changes only the transparent cutout. Your original picture stays saved. Preview again after changing it; hidden body parts and new views still need your artwork.</p>
           {cutout && <div className="picture-cutout">
             <img src={cutout.asset.dataUrl} alt="Transparent cutout preview" />
           </div>}

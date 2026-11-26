@@ -23,8 +23,9 @@ import { applyDirections, createAssistantDraft, PLAYGROUND_BRIEF } from "../src/
 import { starterProject } from "../src/demo-starter";
 import { movieProofArtwork, segmentedProject } from "./creator-fixtures";
 import { downloadAndVerifyMovie } from "./single-movie-proof";
-import { backup } from "./production-helpers";
+import { backup, saved } from "./production-helpers";
 import { cameraAt, duplicateAnimatedScene, elementAt, retimeScene, sceneElementAt, sceneFramesAt, stageCameraAt } from "../src/timeline";
+import { presetAnimation } from "../src/presets";
 import { emptyProduction } from "../src/media-model";
 import { builtInSound } from "../src/sounds";
 import { EXPORT_RECORDING_LEAD_SECONDS } from "../src/segments";
@@ -397,6 +398,79 @@ test("1080p WebM decodes moving cartoon frames, captions and mixed speech and mu
     "crop=2:2:72:960,format=rgb24", "-frames:v", "1", "-f", "rawvideo", "pipe:1",
   ]);
   expect(Math.max(...caption)).toBeLessThan(80);
+});
+
+test("local 2D cartoon finish survives a reused puppet and real animated WebM", async ({ page }, info) => {
+  test.setTimeout(120_000);
+  await page.goto("./");
+  await page.getByRole("button", { name: "Turn My Picture Into a Cartoon", exact: true }).click();
+  const start = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await start.getByLabel("Original picture file", { exact: true }).setInputFiles(
+    fileURLToPath(new URL("../public/examples/little-fixers.png", import.meta.url)));
+  await start.getByRole("button", { name: "Create storyboard scene" }).click();
+  await page.getByRole("button", { name: "Picture & cutouts" }).click();
+  const studio = page.getByRole("dialog", { name: "Turn My Picture Into a Cartoon" });
+  await studio.getByRole("button", { name: "Make This Character Move" }).click();
+  await studio.getByRole("textbox", { name: "Character or prop name" }).fill("Ink Hero");
+  for (const [x, y] of [[10, 28], [30, 28], [30, 58], [10, 58]]) {
+    await studio.getByRole("button", { name: "Add outline point" }).click();
+    await studio.getByRole("spinbutton", { name: "Point X (%)" }).fill(String(x));
+    await studio.getByRole("spinbutton", { name: "Point Y (%)" }).fill(String(y));
+  }
+  await studio.getByRole("button", { name: "Close outline" }).click();
+  await studio.getByRole("button", { name: "Preview transparent cutout" }).click();
+  const preview = studio.getByRole("img", { name: "Transparent cutout preview" });
+  const original = await preview.getAttribute("src");
+  await studio.getByRole("combobox", { name: "Cutout color finish" }).selectOption("ink");
+  await expect(preview).toBeHidden();
+  await studio.getByRole("button", { name: "Preview transparent cutout" }).click();
+  const ink = await preview.getAttribute("src");
+  const difference = await page.evaluate(async ([before, after]) => {
+    async function pixels(url: string) {
+      const image = new Image(); image.src = url; await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+      return context.getImageData(0, 0, canvas.width, canvas.height).data;
+    }
+    const a = await pixels(before), b = await pixels(after);
+    let changed = 0, alphaChanges = 0;
+    for (let i = 0; i < a.length; i += 4) {
+      if (a[i + 3] !== b[i + 3]) alphaChanges++;
+      if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) changed++;
+    }
+    return { changed, alphaChanges };
+  }, [original!, ink!] as [string, string]);
+  expect(difference.changed).toBeGreaterThan(1000);
+  expect(difference.alphaChanges).toBe(0);
+  await studio.getByRole("button", { name: "Keep this body part" }).click();
+  await studio.getByRole("button", { name: "Continue in Puppet Maker" }).click();
+  const maker = page.getByRole("dialog", { name: "Create a Puppet Character", exact: true });
+  await maker.getByRole("button", { name: "Next", exact: true }).click();
+  await maker.getByRole("button", { name: "Preview", exact: true }).click();
+  await maker.getByRole("button", { name: "Add to Cartoon", exact: true }).click();
+  await expect(maker).toBeHidden();
+  await saved(page);
+  const first = (await backup(page)).data;
+  const panels = page.getByRole("navigation", { name: "Editor panels" });
+  if (await panels.isVisible()) await panels.getByRole("button", { name: "Scenes" }).click();
+  await page.getByRole("button", { name: "Add a scene" }).click();
+  await page.locator(".editor-toolbar").getByRole("button", { name: "Art library", exact: true }).click();
+  const card = page.locator(".library-card").filter({ has: page.getByRole("heading", { name: "Ink Hero", exact: true }) });
+  await card.getByRole("button", { name: "Add to scene" }).click();
+  await page.getByRole("button", { name: "Back to my story" }).click();
+  await saved(page);
+  const { data } = await backup(page);
+  expect(data.assets).toEqual(first.assets);
+  const character = data.characters.find(item => item.name === "Ink Hero")!;
+  expect(data.scenes[1].elements.some(item => item.characterId === character.id)).toBe(true);
+  const actor = data.scenes[0].elements.find(item => item.characterId === character.id)!;
+  const scene = { ...data.scenes[0], duration: 4, elements: data.scenes[0].elements.map(item =>
+    item.id === actor.id ? { ...item, animation: presetAnimation(item, 4, "walk", 0, 3, character.puppet) } : item) };
+  await restore(page, { ...data, scenes: [scene] });
+  const { path } = await render(page, info, "ink-hero-picture-puppet", 4,
+    { audio: false, captions: false });
+  expect(changedPixels(rawFrame(path, 0.5), rawFrame(path, 2.5), 80, 60, 640, 330)).toBeGreaterThan(500);
 });
 
 test("VP9 at 720p and 24 fps genuinely excludes audio and captions when unchecked", async ({
