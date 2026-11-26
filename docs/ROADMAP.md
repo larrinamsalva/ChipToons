@@ -136,7 +136,7 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Adds reviewed, optional opening and ending scenes, chapter cards, lesson recaps, and still or scrolling credits to the normal storyboard.
 - Reuses Series Studio for optional presentation defaults, Script Director for recordings, and the shared Stage for real WebM output. See [Episode Titles, Recaps & Credits](EPISODE_TITLES_RECAPS_CREDITS.md).
 
-## PR #176 — Optional 1080p WebM Export (in review)
+## PR #176 — Optional 1080p WebM Export (merged; frame loss under repair in #177)
 
 - Expose 1920×1080 on wider screens while preserving the 800×450 default and 1280×720 option. Render the original Stage and captions at the selected resolution with the existing audio mixer and WebM recorder.
 - Decode a real downloaded 1080p movie to verify dimensions, changing frames, visible caption plate and non-silent voice/music. Do not infer quality from controls or metadata alone.
