@@ -141,3 +141,9 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Expose 1920×1080 on wider screens while preserving the 800×450 default and 1280×720 option. Render the original Stage and captions at the selected resolution with the existing audio mixer and WebM recorder.
 - Decode a real downloaded 1080p movie to verify dimensions, changing frames, visible caption plate and non-silent voice/music. Do not infer quality from controls or metadata alone.
 - Retain the 80 MB per-part cap and 60/120-second duration limits. The existing single-movie builder accepts 450p/720p VP8 only (up to 512 MiB); 1080p parts cannot currently be joined inside ChipToons. A complete 1080p twenty-minute movie is not yet verified or guaranteed.
+
+## PR #177 — Prevent Dropped Frames in 1080p Exports (in review)
+
+- A real 4-second export on #176 encoded only 23 of the planned 60 frames on CI. Its 1080p media test correctly failed. This is a product defect, not a test selector failure.
+- Use offline WebCodecs video samples with explicit scene timestamps and an offline copy of the existing audio mix for 1080p. Keep the lower-resolution real-time exports intact.
+- Require the real 1080p file to decode with nearly all sampled frames, changing animation, an audible mix and visible captions. Keep a fast dedicated media check alongside the existing complete browser and episode suites. Do not claim a 20-minute 1080p joined movie.

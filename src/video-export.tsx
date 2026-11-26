@@ -223,6 +223,107 @@ export async function verifyVideo(blob: Blob, signal: AbortSignal, seekPoints: n
     URL.revokeObjectURL(url);
   }
 }
+// High-definition SVG frames can take longer than one 15-fps clock interval
+// on a typical desktop. Encode each original sampled frame with its intended
+// timestamp instead of letting a real-time MediaRecorder silently drop it.
+async function exportHighDefinition(
+  project: Project,
+  settings: ExportSettings,
+  range: ReturnType<typeof exportRange>,
+  signal: AbortSignal,
+  onProgress: (p: ExportProgress) => void,
+  cache?: AudioDecodeCache,
+) {
+  const {
+    AudioBufferSource, BufferTarget, CanvasSource, Output, WebMOutputFormat,
+    canEncodeAudio, canEncodeVideo,
+  } = await import("mediabunny");
+  const codec = settings.mime.includes("vp9") ? "vp9" : "vp8";
+  if (!await canEncodeVideo(codec, { width: 1920, height: 1080, frameRate: settings.fps, bitrate: 4500000 }) ||
+      settings.audio && (!globalThis.OfflineAudioContext ||
+        !await canEncodeAudio("opus", { sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 })))
+    throw new Error("This browser cannot encode offline 1080p WebM. Choose 720p or try a current desktop Chromium browser.");
+  check(signal);
+  const canvas = document.createElement("canvas");
+  canvas.width = 1920;
+  canvas.height = 1080;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas rendering is unavailable.");
+  onProgress({ phase: "Preparing 1080p artwork…", seconds: 0, fraction: 0 });
+  for (const asset of rangeArtwork(project, range)) {
+    await loadImage(asset.dataUrl, signal);
+    check(signal);
+  }
+
+  let renderedAudio: AudioBuffer | undefined;
+  if (settings.audio) {
+    const decoder = new AudioContext({ sampleRate: 48000 });
+    try {
+      await decoder.resume();
+      const buffers = await prepareAudio(decoder, project,
+        phase => onProgress({ phase, seconds: 0, fraction: 0 }), range, cache);
+      check(signal);
+      const offline = new OfflineAudioContext(2, Math.ceil((range.duration + EXPORT_RECORDING_LEAD_SECONDS) * 48000), 48000);
+      const graph = mixingGraph(offline, offline.destination, project.mixer);
+      const nodes = new Set<AudioBufferSourceNode>();
+      try {
+        scheduleAudio(offline, project, buffers, graph, range.start, range.end,
+          EXPORT_RECORDING_LEAD_SECONDS, nodes);
+        onProgress({ phase: "Mixing 1080p sound…", seconds: 0, fraction: 0 });
+        renderedAudio = await offline.startRendering();
+        check(signal);
+      } finally {
+        graph.dispose();
+      }
+    } finally {
+      await decoder.close();
+    }
+  }
+
+  const target = new BufferTarget();
+  const output = new Output({ format: new WebMOutputFormat(), target });
+  const video = new CanvasSource(canvas, { codec, bitrate: 4500000, keyFrameInterval: 2 });
+  const sound = renderedAudio ? new AudioBufferSource({ codec: "opus", bitrate: 128000 }) : undefined;
+  output.addVideoTrack(video);
+  if (sound) output.addAudioTrack(sound);
+  let finalized = false;
+  const frames = Math.ceil(range.duration * settings.fps);
+  try {
+    await output.start();
+    // The audio encoder may wait for video track progress. Run both tracks
+    // concurrently, retaining the normal mixer and the shared episode clock.
+    const audioJob = sound && renderedAudio ? sound.add(renderedAudio) : undefined;
+    void audioJob?.catch(() => {});
+    for (let i = 0; i < frames; i++) {
+      check(signal);
+      const at = i / settings.fps;
+      await paintStage(context, project, Math.min(range.end - 0.001, range.start + at), settings, signal);
+      await video.add(at, Math.min(1 / settings.fps, range.duration - at));
+      if (i % settings.fps === 0 || i === frames - 1)
+        onProgress({ phase: "Encoding every 1080p frame…", seconds: at,
+          fraction: Math.min(0.98, (i + 1) / frames) });
+    }
+    await audioJob;
+    check(signal);
+    await output.finalize();
+    finalized = true;
+  } finally {
+    if (!finalized) await output.cancel().catch(() => {});
+  }
+  const buffer = target.buffer;
+  if (!buffer || buffer.byteLength < 1000 || buffer.byteLength > 80 * 1024 * 1024)
+    throw new Error("The 1080p movie is empty or exceeds 80 MB. Export shorter scene parts.");
+  const blob = new Blob([buffer], { type: "video/webm" });
+  check(signal);
+  onProgress({ phase: "Checking the playable 1080p movie…", seconds: range.duration, fraction: 0.99 });
+  const verified = await verifyVideo(blob, signal);
+  if (verified.width !== 1920 || verified.height !== 1080 ||
+      verified.duration < range.duration - 0.05 || verified.duration > range.duration + 1)
+    throw new Error("The 1080p movie has unexpected dimensions or duration.");
+  onProgress({ phase: "Ready to download", seconds: range.duration, fraction: 1 });
+  return { blob, mime: settings.mime, duration: range.duration, recordedDuration: verified.duration,
+    frames, width: 1920, height: 1080, audio: settings.audio };
+}
 export async function exportVideo(
   source: Project,
   settings: ExportSettings,
@@ -243,6 +344,8 @@ export async function exportVideo(
     );
   if (![800, 1280, 1920].includes(settings.width) || ![15, 24].includes(settings.fps))
     throw new Error("Choose supported export settings.");
+  if (settings.width === 1920)
+    return exportHighDefinition(project, settings, range, signal, onProgress, cache);
   const height = (settings.width * 450) / 800,
     canvas = document.createElement("canvas");
   canvas.width = settings.width;

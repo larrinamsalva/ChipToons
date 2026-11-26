@@ -45,6 +45,9 @@ export function FinishCartoon({
 }) {
   const [formats] = useState(supportedVideoFormats),
     mobile = window.matchMedia("(max-width:740px)").matches;
+  const hdAvailable = !mobile && typeof globalThis.VideoEncoder === "function" &&
+    typeof globalThis.AudioEncoder === "function" &&
+    typeof globalThis.OfflineAudioContext === "function";
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [publishing, setPublishing] = useState<{ open: boolean; joined?: PublishingMovie; parts?: PublishingParts }>();
   const publishingOpen = !!publishing?.open;
@@ -292,7 +295,7 @@ export function FinishCartoon({
             >
               <option value="800">800 × 450</option>
               {!mobile && <option value="1280">1280 × 720</option>}
-              {!mobile && <option value="1920">1920 × 1080 · detailed</option>}
+              {hdAvailable && <option value="1920">1920 × 1080 · detailed</option>}
             </select>
           </label>
           <label>
@@ -338,7 +341,8 @@ export function FinishCartoon({
           </div>
         </div>
         <p className="field-hint">
-          Export takes about the cartoon’s running time. Keep this tab visible.
+          Export normally takes about the cartoon’s running time; 1080p may
+          take longer because it draws and encodes every frame. Keep this tab visible.
           The limit is {exportLimit()} seconds on this device; recordings and
           artwork remain saved if export fails. MP4 is not offered in this
           release. 1080p takes more time and storage; try a shorter segment or

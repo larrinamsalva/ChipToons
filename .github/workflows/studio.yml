@@ -15,6 +15,36 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  hd_export:
+    name: Decode every 1080p cartoon frame and sound
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Encode, download and independently decode 1080p video
+        run: npx playwright test --project=media-export --grep '1080p WebM'
+      - name: Keep the 1080p video and decoded frame
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: 1080p-media-proof
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
   verify:
     name: Foundation and browser QA
     runs-on: ubuntu-latest
