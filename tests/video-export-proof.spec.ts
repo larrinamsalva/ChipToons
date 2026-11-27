@@ -909,7 +909,8 @@ test("mirrored uploaded arm artwork is visible in a genuinely moving WebM", asyn
   scene.elements = [scene.elements.at(-1)!];
   scene.transition = "cut";
   await restore(page, { ...draft, scenes: [scene] });
-  const mirrored = page.locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]');
+  const mirrored = page.getByRole("button", { name: "Select Sunny the Kindness Hero", exact: true })
+    .locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]');
   await expect(mirrored).toBeAttached();
   const { path, decodedFrames } = await render(page, info, "mirrored-painted-arm", 5,
     { audio: false, captions: false });
@@ -955,8 +956,9 @@ test("nested picture forearm and shin move in an independently decoded WebM", as
     elements: [{ ...actor, x: 400, y: 275,
       animation: presetAnimation({ ...actor, x: 400, y: 275 }, 4, "walk-in-place", 0, 3, rig) }] };
   await restore(page, { ...draft, scenes: [scene] });
-  await expect(page.locator('[data-puppet-part="leftForearm"] image')).toBeAttached();
-  await expect(page.locator('[data-puppet-part="leftShin"] image')).toBeAttached();
+  const stageActor = page.getByRole("button", { name: "Select Sunny the Kindness Hero", exact: true });
+  await expect(stageActor.locator('[data-puppet-part="leftForearm"] image')).toBeAttached();
+  await expect(stageActor.locator('[data-puppet-part="leftShin"] image')).toBeAttached();
   const { path, decodedFrames } = await render(page, info, "nested-picture-joints", 4,
     { audio: false, captions: false });
   expect(decodedFrames).toBeGreaterThan(32);

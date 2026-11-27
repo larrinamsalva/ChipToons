@@ -82,7 +82,8 @@ test("mirrors one uploaded arm cutout into a separate editable joint and restore
   expect(right).toMatchObject({ assetId: left.assetId, flipX: true, x: 58 });
   expect(data.assets.filter(asset => asset.id === left.assetId)).toHaveLength(1);
   await restore(page, { ...data, id: "restored-mirrored-cutout" });
-  await expect(page.locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]'))
+  await expect(page.getByRole("button", { name: `Select ${SUNNY_NAME}`, exact: true })
+    .locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]'))
     .toBeAttached();
   expect(rigOf((await backup(page)).data).parts.find(part => part.role === "rightArm"))
     .toEqual(right);
