@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #186
+## Current focused increment — PR #190
+
+- Extend the bounded 1–6-frame foot hold to a separately parented vector boot, using the same measured Stage sole, 12-pixel limit, saved joint keys and one-step Undo.
+- Preserve actor travel and the other foot, and reject authored keys, nonlinear motion and unsafe spans. Verify creator save/Undo on desktop, phone and tablet plus actual dark vector-boot pixels in a decoded WebM. This does not create full-body physics or a guaranteed natural walk.
+
+## Earlier focused increment — PR #186
 
 - Let a creator mark the visible sole inside an uploaded picture foot in Puppet Maker with two mobile-friendly position controls and a live yellow preview dot. Mirror the mark with the artwork and preserve it through library reuse and backups.
 - Use that mark in the existing read-only foot travel review. Verify genuine moving WebM output with the marked point while preserving original picture pixels; this does not automatically plant or retime a step.
@@ -208,8 +213,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Refuse authored keys, non-linear or procedural acting, unsupported rigs, near-floor changes outside the reviewed span and any requested displacement beyond 12 stage pixels. Postcheck all three sampled sole positions and heights. This short local hold is not an automatic walk cycle, continuous contact solver or physical collision check.
 - Exercise portable save, Undo and Redo on desktop/phone/tablet and independently decode the final held frame beside an original painted shoe in the same real WebM. Keep all prior browser and 20-minute technical export checks.
 
-## PR #189 — Choose a Short Painted-Foot Hold Length (in review)
+## PR #189 — Choose a Short Painted-Foot Hold Length (merged)
 
 - Let a creator select 2–6 consecutive 24-fps samples for a picture-foot hold. Reuse the #188 validated edit path and keep the default at three frames; show when a finding does not have enough remaining samples.
 - Keep the original 12-stage-pixel total reach, authored-key refusal, actor and other-foot preservation, and one-step Undo. Decline longer spans that exceed these bounds instead of silently shortening them.
 - Verify several lengths and rejection boundaries in unit tests; exercise a five-frame choice on desktop, phone and tablet; independently decode a six-frame shoe hold in a real WebM. Continue full-episode technical proof without calling the local hold a finished walk cycle.
+
+## PR #190 — Hold a Vector Puppet Boot (in review)
+
+- Make the existing ordinary-scene hold control available to vector feet as well as picture feet, retaining the 1–6-frame linear-keyed limits, sole measurements, preserved actor path, other-foot position and one-step Undo.
+- Confirm a saved vector boot stays at its reviewed stage X across four frames. Exercise the creator flow and backup/Undo on desktop, phone and tablet, and independently decode the visible boot beside its uncorrected counterpart in a real WebM.
+- Keep the neutral-rig floor as an estimate and distinguish this local correction from collision detection, physically balanced motion or a polished full episode.

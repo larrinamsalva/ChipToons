@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: studio-${{ github.ref }}
-  cancel-in-progress: false
+  # A repaired PR must run all checks on its latest commit without waiting
+  # behind superseded real-time exports. Never cancel main's verification.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   hd_export:
@@ -35,7 +37,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
       - name: Encode, download and independently decode short videos
-        run: npx playwright test --project=media-export --grep '1080p WebM|joins two genuine 1080p|local 2D cartoon finish|plain background cleanup|mirrored uploaded arm artwork|nested picture forearm and shin|reparented painted hand follows|painted foot review|aligned painted foot|three-frame painted foot|six-frame painted foot'
+        run: npx playwright test --project=media-export --grep '1080p WebM|joins two genuine 1080p|local 2D cartoon finish|plain background cleanup|mirrored uploaded arm artwork|nested picture forearm and shin|reparented painted hand follows|painted foot review|aligned painted foot|three-frame painted foot|six-frame painted foot|vector boot hold'
       - name: Keep both videos and decoded frames
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7.0.2

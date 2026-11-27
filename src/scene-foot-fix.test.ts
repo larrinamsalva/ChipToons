@@ -38,12 +38,11 @@ describe("one-frame picture-foot alignment", () => {
     expect(newSole.y).toBeCloseTo(oldSole.y, 1);
   });
 
-  it("refuses stale, unsupported, oversized or authored-key edits without mutation", () => {
+  it("refuses stale, oversized or authored-key edits without mutation", () => {
     const project = paintedFootCartoon(png);
     const scene = project.scenes[0], actor = scene.elements[0];
     const interval = sceneFootTravel(project, scene, actor.id, 0, "right")!.possibleSlides[0];
     expect(alignPictureFootFrame(project, scene, actor.id, 0, "right", 999)).toBeUndefined();
-    expect(alignPictureFootFrame(project, scene, actor.id, 0, "left", interval.afterIndex)).toBeUndefined();
     const original = JSON.stringify(project);
     actor.motion = "walk";
     expect(alignPictureFootFrame(project, scene, actor.id, 0, "right", interval.afterIndex)).toBeUndefined();
@@ -82,6 +81,37 @@ describe("one-frame picture-foot alignment", () => {
       expect(puppetFootSoleAt(project.characters[0].puppet!, actor, newFrame, other).x)
         .toBeCloseTo(puppetFootSoleAt(project.characters[0].puppet!, actor, oldFrame, other).x, 1);
       expect(Math.abs(newFrame.joints?.[footId]?.x ?? 0)).toBeLessThan(12);
+    }
+  });
+});
+
+describe("vector puppet foot alignment", () => {
+  it("holds a separately jointed vector boot for four frames without changing the other shoe", () => {
+    const project = paintedFootCartoon(png);
+    project.characters[0].puppet!.costume = "workshop";
+    const scene = project.scenes[0], actor = scene.elements[0];
+    const rig = project.characters[0].puppet!;
+    const vector = rig.parts.find(part => part.role === "leftFoot")!;
+    const painted = rig.parts.find(part => part.role === "rightFoot")!;
+    expect(vector.assetId).toBeUndefined();
+    const review = sceneFootTravel(project, scene, actor.id, 1, "left")!;
+    const index = Math.min(...review.possibleSlides.map(item => item.afterIndex));
+    const original = JSON.stringify(project);
+    const next = holdPictureFootForFrames(project, scene, actor.id, 1, "left", index, 4)!;
+    expect(next).toBeDefined();
+    expect(JSON.stringify(project)).toBe(original);
+    expect(next.elements[0].animation!.keyframes).toHaveLength(6);
+    const updated = { ...project, scenes: [next] };
+    const held = sceneFootTravel(updated, next, actor.id, 1, "left")!;
+    expect(validateProject(updated)).toBeTruthy();
+    for (let sample = index; sample < index + 4; sample++) {
+      expect(held.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
+      const time = review.points[sample].seconds;
+      const before = sceneFramesAt(project, scene, time).get(actor.id)!;
+      const after = sceneFramesAt(updated, next, time).get(actor.id)!;
+      expect(after.x).toBeCloseTo(before.x, 1);
+      expect(puppetFootSoleAt(rig, actor, after, painted).x)
+        .toBeCloseTo(puppetFootSoleAt(rig, actor, before, painted).x, 1);
     }
   });
 });

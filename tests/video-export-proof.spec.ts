@@ -40,7 +40,7 @@ import { makeScene, uid } from "../src/model";
 import { demo, openLittleFixersOpening, restore } from "./production-helpers";
 import { paintedFootCartoon } from "./custom-foot-fixture";
 import { sceneFootTravel } from "../src/scene-foot-travel";
-import { alignPictureFootFrame, holdPictureFootForFrames, holdPictureFootForThreeFrames } from "../src/scene-foot-fix";
+import { alignPictureFootFrame, holdPictureFootForFrames, holdPictureFootForThreeFrames, holdPuppetFootForFrames } from "../src/scene-foot-fix";
 
 test("Cinematic workshop depth and grounding survive a genuine animated Scout and Jo WebM", async ({ page }, info) => {
   test.setTimeout(200_000);
@@ -1233,6 +1233,66 @@ test("six-frame painted foot hold remains visible in a decoded WebM", async ({ p
   execFileSync("ffmpeg", ["-v", "error", "-ss", String(review.points[last].seconds + EXPORT_RECORDING_LEAD_SECONDS),
     "-i", path, "-frames:v", "1", decoded]);
   await info.attach("Actual decoded six-frame foot hold beside the original shoe",
+    { path: decoded, contentType: "image/png" });
+});
+
+test("vector boot hold is visible beside its original in a decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  // The shared painted-foot fixture uses the classic cream vector shoe.
+  // Select the workshop costume here to prove its actual dark vector boot.
+  project.characters[0].puppet!.costume = "workshop";
+  const scene = project.scenes[0], actor = scene.elements[0];
+  const review = sceneFootTravel(project, scene, actor.id, 1, "left")!;
+  expect(review.paintedFoot).toBe(false);
+  const index = Math.min(...review.possibleSlides.map(item => item.afterIndex));
+  const held = holdPuppetFootForFrames(project, scene, actor.id, 1, "left", index, 4)!;
+  expect(held).toBeDefined();
+  const upper = { ...actor, id: uid(), y: actor.y - 105,
+    animation: { ...actor.animation!, keyframes: actor.animation!.keyframes.map(key =>
+      ({ ...key, id: uid(), y: key.y - 105 })) } };
+  const comparison = { ...held, elements: [...held.elements, upper] };
+  const movie = { ...project, id: uid(), scenes: [comparison] };
+  const corrected = sceneFootTravel(movie, comparison, actor.id, 1, "left")!;
+  const original = sceneFootTravel(movie, comparison, upper.id, 1, "left")!;
+  for (let sample = index; sample < index + 4; sample++)
+    expect(corrected.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
+  const last = index + 3;
+  expect(original.points[last].x - corrected.points[last].x).toBeGreaterThan(7);
+  await restore(page, movie);
+  const { path } = await render(page, info, "vector-boot-four-frame-hold", 4,
+    { audio: false, captions: false, fps: 24 });
+  const raw = rawFrame(path, review.points[last].seconds);
+  const soleCenter = (point: { x: number; y: number }) => {
+    let count = 0, x = 0, y = 0;
+    for (let row = Math.max(0, Math.floor(point.y - 7)); row < Math.min(450, point.y + 3); row++)
+      for (let col = Math.max(0, Math.floor(point.x - 22)); col < Math.min(800, point.x + 22); col++) {
+        const offset = (row * 800 + col) * 3;
+        // The vector boot's dark outsole is distinct from the magenta
+        // picture shoe on the opposite foot and the light meadow.
+        if (raw[offset] < 65 && raw[offset + 1] < 75 && raw[offset + 2] < 85) {
+          count++; x += col; y += row;
+        }
+      }
+    expect(count).toBeGreaterThan(60);
+    return { x: x / count, y: y / count };
+  };
+  const heldBoot = soleCenter(corrected.points[last]);
+  const originalBoot = soleCenter(original.points[last]);
+  expect(originalBoot.x - heldBoot.x).toBeGreaterThan(4);
+  expect(Math.abs(originalBoot.y - heldBoot.y + 105)).toBeLessThan(5);
+  const decoded = info.outputPath("vector-boot-held-decoded.png");
+  execFileSync("ffmpeg", ["-v", "error", "-ss", String(review.points[last].seconds + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", decoded]);
+  await info.attach("Actual decoded vector boot hold beside original",
     { path: decoded, contentType: "image/png" });
 });
 
