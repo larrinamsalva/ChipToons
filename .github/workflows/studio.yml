@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: studio-${{ github.ref }}
-  cancel-in-progress: false
+  # A repaired PR must run all checks on its latest commit without waiting
+  # behind superseded real-time exports. Never cancel main's verification.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   hd_export:
