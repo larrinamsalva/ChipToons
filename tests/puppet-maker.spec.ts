@@ -3,6 +3,7 @@ import type { Page, TestInfo } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { backup, restore, saved } from "./production-helpers";
 import { SUNNY_NAME } from "../src/puppet-project";
+import { paintedFootCartoon } from "./custom-foot-fixture";
 
 const button = (page: Page, name: string) =>
   page.getByRole("button", { name, exact: true });
@@ -33,6 +34,40 @@ async function audit(page: Page) {
 }
 const rigOf = (project: Awaited<ReturnType<typeof backup>>["data"]) =>
   project.characters.find((c) => c.name === SUNNY_NAME)!.puppet!;
+
+test("reviews picture-foot travel in an ordinary scene and seeks its real Stage frame", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  await restore(page, paintedFootCartoon(png));
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await expect(review.getByLabel("Character foot summary"))
+    .toContainText("Right foot: 73 Stage samples");
+  await expect(review.getByText(/bottom center of the part's image box/)).toBeVisible();
+  const left = review.getByRole("combobox", { name: "Character foot to review" });
+  await left.selectOption("left");
+  await expect(review.getByLabel("Character foot summary")).toContainText("Left foot");
+  await left.selectOption("right");
+  const finding = review.getByRole("button", { name: /Show Foot Frame/ }).first();
+  await expect(finding).toBeVisible();
+  await finding.click();
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(page.locator(".stage-panel .live-stage [data-puppet-part=rightFoot] image"))
+    .toBeVisible();
+  const savedProject = (await backup(page)).data;
+  expect(savedProject.scenes[0].elements[0].animation)
+    .toEqual(paintedFootCartoon(png).scenes[0].elements[0].animation);
+});
 
 test("reconnects a painted part without shifting its still picture and saves the new hierarchy", async ({ page }) => {
   await page.goto("./");

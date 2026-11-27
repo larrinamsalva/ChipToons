@@ -38,6 +38,8 @@ import { imageLibraryItem, placeLibraryItem } from "../src/library";
 import { starterLocations } from "../src/world-starters";
 import { makeScene, uid } from "../src/model";
 import { demo, openLittleFixersOpening, restore } from "./production-helpers";
+import { paintedFootCartoon } from "./custom-foot-fixture";
+import { sceneFootTravel } from "../src/scene-foot-travel";
 
 test("Cinematic workshop depth and grounding survive a genuine animated Scout and Jo WebM", async ({ page }, info) => {
   test.setTimeout(200_000);
@@ -1017,6 +1019,46 @@ test("reparented painted hand follows its arm in a decoded WebM", async ({ page 
   const still = locateHand(rawFrame(path, 0.15));
   const waved = locateHand(rawFrame(path, 1.35));
   expect(Math.hypot(waved.x - still.x, waved.y - still.y)).toBeGreaterThan(5);
+});
+
+test("painted foot review matches moving artwork in a decoded WebM", async ({ page }, info) => {
+  test.setTimeout(80_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actorId = scene.elements[0].id;
+  const review = sceneFootTravel(project, scene, actorId, 0, "right")!;
+  await restore(page, project);
+  const { path } = await render(page, info, "painted-foot-review", 4,
+    { audio: false, captions: false });
+  const shoe = (raw: Buffer, expected: { x: number; y: number }) => {
+    let count = 0, x = 0, y = 0;
+    for (let row = Math.max(0, Math.floor(expected.y - 35)); row < Math.min(450, expected.y + 35); row++)
+      for (let col = Math.max(0, Math.floor(expected.x - 35)); col < Math.min(800, expected.x + 35); col++) {
+        const offset = (row * 800 + col) * 3;
+        // The browser's softened Stage composite raises the shoe's green
+        // channel from its source PNG (~41) to ~118 in the decoded movie.
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
+          count++; x += col; y += row;
+        }
+      }
+    expect(count).toBeGreaterThan(100);
+    const center = { x: x / count, y: y / count };
+    expect(Math.hypot(center.x - expected.x, center.y - expected.y)).toBeLessThan(25);
+    return center;
+  };
+  // The WebM recorder includes a fixed 0.15s lead. Decoding these frames
+  // samples the same Stage motion as the 24-fps inspector at ≈0.3s and 1.5s.
+  const start = shoe(rawFrame(path, 0.15), review.points[7]);
+  const moved = shoe(rawFrame(path, 1.35), review.points[36]);
+  expect(moved.x - start.x).toBeGreaterThan(50);
+  expect(Math.abs(moved.y - start.y)).toBeLessThan(5);
 });
 
 test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {

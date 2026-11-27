@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #184
+## Current focused increment — PR #185
+
+- Offer a read-only foot travel review in ordinary scenes for a custom puppet with two parented feet, including picture-backed feet. Open the actual Stage at flagged near-floor frames without altering keys or artwork.
+- Verify the three-second sample and project backup on desktop/phone/tablet, plus real painted-foot motion in a decoded WebM. This is a contact inspection aid; the picture's bounding box is not a true shoe sole or scene floor.
+
+## Previous focused increment — PR #184
 
 - Reconnect a traced or painted part to a different puppet limb while preserving its still Stage position and existing artwork. Check the new animation path and saved poses after reconnecting.
 - Verify parent chains and no-position-jump behavior, the browser save/reopen flow, and actual painted-hand movement in a decoded WebM. This is joint editing, not automatic collision solving or hidden artwork generation.
