@@ -133,4 +133,16 @@ describe("three-frame picture-foot hold", () => {
     expect(holdPictureFootForThreeFrames(project, scene, actor.id, 0, "right", index))
       .toBeUndefined();
   });
+
+  it("holds a later three-frame window after the opening fade", () => {
+    const project = paintedFootCartoon(png);
+    const scene = project.scenes[0], actor = scene.elements[0];
+    const review = sceneFootTravel(project, scene, actor.id, 1, "right")!;
+    const index = review.possibleSlides[0].afterIndex;
+    const next = holdPictureFootForThreeFrames(project, scene, actor.id, 1, "right", index)!;
+    expect(next).toBeDefined();
+    const held = sceneFootTravel({ ...project, scenes: [next] }, next, actor.id, 1, "right")!;
+    for (let sample = index; sample < index + 3; sample++)
+      expect(held.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
+  });
 });

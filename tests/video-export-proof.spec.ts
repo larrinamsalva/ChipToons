@@ -1137,17 +1137,19 @@ test("three-frame painted foot hold survives a decoded WebM", async ({ page }, i
   });
   const project = paintedFootCartoon(png);
   const scene = project.scenes[0], actor = scene.elements[0];
-  const review = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+  // Start after the scene's opening fade so the actual shoe pixels have
+  // reached full opacity in the decoded WebM.
+  const review = sceneFootTravel(project, scene, actor.id, 1, "right")!;
   const index = review.possibleSlides[0].afterIndex;
-  const held = holdPictureFootForThreeFrames(project, scene, actor.id, 0, "right", index)!;
+  const held = holdPictureFootForThreeFrames(project, scene, actor.id, 1, "right", index)!;
   expect(held).toBeDefined();
   const upper = { ...actor, id: uid(), y: actor.y - 105,
     animation: { ...actor.animation!, keyframes: actor.animation!.keyframes.map(key =>
       ({ ...key, id: uid(), y: key.y - 105 })) } };
   const comparison = { ...held, elements: [...held.elements, upper] };
   const movie = { ...project, id: uid(), scenes: [comparison] };
-  const corrected = sceneFootTravel(movie, comparison, actor.id, 0, "right")!;
-  const original = sceneFootTravel(movie, comparison, upper.id, 0, "right")!;
+  const corrected = sceneFootTravel(movie, comparison, actor.id, 1, "right")!;
+  const original = sceneFootTravel(movie, comparison, upper.id, 1, "right")!;
   for (let sample = index; sample < index + 3; sample++)
     expect(corrected.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
   const last = index + 2;
