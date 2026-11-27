@@ -195,3 +195,9 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - In the Workshop frame-by-frame inspector, add an optional left/right foot review for saved motion steps with separate, parented vector feet. Reuse the real 24-fps Stage samples and the existing sole geometry; show both adjacent-frame sole positions in stage pixels.
 - List up to five intervals where the sole moves sideways while staying close to the rig's estimated neutral floor line, and jump back to the original adjacent Stage frames for visual review. This does not edit keyframes, add contacts, change exports or prove physically correct walking.
 - Verify exact sampled sole coordinates, original project immutability, rejection of fake step endpoints and unsupported rigs, the ranking threshold, and browser controls for both feet and frame navigation. Continue the existing full browser and genuine-media checks.
+
+## PR #187 — Hold One Painted Foot at a Reviewed Frame (in review)
+
+- Add an optional correction beside an ordinary scene's picture-foot travel finding. It inserts one editable foot joint key into an existing linear animation interval, preserving original endpoint keys, actor travel and the other foot. The edit is saved with the project and participates in Undo/Redo; source artwork remains intact.
+- Limit a single hold to 12 stage pixels. Refuse existing key times, nonlinear motion, timed gestures/talking cycles, unsupported feet and edits that fail Stage-space postchecks. Preview adjacent frames; this is a local correction, not a full contact solver or a natural walk guarantee.
+- Verify backup/Undo/Redo in creator browser tests and independently decode a real WebM comparing the corrected shoe with an uncorrected shoe in the same frame. Continue the full episode technical export gate and distinguish it from a finished children's episode.
