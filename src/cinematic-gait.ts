@@ -35,9 +35,10 @@ export function puppetFootSoleAt(rig: PuppetRig, element: SceneElement, frame: E
   foot: PuppetPart): Point {
   const index = rig.parts.indexOf(foot);
   const joint = puppetTransforms(rig, frame.joints)[index];
-  const sole = foot.height / 2 - foot.pivotY +
-    (rig.costume === "workshop" && !foot.assetId ? 2 : 0);
-  const tip = rotate({ x: -foot.pivotX, y: sole }, joint.angle);
+  const x = (foot.soleX === undefined ? 0 : (foot.soleX - 0.5) * foot.width) - foot.pivotX;
+  const y = (foot.soleY === undefined ? foot.height / 2 : (foot.soleY - 0.5) * foot.height) -
+    foot.pivotY + (rig.costume === "workshop" && !foot.assetId ? 2 : 0);
+  const tip = rotate({ x, y }, joint.angle);
   return toStage(element, frame, { x: joint.x + tip.x, y: joint.y + tip.y });
 }
 

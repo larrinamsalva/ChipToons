@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { starterProject } from "./demo-starter";
 import { makeScene, validateProject } from "./model";
 import { elementBase, sceneFramesAt } from "./timeline";
@@ -6,6 +8,7 @@ import { puppetFootSoleAt } from "./cinematic-gait";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
 import { sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
+import { Stage } from "./components/Stage";
 
 function fixture() {
   const project = starterProject();
@@ -34,6 +37,15 @@ describe("custom puppet foot review", () => {
     expect(validateProject(project)).toBeTruthy();
     expect(sceneFootTravel(project, project.scenes[0], project.scenes[0].elements[0].id, 0, "right")?.paintedFoot)
       .toBe(true);
+    const before = renderToStaticMarkup(createElement(Stage, {
+      project, scene: project.scenes[0], time: 1.5, labelled: false,
+    }));
+    const foot = project.characters[0].puppet!.parts.find(part => part.role === "rightFoot")!;
+    foot.soleX = 0.75; foot.soleY = 0.8;
+    expect(validateProject(project)).toBeTruthy();
+    expect(renderToStaticMarkup(createElement(Stage, {
+      project, scene: project.scenes[0], time: 1.5, labelled: false,
+    }))).toBe(before);
   });
   it("samples painted feet from the actual Stage motion without editing their animation", () => {
     const { project, scene, actor, character } = fixture();
@@ -54,6 +66,20 @@ describe("custom puppet foot review", () => {
     const left = sceneFootTravel(project, scene, actor.id, 0, "left")!;
     expect(left.paintedFoot).toBe(false);
     expect(left.points[24].x).not.toBeCloseTo(sample.x);
+  });
+
+  it("uses the creator's picture-sole marker without moving any rendered artwork", () => {
+    const { project, scene, actor, character } = fixture();
+    const foot = character.puppet!.parts.find(part => part.role === "rightFoot")!;
+    const original = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    foot.soleX = 0.75; foot.soleY = 0.8;
+    const marked = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    expect(marked.markedSole).toBe(true);
+    expect(marked.points[24].x - original.points[24].x).toBeCloseTo(foot.width * 0.25);
+    expect(marked.points[24].y - original.points[24].y).toBeCloseTo(-foot.height * 0.2);
+    const before = sceneFramesAt(project, scene, 1).get(actor.id)!;
+    foot.soleX = undefined; foot.soleY = undefined;
+    expect(sceneFramesAt(project, scene, 1).get(actor.id)).toEqual(before);
   });
 
   it("uses the current three-second window and rejects unsupported rigs safely", () => {

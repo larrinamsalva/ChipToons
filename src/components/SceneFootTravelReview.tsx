@@ -40,7 +40,9 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek }:
           {" · "}{review.start.toFixed(2)}–{review.end.toFixed(2)}s
           {" · "}{review.possibleSlides.length} possible near-floor travel intervals.
         </output>
-        {review.paintedFoot && <p className="field-hint">For picture feet, the estimated sole is the bottom center of the part's image box. Transparent padding or an unusual shoe shape can move the visible contact point. Check the actual Stage image.</p>}
+        {review.paintedFoot && <p className="field-hint">{review.markedSole
+          ? "Using your painted foot's marked sole point. Check the Stage if the picture or shoe shape changes."
+          : "The estimated sole is the bottom center of the foot's image box. Transparent padding or an unusual shoe shape can move the visible contact point. Mark the sole in Puppet Maker for a closer estimate."}</p>}
         {before && after && <p role="status" className="field-hint">
           Samples {before.index + 1}–{after.index + 1}
           {" · "}sole X {before.x.toFixed(1)} → {after.x.toFixed(1)} stage pixels

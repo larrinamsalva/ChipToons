@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #185
+## Current focused increment — PR #186
+
+- Let a creator mark the visible sole inside an uploaded picture foot in Puppet Maker with two mobile-friendly position controls and a live yellow preview dot. Mirror the mark with the artwork and preserve it through library reuse and backups.
+- Use that mark in the existing read-only foot travel review. Verify genuine moving WebM output with the marked point while preserving original picture pixels; this does not automatically plant or retime a step.
+
+## Previous focused increment — PR #185
 
 - Offer a read-only foot travel review in ordinary scenes for a custom puppet with two parented feet, including picture-backed feet. Open the actual Stage at flagged near-floor frames without altering keys or artwork.
 - Verify the three-second sample and project backup on desktop/phone/tablet, plus real painted-foot motion in a decoded WebM. This is a contact inspection aid; the picture's bounding box is not a true shoe sole or scene floor.
