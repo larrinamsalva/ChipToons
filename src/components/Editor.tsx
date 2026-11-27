@@ -73,6 +73,7 @@ import { waveWorkshopWhileSeated } from "../workshop-seated-wave";
 import { standAfterSeatedGreeting } from "../workshop-sit-wave-stand";
 import { workshopSeatingReviewMoments } from "../workshop-seating-review";
 import { WorkshopPoseCompare } from "./WorkshopPoseCompare";
+import { SceneFootTravelReview } from "./SceneFootTravelReview";
 import type { WorkshopHairstyleChoice } from "../workshop-hairstyle";
 import type { Pose } from "../art-model";
 
@@ -1509,6 +1510,12 @@ export function Editor({
                         </select>
                       </label>
                     )}
+                    {character.puppet && <SceneFootTravelReview
+                      key={`${scene.id}:${element.id}`}
+                      project={project} scene={scene} actorId={element.id}
+                      time={clamp(editSeconds - sceneStart(project, index), 0, scene.duration)}
+                      onSeek={seconds => { seekLocal(seconds); setMobilePanel("stage"); }}
+                    />}
                     {canSeatWorkshopRig(character.puppet) && (
                       <div className="assistant-fields" aria-label="Workshop chair and bench seating">
                         <p className="field-hint">
