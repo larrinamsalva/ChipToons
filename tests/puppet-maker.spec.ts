@@ -242,6 +242,7 @@ test("holds a vector boot across four frames with portable save and Undo", async
     return canvas.toDataURL("image/png");
   });
   const project = paintedFootCartoon(png);
+  project.characters[0].puppet!.costume = "workshop";
   const scene = project.scenes[0], actor = scene.elements[0];
   const reviewData = sceneFootTravel(project, scene, actor.id, 0, "left")!;
   expect(reviewData.paintedFoot).toBe(false);

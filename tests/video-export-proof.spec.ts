@@ -1247,6 +1247,9 @@ test("vector boot hold is visible beside its original in a decoded WebM", async 
     return canvas.toDataURL("image/png");
   });
   const project = paintedFootCartoon(png);
+  // The shared painted-foot fixture uses the classic cream vector shoe.
+  // Select the workshop costume here to prove its actual dark vector boot.
+  project.characters[0].puppet!.costume = "workshop";
   const scene = project.scenes[0], actor = scene.elements[0];
   const review = sceneFootTravel(project, scene, actor.id, 1, "left")!;
   expect(review.paintedFoot).toBe(false);

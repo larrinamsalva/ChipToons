@@ -88,6 +88,7 @@ describe("one-frame picture-foot alignment", () => {
 describe("vector puppet foot alignment", () => {
   it("holds a separately jointed vector boot for four frames without changing the other shoe", () => {
     const project = paintedFootCartoon(png);
+    project.characters[0].puppet!.costume = "workshop";
     const scene = project.scenes[0], actor = scene.elements[0];
     const rig = project.characters[0].puppet!;
     const vector = rig.parts.find(part => part.role === "leftFoot")!;
