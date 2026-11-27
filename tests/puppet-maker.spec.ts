@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { backup, saved } from "./production-helpers";
+import { backup, restore, saved } from "./production-helpers";
 import { SUNNY_NAME } from "../src/puppet-project";
 
 const button = (page: Page, name: string) =>
@@ -33,6 +33,60 @@ async function audit(page: Page) {
 }
 const rigOf = (project: Awaited<ReturnType<typeof backup>>["data"]) =>
   project.characters.find((c) => c.name === SUNNY_NAME)!.puppet!;
+
+test("mirrors one uploaded arm cutout into a separate editable joint and restores it", async ({ page }) => {
+  await page.goto("./");
+  const source = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 20;
+    canvas.height = 48;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#f42635";
+    context.fillRect(0, 0, 10, 48);
+    context.fillStyle = "#2462ee";
+    context.fillRect(10, 0, 10, 48);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await button(page, "Create a Puppet Character").click();
+  await button(page, "Build a Character").click();
+  await dialog(page).getByLabel("Body-part hierarchy").selectOption("leftArm");
+  await dialog(page).getByLabel("Artwork source").selectOption("upload");
+  await dialog(page).getByLabel("Upload artwork for selected part").setInputFiles({
+    name: "painted-left-arm.png", mimeType: "image/png", buffer: Buffer.from(source, "base64"),
+  });
+  await expect(button(page, "Mirror artwork to right Arm")).toBeEnabled();
+  await button(page, "Mirror artwork to right Arm").click();
+  await expect(dialog(page).getByLabel("Body-part hierarchy").locator("option:checked"))
+    .toContainText("right Arm");
+  await expect(dialog(page).getByLabel("Flip this part artwork horizontally")).toBeChecked();
+  const images = dialog(page).locator('[data-puppet-part="leftArm"] image, [data-puppet-part="rightArm"] image');
+  await expect(images).toHaveCount(2);
+  expect(await images.evaluateAll(elements => elements.map(element => ({
+    source: element.getAttribute("href"), transform: element.getAttribute("transform"),
+  })))).toEqual([
+    { source: expect.stringContaining("data:image/png;base64,"), transform: null },
+    { source: expect.stringContaining("data:image/png;base64,"), transform: "scale(-1 1)" },
+  ]);
+  await dialog(page).getByLabel("Joint X", { exact: true }).fill("58");
+  await button(page, "Make It Wave").click();
+  await expect(dialog(page).locator('[data-preview-action="wave"]')).toBeVisible();
+  await button(page, "Show still puppet").click();
+  await button(page, "Next").click();
+  await button(page, "Preview").click();
+  await button(page, "Add to Cartoon").click();
+  await saved(page);
+  const data = (await backup(page)).data;
+  const rig = rigOf(data);
+  const left = rig.parts.find(part => part.role === "leftArm")!;
+  const right = rig.parts.find(part => part.role === "rightArm")!;
+  expect(right).toMatchObject({ assetId: left.assetId, flipX: true, x: 58 });
+  expect(data.assets.filter(asset => asset.id === left.assetId)).toHaveLength(1);
+  await restore(page, { ...data, id: "restored-mirrored-cutout" });
+  await expect(page.locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]'))
+    .toBeAttached();
+  expect(rigOf((await backup(page)).data).parts.find(part => part.role === "rightArm"))
+    .toEqual(right);
+});
 
 test("makes a puppet, edits a joint and pose, animates, undoes and restores its saved project", async ({
   page,

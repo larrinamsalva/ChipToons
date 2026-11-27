@@ -13,6 +13,7 @@ import { stagePoint } from "../src/interaction-motion";
 import { kindHeartsCrew } from "../src/series-starter";
 import { episodeBrief } from "../src/series";
 import { sunnyCartoon } from "../src/puppet-project";
+import { mirrorPuppetCutout } from "../src/puppet-model";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
@@ -878,6 +879,45 @@ test("a puppet wave changes the arm region across decoded WebM frames", async ({
     if (Math.abs(still[i] - waving[i]) + Math.abs(still[i + 1] - waving[i + 1]) + Math.abs(still[i + 2] - waving[i + 2]) > 55) pixels++;
   }
   expect(pixels).toBeGreaterThan(100);
+});
+
+test("mirrored uploaded arm artwork is visible in a genuinely moving WebM", async ({ page }, info) => {
+  test.setTimeout(80_000);
+  await page.goto("./");
+  const image = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 20;
+    canvas.height = 48;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#f42635";
+    ctx.fillRect(0, 0, 10, 48);
+    ctx.fillStyle = "#2462ee";
+    ctx.fillRect(10, 0, 10, 48);
+    return canvas.toDataURL("image/png");
+  });
+  const draft = sunnyCartoon();
+  const actor = draft.characters.find(character => character.puppet)!;
+  const rig = actor.puppet!;
+  const left = rig.parts.find(part => part.role === "leftArm")!;
+  left.assetId = "painted-arm";
+  actor.puppet = mirrorPuppetCutout(rig, left.id, "unused")!;
+  draft.assets.push({ id: "painted-arm", name: "Original two-color arm",
+    type: "image", mime: "image/png", dataUrl: image });
+  const scene = draft.scenes[1];
+  scene.elements = [scene.elements.at(-1)!];
+  scene.transition = "cut";
+  await restore(page, { ...draft, scenes: [scene] });
+  const mirrored = page.locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]');
+  await expect(mirrored).toBeAttached();
+  const { path, decodedFrames } = await render(page, info, "mirrored-painted-arm", 5,
+    { audio: false, captions: false });
+  expect(decodedFrames).toBeGreaterThan(40);
+  const still = rawFrame(path, 0.2), wave = rawFrame(path, 1.5);
+  const isRed = (r: number, g: number, b: number) => r > 150 && r > g * 1.7 && r > b * 1.2;
+  const isBlue = (r: number, g: number, b: number) => b > 150 && b > r * 1.6 && b > g * 1.3;
+  expect(pixels(still, 365, 90, 250, 300, isRed)).toBeGreaterThan(40);
+  expect(pixels(still, 365, 90, 250, 300, isBlue)).toBeGreaterThan(40);
+  expect(changedPixels(still, wave, 365, 90, 250, 300)).toBeGreaterThan(100);
 });
 
 test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {

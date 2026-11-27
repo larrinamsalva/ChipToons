@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 import { episodePackage, restoreProjectFile } from "./episode-package";
 import { describe, expect, it } from "vitest";
 import {
+  mirrorPuppetCutout,
   newPart,
   neutralJoint,
   puppetTransforms,
@@ -22,6 +23,48 @@ import { suggestDirection, directScene } from "./assistant";
 
 const assets = new Set<string>();
 describe("puppet rig, timeline and project snapshots", () => {
+  it("mirrors an existing cutout into an independently articulated opposite limb", () => {
+    const rig = sunnyRig();
+    const left = rig.parts.find(part => part.role === "leftArm")!;
+    const right = rig.parts.find(part => part.role === "rightArm")!;
+    left.assetId = "original-arm";
+    left.x = -50;
+    left.pivotX = 7;
+    left.flipX = true;
+    const mirrored = mirrorPuppetCutout(rig, left.id, "unused")!;
+    expect(mirrored.parts.find(part => part.role === "rightArm")).toMatchObject({
+      id: right.id, parentId: "torso", x: 50, pivotX: -7,
+      assetId: "original-arm", flipX: false,
+    });
+    expect(mirrored.poses).toBe(rig.poses);
+    expect(mirrored.parts.find(part => part.role === "leftArm")).toBe(left);
+    expect(validPuppet(mirrored, new Set(["original-arm"]))).toBe(true);
+    const moved = puppetTransforms(mirrored, { rightArm: { x: 0, y: 0, angle: 45 } });
+    expect(moved[mirrored.parts.indexOf(left)].angle).toBe(0);
+    expect(moved[mirrored.parts.findIndex(part => part.role === "rightArm")].angle).toBe(45);
+    expect(mirrorPuppetCutout(mirrored, left.id, "another")).toBeUndefined();
+    expect(validPuppet({ ...mirrored, parts: mirrored.parts.map(part =>
+      part.role === "rightArm" ? { ...part, flipX: "yes" } : part) },
+    new Set(["original-arm"]))).toBe(false);
+  });
+
+  it("creates a missing opposite part only when its mirrored parent exists", () => {
+    const left = { ...newPart("leftShin", "shin", newPart("leftLeg", "leg")),
+      x: -12, assetId: "shin-image" };
+    const leftLeg = newPart("leftLeg", "leg");
+    const torso = newPart("torso", "torso");
+    const withoutParent = { ...sunnyRig(), parts: [torso, leftLeg, left], poses: [] };
+    expect(mirrorPuppetCutout(withoutParent, left.id, "other-shin")).toBeUndefined();
+    const rightLeg = newPart("rightLeg", "other-leg");
+    const rig = { ...withoutParent, parts: [...withoutParent.parts, rightLeg] };
+    const result = mirrorPuppetCutout(rig, left.id, "other-shin")!;
+    expect(result.parts.find(part => part.id === "other-shin")).toMatchObject({
+      role: "rightShin", parentId: rightLeg.id, x: 12,
+      assetId: "shin-image", flipX: true,
+    });
+    expect(validPuppet(result, new Set(["shin-image"]))).toBe(true);
+    expect(rig.parts).toHaveLength(4);
+  });
   it("rejects cycles, duplicate IDs, missing parent and asset references, and invalid poses", () => {
     const rig = sunnyRig();
     expect(validPuppet(rig, assets)).toBe(true);
