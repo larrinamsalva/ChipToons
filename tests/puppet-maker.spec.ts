@@ -4,6 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { backup, restore, saved } from "./production-helpers";
 import { SUNNY_NAME } from "../src/puppet-project";
 import { paintedFootCartoon } from "./custom-foot-fixture";
+import { sceneFootTravel } from "../src/scene-foot-travel";
 
 const button = (page: Page, name: string) =>
   page.getByRole("button", { name, exact: true });
@@ -116,6 +117,43 @@ test("reviews picture-foot travel in an ordinary scene and seeks its real Stage 
   const savedProject = (await backup(page)).data;
   expect(savedProject.scenes[0].elements[0].animation)
     .toEqual(paintedFootCartoon(png).scenes[0].elements[0].animation);
+});
+
+test("holds one painted foot at a reviewed frame with Undo and portable backup", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const actor = project.scenes[0].elements[0];
+  const original = actor.animation!.keyframes;
+  const reviewData = sceneFootTravel(project, project.scenes[0], actor.id, 0, "right")!;
+  await restore(page, project);
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await expect(review.getByRole("button", { name: "Hold right Foot at Frame 2" })).toBeEnabled();
+  await review.getByRole("button", { name: "Hold right Foot at Frame 2" }).click();
+  await saved(page);
+  const changed = (await backup(page)).data;
+  const keys = changed.scenes[0].elements[0].animation!.keyframes;
+  expect(keys).toHaveLength(original.length + 1);
+  expect(keys[0]).toEqual(original[0]);
+  expect(keys.at(-1)).toEqual(original.at(-1));
+  const after = sceneFootTravel(changed, changed.scenes[0], actor.id, 0, "right")!;
+  expect(after.points[1].x).toBeCloseTo(reviewData.points[0].x, 1);
+  await button(page, "Undo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].elements[0].animation!.keyframes).toEqual(original);
+  await button(page, "Redo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].elements[0].animation!.keyframes).toHaveLength(3);
 });
 
 test("reconnects a painted part without shifting its still picture and saves the new hierarchy", async ({ page }) => {

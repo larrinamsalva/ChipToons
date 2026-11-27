@@ -1515,6 +1515,7 @@ export function Editor({
                       project={project} scene={scene} actorId={element.id}
                       time={clamp(editSeconds - sceneStart(project, index), 0, scene.duration)}
                       onSeek={seconds => { seekLocal(seconds); setMobilePanel("stage"); }}
+                      onApply={next => changeScene({ elements: next.elements })}
                     />}
                     {canSeatWorkshopRig(character.puppet) && (
                       <div className="assistant-fields" aria-label="Workshop chair and bench seating">
