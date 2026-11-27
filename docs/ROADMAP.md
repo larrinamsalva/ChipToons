@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #183
+## Current focused increment — PR #184
+
+- Reconnect a traced or painted part to a different puppet limb while preserving its still Stage position and existing artwork. Check the new animation path and saved poses after reconnecting.
+- Verify parent chains and no-position-jump behavior, the browser save/reopen flow, and actual painted-hand movement in a decoded WebM. This is joint editing, not automatic collision solving or hidden artwork generation.
+
+## Previous focused increment — PR #183
 
 - Let creators trace separate forearms, shins and feet directly from a picture. Attach to the matching upper limb when present and place initial pivots near natural joints without shifting the still figure.
 - Verify parent chains and original picture positions, the browser save workflow, and a genuine decoded WebM with moving painted parts. Artist edits are still necessary for unusual poses, overlaps and occluded anatomy.

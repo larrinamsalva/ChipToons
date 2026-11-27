@@ -16,6 +16,7 @@ import { sunnyCartoon } from "../src/puppet-project";
 import { picturePuppet } from "../src/picture-studio";
 import type { PreparedPart } from "../src/picture-studio";
 import { mirrorPuppetCutout } from "../src/puppet-model";
+import { newPart, reparentPuppetPart } from "../src/puppet-model";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
 import { execFileSync } from "node:child_process";
@@ -970,6 +971,50 @@ test("nested picture forearm and shin move in an independently decoded WebM", as
   expect(pixels(still, 280, 65, 250, 375, green)).toBeGreaterThan(50);
   expect(pixels(still, 280, 65, 250, 375, blue)).toBeGreaterThan(50);
   expect(changedPixels(still, moving, 280, 65, 250, 375)).toBeGreaterThan(100);
+});
+
+test("reparented painted hand follows its arm in a decoded WebM", async ({ page }, info) => {
+  test.setTimeout(80_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ef29db"; ctx.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const draft = sunnyCartoon();
+  const character = draft.characters.find(item => item.puppet)!;
+  const rig = { ...character.puppet!, poses: [],
+    parts: character.puppet!.parts.filter(part => part.role !== "rightArm") };
+  const torso = rig.parts.find(part => part.role === "torso")!;
+  rig.parts.push({ ...newPart("leftHand", "painted-hand", torso),
+    x: -68, y: 35, assetId: "original-hand" });
+  character.puppet = reparentPuppetPart(rig, "painted-hand", "leftArm")!;
+  draft.assets.push({ id: "original-hand", name: "Original painted hand",
+    type: "image", mime: "image/png", dataUrl: png });
+  const original = draft.scenes[1], actor = original.elements.at(-1)!;
+  const placed = { ...actor, x: 400, y: 300, heart: "off" as const, mouth: "closed" as const };
+  const scene = { ...original, duration: 4, transition: "cut" as const,
+    elements: [{ ...placed, animation: presetAnimation(placed, 4, "wave", 0, 3, character.puppet) }] };
+  await restore(page, { ...draft, scenes: [scene] });
+  await expect(page.getByRole("button", { name: "Select Sunny the Kindness Hero", exact: true })
+    .locator('[data-puppet-part="painted-hand"] image')).toBeAttached();
+  const { path } = await render(page, info, "reparented-painted-hand", 4,
+    { audio: false, captions: false });
+  const locateHand = (raw: Buffer) => {
+    let count = 0, totalX = 0, totalY = 0;
+    for (let y = 155; y < 430; y++) for (let x = 265; x < 490; x++) {
+      const index = (y * 800 + x) * 3;
+      const r = raw[index], g = raw[index + 1], b = raw[index + 2];
+      if (r > 145 && b > 135 && g < 110) { count++; totalX += x; totalY += y; }
+    }
+    expect(count).toBeGreaterThan(50);
+    return { x: totalX / count, y: totalY / count };
+  };
+  const still = locateHand(rawFrame(path, 0.15));
+  const waved = locateHand(rawFrame(path, 1.35));
+  expect(Math.hypot(waved.x - still.x, waved.y - still.y)).toBeGreaterThan(5);
 });
 
 test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {

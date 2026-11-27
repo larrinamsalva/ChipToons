@@ -34,6 +34,48 @@ async function audit(page: Page) {
 const rigOf = (project: Awaited<ReturnType<typeof backup>>["data"]) =>
   project.characters.find((c) => c.name === SUNNY_NAME)!.puppet!;
 
+test("reconnects a painted part without shifting its still picture and saves the new hierarchy", async ({ page }) => {
+  await page.goto("./");
+  await button(page, "Create a Puppet Character").click();
+  await button(page, "Build a Character").click();
+  await dialog(page).getByLabel("Another body part").selectOption("leftHand");
+  await button(page, "Add selected part").click();
+  const image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=";
+  await dialog(page).getByLabel("Artwork source").selectOption("upload");
+  await dialog(page).getByLabel("Upload artwork for selected part").setInputFiles({
+    name: "original-hand.png", mimeType: "image/png", buffer: Buffer.from(image, "base64"),
+  });
+  await expect(dialog(page).getByText(/Part artwork: original-hand/)).toBeVisible();
+  const parent = dialog(page).getByLabel("Attach selected part to");
+  await parent.selectOption("torso");
+  // The preview contains a single hand group. Compare measured stage-space
+  // joint coordinates, allowing insignificant floating-point differences.
+  const handId = await dialog(page).getByLabel("Body-part hierarchy").inputValue();
+  const group = dialog(page).locator(`[data-puppet-part="${handId}"]`);
+  const before = await group.getAttribute("transform");
+  expect(before).toMatch(/^translate\(/);
+  await parent.selectOption("leftArm");
+  await expect(parent).toHaveValue("leftArm");
+  const after = await group.getAttribute("transform");
+  const coords = (transform: string | null) => transform!.match(/translate\(([-\d.]+) ([-\d.]+)\)/)!.slice(1).map(Number);
+  expect(coords(after)[0]).toBeCloseTo(coords(before)[0]);
+  expect(coords(after)[1]).toBeCloseTo(coords(before)[1]);
+  await button(page, "Make It Wave").click();
+  await expect(dialog(page).locator('[data-preview-action="wave"]')).toBeVisible();
+  await button(page, "Show still puppet").click();
+  await button(page, "Next").click();
+  await button(page, "Preview").click();
+  await button(page, "Add to Cartoon").click();
+  await saved(page);
+  const data = (await backup(page)).data;
+  const savedHand = rigOf(data).parts.find(part => part.role === "leftHand")!;
+  expect(savedHand.parentId).toBe("leftArm");
+  expect(data.assets.some(asset => asset.id === savedHand.assetId)).toBe(true);
+  await restore(page, { ...data, id: "restored-parented-hand" });
+  expect(rigOf((await backup(page)).data).parts.find(part => part.role === "leftHand"))
+    .toEqual(savedHand);
+});
+
 test("mirrors one uploaded arm cutout into a separate editable joint and restores it", async ({ page }) => {
   await page.goto("./");
   const source = await page.evaluate(() => {
