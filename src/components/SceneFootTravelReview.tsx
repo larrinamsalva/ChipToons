@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Project, Scene } from "../model";
 import { sceneFootTravel } from "../scene-foot-travel";
 import type { FootSide } from "../workshop-foot-travel";
-import { alignPictureFootFrame } from "../scene-foot-fix";
+import { alignPictureFootFrame, holdPictureFootForThreeFrames } from "../scene-foot-fix";
 
 /** A creator can inspect saved motion without changing any keys or media. */
 export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, onApply }: {
@@ -85,6 +85,22 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
               }}>
               Hold {side} Foot at Frame {item.afterIndex + 1}
             </button>}
+            {review.paintedFoot && item.afterIndex + 2 < review.points.length &&
+              <button type="button" className="button secondary small"
+                disabled={!editable}
+                onClick={() => {
+                  const next = holdPictureFootForThreeFrames(
+                    project, scene, actorId, review.start, side, item.afterIndex,
+                  );
+                  if (!next || !onApply(next)) {
+                    setMessage("Three frames could not be safely held here. Try another suggested frame or adjust the timeline keys.");
+                    return;
+                  }
+                  setMessage(`Held this ${side} foot for three reviewed frames from ${item.seconds.toFixed(3)}s. Preview the full step; Undo restores it.`);
+                  onSeek(review.points[item.afterIndex + 2].seconds);
+                }}>
+                Hold {side} Foot for 3 Frames from Frame {item.afterIndex + 1}
+              </button>}
           </li>)}
         </ol> : <p role="status" className="field-hint">
           No interval crossed this review threshold. Check the Stage visually; contact is not guaranteed.

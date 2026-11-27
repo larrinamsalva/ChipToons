@@ -40,7 +40,7 @@ import { makeScene, uid } from "../src/model";
 import { demo, openLittleFixersOpening, restore } from "./production-helpers";
 import { paintedFootCartoon } from "./custom-foot-fixture";
 import { sceneFootTravel } from "../src/scene-foot-travel";
-import { alignPictureFootFrame } from "../src/scene-foot-fix";
+import { alignPictureFootFrame, holdPictureFootForThreeFrames } from "../src/scene-foot-fix";
 
 test("Cinematic workshop depth and grounding survive a genuine animated Scout and Jo WebM", async ({ page }, info) => {
   test.setTimeout(200_000);
@@ -1122,6 +1122,62 @@ test("aligned painted foot holds against its original in a decoded WebM", async 
   execFileSync("ffmpeg", ["-v", "error", "-ss", String(interval.seconds + EXPORT_RECORDING_LEAD_SECONDS),
     "-i", path, "-frames:v", "1", decoded]);
   await info.attach("Actual decoded frame comparing held and original painted shoe",
+    { path: decoded, contentType: "image/png" });
+});
+
+test("three-frame painted foot hold survives a decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  // Start after the scene's opening fade so the actual shoe pixels have
+  // reached full opacity in the decoded WebM.
+  const review = sceneFootTravel(project, scene, actor.id, 1, "right")!;
+  const index = review.possibleSlides[0].afterIndex;
+  const held = holdPictureFootForThreeFrames(project, scene, actor.id, 1, "right", index)!;
+  expect(held).toBeDefined();
+  const upper = { ...actor, id: uid(), y: actor.y - 105,
+    animation: { ...actor.animation!, keyframes: actor.animation!.keyframes.map(key =>
+      ({ ...key, id: uid(), y: key.y - 105 })) } };
+  const comparison = { ...held, elements: [...held.elements, upper] };
+  const movie = { ...project, id: uid(), scenes: [comparison] };
+  const corrected = sceneFootTravel(movie, comparison, actor.id, 1, "right")!;
+  const original = sceneFootTravel(movie, comparison, upper.id, 1, "right")!;
+  for (let sample = index; sample < index + 3; sample++)
+    expect(corrected.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
+  const last = index + 2;
+  expect(original.points[last].x - corrected.points[last].x).toBeGreaterThan(7);
+  await restore(page, movie);
+  const { path } = await render(page, info, "painted-foot-three-frame-hold", 4,
+    { audio: false, captions: false, fps: 24 });
+  const raw = rawFrame(path, review.points[last].seconds);
+  const shoe = (point: { x: number; y: number }) => {
+    let count = 0, x = 0, y = 0;
+    for (let row = Math.max(0, Math.floor(point.y - 34)); row < Math.min(450, point.y + 34); row++)
+      for (let col = Math.max(0, Math.floor(point.x - 34)); col < Math.min(800, point.x + 34); col++) {
+        const offset = (row * 800 + col) * 3;
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
+          count++; x += col; y += row;
+        }
+      }
+    expect(count).toBeGreaterThan(100);
+    return { x: x / count, y: y / count };
+  };
+  const heldShoe = shoe(corrected.points[last]);
+  const originalShoe = shoe(original.points[last]);
+  expect(originalShoe.x - heldShoe.x).toBeGreaterThan(4);
+  expect(Math.abs(originalShoe.y - heldShoe.y + 105)).toBeLessThan(5);
+  const decoded = info.outputPath("painted-foot-three-frame-decoded.png");
+  execFileSync("ffmpeg", ["-v", "error", "-ss", String(review.points[last].seconds + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", decoded]);
+  await info.attach("Actual decoded three-frame foot hold beside the original shoe",
     { path: decoded, contentType: "image/png" });
 });
 
