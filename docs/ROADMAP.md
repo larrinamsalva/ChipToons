@@ -201,3 +201,9 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Add an optional correction beside an ordinary scene's picture-foot travel finding. It inserts one editable foot joint key into an existing linear animation interval, preserving original endpoint keys, actor travel and the other foot. The edit is saved with the project and participates in Undo/Redo; source artwork remains intact.
 - Limit a single hold to 12 stage pixels. Refuse existing key times, nonlinear motion, timed gestures/talking cycles, unsupported feet and edits that fail Stage-space postchecks. Preview adjacent frames; this is a local correction, not a full contact solver or a natural walk guarantee.
 - Verify backup/Undo/Redo in creator browser tests and independently decode a real WebM comparing the corrected shoe with an uncorrected shoe in the same frame. Continue the full episode technical export gate and distinguish it from a finished children's episode.
+
+## PR #188 — Hold a Painted Foot Across Three Frames (in review)
+
+- Add an optional three-frame hold from a suggested ordinary-scene foot-travel frame. Use the original measured sole X as the target at each consecutive 24-fps sample. Insert three joint keys in one undoable scene edit; keep the actor path, other foot, original endpoints and PNG intact.
+- Refuse authored keys, non-linear or procedural acting, unsupported rigs, near-floor changes outside the reviewed span and any requested displacement beyond 12 stage pixels. Postcheck all three sampled sole positions and heights. This short local hold is not an automatic walk cycle, continuous contact solver or physical collision check.
+- Exercise portable save, Undo and Redo on desktop/phone/tablet and independently decode the final held frame beside an original painted shoe in the same real WebM. Keep all prior browser and 20-minute technical export checks.

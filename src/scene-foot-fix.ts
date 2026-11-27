@@ -17,6 +17,12 @@ const rotate = (x: number, y: number, angle: number) => ({
 /** Add one editable foot key at a reviewed frame; never replace an authored key. */
 export function alignPictureFootFrame(project: Project, scene: Scene, actorId: string,
   windowStart: number, side: FootSide, afterIndex: number): Scene | undefined {
+  return alignPictureFootAtTarget(project, scene, actorId, windowStart, side, afterIndex);
+}
+
+function alignPictureFootAtTarget(project: Project, scene: Scene, actorId: string,
+  windowStart: number, side: FootSide, afterIndex: number,
+  heldX?: number): Scene | undefined {
   const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
   const actor = scene.elements.find(item => item.id === actorId);
   const rig = actor && resolvedCharacter(project, actor)?.puppet;
@@ -31,8 +37,11 @@ export function alignPictureFootFrame(project: Project, scene: Scene, actorId: s
 
   const review = sceneFootTravel(project, scene, actorId, windowStart, side);
   const finding = review?.possibleSlides.find(item => item.afterIndex === afterIndex);
-  if (!review || !finding) return undefined;
-  const before = review.points[finding.beforeIndex], after = review.points[afterIndex];
+  if (!review || (heldX === undefined && !finding) ||
+      afterIndex < 1 || afterIndex >= review.points.length) return undefined;
+  const after = review.points[afterIndex];
+  const targetX = heldX ?? review.points[afterIndex - 1].x;
+  if (!Number.isFinite(targetX)) return undefined;
   const keyTime = roundTime(after.seconds);
   const keys = actor.animation.keyframes;
   const left = keys.filter(key => key.time < keyTime).at(-1);
@@ -44,8 +53,8 @@ export function alignPictureFootFrame(project: Project, scene: Scene, actorId: s
       left.mouth === "talking" || right.mouth === "talking") return undefined;
   if (actor.animation.keyframes.some(key => Math.abs(key.time - keyTime) < 0.001))
     return undefined;
-  const dx = before.x - after.x;
-  if (Math.abs(dx) > 12 || Math.abs(dx) < 1.5) return undefined;
+  const dx = targetX - after.x;
+  if (Math.abs(dx) > 12 || (heldX === undefined && Math.abs(dx) < 1.5)) return undefined;
   const globalStart = actor.voiceMouth?.length ? sceneStart(project, sceneIndex) : 0;
   const frame = sceneFramesAt(project, scene, after.seconds, globalStart).get(actorId);
   if (!frame || !(frame.scale > 0)) return undefined;
@@ -88,9 +97,42 @@ export function alignPictureFootFrame(project: Project, scene: Scene, actorId: s
   const other = rig.parts.find(item => item.role === `${side === "left" ? "right" : "left"}Foot`);
   const priorOther = other && puppetFootSoleAt(rig, actor, frame, other);
   const nextOther = other && puppetFootSoleAt(rig, actor, result, other);
-  if (Math.abs(planted.x - before.x) > 0.15 || Math.abs(planted.y - after.y) > 0.15 ||
+  if (Math.abs(planted.x - targetX) > 0.15 || Math.abs(planted.y - after.y) > 0.15 ||
       !priorOther || !nextOther ||
       Math.hypot(nextOther.x - priorOther.x, nextOther.y - priorOther.y) > 0.15)
     return undefined;
   return next;
+}
+
+/** Hold the same measured shoe position for three adjacent review samples. */
+export function holdPictureFootForThreeFrames(project: Project, scene: Scene, actorId: string,
+  windowStart: number, side: FootSide, afterIndex: number): Scene | undefined {
+  const review = sceneFootTravel(project, scene, actorId, windowStart, side);
+  const actor = scene.elements.find(item => item.id === actorId);
+  if (!review || !actor?.animation || !Number.isInteger(afterIndex) ||
+      !review.possibleSlides.some(item => item.afterIndex === afterIndex) ||
+      afterIndex + 2 >= review.points.length ||
+      actor.animation.keyframes.length > MAX_TRACK_KEYS - 3) return undefined;
+  const target = review.points[afterIndex - 1];
+  for (let index = afterIndex; index <= afterIndex + 2; index++) {
+    const point = review.points[index];
+    if (Math.abs(point.x - target.x) > 12 ||
+        Math.abs(point.y - target.y) > 2 || Math.abs(point.floorGap) > 4)
+      return undefined;
+  }
+  let current = scene;
+  let currentProject = project;
+  for (let index = afterIndex; index <= afterIndex + 2; index++) {
+    const next = alignPictureFootAtTarget(currentProject, current, actorId,
+      windowStart, side, index, target.x);
+    if (!next) return undefined;
+    current = next;
+    currentProject = { ...project, scenes: project.scenes.map(item =>
+      item.id === scene.id ? current : item) };
+  }
+  const held = sceneFootTravel(currentProject, current, actorId, windowStart, side);
+  if (!held || [afterIndex, afterIndex + 1, afterIndex + 2].some(index =>
+    Math.abs(held.points[index].x - target.x) > 0.15 ||
+    Math.abs(held.points[index].y - review.points[index].y) > 0.15)) return undefined;
+  return current;
 }
