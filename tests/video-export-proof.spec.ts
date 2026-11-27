@@ -1296,6 +1296,62 @@ test("vector boot hold is visible beside its original in a decoded WebM", async 
     { path: decoded, contentType: "image/png" });
 });
 
+test("below-neutral foot warning matches a lowered painted shoe in decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  const upper = { ...actor, id: uid(), y: actor.y - 105,
+    animation: { ...actor.animation!, keyframes: actor.animation!.keyframes.map(key =>
+      ({ ...key, id: uid(), y: key.y - 105 })) } };
+  actor.animation!.keyframes[1].joints = { rightFoot: { x: 0, y: 12, angle: 0 } };
+  const comparison = { ...scene, elements: [actor, upper] };
+  const movie = { ...project, id: uid(), scenes: [comparison] };
+  const lowered = sceneFootTravel(movie, comparison, actor.id, 1, "right")!;
+  const original = sceneFootTravel(movie, comparison, upper.id, 1, "right")!;
+  const sample = 24; // Two seconds into the original scene, midway through the lowered pose.
+  expect(lowered.points[sample].seconds).toBe(2);
+  expect(lowered.points[sample].floorGap).toBeCloseTo(-8);
+  expect(original.points[sample].floorGap).toBeCloseTo(0);
+  expect(lowered.possibleDepth[0].depthPixels).toBeCloseTo(12);
+  await restore(page, movie);
+  const { path } = await render(page, info, "painted-foot-below-neutral", 4,
+    { audio: false, captions: false, fps: 24 });
+  const raw = rawFrame(path, lowered.points[sample].seconds);
+  const shoeCenter = (point: { x: number; y: number }) => {
+    let count = 0, x = 0, y = 0;
+    for (let row = Math.max(0, Math.floor(point.y - 34)); row < Math.min(450, point.y + 34); row++)
+      for (let col = Math.max(0, Math.floor(point.x - 34)); col < Math.min(800, point.x + 34); col++) {
+        const offset = (row * 800 + col) * 3;
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
+          count++; x += col; y += row;
+        }
+      }
+    expect(count).toBeGreaterThan(100);
+    const center = { x: x / count, y: y / count };
+    expect(Math.hypot(center.x - point.x, center.y - point.y)).toBeLessThan(22);
+    return center;
+  };
+  const loweredPixels = shoeCenter(lowered.points[sample]);
+  const originalPixels = shoeCenter(original.points[sample]);
+  const measuredOffset = lowered.points[sample].y - original.points[sample].y - 105;
+  const visibleOffset = loweredPixels.y - originalPixels.y - 105;
+  expect(visibleOffset).toBeGreaterThan(5);
+  expect(Math.abs(visibleOffset - measuredOffset)).toBeLessThan(4);
+  const decoded = info.outputPath("painted-foot-below-neutral-decoded.png");
+  execFileSync("ffmpeg", ["-v", "error", "-ss", String(lowered.points[sample].seconds + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", decoded]);
+  await info.attach("Actual decoded frame comparing lowered and neutral painted shoes",
+    { path: decoded, contentType: "image/png" });
+});
+
 test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {
   test.setTimeout(70_000);
   const { plan, artwork } = kindHeartsCrew();

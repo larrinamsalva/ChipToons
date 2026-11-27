@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #190
+## Current focused increment — PR #191
+
+- Group read-only warnings when a selected puppet foot's sampled sole falls at least four stage pixels below its own neutral-pose baseline. Link to the deepest saved Stage frame without changing the cartoon.
+- Verify a lowered painted shoe against the reported offset in a genuine decoded WebM, plus desktop, phone and tablet inspection and backup. This remains a pose warning, not actual scenery collision detection.
+
+## Previous focused increment — PR #190 (merged)
 
 - Extend the bounded 1–6-frame foot hold to a separately parented vector boot, using the same measured Stage sole, 12-pixel limit, saved joint keys and one-step Undo.
 - Preserve actor travel and the other foot, and reject authored keys, nonlinear motion and unsafe spans. Verify creator save/Undo on desktop, phone and tablet plus actual dark vector-boot pixels in a decoded WebM. This does not create full-body physics or a guaranteed natural walk.
@@ -219,8 +224,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Keep the original 12-stage-pixel total reach, authored-key refusal, actor and other-foot preservation, and one-step Undo. Decline longer spans that exceed these bounds instead of silently shortening them.
 - Verify several lengths and rejection boundaries in unit tests; exercise a five-frame choice on desktop, phone and tablet; independently decode a six-frame shoe hold in a real WebM. Continue full-episode technical proof without calling the local hold a finished walk cycle.
 
-## PR #190 — Hold a Vector Puppet Boot (in review)
+## PR #190 — Hold a Vector Puppet Boot (merged)
 
 - Make the existing ordinary-scene hold control available to vector feet as well as picture feet, retaining the 1–6-frame linear-keyed limits, sole measurements, preserved actor path, other-foot position and one-step Undo.
 - Confirm a saved vector boot stays at its reviewed stage X across four frames. Exercise the creator flow and backup/Undo on desktop, phone and tablet, and independently decode the visible boot beside its uncorrected counterpart in a real WebM.
 - Keep the neutral-rig floor as an estimate and distinguish this local correction from collision detection, physically balanced motion or a polished full episode.
+
+## PR #191 — Review Below-Neutral Foot Poses (in review)
+
+- Group 24-fps Stage samples at least four stage pixels below a character's neutral sole baseline, rank up to five spans by depth and jump to the worst saved pose. Never alter keys when inspecting.
+- Test threshold/tilt boundaries, the saved desktop/phone/tablet creator flow and the actual picture-shoe vertical offset in an independently decoded WebM. Continue the full 20-minute technical export gate.
+- Keep the warning separate from scenery contact and collision claims; the neutral line moves with the actor and picture feet may have transparent padding.
