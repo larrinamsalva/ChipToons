@@ -101,7 +101,7 @@ test("reviews picture-foot travel in an ordinary scene and seeks its real Stage 
   await review.getByRole("button", { name: "Review Character Feet" }).click();
   await expect(review.getByLabel("Character foot summary"))
     .toContainText("Right foot: 73 Stage samples");
-  await expect(review.getByText(/bottom center of the part's image box/)).toBeVisible();
+  await expect(review.getByText(/Mark the sole in Puppet Maker/)).toBeVisible();
   const left = review.getByRole("combobox", { name: "Character foot to review" });
   await left.selectOption("left");
   await expect(review.getByLabel("Character foot summary")).toContainText("Left foot");
