@@ -161,3 +161,58 @@ test("corrects transparent masks with a keyboard and hands the parts to the exis
   expect(added?.characterId).toBe(puppet.id);
   expect(reused.assets).toEqual(first.assets);
 });
+
+test("traces a bendable picture arm and retains its elbow placement after saving", async ({ page }) => {
+  test.setTimeout(100_000);
+  await page.goto("./");
+  const source = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 200; canvas.height = 300;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 200, 300);
+    ctx.fillStyle = "#df5325"; ctx.fillRect(65, 65, 70, 125);
+    ctx.fillStyle = "#255dc7"; ctx.fillRect(20, 85, 42, 70);
+    ctx.fillStyle = "#15a566"; ctx.fillRect(20, 155, 42, 70);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  const start = await pictureTools(page);
+  await start.getByLabel("Original picture file", { exact: true }).setInputFiles({
+    name: "original-figure.png", mimeType: "image/png", buffer: Buffer.from(source, "base64"),
+  });
+  await button(start, "Create storyboard scene").click();
+  const dialog = await pictureTools(page, "Picture & cutouts");
+  await button(dialog, "Make This Character Move").click();
+  await dialog.getByRole("textbox", { name: "Character or prop name" }).fill("Bendable picture hero");
+  for (const { role, points } of [
+    { role: "torso", points: [[32, 21], [68, 21], [68, 65], [32, 65]] },
+    { role: "leftArm", points: [[9, 28], [32, 28], [32, 52], [9, 52]] },
+    { role: "leftForearm", points: [[9, 51], [32, 51], [32, 77], [9, 77]] },
+  ] as { role: string; points: [number, number][] }[]) {
+    await dialog.getByRole("combobox", { name: "Prepare as a body part" }).selectOption(role);
+    await outline(dialog, points);
+    await button(dialog, "Preview transparent cutout").click();
+    await button(dialog, "Keep this body part").click();
+  }
+  for (const role of ["leftShin", "leftFoot", "rightForearm", "rightShin", "rightFoot"])
+    await expect(dialog.getByRole("combobox", { name: "Prepare as a body part" }).locator(`option[value="${role}"]`)).toBeAttached();
+  await button(dialog, "Continue in Puppet Maker").click();
+  const maker = page.getByRole("dialog", { name: "Create a Puppet Character", exact: true });
+  await expect(maker).toBeVisible();
+  await maker.getByLabel("Body-part hierarchy").selectOption("leftForearm");
+  await expect(maker.getByLabel("Body-part hierarchy").locator("option:checked"))
+    .toContainText("attached to left Arm");
+  expect(Number(await maker.getByLabel("Pivot Y", { exact: true }).inputValue())).toBeLessThan(0);
+  await button(maker, "Make It Wave").click();
+  await expect(maker.locator('[data-preview-action="wave"]')).toBeVisible();
+  await button(maker, "Show still puppet").click();
+  await button(maker, "Next").click();
+  await button(maker, "Preview").click();
+  await button(maker, "Add to Cartoon").click();
+  await saved(page);
+  const data = (await backup(page)).data;
+  const rig = data.characters.find(character => character.name === "Bendable picture hero")!.puppet!;
+  expect(rig.parts.map(part => part.role)).toEqual(["torso", "leftArm", "leftForearm"]);
+  expect(rig.parts.find(part => part.role === "leftForearm")?.parentId).toBe("leftArm");
+  expect(data.scenes[0].elements.some(element => element.characterId ===
+    data.characters.find(character => character.name === "Bendable picture hero")!.id)).toBe(true);
+});
