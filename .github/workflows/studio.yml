@@ -34,8 +34,8 @@ jobs:
           npx playwright install --with-deps chromium
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-      - name: Encode, download and independently decode both short videos
-        run: npx playwright test --project=media-export --grep '1080p WebM|joins two genuine 1080p|local 2D cartoon finish|plain background cleanup'
+      - name: Encode, download and independently decode short videos
+        run: npx playwright test --project=media-export --grep '1080p WebM|joins two genuine 1080p|local 2D cartoon finish|plain background cleanup|mirrored uploaded arm artwork'
       - name: Keep both videos and decoded frames
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7.0.2

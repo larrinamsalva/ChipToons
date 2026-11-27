@@ -515,6 +515,7 @@ export function PuppetArt({
               {asset ? (
                 <image
                   href={asset.dataUrl}
+                  transform={part.flipX ? "scale(-1 1)" : undefined}
                   x={-part.width / 2}
                   y={-part.height / 2}
                   width={part.width}

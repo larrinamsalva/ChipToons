@@ -58,6 +58,8 @@ export interface PuppetPart {
   height: number;
   assetId?: string;
   alternateAssetId?: string;
+  /** Flip only this part's artwork around its center, without flipping the joint. */
+  flipX?: boolean;
 }
 export interface PuppetPose {
   id: string;
@@ -137,6 +139,7 @@ export function validPuppet(
       !numberIn(p.pivotY, -200, 200) ||
       !numberIn(p.width, 8, 320) ||
       !numberIn(p.height, 8, 320) ||
+      (p.flipX !== undefined && typeof p.flipX !== "boolean") ||
       (p.role === "artwork" && !p.assetId) ||
       (p.alternateAssetId !== undefined && (!["eyes", "mouth"].includes(String(p.role)) || !p.assetId ||
         typeof p.alternateAssetId !== "string" || !assets.has(p.alternateAssetId))) ||
@@ -177,6 +180,46 @@ export function validPuppet(
 
 export function puppetAssetIds(rig: PuppetRig): string[] {
   return [...new Set(rig.parts.flatMap(part => [part.assetId, part.alternateAssetId].filter((id): id is string => !!id)))];
+}
+
+export function oppositePartRole(role: PartRole): PartRole | undefined {
+  const opposite = role.startsWith("left")
+    ? `right${role.slice(4)}`
+    : role.startsWith("right") ? `left${role.slice(5)}` : "";
+  return PART_ROLES.find(candidate => candidate === opposite);
+}
+
+/** Reuse visible cutout art on its other limb, without inventing hidden artwork. */
+export function mirrorPuppetCutout(
+  rig: PuppetRig, sourceId: string, newId: string,
+): PuppetRig | undefined {
+  const source = rig.parts.find(part => part.id === sourceId);
+  const role = source && oppositePartRole(source.role);
+  if (!source?.assetId || !role) return undefined;
+  const existing = rig.parts.find(part => part.role === role);
+  if (existing?.assetId || (!existing && rig.parts.length >= MAX_PUPPET_PARTS) ||
+      rig.parts.some(part => part.id === newId)) return undefined;
+  const parent = rig.parts.find(part => part.id === source.parentId);
+  const oppositeParent = parent && oppositePartRole(parent.role);
+  const mirroredParent = oppositeParent
+    ? rig.parts.find(part => part.role === oppositeParent) : parent;
+  if (parent && !mirroredParent) return undefined;
+  const mirrored: PuppetPart = {
+    ...source,
+    id: existing?.id ?? newId,
+    role,
+    parentId: mirroredParent?.id,
+    x: -source.x,
+    pivotX: -source.pivotX,
+    flipX: !source.flipX,
+  };
+  const index = rig.parts.indexOf(source);
+  return {
+    ...rig,
+    parts: existing
+      ? rig.parts.map(part => part.id === existing.id ? mirrored : part)
+      : [...rig.parts.slice(0, index + 1), mirrored, ...rig.parts.slice(index + 1)],
+  };
 }
 export function remapPuppetAssets(
   rig: PuppetRig,

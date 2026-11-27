@@ -21,8 +21,10 @@ import {
   EXPRESSIONS,
   MAX_PUPPET_PARTS,
   MAX_PUPPET_POSES,
+  mirrorPuppetCutout,
   neutralJoint,
   newPart,
+  oppositePartRole,
   PART_ROLES,
   puppetAssetIds,
   puppetTransforms,
@@ -354,6 +356,22 @@ export function PuppetMaker({
     setSaved(false);
     setError("");
   }
+  function mirrorSelectedCutout() {
+    const newId = uid();
+    const next = mirrorPuppetCutout(rig, part.id, newId);
+    if (!next) {
+      setError("Add the matching parent limb first, or use a part without opposite artwork.");
+      return;
+    }
+    const role = oppositePartRole(part.role)!;
+    setRig(next);
+    setPartId(next.parts.find(candidate => candidate.role === role)!.id);
+    setMode("upload");
+    stop();
+    setSaved(false);
+    setError("");
+    setMessage(`Mirrored artwork onto ${label(role)}. Adjust its joint and pivot if needed.`);
+  }
   function parent(parentId: string) {
     const next = {
       ...rig,
@@ -373,7 +391,7 @@ export function PuppetMaker({
   }
   function attach(asset: Asset, id: string) {
     setAssets((prev) => [...prev, asset]);
-    editPart({ assetId: asset.id }, id);
+    editPart({ assetId: asset.id, flipX: false }, id);
     setMessage("Original artwork assigned to this part.");
     setError("");
   }
@@ -1092,10 +1110,31 @@ export function PuppetMaker({
                     </>
                   )}
                   {part.assetId && (
-                    <p>
-                      Part artwork:{" "}
-                      {assets.find((a) => a.id === part.assetId)?.name}
-                    </p>
+                    <>
+                      <p>
+                        Part artwork:{" "}
+                        {assets.find((a) => a.id === part.assetId)?.name}
+                      </p>
+                      <label className="assistant-check">
+                        <input type="checkbox" checked={!!part.flipX}
+                          onChange={event => editPart({ flipX: event.target.checked })} />{" "}
+                        Flip this part artwork horizontally
+                      </label>
+                      {oppositePartRole(part.role) && (
+                        <>
+                          <button className="button secondary"
+                            disabled={!mirrorPuppetCutout(rig, part.id, "__mirror_preview__")}
+                            onClick={mirrorSelectedCutout}>
+                            Mirror artwork to {label(oppositePartRole(part.role)!)}
+                          </button>
+                          <p className="field-hint">
+                            Reuses this cutout for the other limb, with a separate joint.
+                            Check the result and replace or draw any hidden details.
+                            The matching parent limb must already exist.
+                          </p>
+                        </>
+                      )}
+                    </>
                   )}
                 </>
               )}

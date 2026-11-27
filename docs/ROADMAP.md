@@ -4,6 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
+## Current focused increment — PR #182
+
+- Reuse a manually traced or uploaded arm/leg cutout on the opposite side, flipped horizontally with an independent joint. Preserve shared art and saved poses; allow replacement and manual orientation correction.
+- Verify the control on desktop/phone/tablet, project backup/restore, and the painted limbs in an independently decoded moving WebM. This is an editing shortcut for symmetric art, not recovery of hidden anatomy or automatic photo conversion.
+- Next priorities: finish and artist-review an original voiced pilot/full episode; guide remaining photo-part artwork; generalize contact/clipping review for custom rigs; verify full-resolution exports on real devices and nontechnical creator trials. See [Production gap audit](PRODUCTION_GAP_AUDIT.md).
+
 ## PR #1 — Functional Studio Foundation
 
 - React, TypeScript, Vite; public, no-login, browser-local operation.
