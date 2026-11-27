@@ -1042,7 +1042,9 @@ test("painted foot review matches moving artwork in a decoded WebM", async ({ pa
     for (let row = Math.max(0, Math.floor(expected.y - 35)); row < Math.min(450, expected.y + 35); row++)
       for (let col = Math.max(0, Math.floor(expected.x - 35)); col < Math.min(800, expected.x + 35); col++) {
         const offset = (row * 800 + col) * 3;
-        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 110) {
+        // The browser's softened Stage composite raises the shoe's green
+        // channel from its source PNG (~41) to ~118 in the decoded movie.
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
           count++; x += col; y += row;
         }
       }
