@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #182
+## Current focused increment — PR #183
+
+- Let creators trace separate forearms, shins and feet directly from a picture. Attach to the matching upper limb when present and place initial pivots near natural joints without shifting the still figure.
+- Verify parent chains and original picture positions, the browser save workflow, and a genuine decoded WebM with moving painted parts. Artist edits are still necessary for unusual poses, overlaps and occluded anatomy.
+
+## Previous focused increment — PR #182
 
 - Reuse a manually traced or uploaded arm/leg cutout on the opposite side, flipped horizontally with an independent joint. Preserve shared art and saved poses; allow replacement and manual orientation correction.
 - Verify the control on desktop/phone/tablet, project backup/restore, and the painted limbs in an independently decoded moving WebM. This is an editing shortcut for symmetric art, not recovery of hidden anatomy or automatic photo conversion.

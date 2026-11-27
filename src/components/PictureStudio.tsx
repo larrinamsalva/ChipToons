@@ -18,7 +18,10 @@ import { Modal } from "./Modal";
 
 const roleChoices: ReadonlyArray<[PartRole, string]> = [
   ["torso", "Body"], ["head", "Head"], ["leftArm", "Left arm"], ["rightArm", "Right arm"],
+  ["leftForearm", "Left forearm"], ["rightForearm", "Right forearm"],
   ["leftLeg", "Left leg"], ["rightLeg", "Right leg"], ["leftHand", "Left hand"], ["rightHand", "Right hand"],
+  ["leftShin", "Left shin"], ["rightShin", "Right shin"],
+  ["leftFoot", "Left foot"], ["rightFoot", "Right foot"],
   ["eyes", "Eyes"], ["mouth", "Mouth"], ["artwork", "Whole character"],
 ];
 const percent = (value: number) => Math.round(value * 1000) / 10;
@@ -347,6 +350,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
             </select></label>
           </div>
           <p className="field-hint">This optional finish is made on your device and changes only the transparent cutout. Your original picture stays saved. Preview again after changing it; hidden body parts and new views still need your artwork.</p>
+          <p className="field-hint">For bending elbows and knees, trace the upper arm or leg and its forearm or shin separately. Trace hands and feet separately for wrist and ankle movement. Puppet Maker keeps the unposed pieces in their pictured positions and lets you adjust each joint. If a parent part is missing, the cutout attaches to the body; reconnect it in Puppet Maker after adding the missing part.</p>
           {cutout && <div className="picture-cutout">
             <img src={cutout.asset.dataUrl} alt="Transparent cutout preview" />
           </div>}

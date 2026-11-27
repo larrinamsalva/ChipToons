@@ -198,15 +198,41 @@ export function picturePuppet(name: string, prepared: PreparedPart[]) {
   const scale = 120 / Math.max(body.cutout.width, body.cutout.height,
     ...prepared.map(item => Math.max(item.cutout.width, item.cutout.height)));
   const origin = body.cutout.center;
+  const byRole = new Map(prepared.map(item => [item.role, item]));
+  const parentRoles: Partial<Record<PartRole, PartRole[]>> = {
+    leftForearm: ["leftArm"], rightForearm: ["rightArm"],
+    leftHand: ["leftForearm", "leftArm"], rightHand: ["rightForearm", "rightArm"],
+    leftShin: ["leftLeg"], rightShin: ["rightLeg"],
+    leftFoot: ["leftShin", "leftLeg"], rightFoot: ["rightShin", "rightLeg"],
+    leftLeg: ["lowerBody"], rightLeg: ["lowerBody"],
+    hair: ["head"], accessory: ["head"], eyes: ["head"], mouth: ["head"],
+  };
+  const parentOf = (role: PartRole) => role === body.role ? undefined :
+    (parentRoles[role] ?? []).map(candidate => byRole.get(candidate))
+      .find(candidate => candidate && candidate.role !== role) ?? body;
+  const sizeOf = (item: PreparedPart) => ({
+    width: Math.max(8, item.cutout.width * scale),
+    height: Math.max(8, item.cutout.height * scale),
+  });
+  // Joint anchors move to the neck/shoulder/elbow/knee/wrist side of a
+  // cutout. Subtract the parent's anchor so the unposed image centers stay
+  // exactly where the artist traced them in the original picture.
+  const pivotYOf = (item: PreparedPart) => {
+    const height = sizeOf(item).height;
+    return item.role === "head" ? height * 0.39 :
+      /^(left|right)(Arm|Forearm|Hand|Leg|Shin|Foot)$/.test(item.role)
+        ? -height * 0.38 : 0;
+  };
   const parts: PuppetPart[] = prepared.map(({ role, cutout }) => {
-    const face = role === "eyes" || role === "mouth";
-    const parent = role === body.role ? undefined : (face ? prepared.find(item => item.role === "head") : undefined) ?? body;
+    const item = byRole.get(role)!;
+    const parent = parentOf(role);
     const center = parent?.cutout.center ?? origin;
-    const width = Math.max(8, cutout.width * scale), height = Math.max(8, cutout.height * scale);
+    const { width, height } = sizeOf(item);
+    const pivotY = pivotYOf(item);
     return { id: role, role, assetId: cutout.asset.id, parentId: parent?.role,
       x: clamp((cutout.center.x - center.x) * scale, -320, 320),
-      y: clamp((cutout.center.y - center.y) * scale - (parent ? 0 : 100), -320, 320),
-      width, height, pivotX: 0, pivotY: 0 };
+      y: clamp((cutout.center.y - center.y) * scale - (parent ? pivotYOf(parent) : 100) + pivotY, -320, 320),
+      width, height, pivotX: 0, pivotY };
   });
   const title = name.trim().slice(0, 80) || "Picture puppet";
   return {

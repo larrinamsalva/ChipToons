@@ -13,6 +13,8 @@ import { stagePoint } from "../src/interaction-motion";
 import { kindHeartsCrew } from "../src/series-starter";
 import { episodeBrief } from "../src/series";
 import { sunnyCartoon } from "../src/puppet-project";
+import { picturePuppet } from "../src/picture-studio";
+import type { PreparedPart } from "../src/picture-studio";
 import { mirrorPuppetCutout } from "../src/puppet-model";
 import { test, expect } from "@playwright/test";
 import type { Page, TestInfo } from "@playwright/test";
@@ -907,7 +909,8 @@ test("mirrored uploaded arm artwork is visible in a genuinely moving WebM", asyn
   scene.elements = [scene.elements.at(-1)!];
   scene.transition = "cut";
   await restore(page, { ...draft, scenes: [scene] });
-  const mirrored = page.locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]');
+  const mirrored = page.getByRole("button", { name: "Select Sunny the Kindness Hero", exact: true })
+    .locator('[data-puppet-part="rightArm"] image[transform="scale(-1 1)"]');
   await expect(mirrored).toBeAttached();
   const { path, decodedFrames } = await render(page, info, "mirrored-painted-arm", 5,
     { audio: false, captions: false });
@@ -918,6 +921,55 @@ test("mirrored uploaded arm artwork is visible in a genuinely moving WebM", asyn
   expect(pixels(still, 365, 90, 250, 300, isRed)).toBeGreaterThan(40);
   expect(pixels(still, 365, 90, 250, 300, isBlue)).toBeGreaterThan(40);
   expect(changedPixels(still, wave, 365, 90, 250, 300)).toBeGreaterThan(100);
+});
+
+test("nested picture forearm and shin move in an independently decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const pngs = await page.evaluate(() => ["#dd4a2b", "#255dce", "#24aa68", "#6244c7", "#e2ac29", "#75472f"].map(color => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 50;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = color; ctx.fillRect(0, 0, 24, 50);
+    return canvas.toDataURL("image/png");
+  }));
+  const specs: [PreparedPart["role"], number, number, number, number][] = [
+    ["leftForearm", 50, 150, 18, 48], ["leftShin", 82, 207, 19, 40],
+    ["torso", 100, 100, 76, 90], ["leftArm", 55, 113, 20, 58],
+    ["leftLeg", 83, 165, 23, 60], ["leftFoot", 80, 235, 27, 16],
+  ];
+  const prepared: PreparedPart[] = specs.map(([role, x, y, width, height], index) => ({
+    role, cutout: { center: { x, y }, width, height,
+      asset: { id: `traced-${role}`, name: `Traced ${role}`,
+        type: "image", mime: "image/png", dataUrl: pngs[index] } },
+  }));
+  const item = picturePuppet("Traced animated figure", prepared);
+  const rig = item.character!.puppet!;
+  expect(rig.parts.find(part => part.role === "leftForearm")?.parentId).toBe("leftArm");
+  expect(rig.parts.find(part => part.role === "leftShin")?.parentId).toBe("leftLeg");
+  const draft = sunnyCartoon();
+  const character = draft.characters.find(actor => actor.puppet)!;
+  character.puppet = rig;
+  draft.assets.push(...item.assets);
+  const original = draft.scenes[1], actor = original.elements.at(-1)!;
+  const scene = { ...original, duration: 4, transition: "cut" as const,
+    elements: [{ ...actor, x: 400, y: 275,
+      animation: presetAnimation({ ...actor, x: 400, y: 275 }, 4, "walk-in-place", 0, 3, rig) }] };
+  await restore(page, { ...draft, scenes: [scene] });
+  const stageActor = page.getByRole("button", { name: "Select Sunny the Kindness Hero", exact: true });
+  await expect(stageActor.locator('[data-puppet-part="leftForearm"] image')).toBeAttached();
+  await expect(stageActor.locator('[data-puppet-part="leftShin"] image')).toBeAttached();
+  const { path, decodedFrames } = await render(page, info, "nested-picture-joints", 4,
+    { audio: false, captions: false });
+  expect(decodedFrames).toBeGreaterThan(32);
+  const still = rawFrame(path, 0.2), moving = rawFrame(path, 1.4);
+  const red = (r: number, g: number, b: number) => r > 140 && r > g * 1.6 && r > b * 1.5;
+  const green = (r: number, g: number, b: number) => g > 110 && g > r * 1.5 && g > b * 1.2;
+  const blue = (r: number, g: number, b: number) => b > 130 && b > r * 1.5 && b > g * 1.3;
+  expect(pixels(still, 280, 65, 250, 375, red)).toBeGreaterThan(50);
+  expect(pixels(still, 280, 65, 250, 375, green)).toBeGreaterThan(50);
+  expect(pixels(still, 280, 65, 250, 375, blue)).toBeGreaterThan(50);
+  expect(changedPixels(still, moving, 280, 65, 250, 375)).toBeGreaterThan(100);
 });
 
 test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {
