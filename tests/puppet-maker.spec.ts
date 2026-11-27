@@ -193,6 +193,45 @@ test("holds a painted shoe across three reviewed frames and restores the origina
   expect((await backup(page)).data.scenes[0].elements[0].animation!.keyframes).toHaveLength(5);
 });
 
+test("chooses a five-frame painted-foot hold and preserves it through backup and Undo", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  actor.animation!.keyframes[1] = { ...actor.animation!.keyframes[1], x: 376 };
+  const reviewData = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+  const index = Math.min(...reviewData.possibleSlides.map(item => item.afterIndex));
+  await restore(page, project);
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await review.getByRole("combobox", { name: "Foot hold length" }).selectOption("5");
+  await review.getByRole("button", {
+    name: `Hold right Foot for 5 Frames from Frame ${index + 1}`,
+  }).click();
+  await saved(page);
+  const savedProject = (await backup(page)).data;
+  expect(savedProject.scenes[0].elements[0].animation!.keyframes).toHaveLength(7);
+  const points = sceneFootTravel(savedProject, savedProject.scenes[0], actor.id, 0, "right")!.points;
+  for (let sample = index; sample < index + 5; sample++)
+    expect(points[sample].x).toBeCloseTo(reviewData.points[index - 1].x, 1);
+  await button(page, "Undo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].elements[0].animation!.keyframes)
+    .toEqual(actor.animation!.keyframes);
+  await button(page, "Redo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].elements[0].animation!.keyframes).toHaveLength(7);
+});
+
 test("reconnects a painted part without shifting its still picture and saves the new hierarchy", async ({ page }) => {
   await page.goto("./");
   await button(page, "Create a Puppet Character").click();

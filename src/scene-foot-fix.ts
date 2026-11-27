@@ -107,14 +107,21 @@ function alignPictureFootAtTarget(project: Project, scene: Scene, actorId: strin
 /** Hold the same measured shoe position for three adjacent review samples. */
 export function holdPictureFootForThreeFrames(project: Project, scene: Scene, actorId: string,
   windowStart: number, side: FootSide, afterIndex: number): Scene | undefined {
+  return holdPictureFootForFrames(project, scene, actorId, windowStart, side, afterIndex, 3);
+}
+
+/** Hold 2–6 consecutive reviewed samples as one validated project edit. */
+export function holdPictureFootForFrames(project: Project, scene: Scene, actorId: string,
+  windowStart: number, side: FootSide, afterIndex: number, frameCount: number): Scene | undefined {
   const review = sceneFootTravel(project, scene, actorId, windowStart, side);
   const actor = scene.elements.find(item => item.id === actorId);
   if (!review || !actor?.animation || !Number.isInteger(afterIndex) ||
+      !Number.isInteger(frameCount) || frameCount < 2 || frameCount > 6 ||
       !review.possibleSlides.some(item => item.afterIndex === afterIndex) ||
-      afterIndex + 2 >= review.points.length ||
-      actor.animation.keyframes.length > MAX_TRACK_KEYS - 3) return undefined;
+      afterIndex + frameCount - 1 >= review.points.length ||
+      actor.animation.keyframes.length > MAX_TRACK_KEYS - frameCount) return undefined;
   const target = review.points[afterIndex - 1];
-  for (let index = afterIndex; index <= afterIndex + 2; index++) {
+  for (let index = afterIndex; index < afterIndex + frameCount; index++) {
     const point = review.points[index];
     if (Math.abs(point.x - target.x) > 12 ||
         Math.abs(point.y - target.y) > 2 || Math.abs(point.floorGap) > 4)
@@ -122,7 +129,7 @@ export function holdPictureFootForThreeFrames(project: Project, scene: Scene, ac
   }
   let current = scene;
   let currentProject = project;
-  for (let index = afterIndex; index <= afterIndex + 2; index++) {
+  for (let index = afterIndex; index < afterIndex + frameCount; index++) {
     const next = alignPictureFootAtTarget(currentProject, current, actorId,
       windowStart, side, index, target.x);
     if (!next) return undefined;
@@ -131,7 +138,7 @@ export function holdPictureFootForThreeFrames(project: Project, scene: Scene, ac
       item.id === scene.id ? current : item) };
   }
   const held = sceneFootTravel(currentProject, current, actorId, windowStart, side);
-  if (!held || [afterIndex, afterIndex + 1, afterIndex + 2].some(index =>
+  if (!held || Array.from({ length: frameCount }, (_, offset) => afterIndex + offset).some(index =>
     Math.abs(held.points[index].x - target.x) > 0.15 ||
     Math.abs(held.points[index].y - review.points[index].y) > 0.15)) return undefined;
   return current;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateProject } from "./model";
 import { sceneFramesAt } from "./timeline";
 import { puppetFootSoleAt } from "./cinematic-gait";
-import { alignPictureFootFrame, holdPictureFootForThreeFrames } from "./scene-foot-fix";
+import { alignPictureFootFrame, holdPictureFootForFrames, holdPictureFootForThreeFrames } from "./scene-foot-fix";
 import { sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
 
@@ -144,5 +144,39 @@ describe("three-frame picture-foot hold", () => {
     const held = sceneFootTravel({ ...project, scenes: [next] }, next, actor.id, 1, "right")!;
     for (let sample = index; sample < index + 3; sample++)
       expect(held.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
+  });
+});
+
+describe("selected picture-foot hold length", () => {
+  it("keeps two, four and six adjacent sole samples still in one valid edit", () => {
+    for (const count of [2, 4, 6]) {
+      const project = paintedFootCartoon(png);
+      const scene = project.scenes[0], actor = scene.elements[0];
+      actor.animation!.keyframes[1] = { ...actor.animation!.keyframes[1], x: 376 };
+      const review = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+      const index = Math.min(...review.possibleSlides.map(item => item.afterIndex));
+      const original = JSON.stringify(project);
+      const next = holdPictureFootForFrames(project, scene, actor.id, 0, "right", index, count)!;
+      expect(next).toBeDefined();
+      expect(JSON.stringify(project)).toBe(original);
+      expect(next.elements[0].animation!.keyframes).toHaveLength(2 + count);
+      const updated = { ...project, scenes: [next] };
+      expect(validateProject(updated)).toBeTruthy();
+      const held = sceneFootTravel(updated, next, actor.id, 0, "right")!;
+      for (let sample = index; sample < index + count; sample++)
+        expect(held.points[sample].x).toBeCloseTo(review.points[index - 1].x, 1);
+    }
+  });
+
+  it("refuses invalid lengths and a six-frame reach past twelve stage pixels", () => {
+    const project = paintedFootCartoon(png);
+    const scene = project.scenes[0], actor = scene.elements[0];
+    const review = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    const index = review.possibleSlides[0].afterIndex;
+    for (const count of [1, 7, 2.5, Number.NaN])
+      expect(holdPictureFootForFrames(project, scene, actor.id, 0, "right", index, count))
+        .toBeUndefined();
+    expect(holdPictureFootForFrames(project, scene, actor.id, 0, "right", index, 6))
+      .toBeUndefined();
   });
 });
