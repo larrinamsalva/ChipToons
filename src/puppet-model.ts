@@ -60,6 +60,9 @@ export interface PuppetPart {
   alternateAssetId?: string;
   /** Flip only this part's artwork around its center, without flipping the joint. */
   flipX?: boolean;
+  /** Optional normalized contact point in the displayed picture-foot rectangle. */
+  soleX?: number;
+  soleY?: number;
 }
 export interface PuppetPose {
   id: string;
@@ -140,6 +143,9 @@ export function validPuppet(
       !numberIn(p.width, 8, 320) ||
       !numberIn(p.height, 8, 320) ||
       (p.flipX !== undefined && typeof p.flipX !== "boolean") ||
+      ((p.soleX !== undefined || p.soleY !== undefined) &&
+        (!p.assetId || (p.role !== "leftFoot" && p.role !== "rightFoot") ||
+          !numberIn(p.soleX, 0, 1) || !numberIn(p.soleY, 0, 1))) ||
       (p.role === "artwork" && !p.assetId) ||
       (p.alternateAssetId !== undefined && (!["eyes", "mouth"].includes(String(p.role)) || !p.assetId ||
         typeof p.alternateAssetId !== "string" || !assets.has(p.alternateAssetId))) ||
@@ -212,6 +218,7 @@ export function mirrorPuppetCutout(
     x: -source.x,
     pivotX: -source.pivotX,
     flipX: !source.flipX,
+    soleX: source.soleX === undefined ? undefined : 1 - source.soleX,
   };
   const index = rig.parts.indexOf(source);
   return {

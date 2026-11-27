@@ -8,7 +8,7 @@ import type { FootSide, FootTravelReview } from "./workshop-foot-travel";
 /** Review a bounded stretch of any two-foot puppet's actual Stage motion. */
 export function sceneFootTravel(project: Project, scene: Scene, actorId: string,
   fromSeconds: number, side: FootSide): (FootTravelReview & {
-    start: number; end: number; paintedFoot: boolean;
+    start: number; end: number; paintedFoot: boolean; markedSole: boolean;
   }) | undefined {
   const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
   const actor = scene.elements.find(item => item.id === actorId);
@@ -41,6 +41,7 @@ export function sceneFootTravel(project: Project, scene: Scene, actorId: string,
     points.push({ index, seconds, x: sole.x, y: sole.y, floorGap });
     nearFloor.push(Math.abs(frame.rotation) <= 8 && Math.abs(floorGap) <= 4);
   }
-  return { side, start, end, paintedFoot: !!foot.assetId, points,
+  return { side, start, end, paintedFoot: !!foot.assetId,
+    markedSole: foot.soleX !== undefined && foot.soleY !== undefined, points,
     possibleSlides: possibleFootTravel(points, nearFloor) };
 }

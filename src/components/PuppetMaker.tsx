@@ -163,6 +163,15 @@ function PuppetPreview({
       : mouth;
   const world = puppetTransforms(rig, joints);
   const marker = selected && world[rig.parts.indexOf(selected)];
+  const paintedSole = selected?.assetId &&
+    (selected.role === "leftFoot" || selected.role === "rightFoot") && marker
+    ? (() => {
+      const dx = ((selected.soleX ?? 0.5) - 0.5) * selected.width - selected.pivotX;
+      const dy = ((selected.soleY ?? 1) - 0.5) * selected.height - selected.pivotY;
+      const angle = marker.angle * Math.PI / 180;
+      return { x: marker.x + dx * Math.cos(angle) - dy * Math.sin(angle),
+        y: marker.y + dx * Math.sin(angle) + dy * Math.cos(angle) };
+    })() : undefined;
   const parent = selected?.parentId
     ? world[rig.parts.findIndex((p) => p.id === selected.parentId)]
     : neutralJoint;
@@ -254,6 +263,12 @@ function PuppetPreview({
           <path d="M-5 0h10M0-5v10" stroke="#234d85" strokeWidth="2" />
         </g>
       )}
+      {paintedSole && !action && <g
+        transform={`translate(${paintedSole.x} ${paintedSole.y})`}
+        role="img" aria-label="Painted foot sole point" pointerEvents="none">
+        <circle r="8" fill="#ffe25a" stroke="#263451" strokeWidth="2" />
+        <circle r="2" fill="#263451" />
+      </g>}
     </svg>
   );
 }
@@ -1017,6 +1032,8 @@ export function PuppetMaker({
                             pivotY: 0,
                             width: 150,
                             height: 170,
+                            soleX: undefined,
+                            soleY: undefined,
                           };
                           setRig({
                             ...rig,
@@ -1122,6 +1139,31 @@ export function PuppetMaker({
                           onChange={event => editPart({ flipX: event.target.checked })} />{" "}
                         Flip this part artwork horizontally
                       </label>
+                      {(part.role === "leftFoot" || part.role === "rightFoot") && (
+                        <fieldset aria-label="Painted foot sole marker">
+                          <legend>Mark the shoe sole</legend>
+                          <p className="field-hint">
+                            Move the yellow dot to where this picture foot touches the ground.
+                            The mark improves foot-travel review; it does not alter the picture or fix a sliding step.
+                          </p>
+                          <label>Sole across picture: {Math.round((part.soleX ?? 0.5) * 100)}%
+                            <input type="range" min="0" max="100" step="1"
+                              aria-label="Sole across picture" value={Math.round((part.soleX ?? 0.5) * 100)}
+                              onChange={event => editPart({ soleX: Number(event.target.value) / 100,
+                                soleY: part.soleY ?? 1 })} />
+                          </label>
+                          <label>Sole down picture: {Math.round((part.soleY ?? 1) * 100)}%
+                            <input type="range" min="0" max="100" step="1"
+                              aria-label="Sole down picture" value={Math.round((part.soleY ?? 1) * 100)}
+                              onChange={event => editPart({ soleX: part.soleX ?? 0.5,
+                                soleY: Number(event.target.value) / 100 })} />
+                          </label>
+                          <button type="button" className="button secondary small"
+                            onClick={() => editPart({ soleX: undefined, soleY: undefined })}>
+                            Reset sole to picture bottom
+                          </button>
+                        </fieldset>
+                      )}
                       {oppositePartRole(part.role) && (
                         <>
                           <button className="button secondary"

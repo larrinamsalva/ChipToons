@@ -24,6 +24,22 @@ import { suggestDirection, directScene } from "./assistant";
 
 const assets = new Set<string>();
 describe("puppet rig, timeline and project snapshots", () => {
+  it("validates picture-foot sole markers and mirrors their displayed horizontal position", () => {
+    const rig = sunnyRig();
+    const left = newPart("leftFoot", "left-foot", rig.parts.find(part => part.role === "leftLeg"));
+    rig.parts.push({ ...left, assetId: "shoe", soleX: 0.2, soleY: 0.85 });
+    const mirrored = mirrorPuppetCutout(rig, left.id, "right-foot")!;
+    expect(mirrored.parts.find(part => part.id === "right-foot")).toMatchObject({
+      role: "rightFoot", assetId: "shoe", soleX: 0.8, soleY: 0.85, flipX: true,
+    });
+    expect(validPuppet(mirrored, new Set(["shoe"]))).toBe(true);
+    for (const changes of [{ soleY: undefined }, { soleX: -0.1 },
+      { role: "leftHand" as const }, { assetId: undefined }]) {
+      const invalid = { ...rig, parts: rig.parts.map(part => part.id === left.id
+        ? { ...part, ...changes } : part) };
+      expect(validPuppet(invalid, new Set(["shoe"]))).toBe(false);
+    }
+  });
   it("reparents a pictured part without moving its still artwork and then follows the new joint", () => {
     const rig = sunnyRig();
     const hand = { ...newPart("leftHand", "hand", rig.parts.find(part => part.role === "torso")),

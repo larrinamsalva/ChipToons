@@ -1033,7 +1033,14 @@ test("painted foot review matches moving artwork in a decoded WebM", async ({ pa
   });
   const project = paintedFootCartoon(png);
   const scene = project.scenes[0], actorId = scene.elements[0].id;
+  // The published shoe mark changes the review's contact point, but the
+  // real painted pixels in this exported movie must remain the same artwork.
+  const baseline = sceneFootTravel(project, scene, actorId, 0, "right")!;
+  const foot = project.characters[0].puppet!.parts.find(part => part.role === "rightFoot")!;
+  foot.soleX = 0.75; foot.soleY = 0.8;
   const review = sceneFootTravel(project, scene, actorId, 0, "right")!;
+  expect(review.points[7].x - baseline.points[7].x).toBeCloseTo(foot.width * 0.25);
+  expect(review.markedSole).toBe(true);
   await restore(page, project);
   const { path } = await render(page, info, "painted-foot-review", 4,
     { audio: false, captions: false });

@@ -35,6 +35,55 @@ async function audit(page: Page) {
 const rigOf = (project: Awaited<ReturnType<typeof backup>>["data"]) =>
   project.characters.find((c) => c.name === SUNNY_NAME)!.puppet!;
 
+test("marks and mirrors a painted shoe sole, then preserves it in a restored cartoon", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await button(page, "Create a Puppet Character").click();
+  await button(page, "Build a Character").click();
+  await dialog(page).getByLabel("Another body part").selectOption("leftFoot");
+  await button(page, "Add selected part").click();
+  await dialog(page).getByLabel("Artwork source").selectOption("upload");
+  await dialog(page).getByLabel("Upload artwork for selected part").setInputFiles({
+    name: "painted-shoe.png", mimeType: "image/png", buffer: Buffer.from(png, "base64"),
+  });
+  const marker = dialog(page).locator('g[aria-label="Painted foot sole point"]');
+  await expect(marker).toBeVisible();
+  const original = await marker.getAttribute("transform");
+  const move = async (name: string, value: string) => {
+    await dialog(page).getByRole("slider", { name }).evaluate((node, next) => {
+      const input = node as HTMLInputElement;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!
+        .call(input, next);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value);
+  };
+  await move("Sole across picture", "75");
+  await move("Sole down picture", "80");
+  await expect(dialog(page).getByRole("slider", { name: "Sole across picture" })).toHaveValue("75");
+  await expect(marker).not.toHaveAttribute("transform", original!);
+  await button(page, "Mirror artwork to right Foot").click();
+  await expect(dialog(page).getByRole("slider", { name: "Sole across picture" })).toHaveValue("25");
+  await button(page, "Next").click();
+  await button(page, "Preview").click();
+  await button(page, "Add to Cartoon").click();
+  await saved(page);
+  const project = (await backup(page)).data;
+  const left = rigOf(project).parts.find(part => part.role === "leftFoot")!;
+  const right = rigOf(project).parts.find(part => part.role === "rightFoot")!;
+  expect([left.soleX, left.soleY, right.soleX, right.soleY]).toEqual([0.75, 0.8, 0.25, 0.8]);
+  expect(left.assetId).toBe(right.assetId);
+  await restore(page, { ...project, id: "restored-painted-shoe-marker" });
+  expect(rigOf((await backup(page)).data).parts.find(part => part.role === "rightFoot"))
+    .toEqual(right);
+});
+
 test("reviews picture-foot travel in an ordinary scene and seeks its real Stage frame", async ({ page }) => {
   await page.goto("./");
   const png = await page.evaluate(() => {
@@ -52,7 +101,7 @@ test("reviews picture-foot travel in an ordinary scene and seeks its real Stage 
   await review.getByRole("button", { name: "Review Character Feet" }).click();
   await expect(review.getByLabel("Character foot summary"))
     .toContainText("Right foot: 73 Stage samples");
-  await expect(review.getByText(/bottom center of the part's image box/)).toBeVisible();
+  await expect(review.getByText(/Mark the sole in Puppet Maker/)).toBeVisible();
   const left = review.getByRole("combobox", { name: "Character foot to review" });
   await left.selectOption("left");
   await expect(review.getByLabel("Character foot summary")).toContainText("Left foot");
