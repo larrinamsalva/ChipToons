@@ -28,7 +28,7 @@ function alignPictureFootAtTarget(project: Project, scene: Scene, actorId: strin
   const rig = actor && resolvedCharacter(project, actor)?.puppet;
   const foot = rig?.parts.find(part => part.role === `${side}Foot`);
   const parent = rig?.parts.find(part => part.id === foot?.parentId);
-  if (sceneIndex < 0 || !actor || !rig || !foot?.assetId || !parent ||
+  if (sceneIndex < 0 || !actor || !rig || !foot || !parent ||
       !["leftLeg", "rightLeg", "leftShin", "rightShin"].includes(parent.role) ||
       !actor.animation || actor.animation.keyframes.length < 2 ||
       actor.animation.keyframes.length >= MAX_TRACK_KEYS ||
@@ -143,3 +143,7 @@ export function holdPictureFootForFrames(project: Project, scene: Scene, actorId
     Math.abs(held.points[index].y - review.points[index].y) > 0.15)) return undefined;
   return current;
 }
+
+/** Picture and vector puppets use the same measured sole and joint edit. */
+export const alignPuppetFootFrame = alignPictureFootFrame;
+export const holdPuppetFootForFrames = holdPictureFootForFrames;

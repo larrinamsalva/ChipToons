@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Project, Scene } from "../model";
 import { sceneFootTravel } from "../scene-foot-travel";
 import type { FootSide } from "../workshop-foot-travel";
-import { alignPictureFootFrame, holdPictureFootForFrames } from "../scene-foot-fix";
+import { alignPuppetFootFrame, holdPuppetFootForFrames } from "../scene-foot-fix";
 
 /** A creator can inspect saved motion without changing any keys or media. */
 export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, onApply }: {
@@ -57,19 +57,19 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
           {" · "}estimated floor gap {after.floorGap.toFixed(1)} pixels.
         </p>}
         <p className="field-hint">The floor estimate follows the character's neutral feet, not the scenery. Inspect the main Stage at each suggested time for actual ground contact or overlap.</p>
-        {review.paintedFoot && <p className="field-hint">
-          You can hold one picture foot at a suggested frame when this movement has editable timeline keys.
+        <p className="field-hint">
+          You can hold a puppet foot at a suggested frame when this movement has editable timeline keys.
           The change adds one foot key within a linear motion interval, up to 12 stage pixels,
           and can affect nearby frames. Timed gestures, talking cycles and authored keys need manual editing.
           Preview the whole step afterward. Undo restores the original movement.
-        </p>}
-        {review.paintedFoot && <label>Foot hold length
+        </p>
+        <label>Foot hold length
           <select aria-label="Foot hold length" value={holdFrames}
             onChange={event => { setHoldFrames(Number(event.target.value)); setMessage(""); }}>
             {[2, 3, 4, 5, 6].map(count => <option key={count} value={count}>{count} frames</option>)}
           </select>
           <span className="field-hint">One Undo step. Longer holds may be refused if a shoe would move more than 12 stage pixels.</span>
-        </label>}
+        </label>
         {message && <p role="status" className="field-hint">{message}</p>}
         {review.possibleSlides.length ? <ol aria-label="Character near-floor travel intervals">
           {review.possibleSlides.map(item => <li key={item.afterIndex}>
@@ -78,10 +78,10 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
               onClick={() => onSeek(item.seconds)}>
               Show Foot Frame {item.afterIndex + 1}
             </button>
-            {review.paintedFoot && <button type="button" className="button secondary small"
+            <button type="button" className="button secondary small"
               disabled={!editable}
               onClick={() => {
-                const next = alignPictureFootFrame(
+                const next = alignPuppetFootFrame(
                   project, scene, actorId, review.start, side, item.afterIndex,
                 );
                 if (!next || !onApply(next)) {
@@ -92,12 +92,11 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
                 onSeek(item.seconds);
               }}>
               Hold {side} Foot at Frame {item.afterIndex + 1}
-            </button>}
-            {review.paintedFoot &&
-              <button type="button" className="button secondary small"
+            </button>
+            <button type="button" className="button secondary small"
                 disabled={!editable || item.afterIndex + holdFrames - 1 >= review.points.length}
                 onClick={() => {
-                  const next = holdPictureFootForFrames(
+                  const next = holdPuppetFootForFrames(
                     project, scene, actorId, review.start, side, item.afterIndex, holdFrames,
                   );
                   if (!next || !onApply(next)) {
@@ -108,7 +107,7 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
                   onSeek(review.points[item.afterIndex + holdFrames - 1].seconds);
                 }}>
                 Hold {side} Foot for {holdFrames} Frames from Frame {item.afterIndex + 1}
-              </button>}
+            </button>
           </li>)}
         </ol> : <p role="status" className="field-hint">
           No interval crossed this review threshold. Check the Stage visually; contact is not guaranteed.
