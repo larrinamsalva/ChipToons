@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Project, Scene } from "../model";
 import { sceneFootTravel } from "../scene-foot-travel";
 import type { FootSide } from "../workshop-foot-travel";
-import { alignPictureFootFrame, holdPictureFootForThreeFrames } from "../scene-foot-fix";
+import { alignPictureFootFrame, holdPictureFootForFrames } from "../scene-foot-fix";
 
 /** A creator can inspect saved motion without changing any keys or media. */
 export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, onApply }: {
@@ -13,6 +13,7 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   const [opened, setOpened] = useState(false);
   const [side, setSide] = useState<FootSide>("right");
   const [startAt, setStartAt] = useState(0);
+  const [holdFrames, setHoldFrames] = useState(3);
   const [message, setMessage] = useState("");
   const review = opened ? sceneFootTravel(project, scene, actorId, startAt, side) : undefined;
   const actor = scene.elements.find(item => item.id === actorId);
@@ -62,6 +63,13 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
           and can affect nearby frames. Timed gestures, talking cycles and authored keys need manual editing.
           Preview the whole step afterward. Undo restores the original movement.
         </p>}
+        {review.paintedFoot && <label>Foot hold length
+          <select aria-label="Foot hold length" value={holdFrames}
+            onChange={event => { setHoldFrames(Number(event.target.value)); setMessage(""); }}>
+            {[2, 3, 4, 5, 6].map(count => <option key={count} value={count}>{count} frames</option>)}
+          </select>
+          <span className="field-hint">One Undo step. Longer holds may be refused if a shoe would move more than 12 stage pixels.</span>
+        </label>}
         {message && <p role="status" className="field-hint">{message}</p>}
         {review.possibleSlides.length ? <ol aria-label="Character near-floor travel intervals">
           {review.possibleSlides.map(item => <li key={item.afterIndex}>
@@ -85,21 +93,21 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
               }}>
               Hold {side} Foot at Frame {item.afterIndex + 1}
             </button>}
-            {review.paintedFoot && item.afterIndex + 2 < review.points.length &&
+            {review.paintedFoot &&
               <button type="button" className="button secondary small"
-                disabled={!editable}
+                disabled={!editable || item.afterIndex + holdFrames - 1 >= review.points.length}
                 onClick={() => {
-                  const next = holdPictureFootForThreeFrames(
-                    project, scene, actorId, review.start, side, item.afterIndex,
+                  const next = holdPictureFootForFrames(
+                    project, scene, actorId, review.start, side, item.afterIndex, holdFrames,
                   );
                   if (!next || !onApply(next)) {
-                    setMessage("Three frames could not be safely held here. Try another suggested frame or adjust the timeline keys.");
+                    setMessage("This foot hold could not be safely made. Try fewer frames, another suggested frame, or adjust the timeline keys.");
                     return;
                   }
-                  setMessage(`Held this ${side} foot for three reviewed frames from ${item.seconds.toFixed(3)}s. Preview the full step; Undo restores it.`);
-                  onSeek(review.points[item.afterIndex + 2].seconds);
+                  setMessage(`Held this ${side} foot for ${holdFrames} reviewed frames from ${item.seconds.toFixed(3)}s. Preview the full step; Undo restores it.`);
+                  onSeek(review.points[item.afterIndex + holdFrames - 1].seconds);
                 }}>
-                Hold {side} Foot for 3 Frames from Frame {item.afterIndex + 1}
+                Hold {side} Foot for {holdFrames} Frames from Frame {item.afterIndex + 1}
               </button>}
           </li>)}
         </ol> : <p role="status" className="field-hint">
