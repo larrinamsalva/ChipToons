@@ -1185,6 +1185,12 @@ Use existing browser + media-export regressions. Added unit tests check scene im
 
 ## Scope limits
 
+### PR #181 — Read-only foot travel review
+
+In a saved Workshop movement, open **Review Frame by Frame → Compare Adjacent Frames → Review Foot Travel**. Choose the left or right foot to see its actual parented sole coordinates from each original 24-fps Stage sample. The adjacent-frame readout follows frame navigation. Up to five of the largest sideways intervals close to the rig's neutral floor estimate link directly to the original frame pair for visual inspection.
+
+This review requires two separate parented vector foot parts. It does not infer the true scenery floor, handle raster foot silhouettes, detect every slip, resolve collisions or edit animation. A near-floor finding is a prompt for the creator to inspect what the cartoon actually shows. The original Stage, recordings, project history and export remain unchanged.
+
 This is incremental original **2.5D animation**, not full 3D skeletal animation, physics-based motion capture or guaranteed zero foot sliding on every custom rig. Corrections are intentionally bounded and may be insufficient for unusually fast authored translations. The Scout/Jo preset rigs do not yet include a separately articulated shin, so their visible improvement is foot stabilization rather than a knee-joint overhaul. Custom image-backed rigs remain untouched.
 
 The original Little Fixers story is still **4:30** and later spoken lines still need original human recordings. A 20-minute *export technical fixture* is not a completed 20-minute cartoon.

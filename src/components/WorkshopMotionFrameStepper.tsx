@@ -8,6 +8,7 @@ import {
 import { workshopAdjacentFramePair } from "../workshop-adjacent-frame-compare";
 import { workshopAdjacentJointReview } from "../workshop-adjacent-joint-review";
 import { WorkshopJointMotionCurveReview } from "./WorkshopJointMotionCurveReview";
+import { WorkshopFootTravelReview } from "./WorkshopFootTravelReview";
 import { workshopJointReview } from "../workshop-joint-review-filter";
 import type { WorkshopJointGroup } from "../workshop-joint-review-filter";
 import { Stage } from "./Stage";
@@ -194,6 +195,9 @@ export function WorkshopMotionFrameStepper({
                   </>
                 )}
               </section>
+              <WorkshopFootTravelReview
+                project={project} scene={scene} actorId={actorId}
+                step={step} selectedIndex={frameIndex} onSelectFrame={setFrameIndex} />
             </div>
           ) : (
             <div className="workshop-motion-frame-stepper-stage"

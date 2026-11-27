@@ -619,6 +619,24 @@ test("creates and saves a new fully jointed original workshop hero with editable
   await jointBody.selectOption("all");
   await expect(jointChangesTable).toBeVisible();
 
+  // #181: sample the actual parented sole across the same saved movement.
+  // Changing sides and moving adjacent frames updates measurements without
+  // creating timeline keys or claiming a physics-grade contact result.
+  await button(page, "Review Foot Travel").click();
+  const footTravel = frameInspector.getByLabel("Foot travel review");
+  const footSummary = footTravel.getByLabel("Foot travel summary");
+  const footPair = footTravel.getByRole("status").filter({ hasText: /sole X/ });
+  await expect(footSummary).toContainText("Right foot: 37 real Stage samples");
+  await expect(footPair).toContainText("Frames 2 to 3");
+  await expect(footPair).toContainText("estimated floor gap");
+  const rightSole = await footPair.innerText();
+  await footTravel.getByRole("combobox", { name: "Foot to review" }).selectOption("left");
+  await expect(footSummary).toContainText("Left foot: 37 real Stage samples");
+  await expect(footPair).not.toHaveText(rightSole);
+  await button(page, "Next Frame").click();
+  await expect(footPair).toContainText("Frames 3 to 4");
+  await button(page, "Previous Frame").click();
+
   // #171: graph actual Stage-sampled local joint rotation across this
   // recorded step. Switching a part or selected frames never edits keys.
   await button(page, "Review Movement Curve").click();

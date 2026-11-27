@@ -158,8 +158,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Let a creator pick a spot within a traced cutout and remove only connected pixels close to that color, with Low/Medium/High strength and keyboard position fields. Keep the uploaded original untouched and preview the derived transparent PNG before saving.
 - Test connected-region boundaries and destructive picks. Use a genuine uploaded flat-background picture in the browser, inspect removed alpha and preserved subject, then decode a moving puppet from a downloaded WebM. Busy backgrounds and arbitrary person segmentation remain outside this constrained local tool.
 
-## PR #180 — Verified 1080p Movie Joining (in review)
+## PR #180 — Verified 1080p Movie Joining (merged)
 
 - Accept two or more matching VP8 offline 1920×1080 exports in the existing desktop single-movie builder, retaining its 512 MiB source/output and 20-minute planned-duration gates. Preserve the original video packets and re-encode continuous Opus audio.
 - Decode both real four-second HD exports, join them, compare every decoded frame and audio samples near the join, reopen and seek the downloaded movie. Align the joined subtitles to offline picture time, which has no real-time recorder lead-in.
 - A successful short HD proof does not validate a full 15–20-minute 1080p episode, arbitrary third-party WebMs, MP4 or mobile assembly. Measure real device and longer-run performance separately.
+
+## PR #181 — Inspect Actual Foot Travel in Saved Motion (in review)
+
+- In the Workshop frame-by-frame inspector, add an optional left/right foot review for saved motion steps with separate, parented vector feet. Reuse the real 24-fps Stage samples and the existing sole geometry; show both adjacent-frame sole positions in stage pixels.
+- List up to five intervals where the sole moves sideways while staying close to the rig's estimated neutral floor line, and jump back to the original adjacent Stage frames for visual review. This does not edit keyframes, add contacts, change exports or prove physically correct walking.
+- Verify exact sampled sole coordinates, original project immutability, rejection of fake step endpoints and unsupported rigs, the ranking threshold, and browser controls for both feet and frame navigation. Continue the existing full browser and genuine-media checks.
