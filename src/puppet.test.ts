@@ -6,6 +6,7 @@ import {
   newPart,
   neutralJoint,
   puppetTransforms,
+  reparentPuppetPart,
   sunnyRig,
   validPuppet,
 } from "./puppet-model";
@@ -23,6 +24,30 @@ import { suggestDirection, directScene } from "./assistant";
 
 const assets = new Set<string>();
 describe("puppet rig, timeline and project snapshots", () => {
+  it("reparents a pictured part without moving its still artwork and then follows the new joint", () => {
+    const rig = sunnyRig();
+    const hand = { ...newPart("leftHand", "hand", rig.parts.find(part => part.role === "torso")),
+      x: -68, y: 125, pivotX: 4, pivotY: -7, assetId: "painted-hand" };
+    rig.parts.push(hand);
+    const handIndex = rig.parts.indexOf(hand);
+    const before = puppetTransforms(rig)[handIndex];
+    const shoulder = rig.parts.find(part => part.role === "leftArm")!;
+    const connected = reparentPuppetPart(rig, hand.id, shoulder.id)!;
+    const after = puppetTransforms(connected)[handIndex];
+    expect(connected.parts[handIndex].parentId).toBe(shoulder.id);
+    expect(after.x - hand.pivotX).toBeCloseTo(before.x - hand.pivotX);
+    expect(after.y - hand.pivotY).toBeCloseTo(before.y - hand.pivotY);
+    expect(connected.poses).toBe(rig.poses);
+    expect(validPuppet(connected, new Set(["painted-hand"]))).toBe(true);
+    const waved = puppetTransforms(connected, { leftArm: { x: 0, y: 0, angle: 60 } });
+    expect(waved[handIndex].x).not.toBeCloseTo(after.x);
+    expect(waved[handIndex].angle).toBe(60);
+    expect(puppetTransforms(rig, { leftArm: { x: 0, y: 0, angle: 60 } })[handIndex]).toEqual(before);
+    const detached = reparentPuppetPart(connected, hand.id)!;
+    expect(puppetTransforms(detached)[handIndex].y).toBeCloseTo(before.y);
+    expect(reparentPuppetPart(connected, shoulder.id, hand.id)).toBeUndefined();
+    expect(reparentPuppetPart(connected, hand.id, "missing")).toBeUndefined();
+  });
   it("mirrors an existing cutout into an independently articulated opposite limb", () => {
     const rig = sunnyRig();
     const left = rig.parts.find(part => part.role === "leftArm")!;

@@ -29,6 +29,7 @@ import {
   puppetAssetIds,
   puppetTransforms,
   PUPPET_MOUTHS,
+  reparentPuppetPart,
   sunnyRig,
   validPuppet,
 } from "../puppet-model";
@@ -373,20 +374,17 @@ export function PuppetMaker({
     setMessage(`Mirrored artwork onto ${label(role)}. Adjust its joint and pivot if needed.`);
   }
   function parent(parentId: string) {
-    const next = {
-      ...rig,
-      parts: rig.parts.map((p) =>
-        p.id === part.id ? { ...p, parentId: parentId || undefined } : p,
-      ),
-    };
+    const next = reparentPuppetPart(rig, part.id, parentId || undefined);
     const ready = new Set(assets.map((a) => a.id));
-    if (!validPuppet(next, ready)) {
+    if (!next || !validPuppet(next, ready)) {
       setError(
-        "That connection would create a joint loop. Choose another parent.",
+        "That connection would create a joint loop or place the joint too far away. Choose another parent.",
       );
       return;
     }
-    editPart({ parentId: parentId || undefined });
+    setRig(next);
+    stop();
+    setSaved(false);
     setError("");
   }
   function attach(asset: Asset, id: string) {
@@ -901,6 +899,10 @@ export function PuppetMaker({
                         ))}
                     </select>
                   </label>
+                  <p className="field-hint">
+                    Changing this connection keeps the still artwork in place.
+                    Preview its motion and adjust saved poses if the new limb moves differently.
+                  </p>
                   <fieldset>
                     <legend>Move Joint</legend>
                     <p>

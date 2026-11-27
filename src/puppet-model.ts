@@ -267,6 +267,31 @@ export function puppetTransforms(
   return rig.parts.map(resolve);
 }
 
+/** Change a part's parent while keeping its neutral-pose art in place. */
+export function reparentPuppetPart(
+  rig: PuppetRig, partId: string, parentId?: string,
+): PuppetRig | undefined {
+  const part = rig.parts.find(item => item.id === partId);
+  if (!part || (parentId && !rig.parts.some(item => item.id === parentId))) return undefined;
+  if (part.parentId === parentId) return rig;
+  let cursor = parentId;
+  while (cursor) {
+    if (cursor === partId) return undefined;
+    cursor = rig.parts.find(item => item.id === cursor)?.parentId;
+  }
+  const world = puppetTransforms(rig);
+  const original = world[rig.parts.indexOf(part)];
+  const parent = parentId ? world[rig.parts.findIndex(item => item.id === parentId)] : neutralJoint;
+  const angle = -parent.angle * Math.PI / 180;
+  const dx = original.x - parent.x, dy = original.y - parent.y;
+  const x = dx * Math.cos(angle) - dy * Math.sin(angle);
+  const y = dx * Math.sin(angle) + dy * Math.cos(angle);
+  if (![x, y].every(value => Number.isFinite(value) && value >= -320 && value <= 320))
+    return undefined;
+  return { ...rig, parts: rig.parts.map(item => item.id === partId
+    ? { ...item, parentId, x, y } : item) };
+}
+
 export function interpolateJoints(
   a: JointSnapshot | undefined,
   b: JointSnapshot | undefined,
