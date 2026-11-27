@@ -30,7 +30,8 @@ function fromStage(element: SceneElement, frame: ElementFrame, stage: Point): Po
     y: turned.y / frame.scale * (element.flipY ? -1 : 1) };
 }
 
-function footPoint(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
+/** The same visible sole point used by the Stage's bounded foot-planting pass. */
+export function puppetFootSoleAt(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
   foot: PuppetPart): Point {
   const index = rig.parts.indexOf(foot);
   const joint = puppetTransforms(rig, frame.joints)[index];
@@ -129,7 +130,7 @@ function plantFoot(rig: PuppetRig, element: SceneElement, frame: ElementFrame,
   const angled: ElementFrame = { ...frame, joints: { ...frame.joints, [foot.id]: angledFoot } };
 
   const poses = puppetTransforms(rig, angled.joints);
-  const current = footPoint(rig, element, angled, foot);
+  const current = puppetFootSoleAt(rig, element, angled, foot);
   const deltaStage = { x: clamp(target.x - current.x, -19 * frame.scale, 19 * frame.scale) * weight,
     y: clamp(target.y - current.y, -13 * frame.scale, 13 * frame.scale) * weight };
   // Convert the remaining contact correction into the parent-leg frame. The
@@ -190,8 +191,8 @@ export function cinematicGaitAt(
     const cycle = Math.floor(phase);
     const progress = phase - cycle;
     const start = (cycle - offset) * period;
-    const first = footPoint(rig, element, sample(clamp(start, 0, duration)), foot);
-    const last = footPoint(rig, element, sample(clamp(start + period, 0, duration)), foot);
+    const first = puppetFootSoleAt(rig, element, sample(clamp(start, 0, duration)), foot);
+    const last = puppetFootSoleAt(rig, element, sample(clamp(start + period, 0, duration)), foot);
     const stance = progress < 0.58;
     const swing = clamp((progress - 0.58) / 0.42, 0, 1);
     const target: Point = { x: stance ? first.x : mix(first.x, last.x, smooth(swing)),
