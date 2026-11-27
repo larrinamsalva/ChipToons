@@ -1004,7 +1004,9 @@ test("reparented painted hand follows its arm in a decoded WebM", async ({ page 
     { audio: false, captions: false });
   const locateHand = (raw: Buffer) => {
     let count = 0, totalX = 0, totalY = 0;
-    for (let y = 155; y < 430; y++) for (let x = 265; x < 490; x++) {
+    // A raised hand can swing above its still-picture bounds. Search the
+    // decoded video frame rather than clipping the sample to its rest pose.
+    for (let y = 0; y < 450; y++) for (let x = 0; x < 800; x++) {
       const index = (y * 800 + x) * 3;
       const r = raw[index], g = raw[index + 1], b = raw[index + 2];
       if (r > 145 && b > 135 && g < 110) { count++; totalX += x; totalY += y; }
