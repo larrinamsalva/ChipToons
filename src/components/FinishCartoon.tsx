@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { STORY_CARD_STUDIO } from "../story-card-model";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Project } from "../model";
@@ -155,6 +156,7 @@ export function FinishCartoon({
       wide
     >
       <div hidden={deliveryOpen || publishingOpen}>
+      <CategoryDirections category="export" />
       <p className="section-description">
         Review your story, listen once, then make a real WebM movie. Export runs
         on this device and does not record the editor or your screen.

@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useState } from "react";
 import type { Project, Scene } from "../model";
 import { durationLabel } from "../model";
@@ -56,6 +57,7 @@ export function StoryOverview({
   }
   return (
     <Modal title="Story chapters & running time" onClose={onClose} wide>
+      <CategoryDirections category="story" />
       <p className="section-description">
         Build a longer story one manageable chapter at a time. Scenes play in
         their numbered order.

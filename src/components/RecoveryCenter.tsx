@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useEffect, useRef, useState } from "react";
 import { browserLocks } from "../edit-locks";
 import { episodePackage, verifyBackupFile } from "../episode-package";
@@ -160,6 +161,7 @@ export function RecoveryCenter({ onClose, onRestore, onOpenReadOnly, onProjectsC
 
   return (
     <Modal title="Project & Media Recovery" onClose={() => { if (!busy) onClose(); }} wide>
+      <CategoryDirections category="recovery" />
       <p>Find original recordings, check your cartoons, and keep backups you can restore later.</p>
       <nav aria-label="Recovery sections" className="recovery-actions">
         <button className="button secondary" disabled={busy} aria-pressed={panel === "projects"} onClick={checkProjects}>Check My Projects</button>

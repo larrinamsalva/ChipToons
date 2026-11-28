@@ -6903,3 +6903,29 @@ fieldset.interaction-fields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Optional in-place beginner directions, compact until expanded. */
+.category-directions {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: 10px;
+  padding: 0 12px;
+  margin: 8px 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.category-directions > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.category-directions > summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.category-directions-body { padding: 0 0 8px; font-size: 0.9rem; line-height: 1.55; }
+.category-directions-body p { margin: 6px 0; }
+.category-directions-body ol { padding-inline-start: 1.4em; margin: 8px 0; }
+.category-directions-body li + li { margin-top: 5px; }
