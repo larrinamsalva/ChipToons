@@ -1586,11 +1586,6 @@ select {
   height: auto;
   display: block;
 }
-.live-stage > .scene-ground-guide {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
 .stage-scene-label {
   position: absolute;
   left: 10px;

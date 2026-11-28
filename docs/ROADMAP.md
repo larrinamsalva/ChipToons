@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #193
+## Current focused increment — PR #194
+
+- Align saved flat and two-point editor ground guides with the camera transform already used for puppet artwork, so panning and zooming do not leave the guide fixed over the screen. Keep it out of playback and exports.
+- Verify flat and sloped guide transforms at camera keyframes, creator playback and backup on desktop/phone/tablet, and actual camera-panned painted-shoe pixels in a decoded WebM. The guide remains manually authored and is not scenery collision detection.
+
+## Previous focused increment — PR #193 (merged)
 
 - Let creators add a second grounded-foot point to a scene guide for simple inclines. Compare Stage sole positions only between the two authored X positions; preserve existing flat guides, portable backup, Undo and the editor-only display.
 - Verify an eight-pixel dip beneath a two-point line despite neutral foot joints, desktop/phone/tablet save and seek, and actual painted-shoe pixels in a decoded WebM. Two points remain an inspection aid, not automatic scenery geometry or collision solving.
@@ -252,8 +257,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Rank upright intervals where a selected foot sinks at least four pixels below the saved line, with links to original Stage frames. Preserve the separate neutral-pose and horizontal travel warnings. Verify a whole-body vertical move that the neutral-pose check cannot catch, creator save/seek/Undo/backup on desktop/phone/tablet, and visible painted-shoe offsets in a decoded WebM.
 - The saved height is a flat creator-set reference; slopes, moving cameras, jumps and transparent pixels can make it inaccurate. It does not discover scenery, infer contacts or resolve collisions.
 
-## PR #193 — Bound a Two-Point Scene Ground Guide (in review)
+## PR #193 — Bound a Two-Point Scene Ground Guide (merged)
 
 - Record a second grounded sole at a different Stage X to guide a gentle, straight slope. Show the saved segment in the paused editor, compare only the bounded X span, and refuse points under 80 pixels apart or with excessive grade. Existing single-height backups retain their flat guide.
 - Preserve regular scene Undo/Redo, portable backups and unchanged animation/export art. Verify the independent moving-foot sample, creator flow on desktop/phone/tablet and actual painted-shoe position in a decoded WebM. Continue the long technical export gate.
 - This does not read scenery pixels, infer curved terrain or solve character balance/contact. An original finished episode and real-device validation are still separate priorities.
+
+## PR #194 — Keep Ground Guides Aligned During Camera Moves (in review)
+
+- Draw the editor-only flat or bounded two-point guide within the Stage camera coordinate system instead of a separate stationary overlay. Keep authored ground values and warnings in world Stage space, preserve backups and hide the guide during playback/export.
+- Check guide alignment at pan/zoom keys in unit and desktop/phone/tablet browser tests; independently decode a camera-panned painted shoe in a real WebM to verify motion with no exported editor guide. Keep the full 20-minute technical export gate.
+- This is preview alignment, not parallax depth support, collision detection or a completed original episode.

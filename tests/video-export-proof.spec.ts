@@ -1470,6 +1470,65 @@ test("sloped scene ground warning matches a dipping painted shoe in decoded WebM
     { path: decoded, contentType: "image/png" });
 });
 
+test("camera-ground guide preview leaves a camera-panned painted shoe in decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  actor.animation!.keyframes[1].x = actor.x; // Still puppet; only the camera moves.
+  const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+  scene.footGroundY = first.y;
+  scene.footGroundPoints = [first];
+  scene.cameraAnimation = { keyframes: [
+    { id: "export-camera-start", time: 0, x: 400, y: 225, zoom: 1, easing: "linear" },
+    { id: "export-camera-end", time: 4, x: 500, y: 225, zoom: 1, easing: "linear" },
+  ] };
+  await restore(page, project);
+  const { path } = await render(page, info, "camera-ground-painted-foot", 4,
+    { audio: false, captions: false, fps: 24 });
+  const shoeCenter = (raw: Buffer) => {
+    let count = 0, x = 0, y = 0;
+    for (let row = 0; row < 450; row++)
+      for (let col = 0; col < 800; col++) {
+        const offset = (row * 800 + col) * 3;
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
+          count++; x += col; y += row;
+        }
+      }
+    expect(count).toBeGreaterThan(100);
+    return { x: x / count, y: y / count };
+  };
+  const early = shoeCenter(rawFrame(path, 0.6)); // Past the opening fade.
+  const laterFrame = rawFrame(path, 2);
+  const later = shoeCenter(laterFrame);
+  const cameraShift = stageCameraAt(project, scene, 2).x - stageCameraAt(project, scene, 0.6).x;
+  expect(cameraShift).toBeCloseTo(35);
+  expect(later.x - early.x).toBeLessThan(-25);
+  expect(Math.abs(later.x - early.x + cameraShift)).toBeLessThan(4);
+  expect(Math.abs(later.y - early.y)).toBeLessThan(5);
+  let guideColorPixels = 0;
+  for (let row = Math.floor(first.y) - 2; row <= Math.floor(first.y) + 2; row++)
+    for (let col = 20; col < 100; col++) {
+      const offset = (row * 800 + col) * 3;
+      if (laterFrame[offset] >= 65 && laterFrame[offset] <= 100 &&
+          laterFrame[offset + 1] >= 30 && laterFrame[offset + 1] <= 65 &&
+          laterFrame[offset + 2] >= 115 && laterFrame[offset + 2] <= 160) guideColorPixels++;
+    }
+  expect(guideColorPixels).toBeLessThan(4); // Purple editor line is absent from the decoded movie.
+  const decoded = info.outputPath("camera-ground-painted-foot-decoded.png");
+  execFileSync("ffmpeg", ["-v", "error", "-ss", String(2 + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", decoded]);
+  await info.attach("Actual decoded camera-panned painted shoe without the editor guide",
+    { path: decoded, contentType: "image/png" });
+});
+
 test("A Hello Heart previews its linked narrator and exports genuine spoken audio and moving artwork", async ({ page }, info) => {
   test.setTimeout(70_000);
   const { plan, artwork } = kindHeartsCrew();

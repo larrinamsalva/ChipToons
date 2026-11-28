@@ -314,6 +314,7 @@ export const Stage = memo(function Stage({
   scene,
   progress = 0.5,
   showCaption = false,
+  showFootGroundGuide = false,
   labelled = true,
   selectedId,
   onSelect,
@@ -340,6 +341,8 @@ export const Stage = memo(function Stage({
   onFocusPosition?: (point: Point) => void;
   artworkOffset?: { id: string; x: number; y: number };
   showCaption?: boolean;
+  /** Editor-only overlay; media renderers never request this. */
+  showFootGroundGuide?: boolean;
   labelled?: boolean;
   selectedId?: string;
   onSelect?: (id: string) => void;
@@ -887,6 +890,22 @@ export const Stage = memo(function Stage({
             })}
           </g>
         </g>
+        {showFootGroundGuide && scene.footGroundY !== undefined &&
+          <g className="scene-ground-guide" transform={cameraTransform}
+            aria-label={scene.footGroundPoints?.length === 2
+              ? "Saved sloped scene ground guide between two planted points"
+              : `Saved scene ground guide at Stage Y ${scene.footGroundY.toFixed(1)}`}
+            role="img" pointerEvents="none">
+            {scene.footGroundPoints?.length === 2
+              ? <line x1={scene.footGroundPoints[0].x} y1={scene.footGroundPoints[0].y}
+                  x2={scene.footGroundPoints[1].x} y2={scene.footGroundPoints[1].y}
+                  stroke="#512e8a" strokeWidth="2" strokeDasharray="8 6" />
+              : <line x1="0" y1={scene.footGroundY} x2="800" y2={scene.footGroundY}
+                  stroke="#512e8a" strokeWidth="2" strokeDasharray="8 6" />}
+            {scene.footGroundPoints?.map((point, index) =>
+              <circle key={index} cx={point.x} cy={point.y} r="4" fill="#512e8a"
+                stroke="#fff8e6" strokeWidth="2" />)}
+          </g>}
         {focus?.map(({ graphic, point, opacity, progress }) =>
           <FocusArt key={graphic.id} graphic={graphic} point={point} opacity={opacity} progress={progress}
             layout={focusLayout(graphic, point, band)} />)}
