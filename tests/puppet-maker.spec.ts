@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { backup, restore, saved } from "./production-helpers";
 import { SUNNY_NAME } from "../src/puppet-project";
 import { paintedFootCartoon } from "./custom-foot-fixture";
-import { sceneFootTravel } from "../src/scene-foot-travel";
+import { sceneFootGroundAt, sceneFootTravel } from "../src/scene-foot-travel";
 
 const button = (page: Page, name: string) =>
   page.getByRole("button", { name, exact: true });
@@ -160,6 +160,56 @@ test("reviews a below-neutral painted sole and seeks the saved pose without edit
     .toBeVisible();
   expect((await backup(page)).data.scenes[0].elements[0].animation)
     .toEqual(actor.animation);
+});
+
+test("saves a scene ground guide from a painted foot and reviews whole-body sinking with Undo", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  actor.animation!.keyframes[1].y += 12;
+  const reference = sceneFootGroundAt(project, scene, actor.id, 0, "right")!;
+  const preview = sceneFootTravel(project, { ...scene, footGroundY: reference }, actor.id, 0, "right")!;
+  expect(preview.possibleDepth).toEqual([]);
+  const finding = preview.possibleGroundDepth[0];
+  expect(finding.depthPixels).toBeCloseTo(12);
+  await restore(page, project);
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await expect(review.getByLabel("Character foot summary"))
+    .toContainText("0 possible below-neutral intervals");
+  await review.getByRole("button", { name: "Set Scene Ground From This Foot" }).click();
+  await saved(page);
+  await expect(review.getByText(/Scene ground guide: Stage Y/)).toContainText(reference.toFixed(1));
+  await expect(review.getByLabel("Character below-scene-ground intervals"))
+    .toContainText("12.0 stage pixels below saved guide");
+  await expect(page.locator(".stage-panel .scene-ground-guide")).toHaveCount(1);
+  const portable = (await backup(page)).data;
+  expect(portable.scenes[0].footGroundY).toBeCloseTo(reference);
+  expect(portable.scenes[0].elements[0].animation).toEqual(actor.animation);
+  await review.getByRole("button", {
+    name: `Show Below-Ground-Guide Frame ${finding.peakIndex + 1}`,
+  }).click();
+  await expect(page.getByLabel("Cartoon play position")).toHaveValue(String(finding.seconds));
+  // The guide remains scene-wide after seek, even when mobile panels remount.
+  await expect(page.getByRole("img", { name: /Saved scene ground guide at Stage Y/ })).toBeVisible();
+  await button(page, "Undo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].footGroundY).toBeUndefined();
+  await button(page, "Redo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].footGroundY).toBeCloseTo(reference);
+  await restore(page, portable);
+  expect((await backup(page)).data.scenes[0].footGroundY).toBeCloseTo(reference);
 });
 
 test("holds one painted foot at a reviewed frame with Undo and portable backup", async ({ page }) => {

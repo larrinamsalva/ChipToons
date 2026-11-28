@@ -152,6 +152,8 @@ export interface Scene {
   cameraShots?: CameraShot[];
   backgroundAnimation?: BackgroundAnimation;
   gentleDepth?: boolean;
+  /** Creator-set flat Stage reference, sampled from a planted foot. Editor guide only. */
+  footGroundY?: number;
   suggestedAtmosphere?: AtmosphereId;
   interactions?: Interaction[];
   objectTracks?: ObjectTrack[];
@@ -391,6 +393,7 @@ export function validateProject(value: unknown): Project {
       !oneOf(s.background, BACKGROUNDS) ||
       !oneOf(s.camera, ["wide", "close"]) ||
       (s.gentleDepth !== undefined && typeof s.gentleDepth !== "boolean") ||
+      (s.footGroundY !== undefined && !bounded(s.footGroundY, 0, 450)) ||
       !oneOf(s.transition, ["cut", "fade"]) ||
       !validString(s.action) ||
       !validString(s.props, 500) ||

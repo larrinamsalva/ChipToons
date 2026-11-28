@@ -94,6 +94,13 @@ export function ScenePlayer({
           onMove={snapshot.playing ? undefined : onMove}
           onResize={snapshot.playing ? undefined : onResize}
         />
+        {!snapshot.playing && scene.footGroundY !== undefined &&
+          <svg className="scene-ground-guide" viewBox="0 0 800 450"
+            aria-label={`Saved scene ground guide at Stage Y ${scene.footGroundY.toFixed(1)}`}
+            role="img" focusable="false">
+            <line x1="0" y1={scene.footGroundY} x2="800" y2={scene.footGroundY}
+              stroke="#512e8a" strokeWidth="2" strokeDasharray="8 6" />
+          </svg>}
         {captions && (
           <CaptionOverlay
             text={sceneCaptionText(project, scene, localTime)}
