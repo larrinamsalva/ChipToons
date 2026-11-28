@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useMemo, useState } from "react";
 import type { AudioAsset, AudioClip } from "../media-model";
 import type { Project } from "../model";
@@ -96,6 +97,7 @@ export function SoundDirector({ project, index, time, seed, onClose, onApply, on
   }
 
   return <Modal title={SOUND_DIRECTOR_TITLE} onClose={onClose} wide>
+      <CategoryDirections category="sound" />
     <p className="field-hint">Link a sound to a saved action or let a quiet atmosphere carry across scenes. Preview the real mix before applying.</p>
     <div className="interaction-layout sound-director">
       <div className="interaction-controls">

@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { focusIssue, reconcileFocusReferences } from "../focus-model";
 import { reconcileTransformReferences } from "../transform-motion";
 import { transformIssue } from "../transform-model";
@@ -111,6 +112,7 @@ export function InteractionStudio({ project, scene, current, time, selectedId, s
   const release = draft.release;
   return (
     <Modal title={INTERACTION_TITLE} onClose={onClose} wide>
+      <CategoryDirections category="interaction" />
       <p className="field-hint">Choose who acts, what they use, and when it happens. Preview as often as you like before applying.</p>
       {!actors.length && <p role="status">Add a character to this scene through the Art Library, then come back here.</p>}
       {suggestion && <p className="field-hint">Story suggestion: {INTERACTION_LABELS[suggestion.kind]} · {propLabel(suggestion.prop)}.

@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useState } from "react";
 import { elementName } from "../library";
 import type { Project, Scene } from "../model";
@@ -70,6 +71,7 @@ export function FocusStudio({ project, scene, time, seed, graphicId, onScene, on
     else setError("The graphic could not be saved. Check its target and timing.");
   }
   return <Modal title={FOCUS_TITLE} onClose={onClose} wide>
+      <CategoryDirections category="focus" />
     <p className="field-hint">Point out what children should notice. Teaching graphics appear in the movie and stay separate from spoken captions.</p>
     <div className="interaction-layout focus-layout">
       <div className="interaction-controls">

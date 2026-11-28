@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useMemo, useState } from "react";
 import { cameraCoverageReview } from "../camera-coverage-review";
 import { hasCameraTrack, MAX_CAMERA_SHOTS, SHOT_STYLES, SHOT_TITLE, shotIssue, shotNeedsReview } from "../camera-shots";
@@ -138,6 +139,7 @@ export function ShotDirector({ project, scene, time, id, lineId, initialPreset, 
   }
 
   return <Modal title={SHOT_TITLE} onClose={onClose} wide>
+      <CategoryDirections category="camera" />
     <p className="field-hint">Frame what viewers should see. Shots use the same animated scene, dialogue, and sounds.</p>
     {reviewingSavedMoment && <p role="status" className="field-hint">
       Inspecting the saved camera at {inspectTime?.toFixed(2)}s.
