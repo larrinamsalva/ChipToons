@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #191
+## Current focused increment — PR #192
+
+- Let a creator save a flat scene-ground height by sampling the selected foot at a known planted frame. Show an editor-only guide and grouped, seekable warnings when the selected sole crosses four Stage pixels below it. Preserve ordinary scene edits, Undo and portable backups.
+- Verify that a whole character can sink beneath the fixed guide while its neutral-rig gap stays zero, including the saved browser workflow and actual painted-shoe pixels in a decoded WebM. This is a manually chosen line, not floor detection, collision solving or a completed episode.
+
+## Previous focused increment — PR #191 (merged)
 
 - Group read-only warnings when a selected puppet foot's sampled sole falls at least four stage pixels below its own neutral-pose baseline. Link to the deepest saved Stage frame without changing the cartoon.
 - Verify a lowered painted shoe against the reported offset in a genuine decoded WebM, plus desktop, phone and tablet inspection and backup. This remains a pose warning, not actual scenery collision detection.
@@ -230,8 +235,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Confirm a saved vector boot stays at its reviewed stage X across four frames. Exercise the creator flow and backup/Undo on desktop, phone and tablet, and independently decode the visible boot beside its uncorrected counterpart in a real WebM.
 - Keep the neutral-rig floor as an estimate and distinguish this local correction from collision detection, physically balanced motion or a polished full episode.
 
-## PR #191 — Review Below-Neutral Foot Poses (in review)
+## PR #191 — Review Below-Neutral Foot Poses (merged)
 
 - Group 24-fps Stage samples at least four stage pixels below a character's neutral sole baseline, rank up to five spans by depth and jump to the worst saved pose. Never alter keys when inspecting.
 - Test threshold/tilt boundaries, the saved desktop/phone/tablet creator flow and the actual picture-shoe vertical offset in an independently decoded WebM. Continue the full 20-minute technical export gate.
 - Keep the warning separate from scenery contact and collision claims; the neutral line moves with the actor and picture feet may have transparent padding.
+
+## PR #192 — Save a Flat Scene Ground Reference (in review)
+
+- Sample a selected parented foot's exact Stage sole at the current playhead and save its height on the scene. Show a dashed guide in the paused editor preview, share it with all actors in that scene, and hide it during playback and export. Keep this ordinary scene edit undoable and portable.
+- Rank upright intervals where a selected foot sinks at least four pixels below the saved line, with links to original Stage frames. Preserve the separate neutral-pose and horizontal travel warnings. Verify a whole-body vertical move that the neutral-pose check cannot catch, creator save/seek/Undo/backup on desktop/phone/tablet, and visible painted-shoe offsets in a decoded WebM.
+- The saved height is a flat creator-set reference; slopes, moving cameras, jumps and transparent pixels can make it inaccurate. It does not discover scenery, infer contacts or resolve collisions.

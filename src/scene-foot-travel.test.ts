@@ -6,7 +6,7 @@ import { makeScene, validateProject } from "./model";
 import { elementBase, sceneFramesAt } from "./timeline";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
-import { possibleFootDepth, sceneFootTravel } from "./scene-foot-travel";
+import { possibleFootDepth, sceneFootGroundAt, sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
 import { Stage } from "./components/Stage";
 
@@ -32,6 +32,44 @@ function fixture() {
 }
 
 describe("custom puppet foot review", () => {
+  it("compares a saved flat-scene reference when the entire actor moves below it", () => {
+    const { project, scene, actor } = fixture();
+    const reference = sceneFootGroundAt(project, scene, actor.id, 0, "right")!;
+    scene.footGroundY = reference;
+    actor.animation!.keyframes[1].y += 15;
+    const original = JSON.stringify(project);
+    const review = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    expect(review.possibleDepth).toEqual([]);
+    expect(review.possibleGroundDepth).toHaveLength(1);
+    expect(review.possibleGroundDepth[0]).toMatchObject({ peakIndex: 72, depthPixels: 15 });
+    expect(sceneFootGroundAt(project, scene, actor.id, 2, "right"))
+      .toBeCloseTo(review.points[48].y);
+    expect(JSON.stringify(project)).toBe(original);
+    const portable = paintedFootCartoon(project.assets[0].dataUrl);
+    portable.scenes[0].footGroundY = reference;
+    expect(validateProject(portable)).toBeTruthy();
+    portable.scenes[0].footGroundY = -1;
+    expect(() => validateProject(portable)).toThrow();
+    portable.scenes[0].footGroundY = Number.NaN;
+    expect(() => validateProject(portable)).toThrow();
+  });
+
+  it("groups below-guide spans and refuses missing or offstage sole references", () => {
+    const { project, scene, actor } = fixture();
+    const y = sceneFootGroundAt(project, scene, actor.id, 0, "left")!;
+    const points = [y, y + 4, y + 8, y + 3, y + 10].map((sole, index) => ({
+      index, seconds: index / 24, x: 100, y: sole, floorGap: 0,
+    }));
+    expect(possibleFootDepth(points, [true, true, false, true, true], y))
+      .toMatchObject([{ startIndex: 4, endIndex: 4, depthPixels: 10 },
+        { startIndex: 1, endIndex: 1, depthPixels: 4 }]);
+    expect(sceneFootGroundAt(project, scene, actor.id, Number.NaN, "left")).toBeUndefined();
+    expect(sceneFootGroundAt(project, scene, actor.id, 4.01, "left")).toBeUndefined();
+    actor.y = 650;
+    actor.animation = undefined;
+    expect(sceneFootGroundAt(project, scene, actor.id, 0, "left")).toBeUndefined();
+  });
+
   it("groups below-neutral samples, ignores tilted poses and ranks the deepest span", () => {
     const gaps = [0, -4, -6, -5, -3, -8, -2, -8];
     const points = gaps.map((floorGap, index) => ({ index, seconds: index / 24,
