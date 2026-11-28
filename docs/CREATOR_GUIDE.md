@@ -196,3 +196,8 @@ On a supported larger Chromium screen, choose **Make One Complete Movie** after 
 ## Reuse a cartoon world
 
 Open **Build My Cartoon World** to start with one of six original locations, arrange objects with the existing scene controls, and save a reusable layout. Series Studio can copy the same location into the opening scenes of multiple episodes. [Scene & World Builder walkthrough](SCENE_WORLD_BUILDER.md)
+
+
+### Review foot overlap with placed furniture
+
+In **Review Character Feet**, select a placed chair, bench or table in **Furniture to check** (when supported scenery is present). Choose a suggested frame to inspect the sole against a conservative solid region of that furniture. Open gaps, legs, unsupported and changing props are excluded. The review does not change animation or exported artwork and cannot prove a collision or physical contact. The separate uploaded-image box review is unchanged.

@@ -31,32 +31,68 @@ export function footSceneryImages(project: Project, scene: Scene): SceneElement[
     !scene.objectTracks?.some(track => track.objectId === element.id));
 }
 
+type SolidRegion = readonly [left: number, top: number, right: number, bottom: number];
+
+/** Conservative interiors of fixed furniture artwork, not the full prop rectangle.
+ * Coordinates match PropArt and SceneryArt. Legs, curved edges, strokes and
+ * movable or appearance-changing artwork are intentionally not measured. */
+function furnitureRegions(element: SceneElement): readonly SolidRegion[] {
+  switch (element.prop) {
+    case "chair": return [[-31, -103, 28, -60], [-32, -43, 36, -31]];
+    case "table": return [[-54, -67, 54, -54]];
+    case "bench": return [[-54, -71, 54, -50], [-60, -40, 60, -31]];
+    default: return [];
+  }
+}
+
+export function footSceneryFurniture(scene: Scene): SceneElement[] {
+  return scene.elements.filter(element => element.kind === "prop" &&
+    !!element.sceneryDepth && !element.backdrop && !element.assetId &&
+    !element.characterId && !element.frameSequence && furnitureRegions(element).length > 0 &&
+    !scene.objectTracks?.some(track => track.objectId === element.id));
+}
+
+function sampledSceneryInsets(project: Project, scene: Scene, element: SceneElement,
+  points: FootTravelPoint[], regions: readonly SolidRegion[]): FootSceneryFinding[] | undefined {
+  const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
+  if (sceneIndex < 0) return undefined;
+  const voiceStart = scene.elements.some(item => item.voiceMouth?.length)
+    ? sceneStart(project, sceneIndex) : 0;
+  const insets = points.map(point => {
+    const frames = sceneFramesAt(project, scene, point.seconds, voiceStart);
+    const frame = frames.get(element.id);
+    if (!frame || frame.opacity < 0.5 || !(frame.scale > 0)) return 0;
+    const camera = stageCameraAt(project, scene, point.seconds, false, frames, voiceStart);
+    const depth = sceneryOffset(scene, element, camera, false);
+    const radians = frame.rotation * Math.PI / 180;
+    const dx = point.x - frame.x - depth.x, dy = point.y - frame.y - depth.y;
+    const x = (dx * Math.cos(radians) + dy * Math.sin(radians)) /
+      (frame.scale * (element.flip ? -1 : 1));
+    const y = (-dx * Math.sin(radians) + dy * Math.cos(radians)) /
+      (frame.scale * (element.flipY ? -1 : 1));
+    return Math.max(0, ...regions.map(([left, top, right, bottom]) =>
+      Math.min(x - left, right - x, y - top, bottom - y) * frame.scale));
+  });
+  return groupSceneryInsets(points, insets);
+}
+
+/** Read-only candidate frames where the sole enters a supported solid furniture region. */
+export function possibleFootFurnitureOverlaps(project: Project, scene: Scene, propId: string,
+  points: FootTravelPoint[]): FootSceneryFinding[] | undefined {
+  const prop = footSceneryFurniture(scene).find(element => element.id === propId);
+  return prop ? sampledSceneryInsets(project, scene, prop, points, furnitureRegions(prop)) : undefined;
+}
+
 /** Read-only bounding-box candidates, sampled in the same Stage space as the shoe. */
 export function possibleFootSceneryOverlaps(project: Project, scene: Scene, imageId: string,
   points: FootTravelPoint[]): FootSceneryFinding[] | undefined {
   const image = footSceneryImages(project, scene).find(element => element.id === imageId);
   if (!image) return undefined;
-  const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
-  if (sceneIndex < 0) return undefined;
-  const voiceStart = scene.elements.some(element => element.voiceMouth?.length)
-    ? sceneStart(project, sceneIndex) : 0;
   const width = image.width ?? 190, height = image.height ?? 245;
-  const insets = points.map(point => {
-    const frames = sceneFramesAt(project, scene, point.seconds, voiceStart);
-    const frame = frames.get(imageId);
-    if (!frame || frame.opacity < 0.5 || !(frame.scale > 0)) return 0;
-    const camera = stageCameraAt(project, scene, point.seconds, false, frames, voiceStart);
-    const depth = sceneryOffset(scene, image, camera, false);
-    const radians = frame.rotation * Math.PI / 180;
-    const dx = point.x - frame.x - depth.x, dy = point.y - frame.y - depth.y;
-    const x = (dx * Math.cos(radians) + dy * Math.sin(radians)) /
-      (frame.scale * (image.flip ? -1 : 1));
-    const y = (-dx * Math.sin(radians) + dy * Math.cos(radians)) /
-      (frame.scale * (image.flipY ? -1 : 1));
-    // RasterArt places the image in [-width/2, width/2] × [-height, 0].
-    // This is its placed box, not an opaque-pixel or collision test.
-    return Math.max(0, Math.min(x + width / 2, width / 2 - x, y + height, -y) * frame.scale);
-  });
+  return sampledSceneryInsets(project, scene, image, points, [[-width / 2, -height, width / 2, 0]]);
+}
+
+function groupSceneryInsets(points: FootTravelPoint[], insets: number[]): FootSceneryFinding[] {
   const findings: FootSceneryFinding[] = [];
   let start = -1, peak = -1;
   for (let index = 0; index <= points.length; index++) {

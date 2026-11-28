@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Project, Scene, SceneGroundPoint } from "../model";
 import { validGroundSlope } from "../model";
-import { footSceneryImages, possibleFootSceneryOverlaps, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../scene-foot-travel";
+import { footSceneryFurniture, footSceneryImages, possibleFootFurnitureOverlaps, possibleFootSceneryOverlaps, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../scene-foot-travel";
 import type { FootSide } from "../workshop-foot-travel";
 import { alignPuppetFootFrame, holdPuppetFootForFrames } from "../scene-foot-fix";
 
@@ -17,6 +17,7 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   const [startAt, setStartAt] = useState(0);
   const [holdFrames, setHoldFrames] = useState(3);
   const [sceneryId, setSceneryId] = useState("");
+  const [furnitureId, setFurnitureId] = useState("");
   const [message, setMessage] = useState("");
   const review = opened ? sceneFootTravel(project, scene, actorId, startAt, side) : undefined;
   const currentSole = opened ? sceneFootGroundPointAt(project, scene, actorId, time, side) : undefined;
@@ -34,6 +35,10 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   const sceneryImages = opened ? footSceneryImages(project, scene) : [];
   const sceneryFindings = review && sceneryId
     ? possibleFootSceneryOverlaps(project, scene, sceneryId, review.points) : undefined;
+
+  const furniture = opened ? footSceneryFurniture(scene) : [];
+  const furnitureFindings = review && furnitureId
+    ? possibleFootFurnitureOverlaps(project, scene, furnitureId, review.points) : undefined;
 
   return <section className="workshop-joint-motion-curve" aria-label="Character foot travel review">
     <button type="button" className="button secondary small" aria-expanded={opened}
@@ -113,6 +118,28 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
             </ol>}
           </>}
         </div>
+        {furniture.length > 0 && <div className="assistant-fields" aria-label="Foot and furniture review">
+          <label>Furniture to check
+            <select aria-label="Furniture to check" value={furniture.some(item => item.id === furnitureId) ? furnitureId : ""}
+              onChange={event => setFurnitureId(event.target.value)}>
+              <option value="">Choose placed furniture</option>
+              {furniture.map(item => <option key={item.id} value={item.id}>{item.name || item.prop}</option>)}
+            </select>
+          </label>
+          <p className="field-hint">Inspect the selected sole inside supported solid chair, bench or table regions. Open spaces, legs, changing artwork and unsupported props are not measured. This is a visual review aid, not a physical collision or balance solver.</p>
+          {furnitureFindings && <>
+            <output aria-label="Foot and furniture summary">{furnitureFindings.length} possible furniture overlap intervals in this three-second window.</output>
+            {furnitureFindings.length > 0 && <ol aria-label="Foot and furniture overlap intervals">
+              {furnitureFindings.map(item => <li key={item.startIndex}>
+                {item.seconds.toFixed(3)}s · foot point {item.insetPixels.toFixed(1)} stage pixels inside a solid region
+                {" · "}frames {item.startIndex + 1}–{item.endIndex + 1}{" "}
+                <button type="button" className="button secondary small" onClick={() => onSeek(item.seconds)}>
+                  Show Furniture Overlap Frame {item.peakIndex + 1}
+                </button>
+              </li>)}
+            </ol>}
+          </>}
+        </div>}
         {before && after && <p role="status" className="field-hint">
           Samples {before.index + 1}–{after.index + 1}
           {" · "}sole X {before.x.toFixed(1)} → {after.x.toFixed(1)} stage pixels

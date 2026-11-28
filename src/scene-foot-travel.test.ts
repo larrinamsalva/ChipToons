@@ -7,7 +7,7 @@ import { makeScene, validateProject, validGroundSlope } from "./model";
 import { elementBase, sceneFramesAt } from "./timeline";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
-import { footSceneryImages, possibleFootDepth, possibleFootSceneryOverlaps, sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "./scene-foot-travel";
+import { footSceneryFurniture, footSceneryImages, possibleFootFurnitureOverlaps, possibleFootDepth, possibleFootSceneryOverlaps, sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
 import { Stage } from "./components/Stage";
 
@@ -33,6 +33,45 @@ function fixture() {
 }
 
 describe("custom puppet foot review", () => {
+  it("reviews solid furniture interiors but not the open space beneath a seat", () => {
+    const { project, scene, actor } = fixture();
+    const bench: SceneElement = { ...actor, id: "bench-review", characterId: "", kind: "prop",
+      prop: "bench", sceneryDepth: "behind", animation: undefined,
+      motion: "still", x: 320, y: 350, rotation: 0, scale: 1, opacity: 1,
+      flip: false, flipY: false };
+    scene.elements.unshift(bench);
+    const point = { index: 0, seconds: 1, x: 320, y: 290, floorGap: 0 };
+    const saved = JSON.stringify(project);
+    expect(footSceneryFurniture(scene).map(item => item.id)).toEqual([bench.id]);
+    expect(possibleFootFurnitureOverlaps(project, scene, bench.id, [point]))
+      .toMatchObject([{ peakIndex: 0, seconds: 1, insetPixels: 10 }]);
+    expect(possibleFootFurnitureOverlaps(project, scene, bench.id, [{ ...point, y: 340 }])).toEqual([]);
+    expect(JSON.stringify(project)).toBe(saved);
+    bench.rotation = 90;
+    expect(possibleFootFurnitureOverlaps(project, scene, bench.id, [{ ...point, x: 380, y: 350 }]))
+      .toMatchObject([{ insetPixels: 10 }]);
+    bench.opacity = 0.3;
+    expect(possibleFootFurnitureOverlaps(project, scene, bench.id, [{ ...point, x: 380, y: 350 }])).toEqual([]);
+    bench.opacity = 1;
+    scene.objectTracks = [{ objectId: bench.id, initial: "", states: [], changes: [] }];
+    expect(possibleFootFurnitureOverlaps(project, scene, bench.id, [point])).toBeUndefined();
+  });
+
+  it("supports chair and table solid regions without treating an entire furniture box as solid", () => {
+    const { project, scene, actor } = fixture();
+    const furniture: SceneElement = { ...actor, id: "furniture-review", characterId: "", kind: "prop",
+      prop: "chair", sceneryDepth: "alongside", animation: undefined, motion: "still",
+      x: 300, y: 350, rotation: 0, scale: 1, opacity: 1, flip: false, flipY: false };
+    scene.elements.push(furniture);
+    const point = { index: 0, seconds: 1, x: 300, y: 313, floorGap: 0 };
+    expect(possibleFootFurnitureOverlaps(project, scene, furniture.id, [point])).toHaveLength(1);
+    furniture.prop = "table";
+    expect(possibleFootFurnitureOverlaps(project, scene, furniture.id, [point])).toEqual([]);
+    expect(possibleFootFurnitureOverlaps(project, scene, furniture.id, [{ ...point, y: 289 }])).toHaveLength(1);
+    furniture.sceneryDepth = undefined;
+    expect(footSceneryFurniture(scene)).toEqual([]);
+  });
+
   it("finds only sampled shoe positions inside a placed scenery image box without editing animation", () => {
     const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
     const scene = project.scenes[0], actor = scene.elements[0];
