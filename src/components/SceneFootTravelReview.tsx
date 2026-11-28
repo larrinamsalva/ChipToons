@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Project, Scene, SceneGroundPoint } from "../model";
 import { validGroundSlope } from "../model";
-import { sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../scene-foot-travel";
+import { footSceneryImages, possibleFootSceneryOverlaps, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../scene-foot-travel";
 import type { FootSide } from "../workshop-foot-travel";
 import { alignPuppetFootFrame, holdPuppetFootForFrames } from "../scene-foot-fix";
 
@@ -16,6 +16,7 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   const [side, setSide] = useState<FootSide>("right");
   const [startAt, setStartAt] = useState(0);
   const [holdFrames, setHoldFrames] = useState(3);
+  const [sceneryId, setSceneryId] = useState("");
   const [message, setMessage] = useState("");
   const review = opened ? sceneFootTravel(project, scene, actorId, startAt, side) : undefined;
   const currentSole = opened ? sceneFootGroundPointAt(project, scene, actorId, time, side) : undefined;
@@ -30,6 +31,9 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
     ? review.points[Math.max(1, selected)] : undefined;
   const before = after && review?.points[after.index - 1];
   const afterGroundY = after && sceneGroundYAt(scene, after.x);
+  const sceneryImages = opened ? footSceneryImages(project, scene) : [];
+  const sceneryFindings = review && sceneryId
+    ? possibleFootSceneryOverlaps(project, scene, sceneryId, review.points) : undefined;
 
   return <section className="workshop-joint-motion-curve" aria-label="Character foot travel review">
     <button type="button" className="button secondary small" aria-expanded={opened}
@@ -85,6 +89,30 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
         {review.paintedFoot && <p className="field-hint">{review.markedSole
           ? "Using your painted foot's marked sole point. Check the Stage if the picture or shoe shape changes."
           : "The estimated sole is the bottom center of the foot's image box. Transparent padding or an unusual shoe shape can move the visible contact point. Mark the sole in Puppet Maker for a closer estimate."}</p>}
+        <div className="assistant-fields" aria-label="Foot and scenery image review">
+          <label>Scenery image to check
+            <select aria-label="Scenery image to check" value={sceneryImages.some(item => item.id === sceneryId) ? sceneryId : ""}
+              onChange={event => setSceneryId(event.target.value)}>
+              <option value="">Choose a placed image</option>
+              {sceneryImages.map(item => <option key={item.id} value={item.id}>{item.name ||
+                project.assets.find(asset => asset.id === item.assetId)?.name || "Scenery image"}</option>)}
+            </select>
+          </label>
+          <p className="field-hint">Check where this foot enters a placed scenery image's rectangular bounds in the sampled Stage frames. Transparent parts of a picture still count. This points you to frames to inspect, not a proven collision or ground contact.</p>
+          {!sceneryImages.length && <p className="field-hint">Add an image to the scene with a scenery depth to use this review. Backdrops, changing artwork and built-in props are not measured here.</p>}
+          {sceneryFindings && <>
+            <output aria-label="Foot and scenery image summary">{sceneryFindings.length} possible image-box overlap intervals in this three-second window.</output>
+            {sceneryFindings.length > 0 && <ol aria-label="Foot and scenery image overlap intervals">
+              {sceneryFindings.map(item => <li key={item.startIndex}>
+                {item.seconds.toFixed(3)}s · foot point {item.insetPixels.toFixed(1)} stage pixels inside image box
+                {" · "}frames {item.startIndex + 1}–{item.endIndex + 1}{" "}
+                <button type="button" className="button secondary small" onClick={() => onSeek(item.seconds)}>
+                  Show Scenery Overlap Frame {item.peakIndex + 1}
+                </button>
+              </li>)}
+            </ol>}
+          </>}
+        </div>
         {before && after && <p role="status" className="field-hint">
           Samples {before.index + 1}–{after.index + 1}
           {" · "}sole X {before.x.toFixed(1)} → {after.x.toFixed(1)} stage pixels

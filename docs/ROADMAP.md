@@ -263,8 +263,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Preserve regular scene Undo/Redo, portable backups and unchanged animation/export art. Verify the independent moving-foot sample, creator flow on desktop/phone/tablet and actual painted-shoe position in a decoded WebM. Continue the long technical export gate.
 - This does not read scenery pixels, infer curved terrain or solve character balance/contact. An original finished episode and real-device validation are still separate priorities.
 
-## PR #194 — Keep Ground Guides Aligned During Camera Moves (in review)
+## PR #194 — Keep Ground Guides Aligned During Camera Moves (merged)
 
 - Draw the editor-only flat or bounded two-point guide within the Stage camera coordinate system instead of a separate stationary overlay. Keep authored ground values and warnings in world Stage space, preserve backups and hide the guide during playback/export.
 - Check guide alignment at pan/zoom keys in unit and desktop/phone/tablet browser tests; independently decode a camera-panned painted shoe in a real WebM to verify motion with no exported editor guide. Keep the full 20-minute technical export gate.
 - This is preview alignment, not parallax depth support, collision detection or a completed original episode.
+
+## PR #195 — Review Foot Against a Placed Scenery Image (in review)
+
+- Let a creator choose a non-backdrop uploaded scenery image in the existing foot review and seek frames where the selected sole enters its placed rectangle. Sample the image's saved position, scale, rotation, opacity and gentle camera depth offset with the shoe. Keep the review read-only and opt in.
+- Verify the bounding-box math and no project edits, the creator flow on desktop/phone/tablet, and a moving painted shoe beside the actual scenery picture in independently decoded WebM. Retain the full technical episode export gate.
+- A picture rectangle is not its opaque pixels or a walkable surface. Backdrops, built-in props and changing artwork remain outside this first check. No automatic collision repair or complete original episode is claimed.

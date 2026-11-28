@@ -1,7 +1,8 @@
-import type { Project, Scene, SceneGroundPoint } from "./model";
+import type { Project, Scene, SceneElement, SceneGroundPoint } from "./model";
 import { resolvedCharacter } from "./library";
 import { puppetFootSoleAt } from "./cinematic-gait";
-import { sceneFramesAt, sceneStart } from "./timeline";
+import { sceneFramesAt, sceneStart, stageCameraAt } from "./timeline";
+import { sceneryOffset } from "./world-model";
 import { possibleFootTravel } from "./workshop-foot-travel";
 import type { FootSide, FootTravelPoint, FootTravelReview } from "./workshop-foot-travel";
 
@@ -11,6 +12,65 @@ export interface FootDepthFinding {
   peakIndex: number;
   seconds: number;
   depthPixels: number;
+}
+
+export interface FootSceneryFinding {
+  startIndex: number;
+  endIndex: number;
+  peakIndex: number;
+  seconds: number;
+  insetPixels: number;
+}
+
+/** Only placed, non-backdrop image scenery with stable artwork is eligible. */
+export function footSceneryImages(project: Project, scene: Scene): SceneElement[] {
+  return scene.elements.filter(element => element.kind === "art" &&
+    !!element.sceneryDepth && !element.backdrop && !!element.assetId &&
+    project.assets.some(asset => asset.id === element.assetId) &&
+    !element.frameSequence &&
+    !scene.objectTracks?.some(track => track.objectId === element.id));
+}
+
+/** Read-only bounding-box candidates, sampled in the same Stage space as the shoe. */
+export function possibleFootSceneryOverlaps(project: Project, scene: Scene, imageId: string,
+  points: FootTravelPoint[]): FootSceneryFinding[] | undefined {
+  const image = footSceneryImages(project, scene).find(element => element.id === imageId);
+  if (!image) return undefined;
+  const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
+  if (sceneIndex < 0) return undefined;
+  const voiceStart = scene.elements.some(element => element.voiceMouth?.length)
+    ? sceneStart(project, sceneIndex) : 0;
+  const width = image.width ?? 190, height = image.height ?? 245;
+  const insets = points.map(point => {
+    const frames = sceneFramesAt(project, scene, point.seconds, voiceStart);
+    const frame = frames.get(imageId);
+    if (!frame || frame.opacity < 0.5 || !(frame.scale > 0)) return 0;
+    const camera = stageCameraAt(project, scene, point.seconds, false, frames, voiceStart);
+    const depth = sceneryOffset(scene, image, camera, false);
+    const radians = frame.rotation * Math.PI / 180;
+    const dx = point.x - frame.x - depth.x, dy = point.y - frame.y - depth.y;
+    const x = (dx * Math.cos(radians) + dy * Math.sin(radians)) /
+      (frame.scale * (image.flip ? -1 : 1));
+    const y = (-dx * Math.sin(radians) + dy * Math.cos(radians)) /
+      (frame.scale * (image.flipY ? -1 : 1));
+    // RasterArt places the image in [-width/2, width/2] × [-height, 0].
+    // This is its placed box, not an opaque-pixel or collision test.
+    return Math.max(0, Math.min(x + width / 2, width / 2 - x, y + height, -y) * frame.scale);
+  });
+  const findings: FootSceneryFinding[] = [];
+  let start = -1, peak = -1;
+  for (let index = 0; index <= points.length; index++) {
+    if (index < points.length && insets[index] >= 4) {
+      if (start < 0) start = index;
+      if (peak < 0 || insets[index] > insets[peak]) peak = index;
+    } else if (start >= 0) {
+      findings.push({ startIndex: start, endIndex: index - 1, peakIndex: peak,
+        seconds: points[peak].seconds, insetPixels: insets[peak] });
+      start = peak = -1;
+    }
+  }
+  return findings.sort((a, b) => b.insetPixels - a.insetPixels ||
+    a.startIndex - b.startIndex).slice(0, 5);
 }
 
 /** A two-point guide applies only within the measured span; old flat guides cover the Stage. */

@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { backup, restore, saved } from "./production-helpers";
 import { SUNNY_NAME } from "../src/puppet-project";
 import { paintedFootCartoon } from "./custom-foot-fixture";
-import { sceneFootGroundAt, sceneFootGroundPointAt, sceneFootTravel } from "../src/scene-foot-travel";
+import { possibleFootSceneryOverlaps, sceneFootGroundAt, sceneFootGroundPointAt, sceneFootTravel } from "../src/scene-foot-travel";
 
 const button = (page: Page, name: string) =>
   page.getByRole("button", { name, exact: true });
@@ -310,6 +310,46 @@ test("keeps flat and sloped editor ground guides aligned with a moving camera", 
   await expect(flatGuide.locator("line")).toHaveAttribute("x2", "800");
   expect(await flatGuide.getAttribute("transform")).toBe(
     await page.locator(".stage-panel [data-camera-transform=animated]").getAttribute("transform"));
+});
+
+test("reviews a painted shoe against placed scenery image bounds without changing the cartoon", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  const middle = sceneFootTravel(project, scene, actor.id, 0, "right")!.points[36];
+  project.assets.push({ ...project.assets[0], id: "scenery-art", name: "Painted scenery" });
+  const image = { ...actor, id: "scenery-object", characterId: "", kind: "art" as const,
+    assetId: "scenery-art", name: "Painted scenery", sceneryDepth: "behind" as const,
+    animation: undefined, motion: "still" as const, x: middle.x, y: middle.y + 45,
+    width: 90, height: 100 };
+  scene.elements.unshift(image);
+  const expected = possibleFootSceneryOverlaps(project, scene, image.id,
+    sceneFootTravel(project, scene, actor.id, 0, "right")!.points)!;
+  expect(expected).toHaveLength(1);
+  await restore(page, project);
+  const before = (await backup(page)).data;
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  await page.getByRole("combobox", { name: "Selected scene object" }).selectOption(actor.id);
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await review.getByRole("combobox", { name: "Scenery image to check" }).selectOption(image.id);
+  await expect(review.getByLabel("Foot and scenery image summary"))
+    .toContainText("1 possible image-box overlap intervals");
+  await expect(review.getByLabel("Foot and scenery image overlap intervals"))
+    .toContainText(`${expected[0].insetPixels.toFixed(1)} stage pixels inside image box`);
+  await review.getByRole("button", { name: `Show Scenery Overlap Frame ${expected[0].peakIndex + 1}` }).click();
+  await expect(page.getByRole("slider", { name: "Cartoon play position" }))
+    .toHaveValue(String(expected[0].seconds));
+  expect((await backup(page)).data).toEqual(before);
 });
 
 test("holds one painted foot at a reviewed frame with Undo and portable backup", async ({ page }) => {
