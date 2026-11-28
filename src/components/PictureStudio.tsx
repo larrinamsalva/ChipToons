@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import { LITTLE_FIXERS_OPENING_ACTION } from "../little-fixers-opening-script";
@@ -155,6 +156,7 @@ export function PictureStudio({ project, sceneIndex, onClose, onCreate, onPanel,
   }
 
   return <Modal title="Turn My Picture Into a Cartoon" onClose={() => { if (!busy) onClose(); }} wide>
+      <CategoryDirections category="picture" />
     <p className="section-description">Choose a picture panel for your storyboard. Trace separate pieces to make a character or prop move. Finish dialogue, sound, and video in the cartoon editor.</p>
     <fieldset className="picture-fields" disabled={busy}>
       <legend className="visually-hidden">Picture tools</legend>

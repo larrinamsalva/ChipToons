@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { LearningSteps } from "./LearningSteps";
 import { interactionSuggestion } from "../interaction-studio";
 import { INTERACTION_LABELS } from "../interaction-model";
@@ -207,6 +208,7 @@ export function ScriptDirector({ project, index, selected, onSelect, onSelectSce
 
   return <Modal title="Write My Episode Script" onClose={() => { if (!busy) onClose(); }} wide>
     <div className="director">
+      <CategoryDirections category="script" />
       <p>{options.seriesTitle && <>{options.seriesTitle} · </>}<strong>{project.title}</strong></p>
       <p role="status">{busy ? "Preparing sample audio…" : saveStatus}</p>
       {saveError && <p role="alert">{saveError}</p>}
