@@ -64,6 +64,32 @@ describe("custom puppet foot review", () => {
     expect(JSON.stringify(project)).toBe(saved);
   });
 
+  it("draws editor-only guide points in the same camera space as the puppet", () => {
+    const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
+    const scene = project.scenes[0], actor = scene.elements[0];
+    const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+    const second = sceneFootGroundPointAt(project, scene, actor.id, 3, "right")!;
+    scene.footGroundY = first.y;
+    scene.footGroundPoints = [first, second];
+    scene.cameraAnimation = { keyframes: [
+      { id: "guide-camera-start", time: 0, x: 400, y: 225, zoom: 1, easing: "linear" },
+      { id: "guide-camera-end", time: 4, x: 500, y: 245, zoom: 1.4, easing: "linear" },
+    ] };
+    const at = (time: number, showFootGroundGuide: boolean) =>
+      renderToStaticMarkup(createElement(Stage, { project, scene, time, labelled: true, showFootGroundGuide }));
+    const before = at(0, true), after = at(2, true);
+    const guide = (html: string) => html.match(/<g class="scene-ground-guide"[^>]*>/)?.[0];
+    expect(guide(before)).toContain('transform="translate(400 225) scale(1) translate(-400 -225)"');
+    expect(guide(after)).toContain('transform="translate(400 225) scale(1.2) translate(-450 -235)"');
+    expect(after).toContain('data-camera-transform="animated"');
+    expect(after).toContain('x1="' + first.x + '"');
+    expect(after).toContain('x2="' + second.x + '"');
+    expect(at(2, false)).not.toContain("scene-ground-guide");
+    scene.cameraAnimation = undefined;
+    expect(guide(at(2, true))).toContain('transform="translate(400 225) scale(1) translate(-400 -225)"');
+    expect(at(2, false)).not.toContain("scene-ground-guide");
+  });
+
   it("keeps old flat guides portable and rejects malformed or implausible slopes", () => {
     const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
     const scene = project.scenes[0], actor = scene.elements[0];

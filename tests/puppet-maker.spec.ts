@@ -270,6 +270,48 @@ test("sets two planted slope points and keeps the bounded guide through Undo and
   expect((await backup(page)).data.scenes[0].footGroundPoints).toEqual([first, second]);
 });
 
+test("keeps flat and sloped editor ground guides aligned with a moving camera", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+  const second = sceneFootGroundPointAt(project, scene, actor.id, 3, "right")!;
+  scene.footGroundY = first.y;
+  scene.footGroundPoints = [first, second];
+  scene.cameraAnimation = { keyframes: [
+    { id: "guide-camera-start", time: 0, x: 400, y: 225, zoom: 1, easing: "linear" },
+    { id: "guide-camera-end", time: 4, x: 500, y: 245, zoom: 1.4, easing: "linear" },
+  ] };
+  await restore(page, project);
+  const guide = page.locator(".stage-panel .scene-ground-guide");
+  const camera = page.locator(".stage-panel [data-camera-transform=animated]");
+  const start = await guide.getAttribute("transform");
+  expect(start).toBe(await camera.getAttribute("transform"));
+  await page.getByRole("slider", { name: "Cartoon play position" }).fill("2");
+  await expect(guide).toHaveAttribute("transform", "translate(400 225) scale(1.2) translate(-450 -235)");
+  expect(await guide.getAttribute("transform")).toBe(await camera.getAttribute("transform"));
+  expect(await guide.getAttribute("transform")).not.toBe(start);
+  await expect(guide.locator("line")).toHaveAttribute("x2", String(second.x));
+  await page.getByRole("button", { name: "Play cartoon" }).click();
+  await expect(guide).toHaveCount(0);
+  await page.getByRole("button", { name: "Pause cartoon" }).click();
+  await expect(guide).toHaveCount(1);
+  expect((await backup(page)).data.scenes[0].footGroundPoints).toEqual([first, second]);
+  await restore(page, { ...project, scenes: [{ ...scene, footGroundPoints: undefined }] });
+  await page.getByRole("slider", { name: "Cartoon play position" }).fill("2");
+  const flatGuide = page.locator(".stage-panel .scene-ground-guide");
+  await expect(flatGuide.locator("line")).toHaveAttribute("x2", "800");
+  expect(await flatGuide.getAttribute("transform")).toBe(
+    await page.locator(".stage-panel [data-camera-transform=animated]").getAttribute("transform"));
+});
+
 test("holds one painted foot at a reviewed frame with Undo and portable backup", async ({ page }) => {
   await page.goto("./");
   const png = await page.evaluate(() => {
