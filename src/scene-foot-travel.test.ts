@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { starterProject } from "./demo-starter";
-import { makeScene, validateProject } from "./model";
+import { makeScene, validateProject, validGroundSlope } from "./model";
 import { elementBase, sceneFramesAt } from "./timeline";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
-import { possibleFootDepth, sceneFootGroundAt, sceneFootTravel } from "./scene-foot-travel";
+import { possibleFootDepth, sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
 import { Stage } from "./components/Stage";
 
@@ -32,6 +32,62 @@ function fixture() {
 }
 
 describe("custom puppet foot review", () => {
+  it("bounds a two-point guide and finds a dip beneath its measured slope", () => {
+    const { project, scene, actor } = fixture();
+    actor.animation!.keyframes.splice(1, 0, {
+      ...actor.animation!.keyframes[0], id: "slope-mid", time: 1.5, x: 340, y: 344,
+    });
+    actor.animation!.keyframes[2].y += 12;
+    const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+    const second = sceneFootGroundPointAt(project, scene, actor.id, 3, "right")!;
+    expect(validGroundSlope(first, second)).toBe(true);
+    scene.footGroundY = first.y;
+    scene.footGroundPoints = [first, second];
+    const saved = JSON.stringify(project);
+    const review = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    expect(review.possibleDepth).toEqual([]);
+    expect(sceneGroundYAt(scene, review.points[36].x)).toBeCloseTo(first.y + 6);
+    expect(review.possibleGroundDepth).toHaveLength(1);
+    expect(review.possibleGroundDepth[0]).toMatchObject({ peakIndex: 36, depthPixels: 8 });
+    expect(sceneGroundYAt(scene, Math.min(first.x, second.x) - 1)).toBeUndefined();
+    expect(sceneGroundYAt(scene, Math.max(first.x, second.x) + 1)).toBeUndefined();
+    const outside = { ...review.points[36], index: 0, x: first.x - 1, y: first.y + 40 };
+    expect(possibleFootDepth([outside, review.points[36]], [true, true],
+      point => sceneGroundYAt(scene, point.x))).toMatchObject([
+      { startIndex: 1, endIndex: 1, peakIndex: 1, depthPixels: 8 },
+    ]);
+    scene.footGroundPoints = [second, first];
+    scene.footGroundY = second.y;
+    expect(sceneGroundYAt(scene, review.points[36].x)).toBeCloseTo(first.y + 6);
+    scene.footGroundPoints = [first, second];
+    scene.footGroundY = first.y;
+    expect(JSON.stringify(project)).toBe(saved);
+  });
+
+  it("keeps old flat guides portable and rejects malformed or implausible slopes", () => {
+    const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
+    const scene = project.scenes[0], actor = scene.elements[0];
+    const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+    scene.footGroundY = first.y;
+    expect(validateProject(project)).toBeTruthy(); // PR #192 portable backup: no point X stored.
+    expect(sceneGroundYAt(scene, 0)).toBe(first.y);
+    scene.footGroundPoints = [first];
+    expect(validateProject(project)).toBeTruthy();
+    const tooClose = { x: first.x + 79, y: first.y };
+    const tooSteep = { x: first.x + 100, y: first.y - 51 };
+    expect(validGroundSlope(first, tooClose)).toBe(false);
+    expect(validGroundSlope(first, tooSteep)).toBe(false);
+    for (const bad of [[first, tooClose], [first, tooSteep],
+      [first, { x: first.x + 100, y: 451 }]]) {
+      scene.footGroundPoints = bad;
+      expect(() => validateProject(project)).toThrow();
+    }
+    scene.footGroundPoints = [{ ...first, y: first.y + 1 }];
+    expect(() => validateProject(project)).toThrow();
+    scene.footGroundPoints = undefined;
+    expect(validateProject(project)).toBeTruthy();
+  });
+
   it("compares a saved flat-scene reference when the entire actor moves below it", () => {
     const { project, scene, actor } = fixture();
     const reference = sceneFootGroundAt(project, scene, actor.id, 0, "right")!;

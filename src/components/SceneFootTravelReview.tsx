@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { Project, Scene } from "../model";
-import { sceneFootGroundAt, sceneFootTravel } from "../scene-foot-travel";
+import type { Project, Scene, SceneGroundPoint } from "../model";
+import { validGroundSlope } from "../model";
+import { sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../scene-foot-travel";
 import type { FootSide } from "../workshop-foot-travel";
 import { alignPuppetFootFrame, holdPuppetFootForFrames } from "../scene-foot-fix";
 
@@ -9,7 +10,7 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   project: Project; scene: Scene; actorId: string; time: number;
   onSeek: (seconds: number) => void;
   onApply: (next: Scene) => boolean;
-  onGroundChange: (y: number | undefined) => boolean;
+  onGroundChange: (y: number | undefined, points?: SceneGroundPoint[]) => boolean;
 }) {
   const [opened, setOpened] = useState(false);
   const [side, setSide] = useState<FootSide>("right");
@@ -17,7 +18,10 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   const [holdFrames, setHoldFrames] = useState(3);
   const [message, setMessage] = useState("");
   const review = opened ? sceneFootTravel(project, scene, actorId, startAt, side) : undefined;
-  const currentSoleY = opened ? sceneFootGroundAt(project, scene, actorId, time, side) : undefined;
+  const currentSole = opened ? sceneFootGroundPointAt(project, scene, actorId, time, side) : undefined;
+  const firstGroundPoint = scene.footGroundPoints?.[0];
+  const canSetSlope = !!firstGroundPoint && !!currentSole &&
+    validGroundSlope(firstGroundPoint, currentSole);
   const actor = scene.elements.find(item => item.id === actorId);
   const editable = actor?.motion === "still" && actor.animation?.idle === "none" &&
     (actor.animation.keyframes.length ?? 0) >= 2;
@@ -25,6 +29,7 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
   const after = review && time >= review.start && time <= review.end
     ? review.points[Math.max(1, selected)] : undefined;
   const before = after && review?.points[after.index - 1];
+  const afterGroundY = after && sceneGroundYAt(scene, after.x);
 
   return <section className="workshop-joint-motion-curve" aria-label="Character foot travel review">
     <button type="button" className="button secondary small" aria-expanded={opened}
@@ -51,20 +56,31 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
           {" · "}{review.possibleDepth.length} possible below-neutral intervals.
         </output>
         <div className="assistant-fields" aria-label="Scene ground reference controls">
-          <p className="field-hint">Pause on a frame where this foot touches a flat floor, then save its measured sole height as a guide for this scene. The guide is shared by both feet and other characters in this scene. It stays fixed in Stage coordinates, even if a character moves up or down.</p>
-          <button type="button" className="button secondary small" disabled={currentSoleY === undefined}
+          <p className="field-hint">Pause where a foot touches the floor and set the first point. This makes a flat guide. For a gentle slope, move to another grounded frame at least 80 Stage pixels sideways and set the second point. The guide is shared by all feet in this scene.</p>
+          <button type="button" className="button secondary small" disabled={!currentSole}
             onClick={() => {
-              if (currentSoleY !== undefined && onGroundChange(currentSoleY))
-                setMessage(`Saved scene ground at Stage Y ${currentSoleY.toFixed(1)}. Undo restores the previous guide.`);
+              if (currentSole && onGroundChange(currentSole.y, [currentSole]))
+                setMessage(`Saved flat scene ground at Stage Y ${currentSole.y.toFixed(1)}. Undo restores the previous guide.`);
             }}>Set Scene Ground From This Foot</button>
           {scene.footGroundY !== undefined && <>
-            <p role="status" className="field-hint">Scene ground guide: Stage Y {scene.footGroundY.toFixed(1)}. Editor preview only; hidden while playing and absent from exported video.</p>
+            <p role="status" className="field-hint">Scene ground guide: Stage Y {scene.footGroundY.toFixed(1)}{scene.footGroundPoints?.length === 2 &&
+              <> at X {scene.footGroundPoints[0].x.toFixed(1)} → Y {scene.footGroundPoints[1].y.toFixed(1)} at X {scene.footGroundPoints[1].x.toFixed(1)} (between points only)</>}.
+              Editor preview only; hidden while playing and absent from exported video.</p>
+            {firstGroundPoint && <>
+              <button type="button" className="button secondary small" disabled={!canSetSlope}
+                onClick={() => {
+                  if (currentSole && canSetSlope && onGroundChange(firstGroundPoint.y, [firstGroundPoint, currentSole]))
+                    setMessage("Saved a sloped ground guide between two planted points. Undo restores the previous guide.");
+                }}>Set Second Slope Point From This Foot</button>
+              {!canSetSlope && <p className="field-hint">The second point needs to be visible, at least 80 Stage pixels sideways, with a gentle slope (no more than 1 pixel up or down per 2 sideways).</p>}
+            </>}
+            {!firstGroundPoint && <p className="field-hint">This older flat guide has no first X position. Set the first point again to add a slope.</p>}
             <button type="button" className="button secondary small"
-              onClick={() => { if (onGroundChange(undefined)) setMessage("Scene ground guide removed. Undo restores it."); }}>
+              onClick={() => { if (onGroundChange(undefined, undefined)) setMessage("Scene ground guide removed. Undo restores it."); }}>
               Clear Scene Ground Guide
             </button>
           </>}
-          {currentSoleY === undefined && <p className="field-hint">This sole is outside the Stage or unavailable at the playhead. Choose a visible grounded frame.</p>}
+          {!currentSole && <p className="field-hint">This sole is outside the Stage or unavailable at the playhead. Choose a visible grounded frame.</p>}
         </div>
         {review.paintedFoot && <p className="field-hint">{review.markedSole
           ? "Using your painted foot's marked sole point. Check the Stage if the picture or shoe shape changes."
@@ -74,11 +90,14 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
           {" · "}sole X {before.x.toFixed(1)} → {after.x.toFixed(1)} stage pixels
           {" · "}sole Y {before.y.toFixed(1)} → {after.y.toFixed(1)}
           {" · "}estimated floor gap {after.floorGap.toFixed(1)} pixels.
-          {scene.footGroundY !== undefined && <> {" · "}saved ground difference {(scene.footGroundY - after.y).toFixed(1)} pixels (positive above guide).</>}
+          {afterGroundY !== undefined && <> {" · "}saved ground difference {(afterGroundY - after.y).toFixed(1)} pixels (positive above guide).</>}
+          {scene.footGroundPoints?.length === 2 && afterGroundY === undefined && <> {" · "}outside saved ground span.</>}
         </p>}
         <p className="field-hint">The floor estimate follows the character's neutral feet, not the scenery. Inspect the main Stage at each suggested time for actual ground contact or overlap.</p>
         {scene.footGroundY !== undefined && <>
-          <p className="field-hint">{review.possibleGroundDepth.length} possible below-guide intervals in this three-second window. The guide is a flat Stage height you set, not detected floor geometry. Jump to a frame and inspect the artwork; jumping, slopes, camera motion and intentional overlap can make this warning inaccurate.</p>
+          <p className="field-hint">{review.possibleGroundDepth.length} possible below-guide intervals in this three-second window. {scene.footGroundPoints?.length === 2
+            ? "The two-point guide covers only its saved X span; samples outside it are not compared."
+            : "The flat guide covers the Stage."} Jump to a frame and inspect the artwork; camera motion, jumps, perspective and intentional overlap can make this manual guide inaccurate.</p>
           {review.possibleGroundDepth.length > 0 && <ol aria-label="Character below-scene-ground intervals">
             {review.possibleGroundDepth.map(item => <li key={item.startIndex}>
               {item.seconds.toFixed(3)}s · {item.depthPixels.toFixed(1)} stage pixels below saved guide

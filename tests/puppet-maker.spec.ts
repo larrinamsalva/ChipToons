@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { backup, restore, saved } from "./production-helpers";
 import { SUNNY_NAME } from "../src/puppet-project";
 import { paintedFootCartoon } from "./custom-foot-fixture";
-import { sceneFootGroundAt, sceneFootTravel } from "../src/scene-foot-travel";
+import { sceneFootGroundAt, sceneFootGroundPointAt, sceneFootTravel } from "../src/scene-foot-travel";
 
 const button = (page: Page, name: string) =>
   page.getByRole("button", { name, exact: true });
@@ -210,6 +210,64 @@ test("saves a scene ground guide from a painted foot and reviews whole-body sink
   expect((await backup(page)).data.scenes[0].footGroundY).toBeCloseTo(reference);
   await restore(page, portable);
   expect((await backup(page)).data.scenes[0].footGroundY).toBeCloseTo(reference);
+});
+
+test("sets two planted slope points and keeps the bounded guide through Undo and backup", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  actor.animation!.keyframes.splice(1, 0, {
+    ...actor.animation!.keyframes[0], id: "second-slope-pose", time: 1.5, x: 340, y: 344,
+  });
+  actor.animation!.keyframes[2].y += 12;
+  const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+  const second = sceneFootGroundPointAt(project, scene, actor.id, 3, "right")!;
+  const expected = sceneFootTravel(project, {
+    ...scene, footGroundY: first.y, footGroundPoints: [first, second],
+  }, actor.id, 0, "right")!;
+  expect(expected.possibleDepth).toEqual([]);
+  expect(expected.possibleGroundDepth[0].depthPixels).toBeCloseTo(8);
+  await restore(page, project);
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await review.getByRole("button", { name: "Set Scene Ground From This Foot" }).click();
+  await saved(page);
+  await expect(review.getByRole("button", { name: "Set Second Slope Point From This Foot" })).toBeDisabled();
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Preview", exact: true }).click();
+  await page.getByRole("slider", { name: "Cartoon play position" }).fill("3");
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  if (!await review.getByRole("button", { name: "Set Second Slope Point From This Foot" }).isVisible())
+    await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await expect(review.getByRole("button", { name: "Set Second Slope Point From This Foot" })).toBeEnabled();
+  await review.getByRole("button", { name: "Set Second Slope Point From This Foot" }).click();
+  await saved(page);
+  await expect(review.getByLabel("Character below-scene-ground intervals"))
+    .toContainText("8.0 stage pixels below saved guide");
+  const portable = (await backup(page)).data;
+  expect(portable.scenes[0].footGroundPoints).toEqual([first, second]);
+  expect(portable.scenes[0].elements[0].animation).toEqual(actor.animation);
+  await expect(page.locator(".stage-panel .scene-ground-guide line"))
+    .toHaveAttribute("x2", String(second.x));
+  await button(page, "Undo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].footGroundPoints).toEqual([first]);
+  await button(page, "Redo edit").click();
+  await saved(page);
+  expect((await backup(page)).data.scenes[0].footGroundPoints).toEqual([first, second]);
+  await restore(page, portable);
+  expect((await backup(page)).data.scenes[0].footGroundPoints).toEqual([first, second]);
 });
 
 test("holds one painted foot at a reviewed frame with Undo and portable backup", async ({ page }) => {

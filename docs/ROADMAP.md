@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #192
+## Current focused increment — PR #193
+
+- Let creators add a second grounded-foot point to a scene guide for simple inclines. Compare Stage sole positions only between the two authored X positions; preserve existing flat guides, portable backup, Undo and the editor-only display.
+- Verify an eight-pixel dip beneath a two-point line despite neutral foot joints, desktop/phone/tablet save and seek, and actual painted-shoe pixels in a decoded WebM. Two points remain an inspection aid, not automatic scenery geometry or collision solving.
+
+## Previous focused increment — PR #192 (merged)
 
 - Let a creator save a flat scene-ground height by sampling the selected foot at a known planted frame. Show an editor-only guide and grouped, seekable warnings when the selected sole crosses four Stage pixels below it. Preserve ordinary scene edits, Undo and portable backups.
 - Verify that a whole character can sink beneath the fixed guide while its neutral-rig gap stays zero, including the saved browser workflow and actual painted-shoe pixels in a decoded WebM. This is a manually chosen line, not floor detection, collision solving or a completed episode.
@@ -241,8 +246,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Test threshold/tilt boundaries, the saved desktop/phone/tablet creator flow and the actual picture-shoe vertical offset in an independently decoded WebM. Continue the full 20-minute technical export gate.
 - Keep the warning separate from scenery contact and collision claims; the neutral line moves with the actor and picture feet may have transparent padding.
 
-## PR #192 — Save a Flat Scene Ground Reference (in review)
+## PR #192 — Save a Flat Scene Ground Reference (merged)
 
 - Sample a selected parented foot's exact Stage sole at the current playhead and save its height on the scene. Show a dashed guide in the paused editor preview, share it with all actors in that scene, and hide it during playback and export. Keep this ordinary scene edit undoable and portable.
 - Rank upright intervals where a selected foot sinks at least four pixels below the saved line, with links to original Stage frames. Preserve the separate neutral-pose and horizontal travel warnings. Verify a whole-body vertical move that the neutral-pose check cannot catch, creator save/seek/Undo/backup on desktop/phone/tablet, and visible painted-shoe offsets in a decoded WebM.
 - The saved height is a flat creator-set reference; slopes, moving cameras, jumps and transparent pixels can make it inaccurate. It does not discover scenery, infer contacts or resolve collisions.
+
+## PR #193 — Bound a Two-Point Scene Ground Guide (in review)
+
+- Record a second grounded sole at a different Stage X to guide a gentle, straight slope. Show the saved segment in the paused editor, compare only the bounded X span, and refuse points under 80 pixels apart or with excessive grade. Existing single-height backups retain their flat guide.
+- Preserve regular scene Undo/Redo, portable backups and unchanged animation/export art. Verify the independent moving-foot sample, creator flow on desktop/phone/tablet and actual painted-shoe position in a decoded WebM. Continue the long technical export gate.
+- This does not read scenery pixels, infer curved terrain or solve character balance/contact. An original finished episode and real-device validation are still separate priorities.
