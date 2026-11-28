@@ -130,6 +130,7 @@ export interface SceneElement {
   animation?: ElementAnimation;
   voiceMouth?: VoiceMouthTrack[];
 }
+export interface SceneGroundPoint { x: number; y: number }
 export interface Scene {
   picturePanel?: PicturePanel;
   storyCard?: StoryCard;
@@ -154,6 +155,8 @@ export interface Scene {
   gentleDepth?: boolean;
   /** Creator-set flat Stage reference, sampled from a planted foot. Editor guide only. */
   footGroundY?: number;
+  /** One or two creator-set sole positions; two define a bounded linear guide. */
+  footGroundPoints?: SceneGroundPoint[];
   suggestedAtmosphere?: AtmosphereId;
   interactions?: Interaction[];
   objectTracks?: ObjectTrack[];
@@ -260,6 +263,20 @@ function validString(v: unknown, max = 6000): v is string {
 }
 function bounded(v: unknown, min: number, max: number): v is number {
   return typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
+}
+/** Bounds the authored span; guide samples outside the two points are not inferred. */
+export function validGroundSlope(first: SceneGroundPoint, second: SceneGroundPoint): boolean {
+  return [first, second].every(point => bounded(point.x, 0, 800) && bounded(point.y, 0, 450)) &&
+    Math.abs(second.x - first.x) >= 80 &&
+    Math.abs(second.y - first.y) <= Math.abs(second.x - first.x) * 0.5;
+}
+function validFootGroundPoints(value: unknown, flatY: unknown): boolean {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 2 ||
+      !value.every(point => isRecord(point) && bounded(point.x, 0, 800) && bounded(point.y, 0, 450)))
+    return false;
+  const [first, second] = value as SceneGroundPoint[];
+  if (first.y !== flatY) return false;
+  return !second || validGroundSlope(first, second);
 }
 function oneOf<T extends string>(v: unknown, choices: readonly T[]): v is T {
   return typeof v === "string" && choices.includes(v as T);
@@ -394,6 +411,7 @@ export function validateProject(value: unknown): Project {
       !oneOf(s.camera, ["wide", "close"]) ||
       (s.gentleDepth !== undefined && typeof s.gentleDepth !== "boolean") ||
       (s.footGroundY !== undefined && !bounded(s.footGroundY, 0, 450)) ||
+      (s.footGroundPoints !== undefined && !validFootGroundPoints(s.footGroundPoints, s.footGroundY)) ||
       !oneOf(s.transition, ["cut", "fade"]) ||
       !validString(s.action) ||
       !validString(s.props, 500) ||

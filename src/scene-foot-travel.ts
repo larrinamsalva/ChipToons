@@ -1,4 +1,4 @@
-import type { Project, Scene } from "./model";
+import type { Project, Scene, SceneGroundPoint } from "./model";
 import { resolvedCharacter } from "./library";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { sceneFramesAt, sceneStart } from "./timeline";
@@ -13,24 +13,38 @@ export interface FootDepthFinding {
   depthPixels: number;
 }
 
+/** A two-point guide applies only within the measured span; old flat guides cover the Stage. */
+export function sceneGroundYAt(scene: Scene, x: number): number | undefined {
+  if (scene.footGroundY === undefined || !Number.isFinite(x)) return undefined;
+  const points = scene.footGroundPoints;
+  if (!points || points.length !== 2) return scene.footGroundY;
+  const [first, second] = points;
+  if (x < Math.min(first.x, second.x) || x > Math.max(first.x, second.x)) return undefined;
+  return first.y + (second.y - first.y) * (x - first.x) / (second.x - first.x);
+}
+
 /** Group adjacent upright samples at least four pixels below the chosen reference. */
 export function possibleFootDepth(points: FootTravelPoint[], upright: boolean[],
-  referenceY?: number): FootDepthFinding[] {
+  referenceY?: number | ((point: FootTravelPoint) => number | undefined)): FootDepthFinding[] {
   const findings: FootDepthFinding[] = [];
   let start = -1, peak = -1;
-  const depth = (point: FootTravelPoint) => referenceY === undefined
-    ? -point.floorGap : point.y - referenceY;
+  const depth = (point: FootTravelPoint): number | undefined => {
+    if (referenceY === undefined) return -point.floorGap;
+    const y = typeof referenceY === "function" ? referenceY(point) : referenceY;
+    return y === undefined ? undefined : point.y - y;
+  };
   const finish = (end: number) => {
     if (start < 0) return;
     findings.push({ startIndex: start, endIndex: end, peakIndex: peak,
-      seconds: points[peak].seconds, depthPixels: depth(points[peak]) });
+      seconds: points[peak].seconds, depthPixels: depth(points[peak])! });
     start = -1;
     peak = -1;
   };
   for (let index = 0; index <= points.length; index++) {
-    if (index < points.length && upright[index] && depth(points[index]) >= 4) {
+    const value = index < points.length ? depth(points[index]) : undefined;
+    if (value !== undefined && upright[index] && value >= 4) {
       if (start < 0) start = index;
-      if (peak < 0 || depth(points[index]) > depth(points[peak])) peak = index;
+      if (peak < 0 || value > depth(points[peak])!) peak = index;
     } else finish(index - 1);
   }
   return findings.sort((a, b) => b.depthPixels - a.depthPixels ||
@@ -51,17 +65,24 @@ function footParts(project: Project, scene: Scene, actorId: string, side: FootSi
   return { sceneIndex, actor, rig, feet, foot };
 }
 
-/** Exact Stage-space sole at the playhead; a creator may use it as a flat scene guide. */
-export function sceneFootGroundAt(project: Project, scene: Scene, actorId: string,
-  seconds: number, side: FootSide): number | undefined {
+/** Exact visible Stage-space sole at the playhead for a creator-set guide point. */
+export function sceneFootGroundPointAt(project: Project, scene: Scene, actorId: string,
+  seconds: number, side: FootSide): SceneGroundPoint | undefined {
   const parts = footParts(project, scene, actorId, side);
   if (!parts || !Number.isFinite(seconds) || seconds < 0 || seconds > scene.duration) return undefined;
   const { sceneIndex, actor, rig, foot } = parts;
   const globalStart = actor.voiceMouth?.length ? sceneStart(project, sceneIndex) : 0;
   const frame = sceneFramesAt(project, scene, seconds, globalStart).get(actorId);
   if (!frame || !(frame.scale > 0)) return undefined;
-  const y = puppetFootSoleAt(rig, actor, frame, foot).y;
-  return Number.isFinite(y) && y >= 0 && y <= 450 ? y : undefined;
+  const { x, y } = puppetFootSoleAt(rig, actor, frame, foot);
+  return Number.isFinite(x) && x >= 0 && x <= 800 &&
+    Number.isFinite(y) && y >= 0 && y <= 450 ? { x, y } : undefined;
+}
+
+/** The flat reference retained for saved #192 scenes and callers. */
+export function sceneFootGroundAt(project: Project, scene: Scene, actorId: string,
+  seconds: number, side: FootSide): number | undefined {
+  return sceneFootGroundPointAt(project, scene, actorId, seconds, side)?.y;
 }
 
 /** Review a bounded stretch of any two-foot puppet's actual Stage motion. */
@@ -99,5 +120,5 @@ export function sceneFootTravel(project: Project, scene: Scene, actorId: string,
     possibleSlides: possibleFootTravel(points, nearFloor),
     possibleDepth: possibleFootDepth(points, upright),
     possibleGroundDepth: scene.footGroundY === undefined ? [] :
-      possibleFootDepth(points, upright, scene.footGroundY) };
+      possibleFootDepth(points, upright, point => sceneGroundYAt(scene, point.x)) };
 }

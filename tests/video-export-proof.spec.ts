@@ -39,7 +39,7 @@ import { starterLocations } from "../src/world-starters";
 import { makeScene, uid } from "../src/model";
 import { demo, openLittleFixersOpening, restore } from "./production-helpers";
 import { paintedFootCartoon } from "./custom-foot-fixture";
-import { sceneFootGroundAt, sceneFootTravel } from "../src/scene-foot-travel";
+import { sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../src/scene-foot-travel";
 import { alignPictureFootFrame, holdPictureFootForFrames, holdPictureFootForThreeFrames, holdPuppetFootForFrames } from "../src/scene-foot-fix";
 
 test("Cinematic workshop depth and grounding survive a genuine animated Scout and Jo WebM", async ({ page }, info) => {
@@ -1405,6 +1405,68 @@ test("saved scene ground warning matches a whole-body sunk painted shoe in decod
   execFileSync("ffmpeg", ["-v", "error", "-ss", String(moving.points[sample].seconds + EXPORT_RECORDING_LEAD_SECONDS),
     "-i", path, "-frames:v", "1", decoded]);
   await info.attach("Actual decoded frame comparing sunk and stable painted shoes",
+    { path: decoded, contentType: "image/png" });
+});
+
+test("sloped scene ground warning matches a dipping painted shoe in decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  const upper = { ...actor, id: uid(), y: actor.y - 105,
+    animation: { ...actor.animation!, keyframes: actor.animation!.keyframes.map(key =>
+      ({ ...key, id: uid(), y: key.y - 105 + key.time / 3 * 12 })) } };
+  actor.animation!.keyframes.splice(1, 0, {
+    ...actor.animation!.keyframes[0], id: uid(), time: 1.5, x: 340, y: actor.y + 14,
+  });
+  actor.animation!.keyframes[2].y += 12;
+  const first = sceneFootGroundPointAt(project, scene, actor.id, 0, "right")!;
+  const second = sceneFootGroundPointAt(project, scene, actor.id, 3, "right")!;
+  const comparison = { ...scene, footGroundY: first.y,
+    footGroundPoints: [first, second], elements: [actor, upper] };
+  const movie = { ...project, id: uid(), scenes: [comparison] };
+  const dipping = sceneFootTravel(movie, comparison, actor.id, 0, "right")!;
+  const steady = sceneFootTravel(movie, comparison, upper.id, 0, "right")!;
+  const sample = 36; // Midway between the two grounded points.
+  expect(dipping.points[sample].seconds).toBe(1.5);
+  expect(dipping.points[sample].floorGap).toBeCloseTo(0);
+  expect(dipping.possibleDepth).toEqual([]);
+  expect(sceneGroundYAt(comparison, dipping.points[sample].x)).toBeCloseTo(first.y + 6);
+  expect(dipping.possibleGroundDepth[0].depthPixels).toBeCloseTo(8);
+  expect(dipping.possibleGroundDepth[0].peakIndex).toBe(sample);
+  await restore(page, movie);
+  const { path } = await render(page, info, "painted-foot-slope-guide", 4,
+    { audio: false, captions: false, fps: 24 });
+  const raw = rawFrame(path, dipping.points[sample].seconds);
+  const shoeCenter = (point: { x: number; y: number }) => {
+    let count = 0, x = 0, y = 0;
+    for (let row = Math.max(0, Math.floor(point.y - 34)); row < Math.min(450, point.y + 34); row++)
+      for (let col = Math.max(0, Math.floor(point.x - 34)); col < Math.min(800, point.x + 34); col++) {
+        const offset = (row * 800 + col) * 3;
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
+          count++; x += col; y += row;
+        }
+      }
+    expect(count).toBeGreaterThan(100);
+    return { x: x / count, y: y / count };
+  };
+  const dippedPixels = shoeCenter(dipping.points[sample]);
+  const steadyPixels = shoeCenter(steady.points[sample]);
+  const measuredOffset = dipping.points[sample].y - steady.points[sample].y - 105;
+  const visibleOffset = dippedPixels.y - steadyPixels.y - 105;
+  expect(visibleOffset).toBeGreaterThan(5);
+  expect(Math.abs(visibleOffset - measuredOffset)).toBeLessThan(4);
+  const decoded = info.outputPath("painted-foot-slope-guide-decoded.png");
+  execFileSync("ffmpeg", ["-v", "error", "-ss", String(dipping.points[sample].seconds + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", decoded]);
+  await info.attach("Actual decoded frame comparing dipped and sloped-ground shoes",
     { path: decoded, contentType: "image/png" });
 });
 

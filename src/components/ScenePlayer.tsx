@@ -96,10 +96,19 @@ export function ScenePlayer({
         />
         {!snapshot.playing && scene.footGroundY !== undefined &&
           <svg className="scene-ground-guide" viewBox="0 0 800 450"
-            aria-label={`Saved scene ground guide at Stage Y ${scene.footGroundY.toFixed(1)}`}
+            aria-label={scene.footGroundPoints?.length === 2
+              ? "Saved sloped scene ground guide between two planted points"
+              : `Saved scene ground guide at Stage Y ${scene.footGroundY.toFixed(1)}`}
             role="img" focusable="false">
-            <line x1="0" y1={scene.footGroundY} x2="800" y2={scene.footGroundY}
-              stroke="#512e8a" strokeWidth="2" strokeDasharray="8 6" />
+            {scene.footGroundPoints?.length === 2
+              ? <line x1={scene.footGroundPoints[0].x} y1={scene.footGroundPoints[0].y}
+                  x2={scene.footGroundPoints[1].x} y2={scene.footGroundPoints[1].y}
+                  stroke="#512e8a" strokeWidth="2" strokeDasharray="8 6" />
+              : <line x1="0" y1={scene.footGroundY} x2="800" y2={scene.footGroundY}
+                  stroke="#512e8a" strokeWidth="2" strokeDasharray="8 6" />}
+            {scene.footGroundPoints?.map((point, index) =>
+              <circle key={index} cx={point.x} cy={point.y} r="4" fill="#512e8a"
+                stroke="#fff8e6" strokeWidth="2" />)}
           </svg>}
         {captions && (
           <CaptionOverlay
