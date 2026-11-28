@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { SUNNY_NAME, sunnyLibraryItem } from "../puppet-project";
 import { newWorkshopPuppetStarter } from "../workshop-puppet-starter";
 import {
@@ -519,6 +520,7 @@ export function PuppetMaker({
       }}
       wide
     >
+      <CategoryDirections category="puppet" />
       <p
         className="assistant-step"
         role="status"

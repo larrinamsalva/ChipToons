@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { SHOT_STYLES, shotNeedsReview } from "../camera-shots";
 import { participationWindow } from "../participation-model";
 import { FOCUS_TYPES, focusWindow, stepNeedsReview } from "../focus-model";
@@ -764,6 +765,7 @@ export function AnimationTimeline({
           Show me how
         </button>
       </div>
+      <CategoryDirections category="animation" />
       {help && (
         <ol className="timeline-help">
           <li>

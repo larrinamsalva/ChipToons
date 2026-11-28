@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { focusIssue, reconcileFocusReferences } from "../focus-model";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -161,6 +162,7 @@ function TransformForm({ project, scene, object, original, changeId, time, objec
   if (picker === "draw") return <DrawingPad onClose={() => setPicker(undefined)} onSave={saveDrawing}
     name={state?.name} initial={source?.drawing} saveLabel="Use drawing as this appearance" />;
   return <Modal title={TRANSFORM_TITLE} onClose={onClose} wide>
+      <CategoryDirections category="transform" />
     <p className="field-hint">Change one object’s artwork while keeping its placement and movement. Review before applying.</p>
     <div className="interaction-layout">
       <div className="interaction-controls">

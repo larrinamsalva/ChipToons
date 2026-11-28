@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useEffect, useState } from "react";
 import { listLibrary } from "../library";
 import type { LibraryItem } from "../library";
@@ -91,6 +92,7 @@ export function StoryCardStudio({ project, selected, onClose, onApply, onScript 
   }
 
   return <Modal title={STORY_CARD_STUDIO} onClose={onClose} wide>
+      <CategoryDirections category="cards" />
     <p>Add an optional opening, chapter marker, or ending. Each saved card becomes an editable storyboard scene.</p>
     <div className="interaction-layout story-card-studio">
       <div className="interaction-controls">

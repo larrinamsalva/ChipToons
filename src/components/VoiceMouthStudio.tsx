@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { missingAudio } from "../audio-vault";
 import { AudioDecodeCache, PreviewAudio } from "../audio-engine";
@@ -250,6 +251,7 @@ export function VoiceMouthStudio({ project, index, initialClip, onApply, onClose
   }
 
   return <Modal title="Make My Character Talk" onClose={onClose} wide>
+      <CategoryDirections category="mouth" />
     <div className="voice-mouth-studio">
       <p>Match the character’s mouth to the loudness of a recording. This gives an approximate talking rhythm, without recognizing words or speech sounds.</p>
       <p><strong>Scene {index + 1} · {scene.title}</strong></p>

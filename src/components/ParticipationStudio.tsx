@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useState } from "react";
 import { FOCUS_TYPES, focusIssue, focusWindow } from "../focus-model";
 import { cueKey, focusCueChoices } from "../focus-studio";
@@ -103,6 +104,7 @@ export function ParticipationStudio({ project, scene, time, id, stepId, onScene,
     setDraft(moment); setPreview(0); setReviewed(false); setPrepareLines(false); setDirty(false); setError("");
   }
   return <Modal title={PARTICIPATION_TITLE} onClose={onClose} wide>
+      <CategoryDirections category="participation" />
     <p className="field-hint">Invite children to think or speak aloud. The cartoon keeps playing and never collects their answers.</p>
     <div className="interaction-layout participation-layout">
       <div className="interaction-controls">

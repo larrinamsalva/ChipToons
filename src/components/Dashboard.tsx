@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { STORY_CARD_DEMO } from "../story-card-model";
 import { PARTICIPATION_EXAMPLES } from "../participation-model";
 import { EXAMPLE_NAMES } from "../transform-model";
@@ -109,6 +110,7 @@ export function Dashboard({
           Your stories stay with you
         </span>
       </div>
+      <CategoryDirections category="start" />
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
           <span className="eyebrow">

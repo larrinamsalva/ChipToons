@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import type { AudioFile } from "../audio-vault";
 import { CaptionEditor } from "./CaptionEditor";
 import { useEffect, useRef, useState } from "react";
@@ -386,6 +387,7 @@ export function VoiceStudio({
   }
   return (
     <Modal title={target ? "Record This Line" : "Voices & Sound Studio"} onClose={close} wide>
+      <CategoryDirections category="voice" />
       {coverageGapTime !== undefined && (
         <p className="field-hint" role="status" aria-label="Voice gap placement">
           Reviewing scene {sceneIndex + 1} at {coverageGapTime.toFixed(2)}s:

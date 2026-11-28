@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { STORY_CARD_STUDIO } from "../story-card-model";
 import { SOUND_DIRECTOR_TITLE } from "../sound-director";
 import { SHOT_TITLE, shotIssue } from "../camera-shots";
@@ -760,6 +761,7 @@ export function Editor({
           </button>
         ))}
       </nav>
+      <CategoryDirections category="preview" />
       <div className="editor-toolbar">
         <div className="studio-label">
           <span className="studio-dot" />
@@ -903,6 +905,7 @@ export function Editor({
             <span className="count-badge">{project.scenes.length}</span>
           </div>
           <p className="panel-hint">Little moments, one big story.</p>
+      <CategoryDirections category="story" />
           {project.scenes.length > 12 && (
             <div className="scene-pagination">
               <button
@@ -1113,6 +1116,7 @@ export function Editor({
                   onClick={() => setWorldOpen(value => !value)}>Build My Cartoon World</button>
                 <div className="world-fields" id="world-controls" hidden={!worldOpen}>
                   <h3>Arrange My Scene</h3>
+      <CategoryDirections category="world" />
                   <p className="field-hint">Choose a starter, or build with a background and props. Drag items on the stage or use the object controls below.
                     Mark decorations as scenery to include them in your saved location.</p>
                   <div className="series-actions">

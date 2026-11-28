@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clone, uid } from "../model";
 import type { Asset, Emotion } from "../model";
@@ -550,6 +551,7 @@ export function ArtLibrary({
       onClose={onClose}
       wide
     >
+      <CategoryDirections category="art" />
       <p className="section-description">
         Save a character once. Give it a hundred adventures. Your cartoons keep
         independent copies.

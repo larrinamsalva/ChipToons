@@ -1,3 +1,4 @@
+import { CategoryDirections } from "./CategoryDirections";
 import { SeriesPresentationFields } from "./SeriesPresentationFields";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -310,6 +311,7 @@ export function SeriesStudio({ initialId, initialEpisodeId, initialPanel = "Over
 
   return <Modal title="My Cartoon Series" onClose={close} wide>
     <div className="series-studio">
+      <CategoryDirections category="series" />
       <p>Keep your cast, lessons, and episode plans together. Each linked cartoon can still be edited on its own.</p>
       {inventoryWarning && <p role="status">{inventoryWarning}</p>}
       {error && <p className="error" role="alert">{error}</p>}
