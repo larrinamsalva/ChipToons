@@ -45,7 +45,8 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
         <output className="workshop-joint-motion-curve-summary" aria-label="Character foot summary">
           {side === "left" ? "Left" : "Right"} foot: {review.points.length} Stage samples
           {" · "}{review.start.toFixed(2)}–{review.end.toFixed(2)}s
-          {" · "}{review.possibleSlides.length} possible near-floor travel intervals.
+          {" · "}{review.possibleSlides.length} possible near-floor travel intervals
+          {" · "}{review.possibleDepth.length} possible below-neutral intervals.
         </output>
         {review.paintedFoot && <p className="field-hint">{review.markedSole
           ? "Using your painted foot's marked sole point. Check the Stage if the picture or shoe shape changes."
@@ -57,6 +58,19 @@ export function SceneFootTravelReview({ project, scene, actorId, time, onSeek, o
           {" · "}estimated floor gap {after.floorGap.toFixed(1)} pixels.
         </p>}
         <p className="field-hint">The floor estimate follows the character's neutral feet, not the scenery. Inspect the main Stage at each suggested time for actual ground contact or overlap.</p>
+        {review.possibleDepth.length > 0 && <>
+          <p className="field-hint">These poses put the selected sole at least four stage pixels below its neutral-pose baseline. They may be intentional. This does not measure the scenery or prove a collision.</p>
+          <ol aria-label="Character below-neutral foot intervals">
+            {review.possibleDepth.map(item => <li key={item.startIndex}>
+              {item.seconds.toFixed(3)}s · {item.depthPixels.toFixed(1)} stage pixels below neutral
+              {" · "}frames {item.startIndex + 1}–{item.endIndex + 1}{" "}
+              <button type="button" className="button secondary small"
+                onClick={() => onSeek(item.seconds)}>
+                Show Below-Baseline Frame {item.peakIndex + 1}
+              </button>
+            </li>)}
+          </ol>
+        </>}
         <p className="field-hint">
           You can hold a puppet foot at a suggested frame when this movement has editable timeline keys.
           The change adds one foot key within a linear motion interval, up to 12 stage pixels,

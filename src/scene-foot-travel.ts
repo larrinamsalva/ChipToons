@@ -3,12 +3,42 @@ import { resolvedCharacter } from "./library";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { sceneFramesAt, sceneStart } from "./timeline";
 import { possibleFootTravel } from "./workshop-foot-travel";
-import type { FootSide, FootTravelReview } from "./workshop-foot-travel";
+import type { FootSide, FootTravelPoint, FootTravelReview } from "./workshop-foot-travel";
+
+export interface FootDepthFinding {
+  startIndex: number;
+  endIndex: number;
+  peakIndex: number;
+  seconds: number;
+  depthPixels: number;
+}
+
+/** Group adjacent samples four or more pixels below this rig's neutral sole line. */
+export function possibleFootDepth(points: FootTravelPoint[], upright: boolean[]): FootDepthFinding[] {
+  const findings: FootDepthFinding[] = [];
+  let start = -1, peak = -1;
+  const finish = (end: number) => {
+    if (start < 0) return;
+    findings.push({ startIndex: start, endIndex: end, peakIndex: peak,
+      seconds: points[peak].seconds, depthPixels: -points[peak].floorGap });
+    start = -1;
+    peak = -1;
+  };
+  for (let index = 0; index <= points.length; index++) {
+    if (index < points.length && upright[index] && points[index].floorGap <= -4) {
+      if (start < 0) start = index;
+      if (peak < 0 || points[index].floorGap < points[peak].floorGap) peak = index;
+    } else finish(index - 1);
+  }
+  return findings.sort((a, b) => b.depthPixels - a.depthPixels ||
+    a.startIndex - b.startIndex).slice(0, 5);
+}
 
 /** Review a bounded stretch of any two-foot puppet's actual Stage motion. */
 export function sceneFootTravel(project: Project, scene: Scene, actorId: string,
   fromSeconds: number, side: FootSide): (FootTravelReview & {
     start: number; end: number; paintedFoot: boolean; markedSole: boolean;
+    possibleDepth: FootDepthFinding[];
   }) | undefined {
   const sceneIndex = project.scenes.findIndex(item => item.id === scene.id);
   const actor = scene.elements.find(item => item.id === actorId);
@@ -25,7 +55,7 @@ export function sceneFootTravel(project: Project, scene: Scene, actorId: string,
   const start = Math.max(0, Math.min(fromSeconds, Math.max(0, scene.duration - 3)));
   const end = Math.min(scene.duration, start + 3);
   const lastIndex = Math.ceil((end - start) * 24 - 1e-9);
-  const points: FootTravelReview["points"] = [], nearFloor: boolean[] = [];
+  const points: FootTravelReview["points"] = [], nearFloor: boolean[] = [], upright: boolean[] = [];
   const globalStart = actor.voiceMouth?.length ? sceneStart(project, sceneIndex) : 0;
   for (let index = 0; index <= lastIndex; index++) {
     const seconds = index === lastIndex ? end : Math.min(end, start + index / 24);
@@ -40,8 +70,10 @@ export function sceneFootTravel(project: Project, scene: Scene, actorId: string,
     const floorGap = floor - sole.y;
     points.push({ index, seconds, x: sole.x, y: sole.y, floorGap });
     nearFloor.push(Math.abs(frame.rotation) <= 8 && Math.abs(floorGap) <= 4);
+    upright.push(Math.abs(frame.rotation) <= 8);
   }
   return { side, start, end, paintedFoot: !!foot.assetId,
     markedSole: foot.soleX !== undefined && foot.soleY !== undefined, points,
-    possibleSlides: possibleFootTravel(points, nearFloor) };
+    possibleSlides: possibleFootTravel(points, nearFloor),
+    possibleDepth: possibleFootDepth(points, upright) };
 }

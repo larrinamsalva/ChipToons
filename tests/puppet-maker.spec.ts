@@ -119,6 +119,49 @@ test("reviews picture-foot travel in an ordinary scene and seeks its real Stage 
     .toEqual(paintedFootCartoon(png).scenes[0].elements[0].animation);
 });
 
+test("reviews a below-neutral painted sole and seeks the saved pose without editing it", async ({ page }) => {
+  await page.goto("./");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#ef29db"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/png");
+  });
+  const project = paintedFootCartoon(png);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  actor.animation!.keyframes[1].joints = { rightFoot: { x: 0, y: 12, angle: 0 } };
+  const finding = sceneFootTravel(project, scene, actor.id, 0, "right")!.possibleDepth[0];
+  expect(finding.depthPixels).toBeCloseTo(12);
+  await restore(page, project);
+  const navigation = page.getByRole("navigation", { name: "Editor panels" });
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Edit scene" }).click();
+  const review = page.getByLabel("Character foot travel review");
+  await review.getByRole("button", { name: "Review Character Feet" }).click();
+  await expect(review.getByLabel("Character foot summary"))
+    .toContainText("1 possible below-neutral intervals");
+  await expect(review.getByLabel("Character below-neutral foot intervals"))
+    .toContainText("12.0 stage pixels below neutral");
+  await review.getByRole("combobox", { name: "Character foot to review" }).selectOption("left");
+  await expect(review.getByLabel("Character foot summary"))
+    .toContainText("0 possible below-neutral intervals");
+  await review.getByRole("combobox", { name: "Character foot to review" }).selectOption("right");
+  await review.getByRole("button", {
+    name: `Show Below-Baseline Frame ${finding.peakIndex + 1}`,
+  }).click();
+  // On a phone, seeking opens the Stage panel and unmounts this review.
+  // The shared play position proves the selected saved frame on every layout.
+  await expect(page.getByLabel("Cartoon play position"))
+    .toHaveValue(String(finding.seconds));
+  if (await navigation.isVisible())
+    await navigation.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(page.locator(".stage-panel .live-stage [data-puppet-part=rightFoot] image"))
+    .toBeVisible();
+  expect((await backup(page)).data.scenes[0].elements[0].animation)
+    .toEqual(actor.animation);
+});
+
 test("holds one painted foot at a reviewed frame with Undo and portable backup", async ({ page }) => {
   await page.goto("./");
   const png = await page.evaluate(() => {

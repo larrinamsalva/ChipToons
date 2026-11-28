@@ -6,7 +6,7 @@ import { makeScene, validateProject } from "./model";
 import { elementBase, sceneFramesAt } from "./timeline";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
-import { sceneFootTravel } from "./scene-foot-travel";
+import { possibleFootDepth, sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
 import { Stage } from "./components/Stage";
 
@@ -32,6 +32,48 @@ function fixture() {
 }
 
 describe("custom puppet foot review", () => {
+  it("groups below-neutral samples, ignores tilted poses and ranks the deepest span", () => {
+    const gaps = [0, -4, -6, -5, -3, -8, -2, -8];
+    const points = gaps.map((floorGap, index) => ({ index, seconds: index / 24,
+      x: 100, y: 300 - floorGap, floorGap }));
+    const findings = possibleFootDepth(points,
+      [true, true, true, false, true, true, true, true]);
+    expect(findings.map(({ startIndex, endIndex, peakIndex, depthPixels }) =>
+      [startIndex, endIndex, peakIndex, depthPixels])).toEqual([
+      [5, 5, 5, 8], [7, 7, 7, 8], [1, 2, 2, 6],
+    ]);
+  });
+
+  it("finds a lowered painted sole using real Stage samples without editing the cartoon", () => {
+    const { project, scene, actor, character } = fixture();
+    const neutral = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    expect(neutral.possibleDepth).toEqual([]);
+    const foot = character.puppet!.parts.find(part => part.role === "rightFoot")!;
+    actor.animation!.keyframes[1].joints = { [foot.id]: { x: 0, y: 12, angle: 0 } };
+    const saved = JSON.stringify(project);
+    const lowered = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    expect(lowered.possibleDepth).toHaveLength(1);
+    expect(lowered.possibleDepth[0].depthPixels).toBeCloseTo(12);
+    expect(lowered.possibleDepth[0].seconds).toBeCloseTo(3);
+    expect(lowered.points[48].floorGap).toBeCloseTo(-8);
+    const frame = sceneFramesAt(project, scene, 2).get(actor.id)!;
+    expect(lowered.points[48].y).toBeCloseTo(
+      puppetFootSoleAt(character.puppet!, actor, frame, foot).y);
+    expect(JSON.stringify(project)).toBe(saved);
+  });
+
+  it("uses the workshop vector boot's outsole for the same depth warning", () => {
+    const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
+    project.characters[0].puppet!.costume = "workshop";
+    const scene = project.scenes[0], actor = scene.elements[0];
+    actor.animation!.keyframes[1].joints = { leftFoot: { x: 0, y: 10, angle: 0 } };
+    const left = sceneFootTravel(project, scene, actor.id, 0, "left")!;
+    const right = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+    expect(left.paintedFoot).toBe(false);
+    expect(left.possibleDepth[0].depthPixels).toBeCloseTo(10);
+    expect(right.possibleDepth).toEqual([]);
+  });
+
   it("accepts the same portable picture-foot project used by browser and media proof", () => {
     const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
     expect(validateProject(project)).toBeTruthy();
