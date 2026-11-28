@@ -1,6 +1,6 @@
-# Production gap audit — ChipToons through proposed PR #194
+# Production gap audit — ChipToons through proposed PR #195
 
-This audit describes the proposed PR #194 revision based on merged PR #193, not a finished 15–20-minute animated episode. The short two-part HD joining proof is separate from the existing 20-minute lower-resolution technical fixture. [Roadmap](ROADMAP.md) records past increments; the priorities below address what still separates the current studio from the requested complete production workflow.
+This audit describes the proposed PR #195 revision based on merged PR #194, not a finished 15–20-minute animated episode. The short two-part HD joining proof is separate from the existing 20-minute lower-resolution technical fixture. [Roadmap](ROADMAP.md) records past increments; the priorities below address what still separates the current studio from the requested complete production workflow.
 
 | Production area | Verified or present | Remaining work |
 | --- | --- | --- |

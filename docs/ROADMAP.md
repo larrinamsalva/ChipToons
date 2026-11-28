@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #194
+## Current focused increment — PR #195
+
+- Review where a selected puppet sole enters a placed scenery image's Stage rectangle and seek the original frames. Keep the check opt in, read-only and explicit about transparent picture space.
+- Verify real sampled movement, desktop/phone/tablet use and a decoded WebM with a moving painted shoe and placed picture. Preserve the technical 20-minute export gate.
+
+## Previous focused increment — PR #194 (merged)
 
 - Align saved flat and two-point editor ground guides with the camera transform already used for puppet artwork, so panning and zooming do not leave the guide fixed over the screen. Keep it out of playback and exports.
 - Verify flat and sloped guide transforms at camera keyframes, creator playback and backup on desktop/phone/tablet, and actual camera-panned painted-shoe pixels in a decoded WebM. The guide remains manually authored and is not scenery collision detection.
