@@ -150,8 +150,10 @@ test("reviews a below-neutral painted sole and seeks the saved pose without edit
   await review.getByRole("button", {
     name: `Show Below-Baseline Frame ${finding.peakIndex + 1}`,
   }).click();
-  await expect(review.getByRole("status").filter({ hasText: "estimated floor gap" }))
-    .toContainText("-12.0 pixels");
+  // On a phone, seeking opens the Stage panel and unmounts this review.
+  // The shared play position proves the selected saved frame on every layout.
+  await expect(page.getByLabel("Cartoon play position"))
+    .toHaveValue(String(finding.seconds));
   if (await navigation.isVisible())
     await navigation.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(page.locator(".stage-panel .live-stage [data-puppet-part=rightFoot] image"))
