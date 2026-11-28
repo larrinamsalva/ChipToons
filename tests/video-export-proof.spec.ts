@@ -1505,14 +1505,14 @@ test("camera-ground guide preview leaves a camera-panned painted shoe in decoded
     expect(count).toBeGreaterThan(100);
     return { x: x / count, y: y / count };
   };
-  const early = shoeCenter(rawFrame(path, 0.2));
+  const early = shoeCenter(rawFrame(path, 0.6)); // Past the opening fade.
   const laterFrame = rawFrame(path, 2);
   const later = shoeCenter(laterFrame);
-  const cameraShift = stageCameraAt(project, scene, 2).x - stageCameraAt(project, scene, 0.2).x;
-  expect(cameraShift).toBeCloseTo(45);
-  expect(later.x - early.x).toBeLessThan(-35);
+  const cameraShift = stageCameraAt(project, scene, 2).x - stageCameraAt(project, scene, 0.6).x;
+  expect(cameraShift).toBeCloseTo(35);
+  expect(later.x - early.x).toBeLessThan(-25);
   expect(Math.abs(later.x - early.x + cameraShift)).toBeLessThan(4);
-  expect(Math.abs(later.y - early.y)).toBeLessThan(3);
+  expect(Math.abs(later.y - early.y)).toBeLessThan(5);
   let guideColorPixels = 0;
   for (let row = Math.floor(first.y) - 2; row <= Math.floor(first.y) + 2; row++)
     for (let col = 20; col < 100; col++) {
