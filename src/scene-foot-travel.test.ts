@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { starterProject } from "./demo-starter";
+import type { SceneElement } from "./model";
 import { makeScene, validateProject, validGroundSlope } from "./model";
 import { elementBase, sceneFramesAt } from "./timeline";
 import { puppetFootSoleAt } from "./cinematic-gait";
 import { newWorkshopPuppetStarter } from "./workshop-puppet-starter";
-import { possibleFootDepth, sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "./scene-foot-travel";
+import { footSceneryImages, possibleFootDepth, possibleFootSceneryOverlaps, sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "./scene-foot-travel";
 import { paintedFootCartoon } from "../tests/custom-foot-fixture";
 import { Stage } from "./components/Stage";
 
@@ -32,6 +33,61 @@ function fixture() {
 }
 
 describe("custom puppet foot review", () => {
+  it("finds only sampled shoe positions inside a placed scenery image box without editing animation", () => {
+    const project = paintedFootCartoon("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6GxkAAAAASUVORK5CYII=");
+    const scene = project.scenes[0], actor = scene.elements[0];
+    const points = sceneFootTravel(project, scene, actor.id, 0, "right")!.points;
+    const middle = points[36];
+    project.assets.push({ ...project.assets[0], id: "painted-scenery", name: "Painted scenery" });
+    const image: SceneElement = { ...actor, id: "scenery-image", characterId: "", kind: "art",
+      assetId: "painted-scenery", name: "Painted scenery", sceneryDepth: "behind" as const,
+      animation: undefined, x: middle.x, y: middle.y + 45, width: 90, height: 100,
+      motion: "still" as const };
+    scene.elements.unshift(image);
+    expect(validateProject(project)).toBeTruthy();
+    expect(footSceneryImages(project, scene).map(item => item.id)).toEqual([image.id]);
+    const original = JSON.stringify(project);
+    const findings = possibleFootSceneryOverlaps(project, scene, image.id, points)!;
+    expect(findings).toHaveLength(1);
+    expect(findings[0].startIndex).toBeGreaterThan(0);
+    expect(findings[0].endIndex).toBeLessThan(points.length - 1);
+    expect(Math.abs(findings[0].peakIndex - 36)).toBeLessThanOrEqual(1);
+    expect(findings[0].insetPixels).toBeCloseTo(45);
+    expect(JSON.stringify(project)).toBe(original);
+    image.y += 150;
+    expect(possibleFootSceneryOverlaps(project, scene, image.id, points)).toEqual([]);
+    image.backdrop = true;
+    expect(possibleFootSceneryOverlaps(project, scene, image.id, points)).toBeUndefined();
+  });
+
+  it("uses moving, rotated and parallax image bounds and ignores hidden scenery", () => {
+    const { project, scene, actor } = fixture();
+    project.assets.push({ ...project.assets[0], id: "placed-image" });
+    const image = { ...actor, id: "placed-image", characterId: "", kind: "art" as const,
+      assetId: "placed-image", sceneryDepth: "behind" as const, animation: undefined,
+      motion: "still" as const, x: 320, y: 350, width: 40, height: 100 };
+    scene.elements.unshift(image);
+    const point = { index: 0, seconds: 2, x: 348, y: 300, floorGap: 0 };
+    expect(possibleFootSceneryOverlaps(project, scene, image.id, [point])).toEqual([]);
+    scene.gentleDepth = true;
+    scene.cameraAnimation = { keyframes: [
+      { id: "still-camera", time: 0, x: 500, y: 225, zoom: 1, easing: "linear" },
+    ] };
+    expect(possibleFootSceneryOverlaps(project, scene, image.id, [point])).toMatchObject([
+      { peakIndex: 0, seconds: 2, insetPixels: 12 },
+    ]);
+    scene.gentleDepth = false;
+    image.rotation = 90;
+    expect(possibleFootSceneryOverlaps(project, scene, image.id,
+      [{ ...point, x: 370, y: 350 }])).toHaveLength(1);
+    image.opacity = 0.3;
+    expect(possibleFootSceneryOverlaps(project, scene, image.id,
+      [{ ...point, x: 370, y: 350 }])).toEqual([]);
+    image.opacity = 1;
+    scene.objectTracks = [{ objectId: image.id, initial: "", states: [], changes: [] }];
+    expect(footSceneryImages(project, scene)).toEqual([]);
+  });
+
   it("bounds a two-point guide and finds a dip beneath its measured slope", () => {
     const { project, scene, actor } = fixture();
     actor.animation!.keyframes.splice(1, 0, {

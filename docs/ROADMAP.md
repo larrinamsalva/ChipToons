@@ -4,7 +4,12 @@ The studio is delivered in reviewable increments. Pull requests are never automa
 
 For an evidence-based status of the full production goal and the next priorities, see [Production gap audit](PRODUCTION_GAP_AUDIT.md).
 
-## Current focused increment — PR #194
+## Current focused increment — PR #195
+
+- Review where a selected puppet sole enters a placed scenery image's Stage rectangle and seek the original frames. Keep the check opt in, read-only and explicit about transparent picture space.
+- Verify real sampled movement, desktop/phone/tablet use and a decoded WebM with a moving painted shoe and placed picture. Preserve the technical 20-minute export gate.
+
+## Previous focused increment — PR #194 (merged)
 
 - Align saved flat and two-point editor ground guides with the camera transform already used for puppet artwork, so panning and zooming do not leave the guide fixed over the screen. Keep it out of playback and exports.
 - Verify flat and sloped guide transforms at camera keyframes, creator playback and backup on desktop/phone/tablet, and actual camera-panned painted-shoe pixels in a decoded WebM. The guide remains manually authored and is not scenery collision detection.
@@ -263,8 +268,14 @@ Six original teaching graphics can follow sampled objects and camera motion, or 
 - Preserve regular scene Undo/Redo, portable backups and unchanged animation/export art. Verify the independent moving-foot sample, creator flow on desktop/phone/tablet and actual painted-shoe position in a decoded WebM. Continue the long technical export gate.
 - This does not read scenery pixels, infer curved terrain or solve character balance/contact. An original finished episode and real-device validation are still separate priorities.
 
-## PR #194 — Keep Ground Guides Aligned During Camera Moves (in review)
+## PR #194 — Keep Ground Guides Aligned During Camera Moves (merged)
 
 - Draw the editor-only flat or bounded two-point guide within the Stage camera coordinate system instead of a separate stationary overlay. Keep authored ground values and warnings in world Stage space, preserve backups and hide the guide during playback/export.
 - Check guide alignment at pan/zoom keys in unit and desktop/phone/tablet browser tests; independently decode a camera-panned painted shoe in a real WebM to verify motion with no exported editor guide. Keep the full 20-minute technical export gate.
 - This is preview alignment, not parallax depth support, collision detection or a completed original episode.
+
+## PR #195 — Review Foot Against a Placed Scenery Image (in review)
+
+- Let a creator choose a non-backdrop uploaded scenery image in the existing foot review and seek frames where the selected sole enters its placed rectangle. Sample the image's saved position, scale, rotation, opacity and gentle camera depth offset with the shoe. Keep the review read-only and opt in.
+- Verify the bounding-box math and no project edits, the creator flow on desktop/phone/tablet, and a moving painted shoe beside the actual scenery picture in independently decoded WebM. Retain the full technical episode export gate.
+- A picture rectangle is not its opaque pixels or a walkable surface. Backdrops, built-in props and changing artwork remain outside this first check. No automatic collision repair or complete original episode is claimed.

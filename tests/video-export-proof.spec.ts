@@ -39,7 +39,7 @@ import { starterLocations } from "../src/world-starters";
 import { makeScene, uid } from "../src/model";
 import { demo, openLittleFixersOpening, restore } from "./production-helpers";
 import { paintedFootCartoon } from "./custom-foot-fixture";
-import { sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../src/scene-foot-travel";
+import { possibleFootSceneryOverlaps, sceneFootGroundAt, sceneFootGroundPointAt, sceneGroundYAt, sceneFootTravel } from "../src/scene-foot-travel";
 import { alignPictureFootFrame, holdPictureFootForFrames, holdPictureFootForThreeFrames, holdPuppetFootForFrames } from "../src/scene-foot-fix";
 
 test("Cinematic workshop depth and grounding survive a genuine animated Scout and Jo WebM", async ({ page }, info) => {
@@ -1526,6 +1526,68 @@ test("camera-ground guide preview leaves a camera-panned painted shoe in decoded
   execFileSync("ffmpeg", ["-v", "error", "-ss", String(2 + EXPORT_RECORDING_LEAD_SECONDS),
     "-i", path, "-frames:v", "1", decoded]);
   await info.attach("Actual decoded camera-panned painted shoe without the editor guide",
+    { path: decoded, contentType: "image/png" });
+});
+
+test("scenery image-box review matches a moving painted shoe in decoded WebM", async ({ page }, info) => {
+  test.setTimeout(85_000);
+  await page.goto("./");
+  const artwork = await page.evaluate(() => {
+    const draw = (color: string) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 24;
+      const context = canvas.getContext("2d")!;
+      context.fillStyle = color; context.fillRect(0, 0, 24, 24);
+      return canvas.toDataURL("image/png");
+    };
+    return { shoe: draw("#ef29db"), scenery: draw("#00f8ff") };
+  });
+  const project = paintedFootCartoon(artwork.shoe);
+  const scene = project.scenes[0], actor = scene.elements[0];
+  const review = sceneFootTravel(project, scene, actor.id, 0, "right")!;
+  const middle = review.points[36];
+  project.assets.push({ id: "scenery-image", name: "Cyan scenery image", type: "image",
+    mime: "image/png", dataUrl: artwork.scenery });
+  const image = { ...actor, id: "scenery-object", characterId: "", kind: "art" as const,
+    assetId: "scenery-image", sceneryDepth: "behind" as const, name: "Cyan scenery image",
+    animation: undefined, motion: "still" as const, x: middle.x, y: middle.y + 45,
+    width: 90, height: 100 };
+  scene.elements.unshift(image);
+  const findings = possibleFootSceneryOverlaps(project, scene, image.id, review.points)!;
+  expect(findings).toHaveLength(1);
+  expect(findings[0].startIndex).toBeGreaterThan(0);
+  await restore(page, project);
+  const { path } = await render(page, info, "foot-scenery-image", 4,
+    { audio: false, captions: false, fps: 24 });
+  const shoeCenter = (raw: Buffer) => {
+    let count = 0, x = 0;
+    for (let row = 0; row < 450; row++)
+      for (let col = 0; col < 800; col++) {
+        const offset = (row * 800 + col) * 3;
+        if (raw[offset] > 145 && raw[offset + 2] > 135 && raw[offset + 1] < 140) {
+          count++; x += col;
+        }
+      }
+    expect(count).toBeGreaterThan(100);
+    return x / count;
+  };
+  const early = shoeCenter(rawFrame(path, 0.6));
+  const atOverlap = rawFrame(path, findings[0].seconds);
+  const later = shoeCenter(atOverlap);
+  expect(early).toBeLessThan(middle.x - 40);
+  expect(later).toBeGreaterThan(middle.x - 10);
+  expect(later).toBeLessThan(middle.x + 10);
+  let cyan = 0;
+  for (let row = Math.floor(image.y - image.height + 10); row < Math.floor(image.y - 5); row++)
+    for (let col = Math.floor(image.x - image.width / 2 + 5); col < Math.floor(image.x + image.width / 2 - 5); col++) {
+      const offset = (row * 800 + col) * 3;
+      if (atOverlap[offset] < 90 && atOverlap[offset + 1] > 180 && atOverlap[offset + 2] > 180) cyan++;
+    }
+  expect(cyan).toBeGreaterThan(500);
+  const decoded = info.outputPath("foot-scenery-overlap-decoded.png");
+  execFileSync("ffmpeg", ["-v", "error", "-ss", String(findings[0].seconds + EXPORT_RECORDING_LEAD_SECONDS),
+    "-i", path, "-frames:v", "1", decoded]);
+  await info.attach("Decoded moving painted shoe over a placed scenery image",
     { path: decoded, contentType: "image/png" });
 });
 
